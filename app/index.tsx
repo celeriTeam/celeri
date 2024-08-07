@@ -6,10 +6,12 @@ import RegisterPage from './pages/Register';
 import PhoneNumberPage from './pages/PhoneNumber';
 import VerificationPage from './pages/PhoneVerification';
 import HomePage from './pages/home/Home';
-import CreateGroupPage from './pages/CreateGroup';
+import CreateGroupPage from './pages/home/CreateGroup';
 import { RootStackParamList } from './pages/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+let userID = 1
 
 const App: React.FC = () => {
     return (
@@ -19,12 +21,14 @@ const App: React.FC = () => {
                 <Stack.Screen name="PhoneNumber" component={PhoneNumberPage} options={{ headerShown: false }} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
                 <Stack.Screen name="FLEX" component={HomePage} options={{ 
-                        title: 'Groups',
-                        headerStyle: { backgroundColor: '#42a5f5' },
-                        headerTitleStyle: { fontWeight: 'bold' },
-                        headerTintColor: '#fff',
-                        headerLeft: () => null
-                 }} />
+                    title: 'Groups',
+                    headerStyle: { backgroundColor: '#42a5f5' },
+                    headerTitleStyle: { fontWeight: 'bold' },
+                    headerTintColor: '#fff',
+                    headerLeft: () => null
+                }}
+                initialParams={{userID: userID}}
+                />
                 <Stack.Screen name="CreateGroupPage" component={CreateGroupPage} options={{}} />
             </Stack.Navigator>
         </NavigationContainer>

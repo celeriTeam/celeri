@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 
@@ -18,12 +18,23 @@ type Props = {
 
 const VerificationPage: React.FC<Props> = ({ navigation }) => {
     return (
-        <View>
+        <View style={styles.container}>
             <Text>Verification Page</Text>
             <Button title="Back" onPress={() => navigation.goBack()} />
             <Button title="Verify" onPress={() => navigation.navigate('FLEX')} />
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    text: {
+        fontSize: 24,
+    },
+});
 
 export default VerificationPage;

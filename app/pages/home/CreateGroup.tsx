@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from './types';
+import { RootStackParamList } from '../types';
 
 type CreateGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'CreateGroupPage'>;
 
@@ -13,7 +13,8 @@ type Props = {
 const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
     return (
         <View style={styles.container}>
-            <Text>Create Group Page</Text>
+            <Text>Create Group Page</Text><br></br>
+            <Text>Coming soon...</Text><br></br>
             <Button title="Back" onPress={() => navigation.goBack()} />
         </View>
     );

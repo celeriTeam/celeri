@@ -1,11 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useRoute } from '@react-navigation/native';
 import HomeTab from './HomeTab';
 import ProfileTab from './ProfileTab';
-import CreateGroupPage from '../CreateGroup';
-import JoinGroupPage from '../JoinGroup';
-import { NavigationContainer } from '@react-navigation/native';
+import CreateGroupPage from './CreateGroup';
+import JoinGroupPage from './JoinGroup';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -19,6 +19,9 @@ const HomeStackScreen: React.FC = () => (
 );
 
 const HomePage: React.FC = () => {
+    const route = useRoute();
+    const { userID } = route.params as { userID: string };
+
     return (
         <Tab.Navigator>
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} />
