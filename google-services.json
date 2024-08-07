@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "921566828983",
+    "project_id": "flex-22c82",
+    "storage_bucket": "flex-22c82.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:921566828983:android:0be9d0da0692cc46d7b032",
+        "android_client_info": {
+          "package_name": "com.alp2goose.flex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCn-k9YkPP1H5YUIRAXFsIqDhVeSrL9b4I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
