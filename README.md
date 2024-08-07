@@ -18,6 +18,10 @@ Health Betting Application for iOS
 
 - Clone this github repo onto your local and go to the folder path.
 
+- Install dependencies
+
+      npm install
+
 - Start the project with expo
 
       npx expo start
