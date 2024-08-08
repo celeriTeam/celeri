@@ -7,12 +7,18 @@ const ProfileTab: React.FC = () => {
     const route = useRoute();
     const { userID } = route.params as { userID: number };
     const currentUserName = getUserName(userID); // get user name api call
-    const currentUserGroups = getUserGroups(userID); // get user groups api call
+    const currentUserGroups = getUserGroups(userID) || []; // get user groups api call
 
     return (
         <View style={styles.container} >
-            <Text style={styles.name} >{currentUserName}</Text><br></br>
-            <Text style={styles.text} >Groups:</Text>
+            <Text style={styles.name} >{currentUserName}</Text>
+            <Text style={styles.title} >Groups:</Text>
+            {currentUserGroups.map((groupID: number) => {
+                const groupName = getGroupName(groupID); // This function should fetch the group name
+                return (
+                    <Text style={styles.text} >{groupName}</Text>
+                );
+            })}
         </View>
     );
 };
@@ -39,8 +45,13 @@ const styles = StyleSheet.create({
     text: {
         fontSize: 24,
     },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
     name: {
         fontSize: 34,
+        marginBottom: 16,
     }
 });
 

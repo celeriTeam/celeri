@@ -4,7 +4,7 @@ let Users = [
         id: 1,
         name: 'John Doe',
         phoneNumber: '1234567890',
-        groups: [1596]
+        groups: [1438, 1596]
     },
 ]
 
@@ -16,6 +16,12 @@ let Groups = [
         members: 4,
         users: Users
     },
+    {
+        id: 1438,
+        name: 'Family Group',
+        members: 5,
+        users: Users
+    }
 ]
 
 // Temp User APIs
