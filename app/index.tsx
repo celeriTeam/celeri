@@ -3,7 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import RegisterPage from './pages/Register';
-import PhoneNumberPage from './pages/PhoneNumber';
+import SignUpPage from './pages/SignUp';
 import VerificationPage from './pages/PhoneVerification';
 import HomePage from './pages/home/Home';
 import CreateGroupPage from './pages/home/CreateGroup';
@@ -18,7 +18,7 @@ const App: React.FC = () => {
         <NavigationContainer independent={true}>
             <Stack.Navigator initialRouteName="Register">
                 <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
-                <Stack.Screen name="PhoneNumber" component={PhoneNumberPage} options={{ headerShown: false }} />
+                <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
                 <Stack.Screen name="FLEX" component={HomePage} options={{ 
                     title: 'Groups',
