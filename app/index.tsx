@@ -39,7 +39,7 @@ const App: React.FC = () => {
     
     return (
         <NavigationContainer independent={true}>
-            <Stack.Navigator initialRouteName="Register">
+            <Stack.Navigator initialRouteName="FLEX">
                 <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
                 <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
