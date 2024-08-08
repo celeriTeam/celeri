@@ -6,7 +6,7 @@ import RegisterPage from './pages/Register';
 import SignUpPage from './pages/SignUp';
 import VerificationPage from './pages/PhoneVerification';
 import HomePage from './pages/home/Home';
-import CreateGroupPage from './pages/home/CreateGroup';
+import GroupDetails from './pages/home/GroupDetails';
 import { RootStackParamList } from './pages/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -29,7 +29,14 @@ const App: React.FC = () => {
                 }}
                 initialParams={{userID: userID}}
                 />
-                <Stack.Screen name="CreateGroupPage" component={CreateGroupPage} options={{}} />
+                <Stack.Screen name="GroupDetails" component={GroupDetails} options={{ 
+                    title: 'Groups',
+                    headerStyle: { backgroundColor: '#42a5f5' },
+                    headerTitleStyle: { fontWeight: 'bold' },
+                    headerTintColor: '#fff',
+                    headerLeft: () => null
+                }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );

@@ -12,19 +12,24 @@ let Users = [
 let Groups = [
     {
         id: 1596,
-        name: 'Squad',
+        name: 'Squad Group',
         members: 4,
         users: Users
     },
 ]
 
 // Temp User APIs
-function getUserName(id: number) {
+export const getUserName = (id: number): string | undefined => {
     let user = Users.find(user => user.id === id)
     return user?.name
 }
 
-function getUserGroups(id: number) {
+export const getUserGroups = (id: number): number[] | undefined => {
     let user = Users.find(user => user.id === id)
     return user?.groups
+}
+
+export const getGroupName = (id: number): string | undefined => {
+    let group = Groups.find(group => group.id === id)
+    return group?.name
 }
