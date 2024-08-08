@@ -4,7 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 
-type CreateGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'CreateGroupPage'>;
+type CreateGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'CreateGroup'>;
 
 type Props = {
     navigation: CreateGroupPageNavigationProp;

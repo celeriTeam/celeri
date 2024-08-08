@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 
 type JoinGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'JoinGroup'>;
@@ -11,6 +11,7 @@ type Props = {
 };
 
 const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
+    
     return (
         <View style={styles.container}>
             <Text>Join Group Page</Text>
