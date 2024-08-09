@@ -1,41 +1,50 @@
-// User
-let Users = [
-    {
-        id: 1,
-        name: 'John Doe',
-        phoneNumber: '1234567890',
-        groups: [1438, 1596]
-    },
-]
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { app } from "../firebaseConfig"; // Make sure your Firebase config is correctly imported
 
-// Groups Database
-let Groups = [
-    {
-        id: 1596,
-        name: 'Squad Group',
-        members: 4,
-        users: Users
-    },
-    {
-        id: 1438,
-        name: 'Family Group',
-        members: 5,
-        users: Users
-    }
-]
+const db = getFirestore(app);
 
 // Temp User APIs
-export const getUserName = (id: number): string | undefined => {
-    let user = Users.find(user => user.id === id)
-    return user?.name
+export const getUserName = async (id: string): Promise<string | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists()) {
+            return userDoc.data().name;
+        } else {
+            console.log("No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("Error fetching user document:", error);
+        return undefined;
+    }
 }
 
-export const getUserGroups = (id: number): number[] | undefined => {
-    let user = Users.find(user => user.id === id)
-    return user?.groups
+export const getUserGroups = async (id: string): Promise<string[] | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists()) {
+            return userDoc.data().groups;
+        } else {
+            console.log("No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("Error fetching user document:", error);
+        return undefined;
+    }
 }
 
-export const getGroupName = (id: number): string | undefined => {
-    let group = Groups.find(group => group.id === id)
-    return group?.name
+export const getGroupName = async (id: string): Promise<string | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "groups", id));
+        if (userDoc.exists()) {
+            return userDoc.data().name;
+        } else {
+            console.log("No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("Error fetching user document:", error);
+        return undefined;
+    }
 }
