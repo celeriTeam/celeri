@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 
 const db = getFirestore(app);
@@ -44,24 +44,7 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
     }
 }
 
-export const getGroupName = async (groupID: string): Promise<string | undefined> => {
-    try {
-        const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.name) {
-            console.log("Document data:", groupDoc.data());
-            return groupDoc.data()?.name;
-        } else {
-            console.log("getGroupName - No such document!");
-            return undefined;
-        }
-    } catch (error) {
-        console.error("Error fetching user document: ", error);
-        return undefined;
-    }
-}
-
-//getGroupMembers
-
+// Get Group Members
 export const getGroupMembers = async (groupID: string): Promise<string[] | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
@@ -71,6 +54,25 @@ export const getGroupMembers = async (groupID: string): Promise<string[] | undef
         } else{
             console.log("getGroupMembers - No such document!");
             return undefined;
+        }
+    } catch (error) {
+         console.error("Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// Get Group Info From Code
+export const getGroupFromCode = async (groupCode: string): Promise<string | undefined> => {
+    try {
+        const groupsCollection = collection(db, "groups");
+        const q = query(groupsCollection, where("groupCode", "==", groupCode));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            return doc.id; // Return the document ID
+        } else {
+            console.log("No matching documents found.");
+            return '';
         }
     } catch (error) {
          console.error("Error fetching user document: ", error);

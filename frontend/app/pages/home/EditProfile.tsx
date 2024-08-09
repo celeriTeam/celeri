@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Button } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRoute } from '@react-navigation/native';
-import { getUserGroups, getGroupName, getUserName } from '../../database';
+import { getUserGroups, getUserName } from '../../database';
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
