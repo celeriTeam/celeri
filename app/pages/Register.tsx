@@ -6,6 +6,7 @@ import { RouteProp } from '@react-navigation/native';
 type RootStackParamList = {
     Register: undefined;
     SignUp: undefined;
+    Login: undefined;
 };
 
 type RegisterPageNavigationProp = StackNavigationProp<RootStackParamList, 'Register'>;
@@ -21,6 +22,7 @@ const RegisterPage: React.FC<Props> = ({ navigation }) => {
         <View style={styles.container}>
             <Text>Register Page</Text>
             <Button title="Register" onPress={() => navigation.navigate('SignUp')} />
+            <Button title="Login" onPress={() => navigation.navigate('Login')} />
         </View>
     );
 };

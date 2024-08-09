@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import RegisterPage from './pages/Register';
 import SignUpPage from './pages/SignUp';
+import LoginPage from './pages/Login';
 import VerificationPage from './pages/PhoneVerification';
 import HomePage from './pages/home/Home';
 import GroupDetails from './pages/home/GroupDetails';
@@ -12,10 +13,8 @@ import { RootStackParamList } from './pages/types';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-let userID = 1
-
 const App: React.FC = () => {
-    const [initialRoute, setInitialRoute] = useState<string>('SignUp');
+    const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Register');
     const [loading, setLoading] = useState<boolean>(true);
     const auth = getAuth();
 
@@ -24,7 +23,7 @@ const App: React.FC = () => {
         if (user) {
           setInitialRoute('FLEX');
         } else {
-          setInitialRoute('SignUp');
+          setInitialRoute('Register');
         }
         setLoading(false);
       });
@@ -39,9 +38,10 @@ const App: React.FC = () => {
     
     return (
         <NavigationContainer independent={true}>
-            <Stack.Navigator initialRouteName="FLEX">
+            <Stack.Navigator initialRouteName={initialRoute}>
                 <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
                 <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
+                <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false}} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
                 <Stack.Screen name="FLEX" component={HomePage} options={{ 
                     title: 'Groups',
@@ -50,7 +50,6 @@ const App: React.FC = () => {
                     headerTintColor: '#fff',
                     headerLeft: () => null
                 }}
-                initialParams={{userID: userID}}
                 />
                 <Stack.Screen name="GroupDetails" component={GroupDetails} options={{ 
                     title: 'Groups',

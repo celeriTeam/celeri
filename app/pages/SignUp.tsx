@@ -1,17 +1,20 @@
 import React, {useState, useRef, useEffect} from 'react';
 import { SafeAreaView, Pressable, Keyboard,
-    View, Text, TouchableOpacity, Button, TextInput, Alert, StyleSheet } from 'react-native';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+    View, Image, Text, TouchableOpacity, Button, TextInput, Alert, StyleSheet } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, User, AuthError } from "firebase/auth";
 import firebase from '@react-native-firebase/app';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { app, auth, db} from "../../firebaseConfig";
 import { doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CTAButton } from "../../components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import { useNavigation } from "@react-navigation/native";
+import * as ImagePicker from 'expo-image-picker';
 import { FirebaseError } from 'firebase/app';
+import { Permission, PERMISSIONS, request } from 'react-native-permissions';
 //import db from "@react-native-firebase/firestore";
 
 type RootStackParamList = {
@@ -31,18 +34,27 @@ type Props = {
 const SignUpPage: React.FC<Props> = ({navigation}) => {
 
     const [name, setName] = useState<string | undefined>();
+    const [username, setUsername] = useState<string | undefined>(); 
+    const [profileImage, setProfileImage] = useState<string | undefined>();
     const [email, setEmail] = useState<string | undefined>();
     const [password, setPassword] = useState<string | undefined>();
     const [user, setUser] = useState<User | null>(null);
 
     const auth = getAuth(app);
     const nav = useNavigation<NativeStackNavigationProp<any>>();
+    const storage = getStorage(app);
 
     const createProfile = async (user: any) => {
         try{
-            await setDoc(doc(db, 'users', user.uid), { name })
+            const profileImageUrl = await uploadProfileImage(user.uid);
+            await setDoc(doc(db, 'users', user.uid), { 
+                name,
+                username,
+                profileImageUrl,
+            })
         } catch (error) {
             console.error("Error creating user profile:", error);
+            Alert.alert('Error', 'Failed to create user profile.');
         }
         
     };
@@ -55,20 +67,49 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
     
         return () => unsubscribe(); // Cleanup subscription on unmount
       }, []);
+
+      const pickImage = async () => {
+        // Request permission to access the media library
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
-      const handleLogout = async () => {
-        const authInstance = getAuth();
-        try {
-          await signOut(authInstance);
-          Alert.alert("Success", "You have been logged out.");
-        } catch (error: unknown) {
-          if (error instanceof Error) {
-            Alert.alert("Error", error.message);
-          } else {
-            Alert.alert("Error", "An unknown error occurred");
-          }
+        if (permissionResult.granted === false) {
+          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+          return;
         }
+    
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+    
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            if (selectedAsset.uri) {
+              setProfileImage(selectedAsset.uri);
+            }
+          }
       };
+
+    const uploadProfileImage = async (userId: string): Promise<string | null> => {
+        if (!profileImage) return null;
+    
+        try {
+          const response = await fetch(profileImage);
+          const blob = await response.blob();
+          const storageRef = ref(storage, `profileImages/${userId}`);
+          await uploadBytes(storageRef, blob);
+          const url = await getDownloadURL(storageRef);
+    
+          return url;
+        } catch (error) {
+          console.error('Error uploading profile image:', error);
+          Alert.alert('Error', 'Failed to upload profile image.');
+          return null;
+        }
+    };
+    
     
       const registerAndGoToMainFlow = async () => {
         if (email && password){
@@ -77,7 +118,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 const response = await createUserWithEmailAndPassword(
                     auth,
                     email,
-                    password
+                    password,
                 );
                 console.log("User registration response: ", response);
 
@@ -121,6 +162,12 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
               />
               <TextInput
                 style={styles.loginTextField}
+                placeholder="Username"
+                value={username}
+                onChangeText={setUsername}
+              />
+              <TextInput
+                style={styles.loginTextField}
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
@@ -134,6 +181,12 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 onChangeText={setPassword}
                 secureTextEntry
               />
+                <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
+              <Text style={styles.button_text2}>Pick Profile Image</Text>
+            </TouchableOpacity>
+            {profileImage && (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} />
+            )}
             </View>
             
             <CTAButton
@@ -143,16 +196,6 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
             />
             <CTAButton title="Go Back" onPress={nav.goBack} variant="secondary" />
           </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            {user ? (
-                <>
-                <Text>Welcome, {user.email}</Text>
-                <Button title="Log Out" onPress={handleLogout} />
-                </>
-            ) : (
-                <Text>You are not logged in</Text>
-            )}
-            </View>
         </SafeAreaView>
       </Pressable>
         
@@ -182,6 +225,10 @@ const styles = StyleSheet.create({
         fontSize:24,
         color:"#1976d2"
     },
+    button_text2: {
+        color: 'white',
+        fontSize: 16,
+      },
     button_container: {
         borderRadius: 15,
         flexDirection: "row",
@@ -190,6 +237,13 @@ const styles = StyleSheet.create({
         justifyContent:"center",
         backgroundColor:"#e6e6e6"
     },
+    imagePickerButton: {
+        marginTop: 20,
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#1976d2',
+        borderRadius: 5,
+      },
     contentView: {
         flex: 1,
         backgroundColor: "white",
@@ -212,6 +266,12 @@ const styles = StyleSheet.create({
       },
       mainContent: {
         flex: 6,
+      },
+      profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginVertical: 10,
       },
 });
 
