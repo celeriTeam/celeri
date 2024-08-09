@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
 import HomeTab from './HomeTab';
-import ProfileTab from './ProfileTab';
+import ProfileTab from './EditProfile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
