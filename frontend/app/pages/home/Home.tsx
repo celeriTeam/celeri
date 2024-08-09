@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Button, Text, StyleSheet } from 'react-native';
+import { View, Button, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import HomeTab from './HomeTab';
@@ -7,10 +7,10 @@ import ProfileTab from './EditProfile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
-import { getUserGroups, getGroupName, getUserName } from '../../database';
+import { getUserGroups, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
 import { app } from "../../../firebaseConfig";
-import { getAuth } from "firebase/auth";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 type GroupDetailsPageNavigationProp = StackNavigationProp<RootStackParamList, 'GroupDetails'>;
 
@@ -21,20 +21,18 @@ type Props = {
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const auth = getAuth(app);
-const user = auth.currentUser;
-let userID: string = user?.uid || '';
 
 const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
     const [currentUserName, setCurrentUserName] = React.useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = React.useState<string[] | undefined>(undefined);
-    const [groupNames, setGroupNames] = React.useState<Record<string, string | undefined>>({});
     const [loading, setLoading] = React.useState(true);
-
-    userID = user?.uid || '';
+    let userID = '';
 
     React.useEffect(() => {
         const fetchUserData = async () => {
             try {
+                const user = auth.currentUser;
+                let userID = user?.uid || '';
                 console.log('userid: ', userID)
                 const name = await getUserName(userID);
                 setCurrentUserName(name);
@@ -88,7 +86,38 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const HomePage: React.FC = () => {
+    const [userID, setUserID] = React.useState<string | undefined>(undefined);
+    const [loading, setLoading] = React.useState(true);
 
+    React.useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserID(user.uid);
+            } else {
+                setUserID(undefined); // Handle case where user is not signed in
+            }
+            setLoading(false); // Loading is done whether or not we have a user
+        });
+
+        return () => unsubscribe(); // Clean up the listener on unmount
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+
+    if (!userID) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text>No user found. Please log in.</Text>
+            </View>
+        );
+    }
     return (
         <Tab.Navigator>
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} initialParams={{ userID: userID }} />

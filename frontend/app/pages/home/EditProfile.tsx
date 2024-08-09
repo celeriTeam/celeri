@@ -32,6 +32,7 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
                 setCurrentUserName(name);
                 const groups = await getUserGroups(userID);
                 setCurrentUserGroups(groups);
+                console.log(name)
             } catch (error) {
                 console.error("Error fetching user data:", error);
             }
