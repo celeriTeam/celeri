@@ -5,9 +5,9 @@ export type RootStackParamList = {
     Login: undefined;
     Verification: undefined;
     FLEX: { userID: string };
-    CreateGroup: undefined;
+    CreateGroup: { userID: string };
     JoinGroup: undefined;
     HomeTab: undefined;
-    ProfileTab: { userID: number };
+    ProfileTab: { userID: string };
     GroupDetails: { GroupID: string };
 };

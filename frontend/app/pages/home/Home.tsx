@@ -75,7 +75,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
         return (
             <HomeStack.Navigator>
                 <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} />
-                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} />
+                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} initialParams={{ userID: userID }} />
                 <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} />
             </HomeStack.Navigator>
         );

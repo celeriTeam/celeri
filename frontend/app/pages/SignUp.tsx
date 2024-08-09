@@ -14,7 +14,6 @@ import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import { FirebaseError } from 'firebase/app';
-import { Permission, PERMISSIONS, request } from 'react-native-permissions';
 //import db from "@react-native-firebase/firestore";
 
 type RootStackParamList = {

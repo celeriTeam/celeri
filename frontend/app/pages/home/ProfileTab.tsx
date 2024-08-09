@@ -8,21 +8,21 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 
 type RootStackParamList = {
-    ProfileTab: undefined;
+    ProfileTab: { userID: string };
     Register: undefined;
 };
 
 type ProfileTabNavigationProp = StackNavigationProp<RootStackParamList, 'ProfileTab'>;
-type ProfileTabRouteProp = RouteProp<RootStackParamList, 'Register'>;
+type ProfileTabRouteProp = RouteProp<RootStackParamList, 'ProfileTab'>;
 
 type Props = {
     navigation: ProfileTabNavigationProp;
     route: ProfileTabRouteProp;
 };
 
-const ProfileTab: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
+
+const ProfileTab: React.FC<Props> = ({ navigation, route }) => {
+    const { userID } = route.params;
     const [user, setUser] = useState<User | null>(null);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
