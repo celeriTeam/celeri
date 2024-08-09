@@ -5,6 +5,7 @@ import { StackNavigationProp, createStackNavigator } from '@react-navigation/sta
 import { useRoute } from '@react-navigation/native';
 import HomeTab from './HomeTab';
 import ProfileTab from './ProfileTab';
+import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
 import { getUserGroups, getGroupName, getUserName } from '../../database';
@@ -104,6 +105,7 @@ const HomePage: React.FC = () => {
         <Tab.Navigator>
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} initialParams={{ userID: userID }} />
             <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+            <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/>
         </Tab.Navigator>
     );
 };
