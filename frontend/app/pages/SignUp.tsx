@@ -5,7 +5,7 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } fro
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { app, auth, db} from "../../firebaseConfig";
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CTAButton } from "../../components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -48,7 +48,10 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
             await setDoc(doc(db, 'users', user.uid), { 
                 name,
                 username,
+                email,
                 profileImageUrl,
+                "createdAt": serverTimestamp(),
+                "updatedAt": serverTimestamp(),
             })
         } catch (error) {
             console.error("Error creating user profile:", error);
@@ -110,7 +113,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
     
     
       const registerAndGoToMainFlow = async () => {
-        if (email && password){
+        if (email && password && username && profileImage){
             try {
                 console.log("Trying to register user...");
                 const response = await createUserWithEmailAndPassword(

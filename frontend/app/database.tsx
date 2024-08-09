@@ -44,18 +44,36 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
     }
 }
 
-export const getGroupName = async (id: string): Promise<string | undefined> => {
+export const getGroupName = async (groupID: string): Promise<string | undefined> => {
     try {
-        const userDoc = await getDoc(doc(db, "groups", id));
-        if (userDoc.exists() && userDoc.data()?.name) {
-            console.log("Document data:", userDoc.data());
-            return userDoc.data()?.name;
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.name) {
+            console.log("Document data:", groupDoc.data());
+            return groupDoc.data()?.name;
         } else {
             console.log("No such document!");
             return undefined;
         }
     } catch (error) {
-        console.error("Error fetching user document:", error);
+        console.error("Error fetching user document: ", error);
         return undefined;
+    }
+}
+
+//getGroupMembers
+
+export const getGroupMembers = async (groupID: string): Promise<string[] | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.groupMembers){
+            console.log("Document data: ", groupDoc.data());
+            return groupDoc.data()?.groupMembers;
+        } else{
+            console.log("No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("Error fetching user document: ", error);
+         return undefined;
     }
 }
