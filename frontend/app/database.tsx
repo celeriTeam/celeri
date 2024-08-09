@@ -11,7 +11,7 @@ export const getUserName = async (id: string): Promise<string | undefined> => {
             console.log("Document data:", userDoc.data());
             return userDoc.data()?.name;
         } else {
-            console.log("No such document!");
+            console.log("getUserName - No such document!");
             return undefined;
         }
     } catch (error) {
@@ -35,7 +35,7 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
             console.log("API Response:", groups);
             return groups;
         } else {
-            console.log("No such document!");
+            console.log("getUserGroups - No such document!");
             return [];
         }
     } catch (error) {
@@ -51,7 +51,7 @@ export const getGroupName = async (groupID: string): Promise<string | undefined>
             console.log("Document data:", groupDoc.data());
             return groupDoc.data()?.name;
         } else {
-            console.log("No such document!");
+            console.log("getGroupName - No such document!");
             return undefined;
         }
     } catch (error) {
@@ -69,7 +69,7 @@ export const getGroupMembers = async (groupID: string): Promise<string[] | undef
             console.log("Document data: ", groupDoc.data());
             return groupDoc.data()?.groupMembers;
         } else{
-            console.log("No such document!");
+            console.log("getGroupMembers - No such document!");
             return undefined;
         }
     } catch (error) {

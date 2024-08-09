@@ -8,7 +8,7 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app, auth, db} from "../../../firebaseConfig";
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { CTAButton } from "../../../components/CTAButton";
 
@@ -27,16 +27,18 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
 
     const storage = getStorage(app);
     const route = useRoute();
-    const { userID } = route.params as { userID: string };
+    //const { userID } = route.params as { userID: string };
 
     const createGroup = async () => {
         try{
-            const user = { uid: userID };
-            const profileImageUrl = await uploadProfileImage(user.uid);
-            await setDoc(doc(db, 'groups'), { 
+            const user = auth.currentUser;
+            let userID = user?.uid || '';
+            console.log("userID here: ", userID);
+            const profileImageUrl = await uploadProfileImage(userID);
+            await addDoc(collection(db, 'groups'), { 
                 groupName,
                 "users": {
-                    userID: {
+                    [userID]: {
                         "placedBet": false,
                         "tokens": 0,
                     },
