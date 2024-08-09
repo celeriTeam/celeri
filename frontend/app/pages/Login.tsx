@@ -15,7 +15,7 @@ import { FirebaseError } from 'firebase/app';
 
 type RootStackParamList = {
     Login: undefined;
-    FLEX: undefined;
+    HomePage: undefined;
 };
 
 type LoginPageNavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
@@ -58,7 +58,7 @@ const LoginPage: React.FC<Props> = ({navigation}) => {
                     // Assuming createProfile is only for registration, you may not need it here
                     // await createProfile(response.user);
                     // nav.replace("Main");
-                    navigation.navigate("FLEX");
+                    navigation.navigate("HomePage");
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

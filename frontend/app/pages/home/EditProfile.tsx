@@ -6,27 +6,19 @@ import { getUserGroups, getGroupName, getUserName } from '../../database';
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-
-type RootStackParamList = {
-    ProfileTab: { userID: string };
-    Register: undefined;
-};
-
-type ProfileTabNavigationProp = StackNavigationProp<RootStackParamList, 'ProfileTab'>;
-type ProfileTabRouteProp = RouteProp<RootStackParamList, 'ProfileTab'>;
+import { RootStackParamList } from '../types';
 
 type Props = {
-    navigation: ProfileTabNavigationProp;
-    route: ProfileTabRouteProp;
+    navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
 };
 
 
-const ProfileTab: React.FC<Props> = ({ navigation, route }) => {
-    const { userID } = route.params;
+const ProfileTab: React.FC<Props> = ({ navigation }) => {
+    const route = useRoute();
+    const { userID } = route.params as { userID: string };
     const [user, setUser] = useState<User | null>(null);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
-    const nav = useNavigation<StackNavigationProp<any>>();
 
     useEffect(() => {
         const authInstance = getAuth();
@@ -69,6 +61,15 @@ const ProfileTab: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.container}>
             <Text style={styles.name}>{currentUserName}</Text>
             <Text style={styles.text}>Groups:</Text>
+
+            {currentUserGroups === null || currentUserGroups === undefined ? (
+                <Text style={styles.text}>No groups found</Text>
+            ) : (
+                currentUserGroups.map((groupName) => (
+                    <Text key={groupName} style={styles.text}>{groupName}</Text>
+                ))
+            )}
+
             <Button title="Log Out" onPress={handleLogout} />
         </View>
     );
