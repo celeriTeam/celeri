@@ -1,8 +1,7 @@
 import React, {useState, useRef, useEffect} from 'react';
 import { SafeAreaView, Pressable, Keyboard,
-    View, Image, Text, TouchableOpacity, Button, TextInput, Alert, StyleSheet } from 'react-native';
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, User, AuthError } from "firebase/auth";
-import firebase from '@react-native-firebase/app';
+    View, Image, Text, TouchableOpacity, TextInput, Alert, StyleSheet } from 'react-native';
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { app, auth, db} from "../../firebaseConfig";
@@ -10,16 +9,13 @@ import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { CTAButton } from "../../components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import { FirebaseError } from 'firebase/app';
-import { Permission, PERMISSIONS, request } from 'react-native-permissions';
-//import db from "@react-native-firebase/firestore";
 
 type RootStackParamList = {
     SignUp: undefined;
-    FLEX: undefined;
+    HomePage: undefined;
 };
 
 type SignUpPageNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
@@ -125,7 +121,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 if (response.user){
                     await createProfile(response.user);
                     // nav.replace("Main");
-                    navigation.navigate("FLEX");
+                    navigation.navigate("HomePage");
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

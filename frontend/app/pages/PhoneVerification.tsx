@@ -5,7 +5,7 @@ import { RouteProp } from '@react-navigation/native';
 
 type RootStackParamList = {
     Verification: undefined;
-    FLEX: undefined;
+    HomePage: undefined;
 };
 
 type VerificationPageNavigationProp = StackNavigationProp<RootStackParamList, 'Verification'>;
@@ -21,7 +21,7 @@ const VerificationPage: React.FC<Props> = ({ navigation }) => {
         <View style={styles.container}>
             <Text>Verification Page</Text>
             <Button title="Back" onPress={() => navigation.goBack()} />
-            <Button title="Verify" onPress={() => navigation.navigate('FLEX')} />
+            <Button title="Verify" onPress={() => navigation.navigate('HomePage')} />
         </View>
     );
 };

@@ -21,7 +21,7 @@ const App: React.FC = () => {
     useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
         if (user) {
-          setInitialRoute('FLEX');
+          setInitialRoute('HomePage');
         } else {
           setInitialRoute('Register');
         }
@@ -43,7 +43,7 @@ const App: React.FC = () => {
                 <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                 <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false}} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
-                <Stack.Screen name="FLEX" component={HomePage} options={{ 
+                <Stack.Screen name="HomePage" component={HomePage} options={{ 
                     title: 'Groups',
                     headerStyle: { backgroundColor: '#42a5f5' },
                     headerTitleStyle: { fontWeight: 'bold' },

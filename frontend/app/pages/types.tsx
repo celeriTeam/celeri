@@ -4,10 +4,10 @@ export type RootStackParamList = {
     SignUp: undefined;
     Login: undefined;
     Verification: undefined;
-    FLEX: { userID: string };
+    HomePage: undefined;
     CreateGroup: undefined;
     JoinGroup: undefined;
     HomeTab: undefined;
-    ProfileTab: { userID: number };
-    GroupDetails: { GroupID: string };
+    ProfileTab: { userID: string };
+    GroupDetails: { GroupName: string };
 };
