@@ -60,6 +60,15 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
         <View style={styles.container}>
             <Text style={styles.name}>{currentUserName}</Text>
             <Text style={styles.text}>Groups:</Text>
+
+            {currentUserGroups === null || currentUserGroups === undefined ? (
+                <Text style={styles.text}>No groups found</Text>
+            ) : (
+                currentUserGroups.map((groupName) => (
+                    <Text key={groupName} style={styles.text}>{groupName}</Text>
+                ))
+            )}
+
             <Button title="Log Out" onPress={handleLogout} />
         </View>
     );

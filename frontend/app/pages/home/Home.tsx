@@ -22,7 +22,7 @@ const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const auth = getAuth(app);
 const user = auth.currentUser;
-const userID: string = user?.uid || '';
+let userID: string = user?.uid || '';
 
 const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
     const [currentUserName, setCurrentUserName] = React.useState<string | undefined>(undefined);
@@ -30,21 +30,16 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
     const [groupNames, setGroupNames] = React.useState<Record<string, string | undefined>>({});
     const [loading, setLoading] = React.useState(true);
 
+    userID = user?.uid || '';
+
     React.useEffect(() => {
         const fetchUserData = async () => {
             try {
-                console.log("Testing if there's an ID, ", userID)
+                console.log('userid: ', userID)
                 const name = await getUserName(userID);
                 setCurrentUserName(name);
-                const groups = await getUserGroups(userID); // Assuming getUserGroups is an async function
+                const groups = await getUserGroups(userID);
                 setCurrentUserGroups(groups);
-                if (groups) {
-                    const names: Record<string, string | undefined> = {};
-                    for (const groupID of groups) {
-                        names[groupID] = await getGroupName(groupID);
-                    }
-                    setGroupNames(names);
-                }
             } catch (error) {
                 console.error("Error fetching user data:", error);
             } finally {
@@ -80,16 +75,13 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
         return (
             <View style={styles.container}>
                 <Text>Welcome back, {currentUserName}</Text>
-                {currentUserGroups.map((groupID: string) => {
-                    const groupName = groupNames[groupID]; // Get the group name from the state
-                    return (
-                        <Button
-                            key={groupID}
-                            title={groupName || 'INVALID GROUP'}
-                            onPress={() => navigation.navigate('GroupDetails', { GroupID: groupID })}
-                        />
-                    );
-                })}
+                {currentUserGroups.map((groupName: string) => (
+                    <Button
+                        key={groupName}
+                        title={groupName}
+                        onPress={() => navigation.navigate('GroupDetails', { GroupName: groupName })}
+                    />
+                ))}
             </View>
         );
     }

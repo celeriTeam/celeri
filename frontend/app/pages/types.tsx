@@ -9,5 +9,5 @@ export type RootStackParamList = {
     JoinGroup: undefined;
     HomeTab: undefined;
     ProfileTab: { userID: string };
-    GroupDetails: { GroupID: string };
+    GroupDetails: { GroupName: string };
 };
