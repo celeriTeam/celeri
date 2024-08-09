@@ -12,6 +12,7 @@ type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
 };
 
+
 const ProfileTab: React.FC<Props> = ({ navigation }) => {
     const route = useRoute();
     const { userID } = route.params as { userID: string };

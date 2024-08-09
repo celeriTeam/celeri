@@ -3,7 +3,7 @@ import { View, Button, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import HomeTab from './HomeTab';
-import ProfileTab from './ProfileTab';
+import ProfileTab from './EditProfile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
@@ -67,7 +67,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
         return (
             <HomeStack.Navigator>
                 <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} />
-                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} />
+                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} initialParams={{ userID: userID }} />
                 <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} />
             </HomeStack.Navigator>
         );
