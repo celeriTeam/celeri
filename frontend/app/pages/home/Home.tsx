@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Button, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
-import { useRoute } from '@react-navigation/native';
 import HomeTab from './HomeTab';
 import ProfileTab from './ProfileTab';
 import TestScreen from './Test';
@@ -10,7 +9,7 @@ import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
 import { getUserGroups, getGroupName, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
-import { app, db } from "../../../firebaseConfig";
+import { app } from "../../../firebaseConfig";
 import { getAuth } from "firebase/auth";
 
 type GroupDetailsPageNavigationProp = StackNavigationProp<RootStackParamList, 'GroupDetails'>;
@@ -26,8 +25,6 @@ const user = auth.currentUser;
 const userID: string = user?.uid || '';
 
 const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute();
-
     const [currentUserName, setCurrentUserName] = React.useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = React.useState<string[] | undefined>(undefined);
     const [groupNames, setGroupNames] = React.useState<Record<string, string | undefined>>({});
@@ -99,7 +96,6 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const HomePage: React.FC = () => {
-    const route = useRoute();
 
     return (
         <Tab.Navigator>

@@ -19,7 +19,7 @@ import { Permission, PERMISSIONS, request } from 'react-native-permissions';
 
 type RootStackParamList = {
     SignUp: undefined;
-    FLEX: undefined;
+    HomePage: undefined;
 };
 
 type SignUpPageNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
@@ -125,7 +125,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 if (response.user){
                     await createProfile(response.user);
                     // nav.replace("Main");
-                    navigation.navigate("FLEX");
+                    navigation.navigate("HomePage");
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

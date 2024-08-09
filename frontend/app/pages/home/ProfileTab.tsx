@@ -6,18 +6,10 @@ import { getUserGroups, getGroupName, getUserName } from '../../database';
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-
-type RootStackParamList = {
-    ProfileTab: undefined;
-    Register: undefined;
-};
-
-type ProfileTabNavigationProp = StackNavigationProp<RootStackParamList, 'ProfileTab'>;
-type ProfileTabRouteProp = RouteProp<RootStackParamList, 'Register'>;
+import { RootStackParamList } from '../types';
 
 type Props = {
-    navigation: ProfileTabNavigationProp;
-    route: ProfileTabRouteProp;
+    navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
 };
 
 const ProfileTab: React.FC<Props> = ({ navigation }) => {
@@ -26,7 +18,6 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
     const [user, setUser] = useState<User | null>(null);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
-    const nav = useNavigation<StackNavigationProp<any>>();
 
     useEffect(() => {
         const authInstance = getAuth();
