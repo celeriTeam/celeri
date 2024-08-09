@@ -8,7 +8,7 @@ Health Betting Application for iOS
 
 - Download expo onto your mobile device:
 
-    ![alt text](expo-download-qr.png)
+    ![alt text](frontend/expo-download-qr.png)
 
 - Install expo-router:
 
