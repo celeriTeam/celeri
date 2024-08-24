@@ -12,4 +12,5 @@ export type RootStackParamList = {
     BugReportsPage: undefined;
     ProfileTab: { userID: string };
     GroupDetails: { GroupName: string };
+    EditProfile: { userID: string, profilePic: string, username: string };
 };

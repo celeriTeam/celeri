@@ -8,7 +8,7 @@ const db = getFirestore(app);
 export const getProfilePic = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.name) {
+        if (userDoc.exists() && userDoc.data()?.username) {
             console.log("getProfilePic - response:", userDoc.data()?.profileImageUrl);
             return userDoc.data()?.profileImageUrl;
         } else {
@@ -25,16 +25,33 @@ export const getProfilePic = async (id: string): Promise<string | undefined> => 
 export const getUserName = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.name) {
+        if (userDoc.exists() && userDoc.data()?.username) {
             console.log("userDoc - Document data:", userDoc.data());
-            console.log("getProfilePic - response:", userDoc.data()?.name);
-            return userDoc.data()?.name;
+            console.log("getUserName - response:", userDoc.data()?.username);
+            return userDoc.data()?.username;
         } else {
             console.error("getUserName - error: No such document!");
             return undefined;
         }
     } catch (error) {
         console.error("getUserName - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+// Get User Email
+export const getUserEmail = async (id: string): Promise<string | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.email) {
+            console.log("getUserEmail - response:", userDoc.data()?.email);
+            return userDoc.data()?.email;
+        } else {
+            console.error("getUserEmail - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getUserEmail - Error fetching user document:", error);
         return undefined;
     }
 }
@@ -123,10 +140,12 @@ export const editProfilePic = async (userId: string, newProfileImageUri: string)
         await updateDoc(userDocRef, {
             profileImageUrl: downloadURL,
         });
+        const userDoc = await getDoc(userDocRef);
+        console.log('editProfilePic - response: ', userDoc.data()?.profileImageUrl);
 
         return downloadURL;
     } catch (error) {
-        console.error('Error updating profile picture:', error);
+        console.error('editProfilePic - Error updating profile picture:', error);
         return null;
     }
 };
@@ -137,8 +156,10 @@ export const editUsername = async(userId: string, usernameInput: string) => {
         await updateDoc(userDocRef, {
             username: usernameInput,
         });
+        const userDoc = await getDoc(userDocRef);
+        console.log('editUsername - response: ', userDoc.data()?.username);
     } catch (error) {
-        console.error('Error updating username', error);
+        console.error('editUsername - Error updating username', error);
         return null;
     }
 };
