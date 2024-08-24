@@ -1,68 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, Button, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Alert, Button, Image, TouchableOpacity, TextInput } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
-import { useRoute } from '@react-navigation/native';
-import { getProfilePic, getUserGroups, getUserName } from '../../database';
-import { useNavigation } from "@react-navigation/native";
+import * as ImagePicker from 'expo-image-picker';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { editProfilePic, editUsername, getUserEmail } from '../../database';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 
 type Props = {
-    navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
+    navigation: StackNavigationProp<RootStackParamList, 'EditProfile'>;
+    route: RouteProp<{ params: { userID: string, profilePic: string, username: string } }, 'params'>
 };
 
 
-const ProfileTab: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
-    const [user, setUser] = useState<User | null>(null);
-    const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
-    const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
+    const { userID, profilePic, username } = route.params;
+    const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [currentUsername, setcurrentUsername] = useState(username);
+    const [currentProfilePic, setcurrentProfilePic] = useState(profilePic);
+    const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>(undefined);
+    const inputRef = useRef<TextInput>(null);
 
     useEffect(() => {
-        const authInstance = getAuth();
-        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
-            setUser(currentUser);
-        });
-
         const fetchUserData = async () => {
             try {
-                const profilePic = await getProfilePic(userID);
-                setCurrentProfilePic(profilePic);
-                const name = await getUserName(userID);
-                setCurrentUserName(name);
-                const groups = await getUserGroups(userID);
-                setCurrentUserGroups(groups);
+                const userEmail = await getUserEmail(userID);
+                setCurrentUserEmail(userEmail);
             } catch (error) {
                 console.error("Error fetching user data:", error);
             }
         };
 
         fetchUserData();
-
-        return () => unsubscribe(); // Cleanup subscription on unmount
     }, [userID]);
 
-    const handleLogout = async () => {
-        const authInstance = getAuth();
-        try {
-            await signOut(authInstance);
-            Alert.alert("Success", "You have been logged out.");
-            navigation.navigate("Register");
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                Alert.alert("Error", error.message);
-            } else {
-                Alert.alert("Error", "An unknown error occurred");
-            }
-        }
+    const handleEditPress = () => {
+        setIsEditingUsername(true);
     };
+
+    const handleCheckPress = () => {
+        //set username endpoint
+        editUsername(userID, currentUsername);
+        setIsEditingUsername(false);
+    };
+
+    useEffect(() => {
+        if (isEditingUsername && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isEditingUsername]);
+
+    const pickImage = async () => {
+        // Request permission to access the media library
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+        if (permissionResult.granted === false) {
+          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+          return;
+        }
+    
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+    
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            if (selectedAsset.uri) {
+                setcurrentProfilePic(selectedAsset.uri);
+                // set profile pic endpoint
+                editProfilePic(userID, selectedAsset.uri);
+            }
+          }
+      };
 
     return (
         <View style={styles.container}>
-            {currentProfilePic ? (
+            {currentProfilePic != '' ? (
                 <Image
                 source={{ uri: currentProfilePic }}
                 style={styles.profileImage}
@@ -73,25 +89,43 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
                 style={styles.profileImage}
                 />
             )}
-            {currentUserName ? (
-                <Text style={styles.name}>{currentUserName}</Text>
-            ) : (
-                <Text style={styles.name}>Loading...</Text>
-            )
-            }
-            
-            <Text style={styles.groupsLabel}>Groups:</Text>
-            {currentUserGroups === undefined || currentUserGroups.length === 0 ? (
-                <Text style={styles.text}>No groups found</Text>
-            ) : (
-                currentUserGroups.map((groupName) => (
-                    <Text key={groupName} style={styles.text}>{groupName}</Text>
-                ))
-            )}
-
-            <View style={styles.logoutButtonContainer}>
-                <Button title="Log Out" onPress={handleLogout} />
+            <View style={styles.editPic} >
+            {/* <TouchableOpacity style={styles.imagePickerButton}>
+              <Text style={styles.button_text2}>Pick Profile Image</Text>
+            </TouchableOpacity> */}
+                <Button title="Edit profile pic" onPress={pickImage} />
             </View>
+            {isEditingUsername ? (
+                <>
+                    <View style={styles.row}>
+                        <TextInput
+                            ref={inputRef}
+                            style={styles.nameInput}
+                            value={currentUsername}
+                            onChangeText={setcurrentUsername}
+                        />
+                        <TouchableOpacity onPress={handleCheckPress}>
+                            <Image
+                                source={require('../../../components/checkmark-icon.png')}
+                                style={styles.editImage}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </>
+            ) : (
+                <>
+                    <View style={styles.row}>
+                        <Text style={styles.name}>{currentUsername}</Text>
+                        <TouchableOpacity onPress={handleEditPress}>
+                            <Image
+                            source={require('../../../components/edit-icon.jpg')}
+                            style={styles.editImage}
+                            />
+                        </TouchableOpacity>
+                    </View>
+                </>
+            )}
+            
         </View>
     );
 };
@@ -99,36 +133,45 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
     },
-    profileImage: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      marginBottom: 20,
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-    name: {
+    profileImage: {
+        marginTop: 40,
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginBottom: 20,
+    },
+    editPic: {
         fontSize: 34,
         fontWeight: 'bold',
         marginBottom: 40,
     },
-    groupsLabel: {
-        fontSize: 24,
-        fontWeight: '600',
-        marginBottom: 10,
+    name: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginRight: 20,
     },
-    text: {
-        fontSize: 18,
-        marginBottom: 5,
+    editImage: {
+        width: 20,
+        height: 20,
+        borderRadius: 50,
     },
-    logoutButtonContainer: {
-        position: 'absolute',
-        bottom: 30,
-        width: '100%',
-        alignItems: 'center',
+    nameInput: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginRight: 20,
+        borderBottomWidth: 3,
+        borderColor: '#6b6b6b',
+        backgroundColor: '#d9d9d9', // Light gray input area
+        padding: 5,
     },
 });
 
-export default ProfileTab;
+export default EditProfilePage;

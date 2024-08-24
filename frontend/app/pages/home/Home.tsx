@@ -3,7 +3,7 @@ import { View, Button, Text, StyleSheet, ActivityIndicator } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import HomeTab from './HomeTab';
-import ProfileTab from './EditProfile';
+import ProfileTab from './Profile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
