@@ -8,6 +8,7 @@ export type RootStackParamList = {
     CreateGroup: undefined;
     JoinGroup: undefined;
     HomeTab: undefined;
+    BugReportsPage: undefined;
     ProfileTab: { userID: string };
     GroupDetails: { GroupName: string };
 };

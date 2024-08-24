@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, Button } from 'react-native';
+import { View, Text, StyleSheet, Alert, Button, Image } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRoute } from '@react-navigation/native';
-import { getUserGroups, getUserName } from '../../database';
+import { getProfilePic, getUserGroups, getUserName } from '../../database';
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -17,6 +17,7 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
     const route = useRoute();
     const { userID } = route.params as { userID: string };
     const [user, setUser] = useState<User | null>(null);
+    const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
 
@@ -28,11 +29,12 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
 
         const fetchUserData = async () => {
             try {
+                const profilePic = await getProfilePic(userID);
+                setCurrentProfilePic(profilePic);
                 const name = await getUserName(userID);
                 setCurrentUserName(name);
                 const groups = await getUserGroups(userID);
                 setCurrentUserGroups(groups);
-                console.log(name)
             } catch (error) {
                 console.error("Error fetching user data:", error);
             }
@@ -60,10 +62,26 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.name}>{currentUserName}</Text>
-            <Text style={styles.text}>Groups:</Text>
-
-            {currentUserGroups === null || currentUserGroups === undefined ? (
+            {currentProfilePic ? (
+                <Image
+                source={{ uri: currentProfilePic }}
+                style={styles.profileImage}
+                />
+            ) : (
+                <Image
+                source={require('../../../components/blank-profile-picture.png')}
+                style={styles.profileImage}
+                />
+            )}
+            {currentUserName ? (
+                <Text style={styles.name}>{currentUserName}</Text>
+            ) : (
+                <Text style={styles.name}>Loading...</Text>
+            )
+            }
+            
+            <Text style={styles.groupsLabel}>Groups:</Text>
+            {currentUserGroups === undefined || currentUserGroups.length === 0 ? (
                 <Text style={styles.text}>No groups found</Text>
             ) : (
                 currentUserGroups.map((groupName) => (
@@ -71,7 +89,9 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
                 ))
             )}
 
-            <Button title="Log Out" onPress={handleLogout} />
+            <View style={styles.logoutButtonContainer}>
+                <Button title="Log Out" onPress={handleLogout} />
+            </View>
         </View>
     );
 };
@@ -81,31 +101,34 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 16,
     },
-    label: {
-        fontSize: 18,
-        marginBottom: 8,
-    },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        paddingHorizontal: 8,
-        marginBottom: 16,
-        width: '100%',
-        maxWidth: 300,
-    },
-    text: {
-        fontSize: 24,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
+    profileImage: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      marginBottom: 20,
     },
     name: {
         fontSize: 34,
-        marginBottom: 16,
-    }
+        fontWeight: 'bold',
+        marginBottom: 40,
+    },
+    groupsLabel: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginBottom: 10,
+    },
+    text: {
+        fontSize: 18,
+        marginBottom: 5,
+    },
+    logoutButtonContainer: {
+        position: 'absolute',
+        bottom: 30,
+        width: '100%',
+        alignItems: 'center',
+    },
 });
 
 export default ProfileTab;

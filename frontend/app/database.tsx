@@ -3,19 +3,37 @@ import { app } from "../firebaseConfig";
 
 const db = getFirestore(app);
 
+// Get User Profile Pic
+export const getProfilePic = async (id: string): Promise<string | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.name) {
+            console.log("getProfilePic - response:", userDoc.data()?.profileImageUrl);
+            return userDoc.data()?.profileImageUrl;
+        } else {
+            console.error("getProfilePic - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getProfilePic - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
 // Get User Name
 export const getUserName = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.name) {
-            console.log("Document data:", userDoc.data());
+            console.log("userDoc - Document data:", userDoc.data());
+            console.log("getProfilePic - response:", userDoc.data()?.name);
             return userDoc.data()?.name;
         } else {
-            console.log("getUserName - No such document!");
+            console.error("getUserName - error: No such document!");
             return undefined;
         }
     } catch (error) {
-        console.error("Error fetching user document:", error);
+        console.error("getUserName - Error fetching user document:", error);
         return undefined;
     }
 }
@@ -32,14 +50,14 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
                 console.log("Group Document data:", groupDoc.data());
                 groups.push(groupDoc.data()?.name);
             }
-            console.log("API Response:", groups);
+            console.log("getUserGroups - response: ", groups);
             return groups;
         } else {
-            console.log("getUserGroups - No such document!");
+            console.error("getUserGroups - error: No such document!");
             return [];
         }
     } catch (error) {
-        console.error("Error fetching user document:", error);
+        console.error("getUserGroups - Error fetching user document:", error);
         return undefined;
     }
 }
@@ -49,14 +67,14 @@ export const getGroupMembers = async (groupID: string): Promise<string[] | undef
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.groupMembers){
-            console.log("Document data: ", groupDoc.data());
+            console.log("getGroupMembers - response: ", groupDoc.data()?.groupMembers);
             return groupDoc.data()?.groupMembers;
         } else{
-            console.log("getGroupMembers - No such document!");
+            console.error("getGroupMembers - error: No such document!");
             return undefined;
         }
     } catch (error) {
-         console.error("Error fetching user document: ", error);
+         console.error("getGroupMembers - Error fetching user document: ", error);
          return undefined;
     }
 }
@@ -69,13 +87,14 @@ export const getGroupFromCode = async (groupCode: string): Promise<string | unde
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
+            console.log("getGroupFromCode - response: ", doc.id);
             return doc.id; // Return the document ID
         } else {
-            console.log("No matching documents found.");
+            console.error("getGroupFromCode - error: No matching documents found.");
             return '';
         }
     } catch (error) {
-         console.error("Error fetching user document: ", error);
+         console.error("getGroupFromCode - Error fetching user document: ", error);
          return undefined;
     }
 }

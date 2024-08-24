@@ -109,6 +109,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
                 placeholder="Group Name"
                 value={groupName}
                 onChangeText={setGroupName}
+                placeholderTextColor="#999797"
               />
               
                 <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
