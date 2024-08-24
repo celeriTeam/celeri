@@ -1,4 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../firebaseConfig";
 
 const db = getFirestore(app);
@@ -98,3 +99,46 @@ export const getGroupFromCode = async (groupCode: string): Promise<string | unde
          return undefined;
     }
 }
+
+//EDIT -- Profile
+
+export const editProfilePic = async (userId: string, newProfileImageUri: string): Promise<string | null> => {
+    const storage = getStorage();
+    try {
+        // Fetch the image as a blob
+        const response = await fetch(newProfileImageUri);
+        const blob = await response.blob();
+
+        // Create a reference to the user's profile image in Firebase Storage
+        const storageRef = ref(storage, `profileImages/${userId}`);
+
+        // Overwrite the existing image with the new one
+        await uploadBytes(storageRef, blob);
+
+        // Get the download URL for the new profile image
+        const downloadURL = await getDownloadURL(storageRef);
+
+        // Update the user's profile in Firestore with the new image URL
+        const userDocRef = doc(db, 'users', userId);
+        await updateDoc(userDocRef, {
+            profileImageUrl: downloadURL,
+        });
+
+        return downloadURL;
+    } catch (error) {
+        console.error('Error updating profile picture:', error);
+        return null;
+    }
+};
+
+export const editUsername = async(userId: string, usernameInput: string) => {
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        await updateDoc(userDocRef, {
+            username: usernameInput,
+        });
+    } catch (error) {
+        console.error('Error updating username', error);
+        return null;
+    }
+};

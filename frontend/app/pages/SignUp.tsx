@@ -44,7 +44,9 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
 
     const createProfile = async (user: any) => {
         try{
+            console.log("This shows before you upload the profileImage");
             const profileImageUrl = await uploadProfileImage(user.uid);
+            console.log("profileImage uploaded successfully");
             await setDoc(doc(db, 'users', user.uid), { 
                 name,
                 username,
@@ -101,15 +103,26 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
           const response = await fetch(profileImage);
           const blob = await response.blob();
           const storageRef = ref(storage, `profileImages/${userId}`);
+          console.log("profileImage checker THREE");
+          console.log('Blob size: ', blob.size);
+          console.log('Blob type: ', blob.type)
+          console.log('Storage reference:', storageRef.fullPath);
           await uploadBytes(storageRef, blob);
+          console.log("profileImage checker FOUR");
           const url = await getDownloadURL(storageRef);
     
           return url;
         } catch (error) {
-          console.error('Error uploading profile image:', error);
-          Alert.alert('Error', 'Failed to upload profile image.');
-          return null;
+            console.error('Error uploading profile image:', error);
+            if (error instanceof FirebaseError) {
+              console.error('Firebase error code:', error.code);
+              Alert.alert('Firebase Error', error.message);
+            } else {
+              Alert.alert('Error', 'Failed to upload profile image.');
+            }
+            return null;
         }
+        
     };
     
     
@@ -125,7 +138,9 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 console.log("User registration response: ", response);
 
                 if (response.user){
+                    console.log("createProfile function about to run:");
                     await createProfile(response.user);
+                    console.log("Navigation to Home Page now!");
                     // nav.replace("Main");
                     navigation.navigate("HomePage");
                 }
