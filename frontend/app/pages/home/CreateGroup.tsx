@@ -35,7 +35,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
             let userID = user?.uid || '';
             console.log("userID here: ", userID);
             const profileImageUrl = await uploadProfileImage(userID);
-            await addDoc(collection(db, 'groups'), { 
+            const groupRef = await addDoc(collection(db, 'groups'), { 
                 groupName,
                 "users": {
                     [userID]: {
@@ -47,7 +47,10 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
                 "updatedAt": serverTimestamp(),
                 profileImageUrl,
             })
+            const groupID = groupRef.id;
+
             console.log('Group created on Firebase.');
+            navigation.navigate('InviteGroup', {groupID: groupID});
         } catch (error) {
             console.error("Error creating user profile:", error);
             Alert.alert('Error', 'Failed to create user profile.');

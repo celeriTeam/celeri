@@ -7,6 +7,7 @@ import ProfileTab from './EditProfile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
+import InvitePage from './InviteGroup';
 import BugReportsPage from './BugReports';
 import { getUserGroups, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
@@ -28,6 +29,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
     const [currentUserGroups, setCurrentUserGroups] = React.useState<string[] | undefined>(undefined);
     const [loading, setLoading] = React.useState(true);
     let userID = '';
+    let groupID = '';
 
     React.useEffect(() => {
         const fetchUserData = async () => {
@@ -68,6 +70,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
                 <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} />
                 <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} initialParams={{ userID: userID }} />
                 <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} />
+                <HomeStack.Screen name="InviteGroup" component={InvitePage} initialParams={{ groupID: groupID}} />
             </HomeStack.Navigator>
         );
     } else {
