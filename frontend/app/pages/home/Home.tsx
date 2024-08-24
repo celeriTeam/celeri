@@ -7,6 +7,7 @@ import ProfileTab from './EditProfile';
 import TestScreen from './Test';
 import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
+import BugReportsPage from './BugReports';
 import { getUserGroups, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
 import { app } from "../../../firebaseConfig";
@@ -76,7 +77,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
                 {currentUserGroups.map((groupName: string) => (
                     <Button
                         key={groupName}
-                        title={groupName}
+                        title={String(groupName)}
                         onPress={() => navigation.navigate('GroupDetails', { GroupName: groupName })}
                     />
                 ))}
@@ -123,6 +124,7 @@ const HomePage: React.FC = () => {
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} initialParams={{ userID: userID }} />
             <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID }} />
             <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/>
+            <Tab.Screen name="Bug Reports" component={BugReportsPage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
         </Tab.Navigator>
     );
 };

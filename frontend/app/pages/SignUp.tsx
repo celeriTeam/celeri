@@ -52,6 +52,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 profileImageUrl,
                 "createdAt": serverTimestamp(),
                 "updatedAt": serverTimestamp(),
+                groups: [],
             })
         } catch (error) {
             console.error("Error creating user profile:", error);
@@ -140,10 +141,10 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                   console.error("Unknown Error:", e);
                   Alert.alert("Error", "An unknown error occurred");
                 }
-              }
-            } else {
-              Alert.alert("Error", "Please enter both email and password.");
             }
+        } else {
+            Alert.alert("Error", "Please enter both email and password.");
+        }
       };
     
 
@@ -160,12 +161,14 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 placeholder="Name"
                 value={name}
                 onChangeText={setName}
+                placeholderTextColor="#999797"
               />
               <TextInput
                 style={styles.loginTextField}
                 placeholder="Username"
                 value={username}
                 onChangeText={setUsername}
+                placeholderTextColor="#999797"
               />
               <TextInput
                 style={styles.loginTextField}
@@ -174,6 +177,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 onChangeText={setEmail}
                 inputMode="email"
                 autoCapitalize="none"
+                placeholderTextColor="#999797"
               />
               <TextInput
                 style={styles.loginTextField}
@@ -181,6 +185,7 @@ const SignUpPage: React.FC<Props> = ({navigation}) => {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                placeholderTextColor="#999797"
               />
                 <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
               <Text style={styles.button_text2}>Pick Profile Image</Text>
