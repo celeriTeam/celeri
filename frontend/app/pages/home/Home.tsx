@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Button, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
@@ -13,6 +13,7 @@ import { getUserGroups, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
 import { app } from "../../../firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 type GroupDetailsPageNavigationProp = StackNavigationProp<RootStackParamList, 'GroupDetails'>;
 
@@ -25,30 +26,48 @@ const HomeStack = createStackNavigator();
 const auth = getAuth(app);
 
 const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
-    const [currentUserName, setCurrentUserName] = React.useState<string | undefined>(undefined);
-    const [currentUserGroups, setCurrentUserGroups] = React.useState<string[] | undefined>(undefined);
-    const [loading, setLoading] = React.useState(true);
-    let userID = '';
+    const route = useRoute();
+    const { userID } = route.params as { userID: string };
+    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
+    const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const [shouldReload, setShouldReload] = useState(false);
     let groupID = '';
 
-    React.useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const user = auth.currentUser;
-                let userID = user?.uid || '';
-                console.log('userid: ', userID)
-                const name = await getUserName(userID);
-                setCurrentUserName(name);
-                const groups = await getUserGroups(userID);
-                setCurrentUserGroups(groups);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchUserData = async () => {
+        try {
+            // const user = auth.currentUser;
+            // let userID = user?.uid || '';
+            console.log('userid: ', userID)
+            const name = await getUserName(userID);
+            setCurrentUserName(name);
+            const groups = await getUserGroups(userID);
+            setCurrentUserGroups(groups);
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchUserData();
     }, [userID]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchUserData();
+            // Check if the user came from the edit page
+            if (shouldReload) {
+                fetchUserData();
+                setShouldReload(false);
+            }
+        }, [shouldReload])
+    );
+
+    const goToGroup = (groupName: string) => {
+        () => navigation.navigate('GroupDetails', { GroupName: groupName })
+    }
 
     if (loading) {
         return (
@@ -68,9 +87,9 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
         return (
             <HomeStack.Navigator>
                 <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} />
-                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} initialParams={{ userID: userID }} />
-                <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} />
-                <HomeStack.Screen name="InviteGroup" component={InvitePage} initialParams={{ groupID: groupID}} />
+                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+                <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} options={{ headerShown: false }} />
+                <HomeStack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} initialParams={{ groupID: groupID}} />
             </HomeStack.Navigator>
         );
     } else {
@@ -81,7 +100,7 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
                     <Button
                         key={groupName}
                         title={String(groupName)}
-                        onPress={() => navigation.navigate('GroupDetails', { GroupName: groupName })}
+                        onPress={() => goToGroup(groupName)}
                     />
                 ))}
             </View>
@@ -90,10 +109,10 @@ const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const HomePage: React.FC = () => {
-    const [userID, setUserID] = React.useState<string | undefined>(undefined);
-    const [loading, setLoading] = React.useState(true);
+    const [userID, setUserID] = useState<string | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 setUserID(user.uid);
@@ -125,7 +144,7 @@ const HomePage: React.FC = () => {
     return (
         <Tab.Navigator>
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} initialParams={{ userID: userID }} />
-            <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+            <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID, fromEditPage: undefined }} />
             <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/>
             <Tab.Screen name="Bug Reports" component={BugReportsPage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
         </Tab.Navigator>

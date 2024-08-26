@@ -18,21 +18,21 @@ const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [currentUsername, setcurrentUsername] = useState(username);
     const [currentProfilePic, setcurrentProfilePic] = useState(profilePic);
-    const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>(undefined);
+    // const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>(undefined);
     const inputRef = useRef<TextInput>(null);
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const userEmail = await getUserEmail(userID);
-                setCurrentUserEmail(userEmail);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-            }
-        };
+    // useEffect(() => {
+    //     const fetchUserData = async () => {
+    //         try {
+    //             const userEmail = await getUserEmail(userID);
+    //             setCurrentUserEmail(userEmail);
+    //         } catch (error) {
+    //             console.error("Error fetching user data:", error);
+    //         }
+    //     };
 
-        fetchUserData();
-    }, [userID]);
+    //     fetchUserData();
+    // }, [userID]);
 
     const handleEditPress = () => {
         setIsEditingUsername(true);
@@ -78,6 +78,12 @@ const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Image
+                    source={require('../../../components/back-icon.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
             {currentProfilePic != '' ? (
                 <Image
                 source={{ uri: currentProfilePic }}
@@ -90,9 +96,6 @@ const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
                 />
             )}
             <View style={styles.editPic} >
-            {/* <TouchableOpacity style={styles.imagePickerButton}>
-              <Text style={styles.button_text2}>Pick Profile Image</Text>
-            </TouchableOpacity> */}
                 <Button title="Edit profile pic" onPress={pickImage} />
             </View>
             {isEditingUsername ? (
@@ -136,6 +139,15 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+    },
+    backImage: {
+        width: 24,
+        height: 24,
     },
     row: {
         flexDirection: 'row',
