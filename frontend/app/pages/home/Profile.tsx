@@ -19,6 +19,7 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
     const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+    const [fromEditPage, setFromEditPage] = useState(false);
 
     const fetchUserData = async () => {
         try {
@@ -46,8 +47,12 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchUserData();
-        }, [])
+            // Check if the user came from the edit page
+            if (fromEditPage) {
+                fetchUserData();
+                setFromEditPage(false);
+            }
+        }, [fromEditPage])
     );
 
     const handleLogout = async () => {
@@ -66,6 +71,7 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
     };
 
     const handleEditProfile = () => {
+        setFromEditPage(true);
         navigation.navigate('EditProfile', { userID, profilePic: currentProfilePic || '', username: currentUserName || '' });
     };
 
