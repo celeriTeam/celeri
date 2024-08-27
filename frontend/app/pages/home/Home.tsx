@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View, Button, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import HomeTab from './HomeTab';
@@ -9,13 +9,12 @@ import CreateGroupPage from './CreateGroup';
 import JoinGroupPage from './JoinGroup';
 import InvitePage from './InviteGroup';
 import BugReportsPage from './BugReports';
-import { getUserGroups, getUserName } from '../../database';
 import { RootStackParamList } from '../types';
 import { app } from "../../../firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 
-type GroupDetailsPageNavigationProp = StackNavigationProp<RootStackParamList, 'GroupDetails'>;
+type GroupDetailsPageNavigationProp = StackNavigationProp<RootStackParamList, 'HomePage'>;
 
 type Props = {
     navigation: GroupDetailsPageNavigationProp;
@@ -25,87 +24,18 @@ const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const auth = getAuth(app);
 
-const HomeStackScreen: React.FC<Props> = ({ navigation }) => {
+const HomeStackScreen: React.FC = () => {
     const route = useRoute();
     const { userID } = route.params as { userID: string };
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
-    const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
-    const [loading, setLoading] = useState(true);
-    const [shouldReload, setShouldReload] = useState(false);
-    let groupID = '';
 
-    const fetchUserData = async () => {
-        try {
-            // const user = auth.currentUser;
-            // let userID = user?.uid || '';
-            console.log('userid: ', userID)
-            const name = await getUserName(userID);
-            setCurrentUserName(name);
-            const groups = await getUserGroups(userID);
-            setCurrentUserGroups(groups);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUserData();
-    }, [userID]);
-
-    useFocusEffect(
-        useCallback(() => {
-            fetchUserData();
-            // Check if the user came from the edit page
-            if (shouldReload) {
-                fetchUserData();
-                setShouldReload(false);
-            }
-        }, [shouldReload])
+    return (
+        <HomeStack.Navigator>
+            <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+            <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} options={{ headerShown: false }} />
+            <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} options={{ headerShown: false }} />
+            <HomeStack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} />
+        </HomeStack.Navigator>
     );
-
-    const goToGroup = (groupName: string) => {
-        () => navigation.navigate('GroupDetails', { GroupName: groupName })
-    }
-
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <Text>Loading...</Text>
-            </View>
-        );
-    }
-
-    if (currentUserGroups === null || currentUserGroups === undefined) {
-        return (
-            <View style={styles.container}>
-                <Text>Failed to fetch user groups</Text>
-            </View>
-        );
-    } else if (currentUserGroups.length === 0) {
-        return (
-            <HomeStack.Navigator>
-                <HomeStack.Screen name="HomeTab" component={HomeTab} options={{ headerShown: false }} />
-                <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
-                <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} options={{ headerShown: false }} />
-                <HomeStack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} initialParams={{ groupID: groupID}} />
-            </HomeStack.Navigator>
-        );
-    } else {
-        return (
-            <View style={styles.container}>
-                <Text>Welcome back, {currentUserName}</Text>
-                {currentUserGroups.map((groupName: string) => (
-                    <Button
-                        key={groupName}
-                        title={String(groupName)}
-                        onPress={() => goToGroup(groupName)}
-                    />
-                ))}
-            </View>
-        );
-    }
 };
 
 const HomePage: React.FC = () => {
@@ -144,7 +74,7 @@ const HomePage: React.FC = () => {
     return (
         <Tab.Navigator>
             <Tab.Screen name="Home" component={HomeStackScreen} options={{ headerShown: false }} initialParams={{ userID: userID }} />
-            <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID, fromEditPage: undefined }} />
+            <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} initialParams={{ userID: userID }} />
             <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/>
             <Tab.Screen name="Bug Reports" component={BugReportsPage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
         </Tab.Navigator>

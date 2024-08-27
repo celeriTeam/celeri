@@ -10,7 +10,7 @@ import VerificationPage from './pages/PhoneVerification';
 import HomePage from './pages/home/Home';
 import GroupDetails from './pages/home/GroupDetails';
 import { RootStackParamList } from './pages/types';
-import EditProfilePage from './pages/home/EditProfile';
+import InvitePage from './pages/home/InviteGroup';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -60,7 +60,7 @@ const App: React.FC = () => {
                     headerLeft: () => null
                 }}
                 />
-                <Stack.Screen name="EditProfile" component={EditProfilePage} options={{ headerShown: false }} />
+                <Stack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} initialParams={{ groupID: ''}} />
             </Stack.Navigator>
         </NavigationContainer>
     );

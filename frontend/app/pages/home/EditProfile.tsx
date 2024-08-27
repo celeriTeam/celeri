@@ -7,14 +7,15 @@ import { editProfilePic, editUsername, getUserEmail } from '../../database';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 
+type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
+
 type Props = {
-    navigation: StackNavigationProp<RootStackParamList, 'EditProfile'>;
-    route: RouteProp<{ params: { userID: string, profilePic: string, username: string } }, 'params'>
+    navigation: EditProfilePageNavigationProp;
 };
 
-
-const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
-    const { userID, profilePic, username } = route.params;
+const EditProfilePage: React.FC<Props> = ({ navigation }) => {
+    const route = useRoute();
+    const { userID, profilePic, username } = route.params as { userID: string, profilePic: string, username: string };
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [currentUsername, setcurrentUsername] = useState(username);
     const [currentProfilePic, setcurrentProfilePic] = useState(profilePic);
@@ -109,7 +110,7 @@ const EditProfilePage: React.FC<Props> = ({ route, navigation }) => {
                         />
                         <TouchableOpacity onPress={handleCheckPress}>
                             <Image
-                                source={require('../../../components/checkmark-icon.png')}
+                                source={require('../../../components/edit-icon.jpg')}
                                 style={styles.editImage}
                             />
                         </TouchableOpacity>
