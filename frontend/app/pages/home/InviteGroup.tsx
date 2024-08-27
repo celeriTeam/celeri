@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
-import { getGroupCode, getGroupName } from '../../database';
+import { getGroupCode, getGroupName, getGroupMembers } from '../../database';
 import { RotateInDownLeft } from 'react-native-reanimated';
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;

@@ -3,6 +3,8 @@ import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, TouchableO
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
+import { getGroupFromCode, addUserToGroup, addGroupToUser } from '../../database';
+
 
 type JoinGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'JoinGroup'>;
 
@@ -11,8 +13,28 @@ type Props = {
 };
 
 const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
-    const ToGroupFromJoin = () => {
-        navigation.navigate('HomePage');
+
+    const [groupCode, setGroupCode]= useState('');
+    const route = useRoute();
+    const { userID } = route.params as { userID: string };
+
+    const ToGroupFromJoin = async () => {
+        console.log("Enter button pressed");
+        console.log("Group Code Entered: ", groupCode)
+        try {
+            const groupID = await getGroupFromCode(groupCode);
+
+            if(groupID) {
+                await addUserToGroup( userID, groupID )
+                await addGroupToUser( userID, groupID )
+                console.log("Group exists");
+                
+            }
+            navigation.navigate('HomePage');
+
+        } catch (error) {
+            console.error("Error with group code: ", error);
+        }
     }
     
     return (
@@ -32,6 +54,8 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.label}>Enter group code:</Text>
                 <TextInput
                     style={styles.input}
+                    value={groupCode}
+                    onChangeText={setGroupCode}
                     id="groupCode"
                     placeholder="Group Code"
                 />

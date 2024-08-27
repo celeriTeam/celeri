@@ -56,7 +56,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     };
 
     const handlePressButton2 = () => {
-        navigation.navigate('JoinGroup');
+        navigation.navigate('JoinGroup', { userID: userID });
     };
 
     const goToGroup = async (groupName: string) => {

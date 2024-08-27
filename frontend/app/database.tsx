@@ -187,6 +187,37 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<u
     }
 }
 
+//Add user to group
+export const addUserToGroup = async (userID: string, groupID: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const groupData = groupDoc.data();
+            
+            // Check if the user is already in the users map
+            if (groupData?.users && groupData.users[userID]) {
+                console.log(`User ${userID} is already in the group ${groupID}. No update needed.`);
+                return;
+            }
+            
+            await updateDoc(groupDocRef, {
+                [`users.${userID}`]: {
+                    placedBet: false,
+                    tokens: 0,
+                },
+            });
+            console.log(`User ${userID} added to group ${groupID}`);
+            return undefined;
+        } else{
+            console.error("addUserToGroup - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("addUserToGroup - Error fetching group document: ", error);
+         return undefined;
+    }
+}
 
 // Get Group Members
 export const getGroupMembers = async (groupID: string): Promise<string[] | undefined> => {
