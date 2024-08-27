@@ -34,7 +34,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
         const groupID: any = await createGroup(userID, groupName || '', groupCode);
         await addGroupImage(groupID, groupImage || '');
         await addGroupToUser(userID, groupID);
-        navigation.navigate('InviteGroup', { groupID: groupID });
+        navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: true });
     }
 
     const pickImage = async () => {

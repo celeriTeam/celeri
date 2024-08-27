@@ -11,6 +11,9 @@ type Props = {
 };
 
 const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
+    const ToGroupFromJoin = () => {
+        navigation.navigate('HomePage');
+    }
     
     return (
         <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
@@ -32,7 +35,7 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                     id="groupCode"
                     placeholder="Group Code"
                 />
-                <Button title="Enter" onPress={() => navigation.navigate('HomeTab')} />
+                <Button title="Enter" onPress={ToGroupFromJoin} />
             </View>
         </Pressable>
     );

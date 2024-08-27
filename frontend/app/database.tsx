@@ -81,12 +81,41 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
     }
 }
 
-// Get number of users by group name
-export const getNumberOfUsersByGroupName = async (groupName: string): Promise<number | undefined> => {
+// Get groupID from group name
+export const getGroupIDFromGroupName = async (groupName: string): Promise<string | undefined> => {
     try {
-        // WORK ON THIS .. NOT FINISHED
+        // Get the group ID from the group name
+        const q = query(collection(db, "groups"), where("groupName", "==", groupName));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            const doc = querySnapshot.docs[0];
+            const groupID = doc.id;
+            console.log("getGroupIDFromGroupName - response: ", groupID);
+            return groupID;
+        } else {
+            console.error("getNumberOfUsersByGroupName - error: No matching documents found for groupName", groupName);
+            return undefined;
+        }
     } catch (error) {
         console.error("getNumberOfUsersByGroupName - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+// Get Users in Group
+export const getUsersInGroup = async (groupID: string): Promise<string[] | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users) {
+            const users = groupDoc.data()?.users;
+            console.log("getNumberOfUsersByGroupID - response: ", users);
+            return users;
+        } else {
+            console.error("getNumberOfUsersByGroupID - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getNumberOfUsersByGroupID - Error fetching user document:", error);
         return undefined;
     }
 }

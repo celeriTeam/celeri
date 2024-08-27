@@ -1,3 +1,7 @@
+//@ts-ignore
+// Use this if you want to test on web:
+// import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
+
 // Import the functions you need from the SDKs you need
 import { initializeApp, FirebaseApp } from "firebase/app";
 import { Auth, getAuth, initializeAuth, getReactNativePersistence} from 'firebase/auth';

@@ -3,16 +3,16 @@ import { View, Text, StyleSheet, Alert, Button, Image } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRoute } from '@react-navigation/native';
 import { getProfilePic, getUserGroups, getUserName } from '../../database';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
+import EditProfilePage from './EditProfile';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
 };
 
-
-const ProfileTab: React.FC<Props> = ({ navigation }) => {
+const ProfilePage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute();
     const { userID } = route.params as { userID: string };
     const [user, setUser] = useState<User | null>(null);
@@ -109,6 +109,22 @@ const ProfileTab: React.FC<Props> = ({ navigation }) => {
                 <Button title="Log Out" onPress={handleLogout} />
             </View>
         </View>
+    );
+
+}
+
+
+const ProfileStack = createStackNavigator();
+
+const ProfileTab: React.FC = () => {
+    const route = useRoute();
+    const { userID } = route.params as { userID: string };
+    
+    return (
+        <ProfileStack.Navigator>
+            <ProfileStack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+            <ProfileStack.Screen name="EditProfile" component={EditProfilePage} options={{ headerShown: false }} />
+        </ProfileStack.Navigator>
     );
 };
 
