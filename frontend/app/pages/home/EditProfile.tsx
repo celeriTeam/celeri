@@ -74,8 +74,8 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                 // set profile pic endpoint
                 editProfilePic(userID, selectedAsset.uri);
             }
-          }
-      };
+        }
+    };
 
     return (
         <View style={styles.container}>

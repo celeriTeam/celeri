@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, Image } from 'react-native';
+import { View, Text, StyleSheet, Alert, Button, Image, ActivityIndicator } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRoute } from '@react-navigation/native';
 import { getProfilePic, getUserGroups, getUserName } from '../../database';
@@ -20,6 +20,7 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
     const [fromEditPage, setFromEditPage] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const fetchUserData = async () => {
         try {
@@ -31,6 +32,8 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
             setCurrentUserGroups(groups);
         } catch (error) {
             console.error("Error fetching user data:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -74,6 +77,15 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
         setFromEditPage(true);
         navigation.navigate('EditProfile', { userID, profilePic: currentProfilePic || '', username: currentUserName || '' });
     };
+
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>

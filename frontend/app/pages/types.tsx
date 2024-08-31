@@ -11,6 +11,6 @@ export type RootStackParamList = {
     HomeTab: { userID: string };
     BugReportsPage: undefined;
     ProfileTab: { userID: string };
-    GroupDetails: { GroupName: string };
+    GroupDetails: { groupID: string };
     EditProfile: { userID: string, profilePic: string, username: string };
 };
