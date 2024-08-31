@@ -17,6 +17,7 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
     const [groupCode, setGroupCode]= useState('');
     const route = useRoute();
     const { userID } = route.params as { userID: string };
+    const [currrentGroupInUserResponse, setCurrentGroupInUserResponse] = useState<string | undefined>(undefined);
 
     const ToGroupFromJoin = async () => {
         console.log("Enter button pressed");
@@ -25,12 +26,16 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
             const groupID = await getGroupFromCode(groupCode);
 
             if(groupID) {
-                await addUserToGroup( userID, groupID )
-                await addGroupToUser( userID, groupID )
-                console.log("Group exists");
+                await addUserToGroup( userID, groupID );
+                const groupInUserResponse = await addGroupToUser( userID, groupID );
+                setCurrentGroupInUserResponse(groupInUserResponse);
                 
+            } else {
+                setCurrentGroupInUserResponse('Group code invalid. Try again.');
             }
-            navigation.navigate('HomePage');
+            if (currrentGroupInUserResponse) {
+                navigation.navigate('HomeTab', { userID: userID });
+            }
 
         } catch (error) {
             console.error("Error with group code: ", error);
@@ -60,6 +65,9 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                     placeholder="Group Code"
                 />
                 <Button title="Enter" onPress={ToGroupFromJoin} />
+            {currrentGroupInUserResponse !== undefined && (
+                <Text style={styles.errorText}>{currrentGroupInUserResponse}</Text>
+            )}
             </View>
         </Pressable>
     );
@@ -107,6 +115,12 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 24,
+    },
+    errorText: {
+        fontSize: 16,
+        textAlign: "center",
+        color: 'red',
+        marginTop: 30,
     },
 });
 

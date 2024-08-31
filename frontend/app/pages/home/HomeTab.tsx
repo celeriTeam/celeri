@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
-import { getGroupIDFromGroupName, getUserGroups, getUserName, getUsersInGroup } from '../../../app/database';
+import { getGroupIDFromGroupName, getGroupIsGameActive, getUserGroups, getUserName, getUsersInGroup } from '../../../app/database';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -51,11 +51,11 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }, [shouldReload])
     );
 
-    const handlePressButton1 = () => {
+    const createGroupButtonHandle = () => {
         navigation.navigate('CreateGroup', { userID: userID });
     };
 
-    const handlePressButton2 = () => {
+    const joinGroupButtonHandle = () => {
         navigation.navigate('JoinGroup', { userID: userID });
     };
 
@@ -67,12 +67,13 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         const GroupUsers = await getUsersInGroup(groupID);
         const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
         console.log('groupusers: ', GroupUsers);
+        const isGameActive = await getGroupIsGameActive(groupID);
         if (GroupUsers === null || GroupUsers === undefined) {
             return;
-        } else if (numberOfUsers < 3) {
-            navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });
+        } else if (isGameActive) {
+            navigation.navigate('GroupDetails', { groupID: groupID });
         } else {
-            navigation.navigate('GroupDetails', { GroupName: groupName });
+            navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });
         }
     }
 
@@ -93,18 +94,21 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     } else if (currentUserGroups.length === 0) {
         return (
             <View style={styles.container}>
-                <TouchableOpacity style={styles.button} onPress={handlePressButton1}>
+                <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
                     <Text style={styles.buttonText}>Create Group</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={handlePressButton2}>
-                    <Text style={styles.buttonText}>Join Group</Text>
+                <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
+                    <Text style={styles.buttonText}>Join Existing Group</Text>
                 </TouchableOpacity>
             </View>
         );
     } else {
         return (
             <View style={styles.container}>
-                <Text>Welcome back, {currentUserName}</Text>
+                <Text style={styles.welcome}>
+                    Welcome back, <Text style={styles.username}>{currentUserName}</Text>
+                </Text>
+                <Text style={styles.title}>Your Groups:</Text>
                 {currentUserGroups.map((groupName: string) => (
                     <Button
                         key={groupName}
@@ -112,6 +116,11 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                         onPress={() => goToGroup(groupName)}
                     />
                 ))}
+                <View style={styles.spaceAboveButton}>
+                    <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Join Another Group</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }
@@ -123,9 +132,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    title: {
+    welcome: {
         fontSize: 24,
-        marginBottom: 20,
+        marginBottom: 40,
+    },
+    username: {
+        fontWeight: 'bold',
+    },
+    title: {
+        fontSize: 20,
     },
     button: {
         backgroundColor: '#1E90FF', // Blue background color
@@ -138,6 +153,9 @@ const styles = StyleSheet.create({
         color: '#FFFFFF', // White text color
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    spaceAboveButton: {
+        marginTop: 30,
     },
 });
 

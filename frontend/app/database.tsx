@@ -167,11 +167,17 @@ export const editUsername = async(userID: string, usernameInput: string) => {
 };
 
 // Add group to user
-export const addGroupToUser = async (userID: string, groupID: string): Promise<undefined> => {
+export const addGroupToUser = async (userID: string, groupID: string): Promise<string | undefined> => {
     try {
         const userDocRef = doc(db, 'users', userID);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()){
+            // Check if group is already in the user's groups
+            if (userDoc.data()?.groups.includes(groupID)) {
+                console.log(`User ${userID} is already in the group ${groupID}. No update needed.`);
+                return 'You are already in this group!';
+            }
+
             await updateDoc(userDocRef, {
                 groups: [...userDoc.data()?.groups, groupID],
             });
@@ -302,6 +308,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
             "updatedAt": serverTimestamp(),
             "groupImageUrl": null,
             groupCode,
+            "isGameActive": false,
         })
         const groupID = groupRef.id;
         console.log("createGroup - response:", groupID);
@@ -441,6 +448,37 @@ export const addBet = async (userID: string, wager: number, duelID: string, grou
     } catch (error) {
         console.error("addBet - Error adding bet:", error);
         return undefined;
+    }
+}
 
+// Get Group isGameActive
+export const getGroupIsGameActive = async (groupID: string): Promise<boolean | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data().hasOwnProperty('isGameActive')){
+            console.log("getGroupIsGameActive - response: ", groupDoc.data()?.isGameActive);
+            return groupDoc.data()?.isGameActive;
+        } else{
+            console.error("getGroupIsGameActive - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupIsGameActive - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// Set Group isGameActive
+export const setGroupIsGameActive = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            isGameActive: isGameActive,
+        });
+        console.log("setGroupIsGameActive - response: ", isGameActive);
+        return undefined;
+    } catch (error) {
+         console.error("setGroupIsGameActive - Error fetching user document: ", error);
+         return undefined;
     }
 }

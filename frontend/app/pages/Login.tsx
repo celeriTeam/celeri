@@ -83,7 +83,7 @@ const LoginPage: React.FC<Props> = ({navigation}) => {
             <SafeAreaView style={styles.contentView}>
               <View style={styles.container}>
                 <View style={styles.titleContainer}>
-                  <Text style={styles.titleText}>Register</Text>
+                  <Text style={styles.titleText}>Login</Text>
                 </View>
                 <View style={styles.mainContent}>
                   <TextInput
