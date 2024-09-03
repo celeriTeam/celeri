@@ -4,7 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupIDFromGroupName, getGroupIsGameActive, getUserGroups, getUserName, getUsersInGroup } from '../../../app/database';
+import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '@backend/src/groups';
+import { getUserGroups, getUserName } from '@backend/src/users';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
