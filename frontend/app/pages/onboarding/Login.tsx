@@ -5,9 +5,9 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthErro
 import firebase from '@react-native-firebase/app';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { app, auth, db} from "../../firebaseConfig";
+import { app, auth, db} from "@firebaseConfig";
 import { doc, setDoc } from 'firebase/firestore';
-import { CTAButton } from "../../components/CTAButton";
+import { CTAButton } from "@components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { FirebaseError } from 'firebase/app';

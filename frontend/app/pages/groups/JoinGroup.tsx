@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, TouchableOpacity, Keyboard, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
-import { getGroupFromCode, addUserToGroup, addGroupToUser } from '../../database';
+import { RootStackParamList } from '../../types';
+import { getGroupFromCode, addUserToGroup } from '@backend/src/groups';
+import { addGroupToUser } from '@backend/src/users';
 
 
 type JoinGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'JoinGroup'>;
@@ -48,7 +49,7 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.row}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Image
-                            source={require('../../../components/back-icon.png')}
+                            source={require('@components/back-icon.png')}
                             style={styles.backImage}
                         />
                     </TouchableOpacity>

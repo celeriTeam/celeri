@@ -6,13 +6,14 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../../types';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app, auth, db } from "../../../firebaseConfig";
+import { app, auth, db } from "@firebaseConfig";
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
-import { CTAButton } from "../../../components/CTAButton";
-import { generateGroupCode, createGroup, addGroupImage, addGroupToUser } from '../../database';
+import { CTAButton } from "@components/CTAButton";
+import { generateGroupCode, createGroup, addGroupImage } from '@backend/src/groups';
+import { addGroupToUser } from '@backend/src/users';
 
 
 type CreateGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'CreateGroup'>;
@@ -67,7 +68,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.row}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Image
-                            source={require('../../../components/back-icon.png')}
+                            source={require('@components/back-icon.png')}
                             style={styles.backImage}
                         />
                     </TouchableOpacity>

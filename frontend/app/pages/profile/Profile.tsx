@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Alert, Button, Image, ActivityIndicator } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRoute } from '@react-navigation/native';
-import { getProfilePic, getUserGroups, getUserName } from '../../database';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../../types';
 import { useFocusEffect } from '@react-navigation/native';
 import EditProfilePage from './EditProfile';
+import { getProfilePic, getUserGroups, getUserName } from '@backend/src/users';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
@@ -96,7 +96,7 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
                 />
             ) : (
                 <Image
-                source={require('../../../components/blank-profile-picture.png')}
+                source={require('@components/blank-profile-picture.png')}
                 style={styles.profileImage}
                 />
             )}
