@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Alert, Button, Image, TouchableOpacity, TextInp
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import * as ImagePicker from 'expo-image-picker';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { editProfilePic, editUsername, getUserEmail } from '../../database';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../../types';
+import { editProfilePic, editUsername, getUserEmail } from '@backend/src/users';
 
 type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
 
@@ -81,7 +81,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
         <View style={styles.container}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Image
-                    source={require('../../../components/back-icon.png')}
+                    source={require('@components/back-icon.png')}
                     style={styles.backImage}
                 />
             </TouchableOpacity>
@@ -92,7 +92,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                 />
             ) : (
                 <Image
-                source={require('../../../components/blank-profile-picture.png')}
+                source={require('@components/blank-profile-picture.png')}
                 style={styles.profileImage}
                 />
             )}
@@ -110,7 +110,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                         />
                         <TouchableOpacity onPress={handleCheckPress}>
                             <Image
-                                source={require('../../../components/edit-icon.jpg')}
+                                source={require('@components/edit-icon.jpg')}
                                 style={styles.editImage}
                             />
                         </TouchableOpacity>
@@ -122,7 +122,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.name}>{currentUsername}</Text>
                         <TouchableOpacity onPress={handleEditPress}>
                             <Image
-                            source={require('../../../components/edit-icon.jpg')}
+                            source={require('@components/edit-icon.jpg')}
                             style={styles.editImage}
                             />
                         </TouchableOpacity>

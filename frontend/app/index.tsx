@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import RegisterPage from './pages/Register';
-import SignUpPage from './pages/SignUp';
-import LoginPage from './pages/Login';
-import VerificationPage from './pages/PhoneVerification';
+import RegisterPage from './pages/onboarding/Register';
+import SignUpPage from './pages/onboarding/SignUp';
+import LoginPage from './pages/onboarding/Login';
+import VerificationPage from './pages/onboarding/PhoneVerification';
 import HomePage from './pages/home/Home';
-import GroupDetails from './pages/home/GroupDetails';
-import { RootStackParamList } from './pages/types';
-import InvitePage from './pages/home/InviteGroup';
+import GroupDetails from './pages/groups/GroupDetails';
+import { RootStackParamList } from './types';
+import InvitePage from './pages/groups/InviteGroup';
 
 const Stack = createStackNavigator<RootStackParamList>();
 

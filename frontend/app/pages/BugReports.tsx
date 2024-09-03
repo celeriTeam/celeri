@@ -4,7 +4,7 @@ import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
-import { getUserName } from '../../database';
+import { getUserName } from '@backend/src/users';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;

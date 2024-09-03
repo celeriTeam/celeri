@@ -6,7 +6,16 @@
       "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"],
       "@/*": [
         "./*"
-      ]
+      ],
+      "@backend/*": [
+        "../backend/*"
+      ],
+      "@firebaseConfig": [
+        "./firebaseConfig"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
     }
   },
   

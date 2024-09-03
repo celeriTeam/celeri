@@ -4,8 +4,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
-import { getGroupCode, getGroupName, getGroupMembers, getUsersInGroup, getUserName, getProfilePic, setGroupIsGameActive } from '../../database';
+import { RootStackParamList } from '../../types';
+import { getGroupCode, getGroupName, getGroupMembers, getUsersInGroup, setGroupIsGameActive } from '@backend/src/groups';
+import { getUserName, getProfilePic } from '@backend/src/users';
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;
 type InviteGroupRouteProp = RouteProp<RootStackParamList, 'InviteGroup'>;
@@ -30,7 +31,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             const groupCode = await getGroupCode(groupID);
             setCurrentGroupCode(groupCode);
             const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
-            let groupUsersArray = [];
+            let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
             if (groupUsersIdArray) {
                 // get user names & pfps from user IDs
                 for (let i = 0; i < Object.keys(groupUsersIdArray).length; i++) {
@@ -83,7 +84,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.row}>
                         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                             <Image
-                                source={require('../../../components/back-icon.png')}
+                                source={require('@components/back-icon.png')}
                                 style={styles.backImage}
                             />
                         </TouchableOpacity>

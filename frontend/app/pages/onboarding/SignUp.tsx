@@ -6,10 +6,10 @@ import {
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-import { app, auth, db } from "../../firebaseConfig";
+import { app, auth, db } from "@firebaseConfig";
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { CTAButton } from "../../components/CTAButton";
+import { CTAButton } from "@components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
