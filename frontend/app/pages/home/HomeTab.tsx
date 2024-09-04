@@ -74,7 +74,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         } else if (isGameActive) {
             navigation.navigate('GroupDetails', { groupID: groupID });
         } else {
-            navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });
+            navigation.navigate('InviteGroup', { userID: userID, groupID: groupID, fromCreate: false });
         }
     }
 

@@ -6,7 +6,7 @@ export type RootStackParamList = {
     Verification: undefined;
     HomePage: undefined;
     CreateGroup: { userID: string };
-    InviteGroup: { groupID: string, fromCreate: boolean };
+    InviteGroup: { userID: string, groupID: string, fromCreate: boolean };
     JoinGroup: { userID: string };
     HomeTab: { userID: string };
     BugReportsPage: undefined;
