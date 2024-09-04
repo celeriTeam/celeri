@@ -33,34 +33,17 @@ export const getGroupIDFromGroupName = async (groupName: string): Promise<string
 export const getUsersInGroup = async (groupID: string): Promise<string[] | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.users) {
-            const users = groupDoc.data()?.users;
-            console.log("getNumberOfUsersByGroupID - response: ", users);
+        if (groupDoc.exists() && groupDoc.data()?.order) {
+            const users = groupDoc.data()?.order;
+            console.log("getUsersInGroup - response: ", users);
             return users;
         } else {
-            console.error("getNumberOfUsersByGroupID - error: No such document!");
+            console.error("getUsersInGroup - error: No such document!");
             return undefined;
         }
     } catch (error) {
-        console.error("getNumberOfUsersByGroupID - Error fetching user document:", error);
+        console.error("getUsersInGroup - Error fetching user document:", error);
         return undefined;
-    }
-}
-
-// GET Group Members
-export const getGroupMembers = async (groupID: string): Promise<string[] | undefined> => {
-    try {
-        const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.groupMembers){
-            console.log("getGroupMembers - response: ", groupDoc.data()?.groupMembers);
-            return groupDoc.data()?.groupMembers;
-        } else{
-            console.error("getGroupMembers - error: No such document!");
-            return undefined;
-        }
-    } catch (error) {
-         console.error("getGroupMembers - Error fetching user document: ", error);
-         return undefined;
     }
 }
 
@@ -135,6 +118,26 @@ export const getGroupIsGameActive = async (groupID: string): Promise<boolean | u
     }
 }
 
+// GET Group Creator
+export const getGroupCreator = async (groupID: string): Promise<string | undefined> => {
+    // this will be the first user that was added to the group
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const users = groupDoc.data()?.order;
+            const creator = users[0];
+            console.log("getGroupCreator - response: ", creator);
+            return creator;
+        } else{
+            console.error("getGroupCreator - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupCreator - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
@@ -144,9 +147,10 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
         const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists()){
             const groupData = groupDoc.data();
+            const users = groupData?.users;
             
             // Check if the user is already in the users map
-            if (groupData?.users && groupData.users[userID]) {
+            if (users && users[userID]) {
                 console.log(`User ${userID} is already in the group ${groupID}. No update needed.`);
                 return;
             }
@@ -156,7 +160,10 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
                     placedBet: false,
                     tokens: 0,
                 },
+                order: [...groupDoc.data()?.order, userID],
             });
+
+            
             console.log(`User ${userID} added to group ${groupID}`);
             return undefined;
         } else{
@@ -214,6 +221,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
                     "tokens": 0,
                 },
             },
+            "order": [userID],
             "createdAt": serverTimestamp(),
             "updatedAt": serverTimestamp(),
             "groupImageUrl": null,

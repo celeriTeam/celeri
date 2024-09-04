@@ -5,8 +5,8 @@ import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupCode, getGroupName, getGroupMembers, getUsersInGroup, setGroupIsGameActive } from '@backend/src/groups';
-import { getUserName, getProfilePic } from '@backend/src/users';
+import { getGroupCode, getGroupName, getUsersInGroup, setGroupIsGameActive, getGroupCreator, generateGroupCode, createGroup, addUserToGroup } from '@backend/src/groups';
+import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;
 type InviteGroupRouteProp = RouteProp<RootStackParamList, 'InviteGroup'>;
@@ -17,12 +17,13 @@ type Props = {
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<InviteGroupRouteProp>();
-    const { groupID, fromCreate } = route.params;
+    const { userID, groupID, fromCreate } = route.params;
     const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [currentGroupCode, setCurrentGroupCode] = useState<string | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const userStartRequirement = 2;
+    const [isCreator, setIsCreator] = useState(false);
+    const userStartRequirement = 3;
 
     const fetchGroupData = async () => {
         try {
@@ -34,13 +35,17 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
             if (groupUsersIdArray) {
                 // get user names & pfps from user IDs
-                for (let i = 0; i < Object.keys(groupUsersIdArray).length; i++) {
-                    const userID = Object.keys(groupUsersIdArray)[i];
+                for (let i = 0; i < groupUsersIdArray.length; i++) {
+                    const userID = groupUsersIdArray[i];
                     const userName = await getUserName(userID);
                     const profilePic = await getProfilePic(userID);
                     groupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
                 }
                 setCurrentGroupUsersArray(groupUsersArray);
+            }
+            const groupCreator = await getGroupCreator(groupID);
+            if (groupCreator === userID) {
+                setIsCreator(true);
             }
         } catch (error) {
             console.error("Error fetching user data:", error);
@@ -57,6 +62,34 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         console.log('Start game button pressed');
         await setGroupIsGameActive(groupID, true);
         navigation.navigate('GroupDetails', { groupID: groupID });
+    };
+
+    const handleStartReminderPress = async () => {
+        console.log('Remind creator to start button pressed');
+
+        // TESTING
+        const testGroupCode = await generateGroupCode();
+        const testGroupName = 'Test Group';
+        const testGroupID = await createGroup(userID, testGroupName, testGroupCode);
+        if (!testGroupID) {
+            Alert.alert('Error', 'Failed to create test group.');
+            return;
+        }
+        await addGroupToUser(userID, testGroupID);
+
+        await addUserToGroup('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
+        await addGroupToUser('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
+
+        await addUserToGroup('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
+        await addGroupToUser('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
+
+        await addUserToGroup('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
+        await addGroupToUser('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
+
+        await addUserToGroup('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
+        await addGroupToUser('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
+
+        Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
     };
 
     const copyToClipboard = () => {
@@ -122,12 +155,21 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                     </TouchableOpacity>
                 </View>
                 {currentGroupUsersArray.length >= userStartRequirement && (
-                    <TouchableOpacity
-                        onPress={handleStartPress}
-                        style={styles.startButton}
-                    >
-                        <Text style={styles.startButtonText}>Start</Text>
-                    </TouchableOpacity>
+                    isCreator ? (
+                        <TouchableOpacity
+                            onPress={handleStartPress}
+                            style={styles.startButton}
+                        >
+                            <Text style={styles.startButtonText}>Start</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            onPress={handleStartReminderPress}
+                            style={styles.startButton}
+                        >
+                            <Text style={styles.startButtonText}>Remind creator to start</Text>
+                        </TouchableOpacity>
+                    )
                 )}
             </View>
         </View>
