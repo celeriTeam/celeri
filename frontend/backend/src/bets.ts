@@ -1,6 +1,6 @@
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../frontend/firebaseConfig";
+import { app } from "../../firebaseConfig";
 
 const db = getFirestore(app);
 const storage = getStorage();
