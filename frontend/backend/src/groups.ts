@@ -243,8 +243,34 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 export const setGroupIsGameActive = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
+
+        //Grab the number of players from the document
+        let numberOfPlayers;
+        let cycles;
+
+        const docSnap = await getDoc(groupDocRef);
+        
+        if (docSnap.exists()) {
+            // Access the 'order' array from the document data
+            const data = docSnap.data();
+            const orderArray = data.order;
+            cycles = createCycle(orderArray)
+            // Get the number of players (length of the 'order' array)
+            numberOfPlayers = orderArray.length;
+        } else {
+            console.log("Document does not exist.");
+            return undefined;
+        }
+
+        
         await updateDoc(groupDocRef, {
             isGameActive: isGameActive,
+
+            //set the cycle
+            currentPlayersInGame: numberOfPlayers,
+            cycleDay: 1,
+            cycleCount: 1,
+            cycleDuels: cycles,
         });
         console.log("setGroupIsGameActive - response: ", isGameActive);
         return undefined;
@@ -252,6 +278,37 @@ export const setGroupIsGameActive = async (groupID: string, isGameActive: boolea
          console.error("setGroupIsGameActive - Error fetching user document: ", error);
          return undefined;
     }
+}
+
+function createCycle(players: Array<string>): Array<Array<[string, string]>> {
+    const cycles: Array<Array<[string, string]>> = [];
+    const playerCount = players.length;
+
+    // If there's an odd number of players, add a 'bye' player
+    if (playerCount % 2 !== 0) {
+        players.push('BYE');
+    }
+
+    const rounds = players.length - 1; // Total rounds needed for all players to face each other once
+
+    for (let round = 0; round < rounds; round++) {
+        const roundMatchups: Array<[string, string]> = [];
+        for (let i = 0; i < players.length / 2; i++) {
+            const player1 = players[i];
+            const player2 = players[players.length - 1 - i];
+
+            if (player1 !== 'BYE' && player2 !== 'BYE') {
+                roundMatchups.push([player1, player2]);
+            }
+        }
+
+        // Rotate players for the next round except for the first one
+        players.splice(1, 0, players.pop() as string);
+
+        cycles.push(roundMatchups);
+    }
+
+    return cycles;
 }
 
 /*********************************************** MISC FUNCTIONS ********************************************/
