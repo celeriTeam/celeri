@@ -9,7 +9,7 @@ const storage = getStorage();
 
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
-// CREATE Head-To-Head Duels
+// CREATE Head-To-Head Duels -- probably not used because we'll use it in the async functions
 export const createDuels = async (firstUserID: string, secondUserID: string, groupID: string): Promise<string | undefined> => {
     try {
 
