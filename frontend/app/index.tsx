@@ -7,10 +7,10 @@ import RegisterPage from './pages/onboarding/Register';
 import SignUpPage from './pages/onboarding/SignUp';
 import LoginPage from './pages/onboarding/Login';
 import VerificationPage from './pages/onboarding/PhoneVerification';
-import HomePage from './pages/home/Home';
-import GroupDetails from './pages/groups/GroupDetails';
+import BetsPage from './pages/bets/Bets';
 import { RootStackParamList } from './types';
 import InvitePage from './pages/groups/InviteGroup';
+import AppPage from './pages/App';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -44,7 +44,7 @@ const App: React.FC = () => {
                 <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                 <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false}} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
-                <Stack.Screen name="HomePage" component={HomePage} options={{ 
+                <Stack.Screen name="AppPage" component={AppPage} options={{ 
                     title: 'Groups',
                     headerStyle: { backgroundColor: '#42a5f5' },
                     headerTitleStyle: { fontWeight: 'bold' },
@@ -52,15 +52,6 @@ const App: React.FC = () => {
                     headerLeft: () => null
                 }}
                 />
-                <Stack.Screen name="GroupDetails" component={GroupDetails} options={{ 
-                    title: 'Groups',
-                    headerStyle: { backgroundColor: '#42a5f5' },
-                    headerTitleStyle: { fontWeight: 'bold' },
-                    headerTintColor: '#fff',
-                    headerLeft: () => null
-                }}
-                />
-                <Stack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} initialParams={{ groupID: ''}} />
             </Stack.Navigator>
         </NavigationContainer>
     );
