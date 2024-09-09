@@ -5,14 +5,14 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { getUserName } from '@backend/src/users';
+import { useUser } from '../UserProvider';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;
 };
 
 const BugReportsPage: React.FC<Props> = () => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
+    const { userID } = useUser();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [subject, setSubject] = useState<string>('');
     const [issue, setIssue] = useState<string>('');

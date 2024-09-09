@@ -6,6 +6,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
+import { auth } from '@/firebaseConfig';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -14,8 +16,7 @@ type Props = {
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
+    const { userID } = useUser();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
     const [loading, setLoading] = useState(true);
@@ -23,8 +24,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 
     const fetchUserData = async () => {
         try {
-            // const user = auth.currentUser;
-            // let userID = user?.uid || '';
+            const user = auth.currentUser;
+            let userID = user?.uid || '';
             console.log('userid: ', userID)
             const name = await getUserName(userID);
             setCurrentUserName(name);
@@ -53,17 +54,17 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     );
 
     const createGroupButtonHandle = () => {
-        navigation.navigate('CreateGroup', { userID: userID });
+        navigation.navigate('CreateGroup');
     };
 
     const joinGroupButtonHandle = () => {
-        navigation.navigate('JoinGroup', { userID: userID });
+        navigation.navigate('JoinGroup');
     };
 
     const goToGroup = async (groupName: string) => {
         // get groupID and number of users in group;
         // if number of users in group < 3, then navigate to inviteGroup page
-        // else navigate to groupDetails page
+        // else navigate to BetsPage page
         const groupID: any = await getGroupIDFromGroupName(groupName);
         const GroupUsers = await getUsersInGroup(groupID);
         const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
@@ -72,9 +73,14 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         if (GroupUsers === null || GroupUsers === undefined) {
             return;
         } else if (isGameActive) {
-            navigation.navigate('GroupDetails', { groupID: groupID });
+            const isRecap = false;
+            if (isRecap) {
+                navigation.navigate('BetRecapPage');
+            } else {
+                navigation.navigate('HeadToHeadPage', { groupID: groupID });
+            }
         } else {
-            navigation.navigate('InviteGroup', { userID: userID, groupID: groupID, fromCreate: false });
+            navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });
         }
     }
 

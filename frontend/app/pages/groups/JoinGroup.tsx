@@ -5,6 +5,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import { getGroupFromCode, addUserToGroup } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
 
 
 type JoinGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'JoinGroup'>;
@@ -14,10 +15,8 @@ type Props = {
 };
 
 const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
-
+    const { userID } = useUser();
     const [groupCode, setGroupCode]= useState('');
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
     const [currrentGroupInUserResponse, setCurrentGroupInUserResponse] = useState<string | undefined>(undefined);
 
     const ToGroupFromJoin = async () => {
@@ -35,7 +34,7 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                 setCurrentGroupInUserResponse('Group code invalid. Try again.');
             }
             if (currrentGroupInUserResponse) {
-                navigation.navigate('HomeTab', { userID: userID });
+                navigation.navigate('HomeTab');
             }
 
         } catch (error) {

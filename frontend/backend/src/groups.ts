@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -240,19 +240,103 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // SET Group isGameActive
-export const setGroupIsGameActive = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
+export const startGame = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
+
+        //Grab the number of players from the document
+        let numberOfPlayers;
+        let cycles;
+
+        const docSnap = await getDoc(groupDocRef);
+        
+        if (docSnap.exists()) {
+            // Access the 'order' array from the document data
+            const data = docSnap.data();
+            const orderArray = data.order;
+            numberOfPlayers = orderArray.length;
+            cycles = createCycle(orderArray)
+        } else {
+            console.log("startGame - Error: Document does not exist.");
+            return undefined;
+        }
+
+        
         await updateDoc(groupDocRef, {
             isGameActive: isGameActive,
+
+            //set the cycle
+            currentPlayersInGame: numberOfPlayers,
+            cycleDay: 1,
+            cycleCount: 1,
+            cycleDuels: cycles,
         });
-        console.log("setGroupIsGameActive - response: ", isGameActive);
+
+        // Create the duels for cycleDay 1
+        const duelsForDay1 = cycles[0]; // Get the first day's duels
+
+        for (const duelKey in duelsForDay1) {
+            if (duelsForDay1.hasOwnProperty(duelKey)) {
+                const duel = duelsForDay1[duelKey];
+
+                const duelData = {
+                    player1: duel.player1,
+                    player2: duel.player2,
+                    cycleDay: 1,
+                    cycleCount: 1,
+                    createdDate: serverTimestamp(), // Add a timestamp for when the duel was created
+                };
+
+                // Add the duel to the 'duels' subcollection of the group document
+                const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
+                await setDoc(duelDocRef, duelData);
+            }
+        }
+        
+        console.log("startGame - response: ", isGameActive);
         return undefined;
     } catch (error) {
-         console.error("setGroupIsGameActive - Error fetching user document: ", error);
+         console.error("startGame - Error fetching user document: ", error);
          return undefined;
     }
 }
+
+function createCycle(players: Array<string>): Array<{ [duelKey: string]: { player1: string, player2: string } }> {
+    const cycles: Array<{ [duelKey: string]: { player1: string, player2: string } }> = [];
+    const playerCount = players.length;
+
+    // If there's an odd number of players, add a 'bye' player
+    if (playerCount % 2 !== 0) {
+        players.push('BYE');
+    }
+
+    const rounds = players.length - 1; // Total rounds needed for all players to face each other once
+
+    for (let round = 0; round < rounds; round++) {
+        const roundMatchups: { [duelKey: string]: { player1: string, player2: string } } = {};
+        let duelCounter = 1;
+        for (let i = 0; i < players.length / 2; i++) {
+            const player1 = players[i];
+            const player2 = players[players.length - 1 - i];
+
+            if (player1 !== 'BYE' && player2 !== 'BYE') {
+                const duelKey = `duel${duelCounter}`;
+                roundMatchups[duelKey] = {
+                    player1: player1,
+                    player2: player2,
+                };
+                duelCounter++;
+            }
+        }
+
+        // Rotate players for the next round except for the first one
+        players.splice(1, 0, players.pop() as string);
+
+        cycles.push(roundMatchups);
+    }
+
+    return cycles;
+};
 
 /*********************************************** MISC FUNCTIONS ********************************************/
 

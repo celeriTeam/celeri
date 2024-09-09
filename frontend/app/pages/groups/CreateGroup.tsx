@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CTAButton } from "@components/CTAButton";
 import { generateGroupCode, createGroup, addGroupImage } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
 
 
 type CreateGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'CreateGroup'>;
@@ -24,8 +25,7 @@ type Props = {
 };
 
 const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute<CreateGroupRouteProp>();
-    const { userID } = route.params;
+    const { userID } = useUser();
     const [groupName, setGroupName] = useState<string | undefined>();
     const [groupImage, setGroupImage] = useState<string | undefined>();
     const [users, setUsers] = useState<Map<string, Map<string, any>> | undefined>();
@@ -36,7 +36,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
         const groupID: any = await createGroup(userID, groupName || '', groupCode);
         await addGroupImage(groupID, groupImage || '');
         await addGroupToUser(userID, groupID);
-        navigation.navigate('InviteGroup', { userID: userID, groupID: groupID, fromCreate: true });
+        navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: true });
     }
 
     const pickImage = async () => {

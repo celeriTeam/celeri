@@ -4,13 +4,22 @@ export type RootStackParamList = {
     SignUp: undefined;
     Login: undefined;
     Verification: undefined;
-    HomePage: undefined;
-    CreateGroup: { userID: string };
-    InviteGroup: { userID: string, groupID: string, fromCreate: boolean };
-    JoinGroup: { userID: string };
-    HomeTab: { userID: string };
+    PhoneNumber: undefined;
     BugReportsPage: undefined;
-    ProfileTab: { userID: string };
-    GroupDetails: { groupID: string };
-    EditProfile: { userID: string, profilePic: string, username: string };
+    AppPage: undefined;
+    // HOME
+    HomePage: undefined;
+    HomeTab: undefined;
+    // PROFILE
+    ProfileTab: undefined;
+    EditProfile: { profilePic: string, username: string };
+    // GROUPS
+    CreateGroup: undefined;
+    InviteGroup: { groupID: string, fromCreate: boolean };
+    JoinGroup: undefined;
+    // BETS
+    BetsPage: { groupID: string };
+    HeadToHeadPage: { groupID: string };
+    BetRecapPage: undefined;
+    BetSummaryPage: { groupID: string };
 };

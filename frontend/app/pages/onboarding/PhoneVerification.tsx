@@ -2,11 +2,7 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-
-type RootStackParamList = {
-    Verification: undefined;
-    HomePage: undefined;
-};
+import { RootStackParamList } from '../../types';
 
 type VerificationPageNavigationProp = StackNavigationProp<RootStackParamList, 'Verification'>;
 type VerificationPageRouteProp = RouteProp<RootStackParamList, 'Verification'>;
