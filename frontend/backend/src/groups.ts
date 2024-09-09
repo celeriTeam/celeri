@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -272,6 +272,24 @@ export const setGroupIsGameActive = async (groupID: string, isGameActive: boolea
             cycleCount: 1,
             cycleDuels: cycles,
         });
+
+        // Create the duels for cycleDay 1
+        const duelsForDay1 = cycles[0]; // Get the first day's duels
+
+        for (const duel of duelsForDay1) {
+            const duelData = {
+                player1: duel[0],
+                player2: duel[1],
+                cycleDay: 1,
+                cycleCount: 1,
+                date: serverTimestamp(), // Add a timestamp for when the duel was created
+            };
+
+            // Add the duel to the 'duels' subcollection of the group document
+            const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
+            await setDoc(duelDocRef, duelData);
+        }
+        
         console.log("setGroupIsGameActive - response: ", isGameActive);
         return undefined;
     } catch (error) {
