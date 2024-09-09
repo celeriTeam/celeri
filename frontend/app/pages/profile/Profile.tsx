@@ -7,14 +7,14 @@ import { RootStackParamList } from '../../types';
 import { useFocusEffect } from '@react-navigation/native';
 import EditProfilePage from './EditProfile';
 import { getProfilePic, getUserGroups, getUserName } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'ProfileTab'>;
 };
 
 const ProfilePage: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
+    const { userID } = useUser();
     const [user, setUser] = useState<User | null>(null);
     const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
@@ -75,7 +75,7 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
 
     const handleEditProfile = () => {
         setFromEditPage(true);
-        navigation.navigate('EditProfile', { userID, profilePic: currentProfilePic || '', username: currentUserName || '' });
+        navigation.navigate('EditProfile', { profilePic: currentProfilePic || '', username: currentUserName || '' });
     };
 
     if (isLoading) {
@@ -129,12 +129,11 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
 const ProfileStack = createStackNavigator();
 
 const ProfileTab: React.FC = () => {
-    const route = useRoute();
-    const { userID } = route.params as { userID: string };
+    const { userID } = useUser();
     
     return (
         <ProfileStack.Navigator>
-            <ProfileStack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} initialParams={{ userID: userID }} />
+            <ProfileStack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} />
             <ProfileStack.Screen name="EditProfile" component={EditProfilePage} options={{ headerShown: false }} />
         </ProfileStack.Navigator>
     );

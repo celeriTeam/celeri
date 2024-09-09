@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { getGroupCode, getGroupName, getUsersInGroup, setGroupIsGameActive, getGroupCreator, generateGroupCode, createGroup, addUserToGroup } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;
 type InviteGroupRouteProp = RouteProp<RootStackParamList, 'InviteGroup'>;
@@ -16,8 +17,9 @@ type Props = {
 };
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
+    const { userID } = useUser();
     const route = useRoute<InviteGroupRouteProp>();
-    const { userID, groupID, fromCreate } = route.params;
+    const { groupID, fromCreate } = route.params;
     const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [currentGroupCode, setCurrentGroupCode] = useState<string | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
@@ -61,33 +63,40 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const handleStartPress = async () => {
         console.log('Start game button pressed');
         await setGroupIsGameActive(groupID, true);
-        navigation.navigate('GroupDetails', { groupID: groupID });
+        // navigation.navigate('GroupDetails', { groupID: groupID });
+        navigation.reset({
+            index: 1,
+            routes: [
+                { name: 'HomeTab' }, // the first route in the stack
+                { name: 'BetsPage', params: { groupID: groupID } } // the top route in the stack
+            ],
+        });
     };
 
     const handleStartReminderPress = async () => {
         console.log('Remind creator to start button pressed');
 
         // TESTING
-        const testGroupCode = await generateGroupCode();
-        const testGroupName = 'Test Group';
-        const testGroupID = await createGroup(userID, testGroupName, testGroupCode);
-        if (!testGroupID) {
-            Alert.alert('Error', 'Failed to create test group.');
-            return;
-        }
-        await addGroupToUser(userID, testGroupID);
+        // const testGroupCode = await generateGroupCode();
+        // const testGroupName = 'Test Group';
+        // const testGroupID = await createGroup(userID, testGroupName, testGroupCode);
+        // if (!testGroupID) {
+        //     Alert.alert('Error', 'Failed to create test group.');
+        //     return;
+        // }
+        // await addGroupToUser(userID, testGroupID);
 
-        await addUserToGroup('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
-        await addGroupToUser('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
+        // await addUserToGroup('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
+        // await addGroupToUser('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
 
-        await addUserToGroup('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
-        await addGroupToUser('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
+        // await addUserToGroup('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
+        // await addGroupToUser('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
 
-        await addUserToGroup('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
-        await addGroupToUser('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
+        // await addUserToGroup('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
+        // await addGroupToUser('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
 
-        await addUserToGroup('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
-        await addGroupToUser('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
+        // await addUserToGroup('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
+        // await addGroupToUser('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
 
         Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
     };

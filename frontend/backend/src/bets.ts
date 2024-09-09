@@ -55,8 +55,8 @@ export const createDuels = async (firstUserID: string, secondUserID: string, gro
 // ADD Bet
 export const addBet = async (userID: string, wager: number, duelID: string, groupID: string,): Promise<undefined> => {
     try {
-        if (userID || userID.trim() === '') {
-            throw new Error('Invalid userID for player one');
+        if ((userID || userID.trim()) === '') {
+            throw new Error('Invalid userID: ' + userID);
         }
 
         const groupDocRef = doc(db, 'groups', groupID)

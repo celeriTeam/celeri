@@ -2,11 +2,7 @@ import React from 'react';
 import { View, Text, Button, StyleSheet } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
-
-type RootStackParamList = {
-    PhoneNumber: undefined;
-    Verification: undefined;
-};
+import { RootStackParamList } from '../../types';
 
 type PhoneNumberPageNavigationProp = StackNavigationProp<RootStackParamList, 'PhoneNumber'>;
 type PhoneNumberPageRouteProp = RouteProp<RootStackParamList, 'PhoneNumber'>;

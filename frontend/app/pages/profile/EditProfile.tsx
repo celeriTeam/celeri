@@ -6,6 +6,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { editProfilePic, editUsername, getUserEmail } from '@backend/src/users';
+import { useUser } from '../../UserProvider';
 
 type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
 
@@ -14,26 +15,13 @@ type Props = {
 };
 
 const EditProfilePage: React.FC<Props> = ({ navigation }) => {
+    const { userID } = useUser();
     const route = useRoute();
-    const { userID, profilePic, username } = route.params as { userID: string, profilePic: string, username: string };
+    const { profilePic, username } = route.params as { userID: string, profilePic: string, username: string };
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [currentUsername, setcurrentUsername] = useState(username);
     const [currentProfilePic, setcurrentProfilePic] = useState(profilePic);
-    // const [currentUserEmail, setCurrentUserEmail] = useState<string | undefined>(undefined);
     const inputRef = useRef<TextInput>(null);
-
-    // useEffect(() => {
-    //     const fetchUserData = async () => {
-    //         try {
-    //             const userEmail = await getUserEmail(userID);
-    //             setCurrentUserEmail(userEmail);
-    //         } catch (error) {
-    //             console.error("Error fetching user data:", error);
-    //         }
-    //     };
-
-    //     fetchUserData();
-    // }, [userID]);
 
     const handleEditPress = () => {
         setIsEditingUsername(true);

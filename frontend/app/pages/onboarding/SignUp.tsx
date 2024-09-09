@@ -14,13 +14,9 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import { FirebaseError } from 'firebase/app';
+import { RootStackParamList } from '../../types';
 import { Permission, PERMISSIONS, request } from 'react-native-permissions';
 //import db from "@react-native-firebase/firestore";
-
-type RootStackParamList = {
-    SignUp: undefined;
-    HomePage: undefined;
-};
 
 type SignUpPageNavigationProp = StackNavigationProp<RootStackParamList, 'SignUp'>;
 type SignUpPageRouteProp = RouteProp<RootStackParamList, 'SignUp'>;
@@ -142,9 +138,9 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                 if (response.user) {
                     console.log("createProfile function about to run:");
                     await createProfile(response.user);
-                    console.log("Navigation to Home Page now!");
+                    console.log("Navigation to App Page now!");
                     // nav.replace("Main");
-                    navigation.navigate("HomePage");
+                    navigation.navigate("AppPage");
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {
