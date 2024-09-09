@@ -6,6 +6,24 @@ const db = getFirestore(app);
 const storage = getStorage();
 
 /*********************************************** GET FUNCTIONS ********************************************/
+export const getDailyDuels = async (groupID: string): Promise<{ [key: string]: { player1: string, player2: string } } | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const cycleDuels = groupDoc.data()?.cycleDuels;
+            const cycleDay = groupDoc.data()?.cycleDay;
+            const dailyDuel = cycleDuels[cycleDay - 1];
+            console.log("getDailyDuels - response: ", dailyDuel);
+            return dailyDuel;
+        } else{
+            console.error("getDailyDuels - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getDailyDuels - Error fetching user document: ", error);
+         return undefined;
+    }
+}
 
 /*********************************************** CREATE FUNCTIONS ********************************************/
 

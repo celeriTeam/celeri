@@ -5,7 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupCode, getGroupName, getUsersInGroup, setGroupIsGameActive, getGroupCreator, generateGroupCode, createGroup, addUserToGroup } from '@backend/src/groups';
+import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
@@ -24,15 +24,18 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [currentGroupCode, setCurrentGroupCode] = useState<string | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingText, setLoadingText] = useState('');
     const [isCreator, setIsCreator] = useState(false);
     const userStartRequirement = 3;
 
     const fetchGroupData = async () => {
         try {
+            setLoadingText('Getting group data...');
             const groupName = await getGroupName(groupID);
             setCurrentGroupName(groupName);
             const groupCode = await getGroupCode(groupID);
             setCurrentGroupCode(groupCode);
+            setLoadingText('Finding group members...');
             const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
             let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
             if (groupUsersIdArray) {
@@ -53,6 +56,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             console.error("Error fetching user data:", error);
         } finally {
             setIsLoading(false);
+            setLoadingText('');
         }
     };
 
@@ -62,13 +66,13 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 
     const handleStartPress = async () => {
         console.log('Start game button pressed');
-        await setGroupIsGameActive(groupID, true);
+        await startGame(groupID, true);
         // navigation.navigate('GroupDetails', { groupID: groupID });
         navigation.reset({
             index: 1,
             routes: [
                 { name: 'HomeTab' }, // the first route in the stack
-                { name: 'BetsPage', params: { groupID: groupID } } // the top route in the stack
+                { name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
             ],
         });
     };
@@ -111,6 +115,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
                 <Text>Loading...</Text>
+                <Text>{loadingText}</Text>
             </View>
         );
     }

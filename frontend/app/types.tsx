@@ -21,5 +21,5 @@ export type RootStackParamList = {
     BetsPage: { groupID: string };
     HeadToHeadPage: { groupID: string };
     BetRecapPage: undefined;
-    BetSummaryPage: undefined;
+    BetSummaryPage: { groupID: string };
 };

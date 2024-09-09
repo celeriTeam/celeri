@@ -4,7 +4,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import { addBet } from '@/backend/src/bets';
+import { getDailyDuels } from '@/backend/src/bets';
+import { getUserName } from '@/backend/src/users';
+// import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 
@@ -12,20 +14,65 @@ type Props = {
     navigation: headToHeadPageNavigationProp;
 };
 
-const matchups = [
-    ['Player 1', 'Player 2'],
-    ['Player 3', 'Player 4'],
-];
-
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
+    const { userID } = useUser();
     const route = useRoute();
     const { groupID } = route.params as { groupID: string };
-    const { userID } = useUser();
+    const [matchups, setMatchups] = useState<{ player1: string, player2: string }[]>([]);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [betAmount1, setBetAmount1] = useState('');
     const [betAmount2, setBetAmount2] = useState('');
+    const [player1ID, setPlayer1ID] = useState('');
+    const [player2ID, setPlayer2ID] = useState('');
+    const [player1, setPlayer1] = useState('');
+    const [player2, setPlayer2] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
+
+    const fetchData = async () => {
+        try {
+            let dailyDuel = await getDailyDuels(groupID);
+
+            const flattenDuels = (duels: { [key: string]: { player1: string, player2: string } }) => {
+                return Object.values(duels);
+            };
+        
+            const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
+            setMatchups(matchups);
+            
+            fetchUserName(matchups);
+        } catch(error) {
+            console.error("Error fetching user data:", error);
+        }
+    };
+
+    const fetchUserName = async (matchups: { player1: string; player2: string; }[]) => {
+        try {
+            const currentPlayers = matchups[currentMatchupIndex];
+            const player1ID = currentPlayers.player1;
+            setPlayer1ID(player1ID);
+            const player2ID = currentPlayers.player2;
+            setPlayer2ID(player2ID);
+            const player1 = await getUserName(player1ID);
+            setPlayer1(player1);
+            const player2 = await getUserName(player2ID);
+            setPlayer2(player2);
+        } catch(error) {
+            console.error("Error fetching user data:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    if (matchups === undefined) {
+        return (
+            <View>
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
 
     const handleSelectPlayer = (player: string) => {
         setSelectedPlayer(player);
@@ -36,22 +83,20 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
             console.log('you bet on: ', selectedPlayer);
-            console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex][0] ? betAmount1 : betAmount2);
+            const duelnumber: any = `duel${matchups.length}`;
+            console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
             const submittedPlayer = selectedPlayer;
-            const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex][0] ? betAmount1 : betAmount2);
+            const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
             const duelID = 'tempduelid';
-            await addBet(userID, submittedBet, duelID, groupID);
+            // await addBet(userID, submittedBet, duelID, groupID);
             
             setSelectedPlayer(null);
             setBetAmount1('');
             setBetAmount2('');
             setCurrentMatchupIndex(currentMatchupIndex + 1);
+            fetchUserName(matchups);
         }
     };
-
-    const currentPlayers = matchups[currentMatchupIndex];
-    const player1 = currentPlayers[0];
-    const player2 = currentPlayers[1];
 
     useEffect(() => {
         // Add listeners to track the keyboard state
@@ -70,7 +115,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     }, []);
 
     const shouldShowSubmit = () => {
-        if ((selectedPlayer === player1 && betAmount1) || (selectedPlayer === player2 && betAmount2)) {
+        if ((selectedPlayer === player1ID && betAmount1) || (selectedPlayer === player2ID && betAmount2)) {
             return true;
         }
         return false;
@@ -78,13 +123,20 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const handleSubmit = async () => {
         console.log('you bet on: ', selectedPlayer);
-        console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex][0] ? betAmount1 : betAmount2);
+        console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
         const submittedPlayer = selectedPlayer;
-        const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex][0] ? betAmount1 : betAmount2);
+        const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
         const duelID = 'tempduelid';
-        await addBet(userID, submittedBet, duelID, groupID);
-        
-        navigation.navigate('BetSummaryPage');
+        // await addBet(userID, submittedBet, duelID, groupID);
+
+        // navigation.navigate('BetSummaryPage', { groupID: groupID });
+        navigation.reset({
+            index: 1,
+            routes: [
+                { name: 'HomeTab' }, // the first route in the stack
+                { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
+            ],
+        });
     };
 
     return (
@@ -103,13 +155,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
                 style={[
                     styles.player1Container,
-                    isSelected(player1) && styles.selectedPlayer1,
+                    isSelected(player1ID) && styles.selectedPlayer1,
                 ]}
-                onPress={() => handleSelectPlayer(player1)}
+                onPress={() => handleSelectPlayer(player1ID)}
                 activeOpacity={1}
             >
                 <Text style={styles.playerText}>{player1}</Text>
-                {isSelected(player1) && (
+                {isSelected(player1ID) && (
                     <TextInput
                         style={styles.input}
                         placeholder="Enter bet"
@@ -124,13 +176,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
                 style={[
                     styles.player2Container,
-                    isSelected(player2) && styles.selectedPlayer2,
+                    isSelected(player2ID) && styles.selectedPlayer2,
                 ]}
-                onPress={() => handleSelectPlayer(player2)}
+                onPress={() => handleSelectPlayer(player2ID)}
                 activeOpacity={1}
             >
                 <Text style={styles.playerText}>{player2}</Text>
-                {isSelected(player2) && (
+                {isSelected(player2ID) && (
                     <TextInput
                         style={styles.input}
                         placeholder="Enter bet"

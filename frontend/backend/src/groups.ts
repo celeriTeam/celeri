@@ -240,7 +240,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // SET Group isGameActive
-export const setGroupIsGameActive = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
+export const startGame = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
@@ -254,11 +254,10 @@ export const setGroupIsGameActive = async (groupID: string, isGameActive: boolea
             // Access the 'order' array from the document data
             const data = docSnap.data();
             const orderArray = data.order;
-            cycles = createCycle(orderArray)
-            // Get the number of players (length of the 'order' array)
             numberOfPlayers = orderArray.length;
+            cycles = createCycle(orderArray)
         } else {
-            console.log("Document does not exist.");
+            console.log("startGame - Error: Document does not exist.");
             return undefined;
         }
 
@@ -276,30 +275,34 @@ export const setGroupIsGameActive = async (groupID: string, isGameActive: boolea
         // Create the duels for cycleDay 1
         const duelsForDay1 = cycles[0]; // Get the first day's duels
 
-        for (const duel of duelsForDay1) {
-            const duelData = {
-                player1: duel[0],
-                player2: duel[1],
-                cycleDay: 1,
-                cycleCount: 1,
-                date: serverTimestamp(), // Add a timestamp for when the duel was created
-            };
+        for (const duelKey in duelsForDay1) {
+            if (duelsForDay1.hasOwnProperty(duelKey)) {
+                const duel = duelsForDay1[duelKey];
 
-            // Add the duel to the 'duels' subcollection of the group document
-            const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
-            await setDoc(duelDocRef, duelData);
+                const duelData = {
+                    player1: duel.player1,
+                    player2: duel.player2,
+                    cycleDay: 1,
+                    cycleCount: 1,
+                    createdDate: serverTimestamp(), // Add a timestamp for when the duel was created
+                };
+
+                // Add the duel to the 'duels' subcollection of the group document
+                const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
+                await setDoc(duelDocRef, duelData);
+            }
         }
         
-        console.log("setGroupIsGameActive - response: ", isGameActive);
+        console.log("startGame - response: ", isGameActive);
         return undefined;
     } catch (error) {
-         console.error("setGroupIsGameActive - Error fetching user document: ", error);
+         console.error("startGame - Error fetching user document: ", error);
          return undefined;
     }
 }
 
-function createCycle(players: Array<string>): Array<Array<[string, string]>> {
-    const cycles: Array<Array<[string, string]>> = [];
+function createCycle(players: Array<string>): Array<{ [duelKey: string]: { player1: string, player2: string } }> {
+    const cycles: Array<{ [duelKey: string]: { player1: string, player2: string } }> = [];
     const playerCount = players.length;
 
     // If there's an odd number of players, add a 'bye' player
@@ -310,13 +313,19 @@ function createCycle(players: Array<string>): Array<Array<[string, string]>> {
     const rounds = players.length - 1; // Total rounds needed for all players to face each other once
 
     for (let round = 0; round < rounds; round++) {
-        const roundMatchups: Array<[string, string]> = [];
+        const roundMatchups: { [duelKey: string]: { player1: string, player2: string } } = {};
+        let duelCounter = 1;
         for (let i = 0; i < players.length / 2; i++) {
             const player1 = players[i];
             const player2 = players[players.length - 1 - i];
 
             if (player1 !== 'BYE' && player2 !== 'BYE') {
-                roundMatchups.push([player1, player2]);
+                const duelKey = `duel${duelCounter}`;
+                roundMatchups[duelKey] = {
+                    player1: player1,
+                    player2: player2,
+                };
+                duelCounter++;
             }
         }
 
@@ -327,7 +336,7 @@ function createCycle(players: Array<string>): Array<Array<[string, string]>> {
     }
 
     return cycles;
-}
+};
 
 /*********************************************** MISC FUNCTIONS ********************************************/
 

@@ -25,7 +25,7 @@ export const getProfilePic = async (id: string): Promise<string | undefined> => 
 }
 
 // GET User Name
-export const getUserName = async (id: string): Promise<string | undefined> => {
+export const getUserName = async (id: string): Promise<string> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.username) {
@@ -34,11 +34,11 @@ export const getUserName = async (id: string): Promise<string | undefined> => {
             return userDoc.data()?.username;
         } else {
             console.error("getUserName - error: No such document!");
-            return undefined;
+            return '';
         }
     } catch (error) {
         console.error("getUserName - Error fetching user document:", error);
-        return undefined;
+        return '';
     }
 }
 
