@@ -71,7 +71,6 @@ function createCycle(players) {
 }
 
 exports.createDuels = onSchedule('every day 04:00', async (event) =>{
-    console.log("createDuels is running");
 
     const groupRef = firestore.collection('groups')
 
@@ -88,35 +87,48 @@ exports.createDuels = onSchedule('every day 04:00', async (event) =>{
       let cycleCount = data.cycleCount;
       let cycleDuels = data.cycleDuels;
       let players = data.order;
+      let numberOfPlayers = players.length;
 
-      if(data.cycleDay >= data.numberOfPlayers-1){
+      if(data.cycleDay >= numberOfPlayers-1){
         cycleDay = 1;
         cycleCount += 1;
-        console.log(`Updating cycleDay to 1 and increasing cycle to ${cycle} for group: ${doc.id}`);
+        console.log(`Updating cycleDay to 1 and increasing cycleCount to ${cycle} for group: ${doc.id}`);
 
-        //generate new duels and create initial duels 
-        cycleDuels = createCycles(players)
+        cycleDuels = createCycle(players)
 
         //incomplete function -- need to still create the initial duels 
       } else {
         cycleDay += 1;
         console.log(`Incrementing cycleDay to ${cycleDay} for group: ${doc.id}`);
 
-        //create new duels 
-
       }
+
+      //create new duels
+
+      const duelsForToday = cycleDuels[cycleDay - 1]; // 0-based index
+
+        // Create new duel documents for each matchup in duelsForToday
+        duelsForToday.forEach((duel) => {
+            const duelData = {
+                player1: duel[0],
+                player2: duel[1],
+                cycleDay: cycleDay,
+                cycleCount: cycleCount,
+                date: admin.firestore.FieldValue.serverTimestamp() // Add a timestamp
+            };
+            // Add a new duel document inside the `duels` subcollection
+            const duelDocRef = groupDocRef.collection('duels').doc(); // Auto-generate a new document ID
+            groupBatch.set(duelDocRef, duelData);
+        });
 
       groupBatch.update(groupDocRef, {
         cycleDay: cycleDay,
         cycleCount: cycleCount,
+        cycleDuels: cycleDuels,
       })
       
     });
-
-    //grab two random people from each active group
-
-    //make sure the two randoms haven't already been chosen to be head to head 
-
-    //alternatively, track cycles -- set the head to head every cyle instead of every day -- problem, what if people join/leave groups?
-    
+    // Commit the batch operation to Firestore
+    await groupBatch.commit();
+    console.log("Duels created and cycle updated successfully.");
 });
