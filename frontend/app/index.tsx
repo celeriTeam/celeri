@@ -11,12 +11,13 @@ import BetsPage from './pages/bets/Bets';
 import { RootStackParamList } from './types';
 import InvitePage from './pages/groups/InviteGroup';
 import AppPage from './pages/App';
+import { ActivityIndicator, View, Text } from 'react-native';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Register');
-    const [loading, setLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const auth = getAuth();
 
     useEffect(() => {
@@ -26,15 +27,19 @@ const App: React.FC = () => {
         } else {
           setInitialRoute('Register');
         }
-        setLoading(false);
+        setIsLoading(false);
       });
   
       return () => unsubscribe();
     }, [auth]);
   
-    if (loading) {
-      // Optionally, show a loading spinner or screen while determining the initial route
-      return null;
+    if (isLoading) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
+                <Text>Loading...</Text>
+            </View>
+        );
     }
     
     return (

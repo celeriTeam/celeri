@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import { getDailyDuels } from '@/backend/src/bets';
+import { addToFinishedBetting, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
 // import { addBet } from '@/backend/src/bets';
 
@@ -18,7 +18,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const { userID } = useUser();
     const route = useRoute();
     const { groupID } = route.params as { groupID: string };
-    const [matchups, setMatchups] = useState<{ player1: string, player2: string }[]>([]);
+    const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [betAmount1, setBetAmount1] = useState('');
     const [betAmount2, setBetAmount2] = useState('');
@@ -32,9 +32,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const fetchData = async () => {
         try {
-            let dailyDuel = await getDailyDuels(groupID);
+            let dailyDuel = await getUnbetDuels(groupID, userID);
 
-            const flattenDuels = (duels: { [key: string]: { player1: string, player2: string } }) => {
+            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                 return Object.values(duels);
             };
         
@@ -47,10 +47,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
-    const fetchUserName = async (matchups: { player1: string; player2: string; }[]) => {
+    const fetchUserName = async (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
             const currentPlayers = matchups[currentMatchupIndex];
-            console.log('this is the curr index: ', currentMatchupIndex);
             const player1ID = currentPlayers.player1;
             setPlayer1ID(player1ID);
             const player2ID = currentPlayers.player2;
@@ -106,17 +105,16 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
-            console.log('you bet on: ', selectedPlayer);
             const duelnumber: any = `duel${matchups.length}`;
-            console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
             const submittedPlayer = selectedPlayer;
             const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
-            const duelID = 'tempduelid';
-            // await addBet(userID, submittedBet, duelID, groupID);
+            const duelID = matchups[currentMatchupIndex].duelID;
+            console.log('you bet on: ', submittedPlayer);
+            console.log('you bet: ', submittedBet);
+            console.log('duelid: ', duelID);
+            await createBet(userID, groupID, duelID, submittedBet, submittedPlayer ?? '');
             
-            const newIndex = currentMatchupIndex + 1;
-            console.log('added to index: ', newIndex);
-            setCurrentMatchupIndex(newIndex);
+            setCurrentMatchupIndex(currentMatchupIndex + 1);
             setChangePageForUserName(true);
         }
     };
@@ -145,12 +143,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     };
 
     const handleSubmit = async () => {
-        console.log('you bet on: ', selectedPlayer);
-        console.log('you bet: ', selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
         const submittedPlayer = selectedPlayer;
         const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
-        const duelID = 'tempduelid';
-        // await addBet(userID, submittedBet, duelID, groupID);
+        const duelID = matchups[currentMatchupIndex].duelID;
+        console.log('you bet on: ', submittedPlayer);
+        console.log('you bet: ', submittedBet);
+        console.log('duelid: ', duelID);
+        await createBet(userID, groupID, duelID, submittedBet, submittedPlayer ?? '');
+        await addToFinishedBetting(groupID, userID);
 
         // navigation.navigate('BetSummaryPage', { groupID: groupID });
         navigation.reset({

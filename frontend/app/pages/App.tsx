@@ -14,7 +14,7 @@ const auth = getAuth(app);
 
 const AppPage: React.FC = () => {
     const [userID, setUserID] = useState<string>('');
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -23,13 +23,13 @@ const AppPage: React.FC = () => {
             } else {
                 setUserID(''); // Handle case where user is not signed in
             }
-            setLoading(false); // Loading is done whether or not we have a user
+            setIsLoading(false); // Loading is done whether or not we have a user
         });
 
         return () => unsubscribe(); // Clean up the listener on unmount
     }, []);
 
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
