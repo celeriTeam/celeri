@@ -6,40 +6,138 @@ const db = getFirestore(app);
 const storage = getStorage();
 
 /*********************************************** GET FUNCTIONS ********************************************/
-export const getDailyDuels = async (groupID: string): Promise<{ [key: string]: { player1: string, player2: string } } | undefined> => {
+
+// GET todays duels
+export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } } | undefined> => {
     try {
-        const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.users){
-            const cycleDuels = groupDoc.data()?.cycleDuels;
-            const cycleDay = groupDoc.data()?.cycleDay;
-            const dailyDuel = cycleDuels[cycleDay - 1];
-            console.log("getDailyDuels - response: ", dailyDuel);
-            return dailyDuel;
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const groupCycleCount = groupDoc.data()?.cycleCount;
+            const groupCycleDay = groupDoc.data()?.cycleDay;
+            
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('No duels found for today');
+                return undefined;
+            }
+            
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                duels[doc.id] = {
+                    duelID: doc.id,
+                    player1: duelData.player1,
+                    player2: duelData.player2,
+                    bets: duelData.bets || {
+                        userID: '',
+                        wager: 0,
+                        betOnUserID: ''
+                    }
+                };
+            });
+            console.log("getTodaysDuelsSummary - response: ", duels);
+            return duels;
         } else{
-            console.error("getDailyDuels - error: No such document!");
+            console.error("getTodaysDuelsSummary - error: No such document!");
             return undefined;
         }
     } catch (error) {
-         console.error("getDailyDuels - Error fetching user document: ", error);
+         console.error("getTodaysDuelsSummary - Error fetching user document: ", error);
          return undefined;
+    }
+}
+
+// GET duels not bet on yet by user
+export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const groupCycleCount = groupDoc.data()?.cycleCount;
+            const groupCycleDay = groupDoc.data()?.cycleDay;
+            
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('No duels found for today');
+                return undefined;
+            }
+            
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                const bets = duelData.bets || [];
+                
+                // Check if the user has already placed a bet
+                const hasBet = bets.some((bet: { userID: string; wager: number; betOnUserID: string }) => bet.userID === userID);
+
+                // Use only the duels that have not been bet on yet by user
+                if (!hasBet) {
+                    duels[doc.id] = {
+                        duelID: doc.id,
+                        player1: duelData.player1,
+                        player2: duelData.player2,
+                    };
+                }
+            });
+            console.log("getUnbetDuels - response: ", duels);
+            return duels;
+        } else{
+            console.error("getUnbetDuels - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getUnbetDuels - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// Check if user has finished betting
+export const checkFinishedBetting = async (groupID: string, userID: string): Promise<boolean> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const finishedBetting = groupDoc.data()?.finishedBetting || [];
+            console.log("checkFinishedBetting - response: ", finishedBetting.includes(userID));
+            return finishedBetting.includes(userID);
+        } else{
+            console.error("checkFinishedBetting - error: No such document!");
+            return false;
+        }
+    } catch (error) {
+         console.error("checkFinishedBetting - Error fetching user document: ", error);
+         return false;
     }
 }
 
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
-//createBet
+//CREATE bet
 export const createBet = async (userID: string, groupID: string, duelID: string, wager: number, betOnUserID: string): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const duelDocRef = doc(groupDocRef, 'duels', duelID);
         // We create a new bet structure with [userID, wager, betOnUserID]
-        const newBet = [userID, wager, betOnUserID];
+        const newBet = {
+            userID,
+            wager,
+            betOnUserID
+        };
         
         // Use arrayUnion to add the new bet to the "bets" array
         await updateDoc(duelDocRef, {
             bets: arrayUnion(newBet),
         });
-        console.log(`Bet placed by user ${userID} with a wager of ${wager}`);
+        console.log(`Bet placed by user ${userID} on ${betOnUserID} with a wager of ${wager}`);
         return undefined;
     } catch (error) {
         console.error("createBet - Error creating bet: ", error);
@@ -50,3 +148,17 @@ export const createBet = async (userID: string, groupID: string, duelID: string,
 
 /*********************************************** ADD FUNCTIONS ********************************************/
 
+// ADD user to finishedBetting
+export const addToFinishedBetting = async (groupID: string, userID: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            finishedBetting: arrayUnion(userID),
+        });
+        console.log(`User ${userID} has finished betting`);
+        return undefined;
+    } catch (error) {
+        console.error("addToFinishedBetting - Error adding user to finishedBetting: ", error);
+        return undefined;
+    }
+}

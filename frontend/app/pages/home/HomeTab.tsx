@@ -1,6 +1,6 @@
 // HomeTab.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
@@ -8,6 +8,7 @@ import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '
 import { getUserGroups, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { auth } from '@/firebaseConfig';
+import { checkFinishedBetting } from '@/backend/src/bets';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -19,7 +20,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const { userID } = useUser();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
-    const [loading, setLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [shouldReload, setShouldReload] = useState(false);
 
     const fetchUserData = async () => {
@@ -34,7 +35,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         } catch (error) {
             console.error("Error fetching user data:", error);
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
@@ -74,8 +75,11 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             return;
         } else if (isGameActive) {
             const isRecap = false;
+            const isFinishedBetting = await checkFinishedBetting(groupID, userID);
             if (isRecap) {
                 navigation.navigate('BetRecapPage');
+            } else if (isFinishedBetting) {
+                navigation.navigate('BetSummaryPage', { groupID: groupID });
             } else {
                 navigation.navigate('HeadToHeadPage', { groupID: groupID });
             }
@@ -84,9 +88,10 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
-            <View style={styles.container}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" />
                 <Text>Loading...</Text>
             </View>
         );

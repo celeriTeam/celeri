@@ -62,16 +62,18 @@ function createCycle(players) {
   for (let round = 0; round < rounds; round++) {
     const roundMatchups = {};
     // Create an object to store matchups for the round
+    let duelCounter = 1;
     for (let i = 0; i < players.length / 2; i++) {
       const player1 = players[i];
       const player2 = players[players.length - 1 - i];
 
       if (player1 !== "BYE" && player2 !== "BYE") {
-        const duelKey = `duel${i + 1}`; // Create unique keys for each duel
+        const duelKey = `duel${duelCounter}`;
         roundMatchups[duelKey] = {
           player1: player1,
           player2: player2,
         };
+        duelCounter++;
       }
     }
 
@@ -175,6 +177,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         cycleDay: cycleDay,
         cycleCount: cycleCount,
         cycleDuels: cycleDuels,
+        finishedBetting: admin.firestore.FieldValue.delete(),
       });
     });
     // Commit the batch operation to Firestore
