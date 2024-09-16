@@ -28,6 +28,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [player2, setPlayer2] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
+    const [changePageForUserName, setChangePageForUserName] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -49,6 +50,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const fetchUserName = async (matchups: { player1: string; player2: string; }[]) => {
         try {
             const currentPlayers = matchups[currentMatchupIndex];
+            console.log('this is the curr index: ', currentMatchupIndex);
             const player1ID = currentPlayers.player1;
             setPlayer1ID(player1ID);
             const player2ID = currentPlayers.player2;
@@ -57,6 +59,19 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setPlayer1(player1);
             const player2 = await getUserName(player2ID);
             setPlayer2(player2);
+
+            if (player1ID === userID) {
+                setSelectedPlayer(player1ID);
+                setBetAmount1('10'); // Automatically set bet amount to 10 for player1
+            } else if (player2ID === userID) {
+                setSelectedPlayer(player2ID);
+                setBetAmount2('10'); // Automatically set bet amount to 10 for player2
+            } else {
+                // Reset the selection and bet amounts if the current user isn't involved
+                setSelectedPlayer(null);
+                setBetAmount1('');
+                setBetAmount2('');
+            }
         } catch(error) {
             console.error("Error fetching user data:", error);
         }
@@ -65,6 +80,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (changePageForUserName) {
+            fetchUserName(matchups);
+            setChangePageForUserName(false);
+        }
+    }, [changePageForUserName]);
 
     if (matchups === undefined) {
         return (
@@ -80,6 +102,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const isSelected = (player: string) => selectedPlayer === player;
 
+    const isCurrentUser = (playerID: string) => playerID === userID;
+
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
             console.log('you bet on: ', selectedPlayer);
@@ -90,11 +114,10 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             const duelID = 'tempduelid';
             // await addBet(userID, submittedBet, duelID, groupID);
             
-            setSelectedPlayer(null);
-            setBetAmount1('');
-            setBetAmount2('');
-            setCurrentMatchupIndex(currentMatchupIndex + 1);
-            fetchUserName(matchups);
+            const newIndex = currentMatchupIndex + 1;
+            console.log('added to index: ', newIndex);
+            setCurrentMatchupIndex(newIndex);
+            setChangePageForUserName(true);
         }
     };
 
@@ -157,7 +180,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     styles.player1Container,
                     isSelected(player1ID) && styles.selectedPlayer1,
                 ]}
-                onPress={() => handleSelectPlayer(player1ID)}
+                onPress={() => !isCurrentUser(player1ID) && handleSelectPlayer(player1ID)}
                 activeOpacity={1}
             >
                 <Text style={styles.playerText}>{player1}</Text>
@@ -178,7 +201,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     styles.player2Container,
                     isSelected(player2ID) && styles.selectedPlayer2,
                 ]}
-                onPress={() => handleSelectPlayer(player2ID)}
+                onPress={() => !isCurrentUser(player1ID) && handleSelectPlayer(player2ID)}
                 activeOpacity={1}
             >
                 <Text style={styles.playerText}>{player2}</Text>
