@@ -60,13 +60,18 @@ function createCycle(players) {
   // Total rounds needed for all players to face each other once
 
   for (let round = 0; round < rounds; round++) {
-    const roundMatchups = [];
+    const roundMatchups = {};
+    // Create an object to store matchups for the round
     for (let i = 0; i < players.length / 2; i++) {
       const player1 = players[i];
       const player2 = players[players.length - 1 - i];
 
       if (player1 !== "BYE" && player2 !== "BYE") {
-        roundMatchups.push([player1, player2]);
+        const duelKey = `duel${i + 1}`; // Create unique keys for each duel
+        roundMatchups[duelKey] = {
+          player1: player1,
+          player2: player2,
+        };
       }
     }
 
@@ -74,9 +79,11 @@ function createCycle(players) {
     players.splice(1, 0, players.pop());
 
     cycles.push(roundMatchups);
+    // Push the object with matchups into the cycles array
   }
 
   return cycles;
+  // Return the array of objects, each representing a round
 }
 
 exports.createDuels = onSchedule("every day 04:00", async (event) =>{
@@ -133,18 +140,23 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         return; // Exit early if no duels are available
       }
       console.log("checkpoint five");
+      console.log(duelsForToday);
+      console.log(cycleDay - 1);
 
       // Create new duel documents for each matchup in duelsForToday
       Object.entries(duelsForToday).forEach(([key, duel]) => {
-        if (!duel[0] || !duel[1]) {
+        console.log("checkpoint 5.5");
+        console.log(duel.player1);
+        console.log(duel.player2);
+        if (!duel.player1 || !duel.player2) {
           console.error(`Invalid duel entry: ${duel} for key: ${key}`);
           return;
           // Skip this iteration if player1 or player2 is undefined
         }
 
         const duelData = {
-          player1: duel[0],
-          player2: duel[1],
+          player1: duel.player1,
+          player2: duel.player2,
           cycleDay: cycleDay,
           cycleCount: cycleCount,
           createdAt:
