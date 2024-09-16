@@ -128,6 +128,9 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.buttonText}>Join Another Group</Text>
                     </TouchableOpacity>
                 </View>
+                    <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Create Group</Text>
+                    </TouchableOpacity>
             </View>
         );
     }

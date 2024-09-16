@@ -166,7 +166,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         };
         // Add a new duel document inside the `duels` subcollection
         // Auto-generate a new document ID
-        const duelDocRef = groupDocRef.collection("duels").doc();
+        const duelDocRef = doc(collection(groupDocRef, "duels"));
         groupBatch.set(duelDocRef, duelData);
         console.log("checkpoint six");
       });
