@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -28,14 +28,17 @@ export const getDailyDuels = async (groupID: string): Promise<{ [key: string]: {
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 //createBet
-export const createBet = async (userID: string, groupID: string, duelID: string, wager: number): Promise<undefined> => {
+export const createBet = async (userID: string, groupID: string, duelID: string, wager: number, betOnUserID: string): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const duelDocRef = doc(groupDocRef, 'duels', duelID);
+        // We create a new bet structure with [userID, wager, betOnUserID]
+        const newBet = [userID, wager, betOnUserID];
+        
+        // Use arrayUnion to add the new bet to the "bets" array
         await updateDoc(duelDocRef, {
-            [`bets.${userID}`]: wager, // The userID is used as the key, and wager as the value
+            bets: arrayUnion(newBet),
         });
-
         console.log(`Bet placed by user ${userID} with a wager of ${wager}`);
         return undefined;
     } catch (error) {
