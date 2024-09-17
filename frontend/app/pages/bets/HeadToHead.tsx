@@ -191,6 +191,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         value={betAmount1}
                         onChangeText={setBetAmount1}
                         keyboardType="numeric"
+                        editable={!isCurrentUser(player1ID)}
                     />
                 )}
             </TouchableOpacity>
@@ -212,6 +213,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         value={betAmount2}
                         onChangeText={setBetAmount2}
                         keyboardType="numeric"
+                        editable={!isCurrentUser(player2ID)}
                     />
                 )}
             </TouchableOpacity>

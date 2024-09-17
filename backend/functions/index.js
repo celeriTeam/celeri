@@ -168,7 +168,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         };
         // Add a new duel document inside the `duels` subcollection
         // Auto-generate a new document ID
-        const duelDocRef = doc(collection(groupDocRef, "duels"));
+        const duelDocRef = groupDocRef.collection("duels").doc();
         groupBatch.set(duelDocRef, duelData);
         console.log("checkpoint six");
       });
@@ -178,6 +178,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         cycleCount: cycleCount,
         cycleDuels: cycleDuels,
         finishedBetting: admin.firestore.FieldValue.delete(),
+        finishedRecap: admin.firestore.FieldValue.delete(),
       });
     });
     // Commit the batch operation to Firestore
