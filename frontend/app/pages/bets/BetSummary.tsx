@@ -36,31 +36,45 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     const player1 = await getUserName(bet.player1);
                     const player2 = await getUserName(bet.player2);
 
-                    // Separate bets for player1 and player2
-                    const player1Bets = await Promise.all(
-                        bet.bets
-                            .filter((b) => b.betOnUserID === bet.player1)
-                            .map(async (b) => ({
-                                user: await getUserName(b.userID),
-                                wager: b.wager,
-                            }))
-                    );
+                    // if there are no bets, return the duel with the player names
+                    console.log('...', bet.bets[0]?.wager);
+                    if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+                        return {
+                            duelID: bet.duelID,
+                            player1,
+                            player2,
+                            player1Bets: [],
+                            player2Bets: [],
+                        };
+                    }
 
-                    const player2Bets = await Promise.all(
-                        bet.bets
-                            .filter((b) => b.betOnUserID === bet.player2)
-                            .map(async (b) => ({
-                                user: await getUserName(b.userID),
-                                wager: b.wager,
-                            }))
-                    );
-                    return {
-                        duelID: bet.duelID,
-                        player1,
-                        player2,
-                        player1Bets,
-                        player2Bets,
-                    };
+                    else {
+                        // Separate bets for player1 and player2
+                        const player1Bets = await Promise.all(
+                            bet.bets
+                                .filter((b) => b.betOnUserID === bet.player1)
+                                .map(async (b) => ({
+                                    user: await getUserName(b.userID),
+                                    wager: b.wager,
+                                }))
+                        );
+
+                        const player2Bets = await Promise.all(
+                            bet.bets
+                                .filter((b) => b.betOnUserID === bet.player2)
+                                .map(async (b) => ({
+                                    user: await getUserName(b.userID),
+                                    wager: b.wager,
+                                }))
+                        );
+                        return {
+                            duelID: bet.duelID,
+                            player1,
+                            player2,
+                            player1Bets,
+                            player2Bets,
+                        };
+                    }
                 })
             );
             

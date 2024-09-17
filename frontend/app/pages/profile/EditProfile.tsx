@@ -37,6 +37,8 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
         if (isEditingUsername && inputRef.current) {
             inputRef.current.focus();
         }
+        // print out back-icon
+        console.log('back-icon: ', require('@components/back-icon.png'));
     }, [isEditingUsername]);
 
     const pickImage = async () => {
