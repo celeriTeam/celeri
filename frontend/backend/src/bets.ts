@@ -5,6 +5,69 @@ import { app } from "../../firebaseConfig";
 const db = getFirestore(app);
 const storage = getStorage();
 
+
+/*********************************************** RECAP FUNCTIONS ********************************************/
+
+// GET yesterdays duels
+export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            let groupCycleCount = groupDoc.data()?.cycleCount;
+            let groupCycleDay = groupDoc.data()?.cycleDay;
+            const numberOfPlayers = groupDoc.data()?.order.length;
+
+            if (groupCycleDay === 1 && groupCycleCount === 1) {
+                console.log('getYesterdaysDuelsSummary - error: No duels found for yesterday');
+                return undefined;
+            } else if (groupCycleDay === 1) {
+                groupCycleCount -= 1;
+                groupCycleDay = numberOfPlayers-1;
+            } else {
+                groupCycleDay -= 1;
+            }
+
+            console.log('Yesterday\'s cycleCount: ', groupCycleCount);
+            console.log('Yesterday\'s cycleDay: ', groupCycleDay);
+            
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getYesterdaysDuelsSummary - error: No duels found for today');
+                return undefined;
+            }
+            
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                duels[doc.id] = {
+                    duelID: doc.id,
+                    player1: duelData.player1,
+                    player2: duelData.player2,
+                    bets: duelData.bets || {
+                        userID: '',
+                        wager: 0,
+                        betOnUserID: ''
+                    },
+                    winner: duelData.winner
+                };
+            });
+            console.log("getYesterdaysDuelsSummary - response: ", duels);
+            return duels;
+        } else{
+            console.error("getYesterdaysDuelsSummary - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getYesterdaysDuelsSummary - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** GET FUNCTIONS ********************************************/
 
 // GET todays duels
@@ -119,6 +182,25 @@ export const checkFinishedBetting = async (groupID: string, userID: string): Pro
     }
 }
 
+// Check if user has finished recap
+export const checkFinishedRecap = async (groupID: string, userID: string): Promise<boolean> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const finishedRecap = groupDoc.data()?.finishedRecap || [];
+            console.log("checkFinishedRecap - response: ", finishedRecap.includes(userID));
+            return finishedRecap.includes(userID);
+        } else{
+            console.error("checkFinishedRecap - error: No such document!");
+            return false;
+        }
+    } catch (error) {
+         console.error("checkFinishedRecap - Error fetching user document: ", error);
+         return false;
+    }
+}
+
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 //CREATE bet
@@ -159,6 +241,21 @@ export const addToFinishedBetting = async (groupID: string, userID: string): Pro
         return undefined;
     } catch (error) {
         console.error("addToFinishedBetting - Error adding user to finishedBetting: ", error);
+        return undefined;
+    }
+}
+
+// ADD user to finishedRecap
+export const addToFinishedRecap = async (groupID: string, userID: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            finishedRecap: arrayUnion(userID),
+        });
+        console.log(`User ${userID} has finished recap`);
+        return undefined;
+    } catch (error) {
+        console.error("addToFinishedRecap - Error adding user to finishedRecap: ", error);
         return undefined;
     }
 }

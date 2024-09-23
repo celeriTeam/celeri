@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, Image, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Image, ActivityIndicator, FlatList, Modal } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
+import BetRecapPage from './Recap';
 
-type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'BetSummaryPage'>;
+type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
 
 type Props = {
@@ -20,6 +21,15 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { groupID } = route.params;
     const [isLoading, setIsLoading] = useState(true);
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[] }[]>([]);
+    const [isModalVisible, setModalVisible] = useState(false);
+  
+    const closeModal = async () => {
+      setModalVisible(false);
+    };
+  
+    const openModal = async () => {
+      setModalVisible(true);
+    };
 
     const fetchGroupData = async () => {
         try {
@@ -127,18 +137,44 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     );
 
     return (
-        <View>
+        <View style={styles.container}>
             <FlatList
                 data={currentBets}
                 keyExtractor={(item) => item.duelID}
                 renderItem={renderBetItem}
             />
+
+            {/* Modal */}
+            <View style={styles.button}>
+                <Button title="See yesterday's bets" onPress={openModal} />
+            </View>
+            <Modal
+                transparent={true}
+                visible={isModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    {/* Close button */}
+                    <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                        <Text style={styles.closeButtonText}>X</Text>
+                    </TouchableOpacity>
+
+                    {/* BetRecapPage as the modal content */}
+                    <BetRecapPage navigation={navigation} />
+                </View>
+                </View>
+            </Modal>
         </View>
     );
 };
 
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        marginTop: 20,
+    },
     flatList: {
         padding: 25,
         borderBottomWidth: 1,
@@ -160,6 +196,38 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingLeft: 20,
     },
+    // MODAL
+    button: {
+        marginTop: 20,
+        marginBottom: 20,
+        width: '50%',
+        alignSelf: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+      },
+      modalContainer: {
+        width: '90%',
+        height: '90%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        position: 'relative',
+      },
+      closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        zIndex: 1,
+      },
+      closeButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
+      },
 });
 
 export default BetSummaryPage;

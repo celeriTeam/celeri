@@ -140,7 +140,10 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                     await createProfile(response.user);
                     console.log("Navigation to App Page now!");
                     // nav.replace("Main");
-                    navigation.navigate("AppPage");
+                    navigation.reset({
+                        index: 0,  // Index of the screen to be focused on
+                        routes: [{ name: 'AppPage' }],  // Define only the desired route
+                    });
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {
