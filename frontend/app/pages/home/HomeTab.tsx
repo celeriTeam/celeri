@@ -8,7 +8,7 @@ import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '
 import { getUserGroups, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { auth } from '@/firebaseConfig';
-import { checkFinishedBetting } from '@/backend/src/bets';
+import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -74,14 +74,14 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         if (GroupUsers === null || GroupUsers === undefined) {
             return;
         } else if (isGameActive) {
-            const isRecap = false;
             const isFinishedBetting = await checkFinishedBetting(groupID, userID);
-            if (isRecap) {
-                navigation.navigate('BetRecapPage');
-            } else if (isFinishedBetting) {
-                navigation.navigate('BetSummaryPage', { groupID: groupID });
+            const isFinishedRecap = await checkFinishedRecap(groupID, userID);
+            // if (!isFinishedRecap) {
+            //     navigation.navigate('BetRecapPage', { groupID: groupID });
+            if (!isFinishedBetting) {
+                navigation.navigate('HeadToHeadPage', { groupID: groupID, isFinishedRecap: isFinishedRecap });
             } else {
-                navigation.navigate('HeadToHeadPage', { groupID: groupID });
+                navigation.navigate('BetSummaryPage', { groupID: groupID });
             }
         } else {
             navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });

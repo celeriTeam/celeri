@@ -19,7 +19,7 @@ export type RootStackParamList = {
     JoinGroup: undefined;
     // BETS
     BetsPage: { groupID: string };
-    HeadToHeadPage: { groupID: string };
-    BetRecapPage: undefined;
+    HeadToHeadPage: { groupID: string, isFinishedRecap: boolean };
+    BetRecapPage: { groupID: string };
     BetSummaryPage: { groupID: string };
 };

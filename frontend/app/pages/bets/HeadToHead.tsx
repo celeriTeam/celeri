@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, Image, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Image, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal } from 'react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import { addToFinishedBetting, createBet, getUnbetDuels } from '@/backend/src/bets';
+import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
+import BetRecapPage from './Recap';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
+type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'HeadToHeadPage'>;
 
 type Props = {
     navigation: headToHeadPageNavigationProp;
@@ -16,8 +18,8 @@ type Props = {
 
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const { userID } = useUser();
-    const route = useRoute();
-    const { groupID } = route.params as { groupID: string };
+    const route = useRoute<headToHeadPageRouteProp>();
+    const { groupID, isFinishedRecap } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [betAmount1, setBetAmount1] = useState('');
@@ -29,11 +31,20 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
+    const [isModalVisible, setModalVisible] = useState(true);
+  
+    const closeModal = async () => {
+      setModalVisible(false);
+      await addToFinishedRecap(groupID, userID);
+    };
 
     const fetchData = async () => {
         try {
-            let dailyDuel = await getUnbetDuels(groupID, userID);
+            if (isFinishedRecap) {
+                setModalVisible(false);
+            }
 
+            let dailyDuel = await getUnbetDuels(groupID, userID);
             const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                 return Object.values(duels);
             };
@@ -234,6 +245,25 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 </TouchableHighlight>
             )}
 
+            {/* Modal */}
+            <Modal
+                transparent={true}
+                visible={isModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    {/* Close button */}
+                    <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                        <Text style={styles.closeButtonText}>X</Text>
+                    </TouchableOpacity>
+
+                    {/* BetRecapPage as the modal content */}
+                    <BetRecapPage navigation={navigation} />
+                </View>
+                </View>
+            </Modal>
+
         </KeyboardAvoidingView>
     );
 };
@@ -317,7 +347,32 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 18,
     },
-
+    // MODAL
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+      },
+      modalContainer: {
+        width: '90%',
+        height: '90%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        position: 'relative',
+      },
+      closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        zIndex: 1,
+      },
+      closeButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
+      },
 });
 
 export default HeadToHeadPage;

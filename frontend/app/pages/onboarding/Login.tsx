@@ -57,7 +57,10 @@ const LoginPage: React.FC<Props> = ({ navigation }) => {
                     // Assuming createProfile is only for registration, you may not need it here
                     // await createProfile(response.user);
                     // nav.replace("Main");
-                    navigation.navigate("AppPage");
+                    navigation.reset({
+                        index: 0,  // Index of the screen to be focused on
+                        routes: [{ name: 'AppPage' }],  // Define only the desired route
+                    });
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

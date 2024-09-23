@@ -25,7 +25,7 @@ const HomePage: React.FC = () => {
                 <HomeStack.Screen name="BetsPage" component={BetsPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="HeadToHeadPage" component={HeadToHeadPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="BetSummaryPage" component={BetSummaryPage} options={{ headerShown: false }} />
-                <HomeStack.Screen name="BetRecapPage" component={BetRecapPage} options={{ headerShown: false }} />
+                <HomeStack.Screen name="BetRecapPage" component={BetRecapPage} options={{ presentation: 'modal', headerShown: false }} />
             </HomeStack.Navigator>
         </UserProvider>
     );
