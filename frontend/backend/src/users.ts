@@ -1,6 +1,9 @@
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
+import { Pedometer } from 'expo-sensors';
+import { Subscription } from 'expo-sensors/build/Pedometer';
+import { useEffect, useState } from 'react';
 
 const db = getFirestore(app);
 const storage = getStorage();
@@ -160,3 +163,56 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
          return undefined;
     }
 }
+
+/*********************************************** HEALTH DATA FUNCTIONS ********************************************/
+
+//should call whenever the player opens the app OR clicks refresh? or maybe automatically every 5 minutes they're on 
+export const updateSteps = (userID: string) => {
+    const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
+    const [pastStepCount, setPastStepCount] = useState(0);
+    //const [currentStepCount, setCurrentStepCount] = useState(0);
+
+    const fetchStepCount = async () => {
+        try {
+          const isAvailable = await Pedometer.isAvailableAsync();
+          setIsPedometerAvailable(String(isAvailable));
+    
+          if (isAvailable) {
+            const end = new Date();
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+    
+            const pastStepCountResult = await Pedometer.getStepCountAsync(start, end);
+            if (pastStepCountResult) {
+              setPastStepCount(pastStepCountResult.steps);
+              // Upload steps to Firebase after fetching
+              await uploadStepsToFirebase(userID, pastStepCountResult.steps);
+            }
+          } else {
+            console.log('Pedometer is not available on this device.');
+          }
+        } catch (error) {
+          console.error('Error fetching step count:', error);
+        }
+      };
+    
+      useEffect(() => {
+        // Call the function to fetch the step count once when the component mounts
+        fetchStepCount();
+      }, [userID]);
+    
+      // Function to upload step count to Firebase
+      const uploadStepsToFirebase = async (userID: string, steps: number) => {
+        try {
+            const userDocRef = doc(db, 'users', userID);
+            await updateDoc(userDocRef, {
+                steps: steps,
+                lastUpdated: serverTimestamp(),
+            })
+    
+          console.log(`Successfully uploaded ${steps} steps for user: ${userID}`);
+        } catch (error) {
+          console.error('Error uploading steps to Firebase:', error);
+        }
+      };
+    };

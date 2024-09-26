@@ -88,6 +88,93 @@ function createCycle(players) {
   // Return the array of objects, each representing a round
 }
 
+exports.updateWinners = onSchedule("every day 04:00", async (event) =>{
+  console.log("updateWinners is running");
+  const groupRef = firestore.collection("groups");
+
+  try {
+    const groupSnapshots =
+    await groupRef.where("isGameActive", "==", true).get();
+    if (groupSnapshots.empty) {
+      console.log("No active games found.");
+      return;
+    }
+
+    console.log("Group snapshots found: ", groupSnapshots.size);
+    const batch = firestore.batch();
+
+    const endOfYesterday = new Date();
+    endOfYesterday.setHours(0, 0, 0, 0); // Midnight today
+    const startOfYesterday = new Date(endOfYesterday);
+    startOfYesterday.setDate(endOfYesterday.getDate() - 1); // Go back one day
+
+    console.log("checkpoint one");
+    groupSnapshots.docs.forEach((doc) => {
+      const groupDocRef = doc.ref;
+      const duelsRef = groupDocRef.collection("duels");
+
+      duelsRef
+          .where("createdAt", ">=", startOfYesterday)
+          .where("createdAt", "<", endOfYesterday)
+          .get()
+          .then((duelsSnapshot) => {
+            if (duelsSnapshot.empty) {
+              console.log(`No active duels found 
+                for group ${doc.id} from yesterday.`);
+              return;
+            }
+
+            console.log(`Duels found for group
+               ${doc.id}: `, duelsSnapshot.size);
+
+            duelsSnapshot.forEach((duelDoc) => {
+              const duelData = duelDoc.data();
+              const player1Id = duelData.player1;
+              const player2Id = duelData.player2;
+              let winner = "none";
+
+              // Update the 'ended' field to true
+              try {
+              // Fetch steps data for player 1
+                const player1Doc =
+                firestore.collection("users").doc(player1Id).get();
+                const player1Steps =
+                player1Doc.exists ? player1Doc.data().steps : 0;
+
+                // Fetch steps data for player 2
+                const player2Doc =
+                firestore.collection("users").doc(player2Id).get();
+                const player2Steps =
+                player2Doc.exists ? player2Doc.data().steps : 0;
+
+                if (player1Steps > player2Steps) {
+                  winner = player1Id;
+                } else if (player1Steps == player2Steps) {
+                  winner = "draw";
+                } else {
+                  winner = player2Id;
+                }
+
+                // Update the 'ended' field to true in the duel document
+                batch.update(duelDoc.ref, {ended: true, winner: winner});
+              } catch (error) {
+                console.error(`Error fetching player steps for duel 
+                  ${duelDoc.id}:`, error);
+              }
+            });
+          })
+          .catch((error) => {
+            console.error(`Error fetching duels for group ${doc.id}:`, error);
+          });
+    });
+
+    await batch.commit();
+    console.log("Batch update completed successfully.");
+  } catch (error) {
+    console.error("Error querying Firestore:", error);
+  }
+});
+
 exports.createDuels = onSchedule("every day 04:00", async (event) =>{
   console.log("createDuels is running");
   const groupRef = firestore.collection("groups");
