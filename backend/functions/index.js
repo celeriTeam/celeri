@@ -198,7 +198,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                 console.error(`Error fetching player steps for duel 
                   ${duelDoc.id}:`, error);
               }
-            });
+            };
           })
           .catch((error) => {
             console.error(`Error fetching duels for group ${doc.id}:`, error);
