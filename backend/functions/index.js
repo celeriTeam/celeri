@@ -240,7 +240,9 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
               }
 
               // Update the 'ended' field to true in the duel document
-              batch.update(duelDoc.ref, {ended: true, winner: winner});
+              batch.update(duelDoc.ref, {ended: true, winner: winner,
+                playerOneSteps: player1Steps, playerTwoSteps: player2Steps,
+              });
             } catch (error) {
               console.error(`Error fetching player steps for duel 
                   ${duelDoc.id}:`, error);
