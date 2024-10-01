@@ -5,8 +5,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
-import { getUserName } from '@/backend/src/users';
+import { getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
+import { text } from 'body-parser';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -20,7 +21,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID } = route.params;
     const [isLoading, setIsLoading] = useState(true);
-    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[] }[]>([]);
+    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [isModalVisible, setModalVisible] = useState(false);
   
     const closeModal = async () => {
@@ -45,6 +46,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 flattenedBets.map(async (bet) => {
                     const player1 = await getUserName(bet.player1);
                     const player2 = await getUserName(bet.player2);
+                    const player1Steps = await getSteps(bet.player1);
+                    const player2Steps = await getSteps(bet.player2);
 
                     // if there are no bets, return the duel with the player names
                     console.log('...', bet.bets[0]?.wager);
@@ -55,6 +58,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             player2,
                             player1Bets: [],
                             player2Bets: [],
+                            player1Steps,
+                            player2Steps,
                         };
                     }
 
@@ -83,6 +88,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             player2,
                             player1Bets,
                             player2Bets,
+                            player1Steps,
+                            player2Steps,
                         };
                     }
                 })
@@ -109,12 +116,18 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         );
     }
 
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[] } }) => (
+    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number } }) => (
         <View style={styles.flatList}>
             {/* Players */}
             <View style={styles.row}>
                 <Text style={styles.player}>{item.player1}</Text>
                 <Text style={styles.player}>{item.player2}</Text>
+            </View>
+
+            {/* Steps */}
+            <View style={styles.row}>
+                <Text><Text style={styles.stepTitle}>Steps: </Text>{item.player1Steps}</Text>
+                <Text><Text style={styles.stepTitle}>Steps: </Text>{item.player2Steps}</Text>
             </View>
 
             
@@ -187,6 +200,9 @@ const styles = StyleSheet.create({
     player: {
         fontWeight: 'bold',
         fontSize: 18,
+    },
+    stepTitle: {
+        fontWeight: 'bold',
     },
     betsListLeft: {
         marginTop: 10,

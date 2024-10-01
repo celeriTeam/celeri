@@ -1,15 +1,15 @@
 // HomeTab.tsx
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator } from 'react-native';
+import { Pedometer } from 'expo-sensors';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '@backend/src/groups';
-import { getUserGroups, getUserName } from '@backend/src/users';
+import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { auth } from '@/firebaseConfig';
 import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
-import { updateSteps } from '../../../backend/src/users'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -21,6 +21,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const { userID } = useUser();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+    const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [shouldReload, setShouldReload] = useState(false);
 
@@ -40,14 +41,40 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const getStepsSinceMidnight = async () => {
+        const now = new Date();
+        const midnight = new Date(now.setHours(0, 0, 0, 0)); // Get 12:00 AM of the current day
+        try {
+            const user = auth.currentUser;
+            let userID = user?.uid || '';
+			const result = await Pedometer.getStepCountAsync(midnight, new Date());
+			setStepsSinceMidnight(result.steps);
+			setSteps(userID, result.steps);
+			console.log('Steps: ', result.steps);
+			console.log('at time: ', now);
+        } catch (error) {
+			console.error("Error getting step count: ", error);
+			setStepsSinceMidnight(null);
+        }
+	};
+
     useEffect(() => {
         fetchUserData();
+		getStepsSinceMidnight();
+
+		const intervalId = setInterval(() => {
+			getStepsSinceMidnight();
+		}, 300000); // 5 minutes in milliseconds
+	
+		// Clean up the interval when the component unmounts
+		return () => {
+			clearInterval(intervalId);
+		};
     }, [userID]);
 
     useFocusEffect(
         useCallback(() => {
             fetchUserData();
-            // Check if the user came from the edit page
             if (shouldReload) {
                 fetchUserData();
                 setShouldReload(false);
