@@ -10,7 +10,6 @@ import BetSummaryPage from '../bets/BetSummary';
 import BetRecapPage from '../bets/Recap';
 import HeadToHeadPage from '../bets/HeadToHead';
 import { UserProvider } from '../../UserProvider';
-import { updateSteps } from '../../../backend/src/users'
 
 const HomeStack = createStackNavigator();
 
