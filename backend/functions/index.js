@@ -88,6 +88,34 @@ function createCycle(players) {
   // Return the array of objects, each representing a round
 }
 
+exports.resetSteps = onSchedule("every day 04:00", async (event) => {
+  const userRef = firestore.collection("users");
+
+  try {
+    const userSnapshots = await userRef.get();
+
+    if (userSnapshots.empty) {
+      console.log("No users found");
+      return;
+    }
+
+    console.log("User snapshots found: ", userSnapshots.size);
+
+    const batch = firestore.batch();
+
+    userSnapshots.forEach((doc) => {
+      const docRef = userRef.doc(doc.id);
+      batch.update(docRef, {steps: 0});
+    });
+
+    await batch.commit();
+    console.log("Batch update successful, all steps reset to 0");
+  } catch (error) {
+    console.error("Error resetting steps: ", error);
+  }
+});
+
+
 exports.updateWinners = onSchedule("every day 04:00", async (event) => {
   console.log("updateWinners is running");
   const groupRef = firestore.collection("groups");
@@ -108,7 +136,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
 
     const allBatches = [];
 
-    groupSnapshots.docs.forEach((doc) => {
+    groupSnapshots.docs.forEach(async (doc) => {
       const groupDocRef = doc.ref;
       const duelsRef = groupDocRef.collection("duels");
 
@@ -148,66 +176,82 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                 winner = player2Id;
               }
 
-                //now, distribute earnings
-                //if player1 wins, grab the bets 
-                let totalWagers = 0;
-                let totalWagersOnWinner = 0;
+              console.log("player1, " + player1Id + " steps is " + player1Steps);
+              console.log("player2, " + player2Id + " steps is " + player2Steps);
+              console.log("winner is " + winner);
 
-                //iterate through it once to find out what the total wagers were 
-                for(let i = 0; i < duelData.bets.length; i++){
+              // now, distribute earnings
+              // if player1 wins, grab the bets
+              let totalWagers = 0;
+              let totalWagersOnWinner = 0;
+
+              // iterate through it once to find out what the total wagers were
+              if (duelData.bets != null) {
+                for (let i = 0; i < duelData.bets.length; i++) {
                   totalWagers += duelData.bets[i].wager;
-                  if(duelData.bets[i].betOnUserID == winner){
+                  if (duelData.bets[i].betOnUserID == winner) {
                     totalWagersOnWinner += duelData.bets[i].wager;
                   }
                 }
-                console.log('total wagers: ' + totalWagers);
-                console.log('totalWagersOnWinner: ' + totalWagersOnWinner);
+              } else {
+                console.log("there were no bets");
+              }
+              console.log("total wagers: " + totalWagers);
+              console.log("totalWagersOnWinner: " + totalWagersOnWinner);
 
-                //iterate through it again now that you have total wagers
-                for(let i = 0; i < duelData.bets.length; i++){
+              if (duelData.bets != null) {
+              // iterate through it again now that you have total wagers
+                for (let i = 0; i < duelData.bets.length; i++) {
                   let amountWon = 0.0;
                   let percentage = 0.0;
-                  if(duelData.bets[i].betOnUserID == winner){
+                  if (duelData.bets[i].betOnUserID == winner) {
                     percentage = duelData.bets[i].wager / totalWagersOnWinner;
                     amountWon = percentage * totalWagers;
-                    //add the amount won 
-                    const userRef = firestore.collection("users").doc(duelData.bets[i].userID);
-                    userRef.update({
-                      tokens: firestore.FieldValue.increment(amountWon) // Increment the tokens by amountWon
+                    // add the amount won
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.tokens`]: firestore.FieldValue.increment(amountWon),
                     }).then(() => {
-                        console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
-                        console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
-                  }
-                  else {
-                    const userRef = firestore.collection("users").doc(duelData.bets[i].userID);
-                    userRef.update({
-                      tokens: firestore.FieldValue.decrement(amountWon) // Increment the tokens by amountWon
+                  } else if (winner == "draw") {
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
                     }).then(() => {
-                        console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
-                        console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  } else { // if they lose, they lose what they wagered
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.tokens`]: firestore.FieldValue.decrement(duelData.bets[i].wager),
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
                   }
                 }
-
-                // Update the 'ended' field to true in the duel document
-                batch.update(duelDoc.ref, {ended: true, winner: winner});
-              } catch (error) {
-                console.error(`Error fetching player steps for duel 
-                  ${duelDoc.id}:`, error);
+              } else {
+                console.log("no tokens were updated because there were no bets");
               }
-            });
-          })
-          .catch((error) => {
-            console.error(`Error fetching duels for group ${doc.id}:`, error);
-          });
-    });
 
-    // Wait for all batches to be committed
-    await Promise.all(allBatches);
-    console.log("Batch update completed successfully.");
+              // Update the 'ended' field to true in the duel document
+              batch.update(duelDoc.ref, {ended: true, winner: winner});
+            } catch (error) {
+              console.error(`Error fetching player steps for duel 
+                  ${duelDoc.id}:`, error);
+            }
+          }
+        });
+
+      // Wait for all batches to be committed
+      await Promise.all(allBatches);
+      console.log("Batch update completed successfully.");
+    });
   } catch (error) {
     console.error("Error querying Firestore:", error);
   }

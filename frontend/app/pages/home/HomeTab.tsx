@@ -9,6 +9,7 @@ import { getUserGroups, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { auth } from '@/firebaseConfig';
 import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
+import { updateSteps } from '../../../backend/src/users'
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 

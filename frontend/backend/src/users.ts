@@ -5,6 +5,7 @@ import { Pedometer } from 'expo-sensors';
 import { Subscription } from 'expo-sensors/build/Pedometer';
 import { useEffect, useState } from 'react';
 
+
 const db = getFirestore(app);
 const storage = getStorage();
 
