@@ -27,6 +27,7 @@
     "@react-navigation/stack": "^6.4.1",
     "@t2tx/react-native-universal-pedometer": "^2.0.3",
     "@types/react-native": "^0.73.0",
+    "date-fns": "^4.1.0",
     "expo": "^51.0.32",
     "expo-application": "~5.9.1",
     "expo-build-properties": "~0.12.5",

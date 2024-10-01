@@ -6,7 +6,7 @@ import { StackNavigationProp, createStackNavigator } from '@react-navigation/sta
 import { RootStackParamList } from '../../types';
 import { useFocusEffect } from '@react-navigation/native';
 import EditProfilePage from './EditProfile';
-import { getProfilePic, getUserGroups, getUserName } from '@backend/src/users';
+import { getProfilePic, getSteps, getUserGroups, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
 type Props = {
@@ -19,8 +19,20 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
     const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
     const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+    const [currentSteps, setCurrentSteps] = useState<number | undefined>(undefined);
     const [fromEditPage, setFromEditPage] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+
+    const fetchSteps = async () => {
+        try {
+            const steps = await getSteps(userID);
+            setCurrentSteps(steps);
+        } catch (error) {
+            console.error("Error fetching steps:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const fetchUserData = async () => {
         try {
@@ -30,6 +42,8 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
             setCurrentUserName(name);
             const groups = await getUserGroups(userID);
             setCurrentUserGroups(groups);
+            const steps = await getSteps(userID);
+            setCurrentSteps(steps);
         } catch (error) {
             console.error("Error fetching user data:", error);
         } finally {
@@ -54,6 +68,8 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
             if (fromEditPage) {
                 fetchUserData();
                 setFromEditPage(false);
+            } else {
+                fetchSteps();
             }
         }, [fromEditPage])
     );
@@ -104,6 +120,14 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.name}>{currentUserName}</Text>
             ) : (
                 <Text style={styles.name}>Loading...</Text>
+            )
+            }
+
+            <Text style={styles.groupsLabel}>Steps: </Text>
+            {currentSteps != undefined ? (
+                <Text style={styles.text}>{currentSteps}</Text>
+            ) : (
+                <Text style={styles.text}>Loading...</Text>
             )
             }
             
@@ -165,7 +189,7 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 18,
-        marginBottom: 5,
+        marginBottom: 20,
     },
     logoutButtonContainer: {
         position: 'absolute',
