@@ -9,7 +9,7 @@ const storage = getStorage();
 /*********************************************** RECAP FUNCTIONS ********************************************/
 
 // GET yesterdays duels
-export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string } } | undefined> => {
+export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } | undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -41,7 +41,7 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
                 return undefined;
             }
             
-            const duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string } } = {};
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
             querySnapshot.forEach(doc => {
                 const duelData = doc.data();
                 duels[doc.id] = {
@@ -53,7 +53,9 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
                         wager: 0,
                         betOnUserID: ''
                     },
-                    winner: duelData.winner
+                    winner: duelData.winner,
+                    playerOneSteps: duelData.playerOneSteps,
+                    playerTwoSteps: duelData.playerTwoSteps
                 };
             });
             console.log("getYesterdaysDuelsSummary - response: ", duels);

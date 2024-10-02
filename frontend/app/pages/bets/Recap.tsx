@@ -20,7 +20,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<betRecapPageRouteProp>();
     const { groupID } = route.params;
     const [isLoading, setIsLoading] = useState(true);
-    const [currentRecapBets, setCurrentRecapBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string }[]>([]);
+    const [currentRecapBets, setCurrentRecapBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number }[]>([]);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
 
@@ -28,7 +28,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
         try {
             const yesterdaysBets = await getYesterdaysDuelsSummary(groupID);
 
-            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string } }) => {
+            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
                 return Object.values(duels);
             };
 
@@ -38,13 +38,12 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                 flattenedBets.map(async (bet) => {
                     const player1 = await getUserName(bet.player1);
                     const player2 = await getUserName(bet.player2);
-                    let winner = 'empty';
-                    if (bet.winner != 'empty') {
+                    let winner = 'draw';
+                    if (bet.winner != 'draw') {
                         winner = await getUserName(bet.winner);
                     }
 
                     // if there are no bets, return the duel with the player names
-                    console.log('...', bet.bets[0]?.wager);
                     if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
                         return {
                             duelID: bet.duelID,
@@ -53,6 +52,8 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                             player1Bets: [],
                             player2Bets: [],
                             winner,
+							playerOneSteps: bet.playerOneSteps,
+							playerTwoSteps: bet.playerTwoSteps,
                         };
                     }
 
@@ -82,6 +83,8 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                             player1Bets,
                             player2Bets,
                             winner,
+							playerOneSteps: bet.playerOneSteps,
+							playerTwoSteps: bet.playerTwoSteps,
                         };
                     }
                 })
@@ -114,7 +117,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
         }));
     };
 
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string } }) => {
+    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
         return (
             <View style={styles.flatList}>
@@ -149,22 +152,44 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                         <View style={styles.row}>
                             {/* Player1's Bets */}
                             <View style={styles.betsListLeft}>
-                                {item.player1Bets.map((bet, index) => (
-                                    <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                                ))}
+								{/* Player1's Steps */}
+								<Text><Text style={styles.stepTitle}>Steps: </Text>{item.playerOneSteps}</Text>
+                                <Text style={[styles.stepTitle, styles.spacedText]}>Bets:</Text>
+								{item.player1Bets.length === 0 ? (
+                                    <View>
+                                        <Text>(No bets placed)</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+                                        {item.player1Bets.map((bet, index) => (
+                                            <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
+                                        ))}
+									</View>
+								)}
                             </View>
 
                             {/* Player2's Bets */}
                             <View style={styles.betsListRight}>
-                                {item.player2Bets.map((bet, index) => (
-                                    <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-                                ))}
+								{/* Player2's Steps */}
+								<Text><Text style={styles.stepTitle}>Steps: </Text>{item.playerTwoSteps}</Text>
+                                <Text style={[styles.stepTitle, styles.spacedText]}>Bets:</Text>
+								{item.player2Bets.length === 0 ? (
+                                    <View>
+                                        <Text>(No bets placed)</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+										{item.player2Bets.map((bet, index) => (
+											<Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
+										))}
+									</View>
+								)}
                             </View>
                         </View>
 
                         {/* No Winner Available */}
-                        {item.winner === 'empty' && (
-                            <View>
+                        {item.winner === 'draw' && (
+                            <View style={styles.spacedText}>
                                 <Text style={styles.noWinner}>(No winner available)</Text>
                             </View>
                         )}
@@ -208,6 +233,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
     },
+    stepTitle: {
+        fontWeight: 'bold',
+    },
+	spacedText: {
+		marginTop: 10,
+	},
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',

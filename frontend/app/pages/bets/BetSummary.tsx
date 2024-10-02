@@ -8,6 +8,7 @@ import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { text } from 'body-parser';
+import { getUserTokens } from '@/backend/src/groups';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -22,6 +23,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { groupID } = route.params;
     const [isLoading, setIsLoading] = useState(true);
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
+    const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [isModalVisible, setModalVisible] = useState(false);
   
     const closeModal = async () => {
@@ -96,6 +98,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             );
             
             setCurrentBets(betsWithUsernames);
+
+            // Get user's tokens
+            const userTokens = await getUserTokens(userID, groupID);
+            setCurrentUserTokens(userTokens);
         } catch (error) {
             console.error("Error fetching user data:", error);
         } finally {
@@ -134,16 +140,34 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             <View style={styles.row}>
                 {/* Player1's Bets */}
                 <View style={styles.betsListLeft}>
-                    {item.player1Bets.map((bet, index) => (
-                        <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                    ))}
+                    <Text style={styles.stepTitle}>Bets:</Text>
+                    {item.player1Bets.length === 0 ? (
+                        <View>
+                            <Text>(No bets placed yet)</Text>
+                        </View>
+                    ) : (
+                        <View>
+                            {item.player1Bets.map((bet, index) => (
+                                <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
+                            ))}
+                        </View>
+                    )}
                 </View>
 
                 {/* Player2's Bets */}
                 <View style={styles.betsListRight}>
-                    {item.player2Bets.map((bet, index) => (
-                        <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-                    ))}
+                    <Text style={styles.stepTitle}>Bets:</Text>
+                    {item.player2Bets.length === 0 ? (
+                        <View>
+                            <Text>(No bets placed yet)</Text>
+                        </View>
+                    ) : (
+                        <View>
+                            {item.player2Bets.map((bet, index) => (
+                                <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
+                            ))}
+                        </View>
+                    )}
                 </View>
             </View>
         </View>
@@ -151,6 +175,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
+            <View style={styles.tokens}>
+                <Text>Tokens: {currentUserTokens}</Text>
+            </View>
             <FlatList
                 data={currentBets}
                 keyExtractor={(item) => item.duelID}
@@ -188,10 +215,20 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 20,
     },
+    tokens: {
+        position: 'absolute',
+        right: 20,
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderColor: '#FF8C00',
+        borderWidth: 2,
+    },
     flatList: {
         padding: 25,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
+        marginTop: 20,
     },
     row: {
         flexDirection: 'row',
@@ -199,7 +236,7 @@ const styles = StyleSheet.create({
     },
     player: {
         fontWeight: 'bold',
-        fontSize: 18,
+        fontSize: 20,
     },
     stepTitle: {
         fontWeight: 'bold',
