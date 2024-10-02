@@ -7,6 +7,7 @@ import { useUser } from '../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
+import { getUserTokens } from '@/backend/src/groups';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -21,6 +22,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID, isFinishedRecap } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
+    const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [betAmount1, setBetAmount1] = useState('');
     const [betAmount2, setBetAmount2] = useState('');
@@ -60,6 +62,11 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const fetchUserName = async (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
+            // Get user's tokens
+            const userTokens = await getUserTokens(userID, groupID);
+            console.log('tokens: ', userTokens);
+            setCurrentUserTokens(userTokens);
+
             const currentPlayers = matchups[currentMatchupIndex];
             const player1ID = currentPlayers.player1;
             setPlayer1ID(player1ID);
@@ -184,6 +191,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.dismissOverlay} />
                 </TouchableWithoutFeedback>
             )}
+            <View style={styles.tokens}>
+                <Text>Tokens: {currentUserTokens}</Text>
+            </View>
 
             {/* Top-left (Player 1) */}
             <TouchableOpacity
@@ -277,6 +287,17 @@ const styles = StyleSheet.create({
     dismissOverlay: {
         ...StyleSheet.absoluteFillObject,
         zIndex: 1,
+    },
+    tokens: {
+        position: 'absolute',
+        top: 10,
+        right: 20,
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderColor: '#FF8C00',
+        borderWidth: 2,
+        zIndex: 100,
     },
     player1Container: {
         position: 'absolute',

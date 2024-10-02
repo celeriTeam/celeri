@@ -138,6 +138,25 @@ export const getGroupCreator = async (groupID: string): Promise<string | undefin
     }
 }
 
+// GET user tokens (based on group)
+export const getUserTokens = async (userID: string, groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const users = groupDoc.data()?.users;
+            const user = users[userID];
+            console.log("getUserTokens - response: ", user.tokens);
+            return user.tokens;
+        } else{
+            console.error("getUserTokens - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getUserTokens - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group

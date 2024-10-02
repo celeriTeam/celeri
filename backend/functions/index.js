@@ -10,7 +10,7 @@ const {onSchedule} = require("firebase-functions/v2/scheduler");
 
 // The Firebase Admin SDK to access Firestore.
 const {initializeApp} = require("firebase-admin/app");
-const {getFirestore} = require("firebase-admin/firestore");
+const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 // const {getFirestore,
 //   doc,
 //   updateDoc} = require("firebase-admin/firestore");
@@ -210,7 +210,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                     // add the amount won
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: firestore.FieldValue.increment(amountWon),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
@@ -227,7 +227,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                   } else { // if they lose, they lose what they wagered
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: firestore.FieldValue.decrement(duelData.bets[i].wager),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.decrement(duelData.bets[i].wager),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
@@ -240,14 +240,19 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
               }
 
               // Update the 'ended' field to true in the duel document
-              batch.update(duelDoc.ref, {ended: true, winner: winner,
-                playerOneSteps: player1Steps, playerTwoSteps: player2Steps,
+              batch.update(duelDoc.ref, {
+                ended: true,
+                winner: winner,
+                playerOneSteps: player1Steps,
+                playerTwoSteps: player2Steps,
               });
             } catch (error) {
               console.error(`Error fetching player steps for duel 
                   ${duelDoc.id}:`, error);
             }
           }
+          // Add the batch to the array to commit later
+          allBatches.push(batch.commit());
         });
 
       // Wait for all batches to be committed
