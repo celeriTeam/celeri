@@ -140,9 +140,32 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
       const groupDocRef = doc.ref;
       const duelsRef = groupDocRef.collection("duels");
 
+      // const groupDoc = await groupDocRef.get();
+      // if (!groupDoc.exists) {
+      //   console.log(`Group document ${doc.id} not found.`);
+      //   return;
+      // }
+      // let groupCycleCount = groupDoc.data().cycleCount;
+      // let groupCycleDay = groupDoc.data().cycleDay;
+      // const numberOfPlayers = groupDoc.data().order.length;
+
+      // if (groupCycleDay === 1 && groupCycleCount === 1) {
+      //   console.log("error: No duels found for yesterday");
+      //   return undefined;
+      // } else if (groupCycleDay === 1) {
+      //   groupCycleCount -= 1;
+      //   groupCycleDay = numberOfPlayers-1;
+      // } else {
+      //   groupCycleDay -= 1;
+      // }
+
+      // console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
+
       duelsRef
         .where("createdAt", ">=", startOfYesterday)
         .where("createdAt", "<", endOfYesterday)
+        // .where("cycleCount", "==", groupCycleCount)
+        // .where("cycleDay", "==", groupCycleDay)
         .get()
         .then(async (duelsSnapshot) => {
           if (duelsSnapshot.empty) {
@@ -227,7 +250,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                   } else { // if they lose, they lose what they wagered
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.decrement(duelData.bets[i].wager),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
