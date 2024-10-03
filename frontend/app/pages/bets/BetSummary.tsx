@@ -8,7 +8,7 @@ import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getProfilePic, getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { text } from 'body-parser';
-import { getGroupIsFirstDay, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getGroupIsFirstDay, getGroupName, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -25,6 +25,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(false);
   
@@ -108,6 +109,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             // Check if it's the first day
             const firstDay = await getGroupIsFirstDay(groupID);
             setIsFirstDay(firstDay || true);
+
+            // Get group name
+            const groupName = await getGroupName(groupID);
+            setCurrentGroupName(groupName);
 
             // Get group users
             const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
@@ -199,9 +204,18 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.tokens}>
-                <Text>Your Tokens: {currentUserTokens}</Text>
+            <View style={styles.row}>
+                    <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <Image
+                            source={require('@components/back-icon.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                <View style={styles.tokens}>
+                    <Text>Your Tokens: {currentUserTokens}</Text>
+                </View>
             </View>
+            <Text style={styles.groupTitle}>{currentGroupName}</Text>
             {currentGroupUsersArray ? (
                 <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
                     {currentGroupUsersArray.map((user) => (
@@ -257,6 +271,10 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 20,
     },
+    backImage: {
+        width: 24,
+        height: 24,
+    },
     tokens: {
         position: 'absolute',
         right: 20,
@@ -265,6 +283,13 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderColor: '#FF8C00',
         borderWidth: 2,
+    },
+    groupTitle: {
+        marginTop: 40,
+        fontSize: 30,
+        fontWeight: 'bold',
+        marginBottom: 40,
+        textAlign: 'center',
     },
     userRow: {
       flexDirection: 'row', 
