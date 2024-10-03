@@ -8,7 +8,7 @@ import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getProfilePic, getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { text } from 'body-parser';
-import { getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getGroupIsFirstDay, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -25,6 +25,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(false);
   
     const closeModal = async () => {
@@ -36,8 +37,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     };
 
     const createMemberButtonHandle = (id: string) => {
-        console.log('id:', id);
-        console.log(id ?? '');
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
 
@@ -105,6 +104,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             );
             
             setCurrentBets(betsWithUsernames);
+
+            // Check if it's the first day
+            const firstDay = await getGroupIsFirstDay(groupID);
+            setIsFirstDay(firstDay || true);
 
             // Get group users
             const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
@@ -222,9 +225,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             />
 
             {/* Modal */}
-            <View style={styles.button}>
-                <Button title="See yesterday's bets" onPress={openModal} />
-            </View>
+            {!isFirstDay && (
+                <View style={styles.button}>
+                    <Button title="See yesterday's bets" onPress={openModal} />
+                </View>
+            )}
             <Modal
                 transparent={true}
                 visible={isModalVisible}

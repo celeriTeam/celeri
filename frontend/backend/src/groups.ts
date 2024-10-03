@@ -118,6 +118,24 @@ export const getGroupIsGameActive = async (groupID: string): Promise<boolean | u
     }
 }
 
+// GET Group isFirstDay
+export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists()){
+            const isFirstDay = groupDoc.data()?.cycleCount == 1 && groupDoc.data()?.cycleDay == 1;
+            console.log("getGroupIsFirstDay - response: ", isFirstDay);
+            return isFirstDay;
+        } else{
+            console.error("getGroupIsFirstDay - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupIsFirstDay - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 // GET Group Creator
 export const getGroupCreator = async (groupID: string): Promise<string | undefined> => {
     // this will be the first user that was added to the group
@@ -170,7 +188,7 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
             
             // Check if the user is already in the users map
             if (users && users[userID]) {
-                console.log(`User ${userID} is already in the group ${groupID}. No update needed.`);
+                console.log(`addUserToGroup - response: User ${userID} is already in the group ${groupID}. No update needed.`);
                 return;
             }
             
@@ -183,7 +201,7 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
             });
 
             
-            console.log(`User ${userID} added to group ${groupID}`);
+            console.log(`addUserToGroup - response: User ${userID} added to group ${groupID}`);
             return undefined;
         } else{
             console.error("addUserToGroup - error: No such document!");
