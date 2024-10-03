@@ -64,7 +64,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         try {
             // Get user's tokens
             const userTokens = await getUserTokens(userID, groupID);
-            console.log('tokens: ', userTokens);
             setCurrentUserTokens(userTokens);
 
             const currentPlayers = matchups[currentMatchupIndex];
@@ -121,6 +120,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const isCurrentUser = (playerID: string) => playerID === userID;
 
+    const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
+
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
             const duelnumber: any = `duel${matchups.length}`;
@@ -154,7 +155,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     }, []);
 
     const shouldShowSubmit = () => {
-        if ((selectedPlayer === player1ID && betAmount1) || (selectedPlayer === player2ID && betAmount2)) {
+        if ((selectedPlayer === player1ID && isValidBet(currentUserTokens ?? 0, +betAmount1)) || (selectedPlayer === player2ID && isValidBet(currentUserTokens ?? 0, +betAmount2))) {
             return true;
         }
         return false;
@@ -192,7 +193,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 </TouchableWithoutFeedback>
             )}
             <View style={styles.tokens}>
-                <Text>Tokens: {currentUserTokens}</Text>
+                <Text>Your Tokens: {currentUserTokens}</Text>
             </View>
 
             {/* Top-left (Player 1) */}
@@ -215,6 +216,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         editable={!isCurrentUser(player1ID)}
                     />
                 )}
+                {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (
+                    <Text style={{ color: 'red' }}>Invalid bet</Text>
+                )}
             </TouchableOpacity>
 
             {/* Bottom-right (Player 2) */}
@@ -236,6 +240,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         keyboardType="numeric"
                         editable={!isCurrentUser(player2ID)}
                     />
+                )}
+                {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (
+                    <Text style={{ color: 'red' }}>Invalid bet</Text>
                 )}
             </TouchableOpacity>
 

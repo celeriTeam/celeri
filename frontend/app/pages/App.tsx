@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import ProfileTab from './profile/Profile';
+import ProfileTab from './profile/PersonalProfile';
 import TestScreen from './Test';
 import BugReportsPage from './BugReports';
 import HomePage from './home/Home';
@@ -50,7 +50,7 @@ const AppPage: React.FC = () => {
             <Tab.Navigator>
                 <Tab.Screen name="Home" component={HomePage} options={{ headerShown: false }} />
                 <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} />
-                <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/>
+                {/* <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/> */}
                 <Tab.Screen name="Bug Reports" component={BugReportsPage} options={{ headerShown: false }} />
             </Tab.Navigator>
         </UserProvider>
