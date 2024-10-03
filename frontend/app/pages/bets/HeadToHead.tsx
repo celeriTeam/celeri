@@ -7,7 +7,7 @@ import { useUser } from '../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
-import { getUserTokens } from '@/backend/src/groups';
+import { getGroupIsFirstDay, getUserTokens } from '@/backend/src/groups';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -34,6 +34,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
     const [isModalVisible, setModalVisible] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
   
     const closeModal = async () => {
       setModalVisible(false);
@@ -42,7 +43,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const fetchData = async () => {
         try {
-            if (isFinishedRecap) {
+            const isFirstDay = await getGroupIsFirstDay(groupID);
+            if (isFinishedRecap || isFirstDay) {
                 setModalVisible(false);
             }
 
@@ -57,6 +59,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             fetchUserName(matchups);
         } catch(error) {
             console.error("Error fetching user data:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -78,10 +82,10 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
             if (player1ID === userID) {
                 setSelectedPlayer(player1ID);
-                setBetAmount1('10'); // Automatically set bet amount to 10 for player1
+                setBetAmount1('100'); // Automatically set bet amount to 10 for player1
             } else if (player2ID === userID) {
                 setSelectedPlayer(player2ID);
-                setBetAmount2('10'); // Automatically set bet amount to 10 for player2
+                setBetAmount2('100'); // Automatically set bet amount to 10 for player2
             } else {
                 // Reset the selection and bet amounts if the current user isn't involved
                 setSelectedPlayer(null);
@@ -103,14 +107,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setChangePageForUserName(false);
         }
     }, [changePageForUserName]);
-
-    if (matchups === undefined) {
-        return (
-            <View>
-                <Text>Loading...</Text>
-            </View>
-        );
-    }
 
     const handleSelectPlayer = (player: string) => {
         setSelectedPlayer(player);
@@ -181,6 +177,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         });
     };
 
+    if (isLoading) {
+        return (
+            <View>
+                <Text>Loading...</Text>
+            </View>
+        );
+    }
+
     return (
         <KeyboardAvoidingView
             style={styles.container}
@@ -216,7 +220,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         editable={!isCurrentUser(player1ID)}
                     />
                 )}
-                {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (
+                {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
                     <Text style={{ color: 'red' }}>Invalid bet</Text>
                 )}
             </TouchableOpacity>
@@ -241,7 +245,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                         editable={!isCurrentUser(player2ID)}
                     />
                 )}
-                {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (
+                {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
                     <Text style={{ color: 'red' }}>Invalid bet</Text>
                 )}
             </TouchableOpacity>

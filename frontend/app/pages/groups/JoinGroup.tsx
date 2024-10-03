@@ -3,7 +3,7 @@ import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, TouchableO
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
-import { getGroupFromCode, addUserToGroup } from '@backend/src/groups';
+import { getGroupFromCode, addUserToGroup, getGroupIsGameActive } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
@@ -28,13 +28,30 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
             if(groupID) {
                 await addUserToGroup( userID, groupID );
                 const groupInUserResponse = await addGroupToUser( userID, groupID );
+                const isGameActive = await getGroupIsGameActive(groupID);
+                if (groupInUserResponse === 'Group added successfully!') {
+                    if (isGameActive) {
+                        navigation.reset({
+                            index: 1,
+                            routes: [
+                                { name: 'HomeTab' },
+                                { name: 'HeadToHeadPage', params: { groupID: groupID, isFinishedRecap: false } }
+                            ],
+                        });
+                    } else {
+                        navigation.reset({
+                            index: 1,
+                            routes: [
+                                { name: 'HomeTab' },
+                                { name: 'InviteGroup', params: { groupID: groupID, fromCreate: false } }
+                            ],
+                        });
+                    }
+                };
                 setCurrentGroupInUserResponse(groupInUserResponse);
                 
             } else {
                 setCurrentGroupInUserResponse('Group code invalid. Try again.');
-            }
-            if (currrentGroupInUserResponse) {
-                navigation.navigate('HomeTab');
             }
 
         } catch (error) {

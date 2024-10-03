@@ -146,15 +146,15 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
         if (userDoc.exists()){
             // Check if group is already in the user's groups
             if (userDoc.data()?.groups.includes(groupID)) {
-                console.log(`User ${userID} is already in the group ${groupID}. No update needed.`);
+                console.log(`addUserToGroup - response: User ${userID} is already in the group ${groupID}. No update needed.`);
                 return 'You are already in this group!';
             }
 
             await updateDoc(userDocRef, {
                 groups: [...userDoc.data()?.groups, groupID],
             });
-            console.log("addGroupToUser - response: ", userDoc.data()?.groups);
-            return undefined;
+            console.log(`addGroupToUser - response: Group ${groupID} added to user ${userID}`);
+            return 'Group added successfully!';
         } else{
             console.error("addGroupToUser - error: No such document!");
             return undefined;
