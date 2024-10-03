@@ -129,7 +129,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                     </Text>
                 ) : (
                     <View style={styles.row}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <TouchableOpacity onPress={() => navigation.goBack()}>
                             <Image
                                 source={require('@components/back-icon.png')}
                                 style={styles.backImage}
