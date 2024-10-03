@@ -4,6 +4,7 @@ import HomeTab from './HomeTab';
 import CreateGroupPage from '../groups/CreateGroup';
 import JoinGroupPage from '../groups/JoinGroup';
 import InvitePage from '../groups/InviteGroup';
+import ProfilePage from '../profile/Profile';
 import { useRoute } from '@react-navigation/native';
 import BetsPage from '../bets/Bets';
 import BetSummaryPage from '../bets/BetSummary';
@@ -21,6 +22,7 @@ const HomePage: React.FC = () => {
                 <HomeStack.Screen name="CreateGroup" component={CreateGroupPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="JoinGroup" component={JoinGroupPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="InviteGroup" component={InvitePage} options={{ headerShown: false }} />
+                <HomeStack.Screen name="ProfilePage" component={ProfilePage} options={{ headerShown: false }} />
                 {/* Bet Screens: */}
                 <HomeStack.Screen name="BetsPage" component={BetsPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="HeadToHeadPage" component={HeadToHeadPage} options={{ headerShown: false }} />

@@ -209,10 +209,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     profileImage: {
-        width: 40, // adjust width as needed
-        height: 40, // adjust height as needed
-        borderRadius: 20, // make it circular if it's a square
-        marginRight: 10, // space between image and text
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 10,
     },
     backImage: {
         width: 24,

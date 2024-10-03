@@ -12,6 +12,8 @@ export type RootStackParamList = {
     HomeTab: undefined;
     // PROFILE
     ProfileTab: undefined;
+    PersonalProfilePage: undefined;
+    ProfilePage: { selectedUserID: string, groupID: string };
     EditProfile: { profilePic: string, username: string };
     // GROUPS
     CreateGroup: undefined;

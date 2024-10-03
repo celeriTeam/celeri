@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, Image, ActivityIndicator, FlatList, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, Image, ActivityIndicator, FlatList, Modal, ScrollView } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
-import { getSteps, getUserName } from '@/backend/src/users';
+import { getProfilePic, getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { text } from 'body-parser';
-import { getUserTokens } from '@/backend/src/groups';
+import { getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -24,6 +24,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [isModalVisible, setModalVisible] = useState(false);
   
     const closeModal = async () => {
@@ -32,6 +33,12 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
   
     const openModal = async () => {
       setModalVisible(true);
+    };
+
+    const createMemberButtonHandle = (id: string) => {
+        console.log('id:', id);
+        console.log(id ?? '');
+        navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
 
     const fetchGroupData = async () => {
@@ -98,6 +105,20 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             );
             
             setCurrentBets(betsWithUsernames);
+
+            // Get group users
+            const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
+            let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
+            if (groupUsersIdArray) {
+                // get user names & pfps from user IDs
+                for (let i = 0; i < groupUsersIdArray.length; i++) {
+                    const userID = groupUsersIdArray[i];
+                    const userName = await getUserName(userID);
+                    const profilePic = await getProfilePic(userID);
+                    groupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
+                }
+                setCurrentGroupUsersArray(groupUsersArray);
+            }
 
             // Get user's tokens
             const userTokens = await getUserTokens(userID, groupID);
@@ -176,8 +197,24 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <View style={styles.tokens}>
-                <Text>Tokens: {currentUserTokens}</Text>
+                <Text>Your Tokens: {currentUserTokens}</Text>
             </View>
+            {currentGroupUsersArray ? (
+                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
+                    {currentGroupUsersArray.map((user) => (
+                    <TouchableOpacity
+                        key={user.id}
+                        style={styles.userContainer}
+                        onPress={() => createMemberButtonHandle(user.id)}
+                    >
+                        <Image source={{ uri: user.pfp }} style={styles.profileImage} />
+                        <Text style={styles.username}>{user.name}</Text>
+                    </TouchableOpacity>
+                    ))}
+                </ScrollView>
+                ) : (
+                <Text>No users found.</Text>
+                )}
             <FlatList
                 data={currentBets}
                 keyExtractor={(item) => item.duelID}
@@ -223,6 +260,26 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderColor: '#FF8C00',
         borderWidth: 2,
+    },
+    userRow: {
+      flexDirection: 'row', 
+      alignItems: 'center',
+      padding: 10,
+    },
+    userContainer: {
+      marginRight: 15,
+      marginTop: 15,
+      alignItems: 'center',
+    },
+    profileImage: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+    },
+    username: {
+      marginTop: 5,
+      fontSize: 18,
+      textAlign: 'center',
     },
     flatList: {
         padding: 25,
