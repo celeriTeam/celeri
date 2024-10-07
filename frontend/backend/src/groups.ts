@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -163,14 +163,32 @@ export const getUserTokens = async (userID: string, groupID: string): Promise<nu
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            console.log("getUserTokens - response: ", user.tokens);
-            return user.tokens;
+            const tokens = user.tokens - user.todaysBetTokens;
+            console.log("getUserTokens - response: ", tokens);
+            return tokens;
         } else{
             console.error("getUserTokens - error: No such document!");
             return undefined;
         }
     } catch (error) {
          console.error("getUserTokens - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET defaultBetOnSelf
+export const getDefaultBetOnSelf = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.defaultBetOnSelf){
+            console.log("getDefaultBetOnSelf - response: ", groupDoc.data()?.defaultBetOnSelf);
+            return groupDoc.data()?.defaultBetOnSelf;
+        } else{
+            console.error("getDefaultBetOnSelf - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getDefaultBetOnSelf - Error fetching user document: ", error);
          return undefined;
     }
 }
@@ -196,6 +214,7 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
                 [`users.${userID}`]: {
                     placedBet: false,
                     tokens: 0,
+                    todaysBetTokens: 0,
                 },
                 order: [...groupDoc.data()?.order, userID],
             });
@@ -256,6 +275,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
                 [userID]: {
                     "placedBet": false,
                     "tokens": 0,
+                    "todaysBetTokens": 0,
                 },
             },
             "order": [userID],
@@ -276,8 +296,8 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 
 /*********************************************** SET FUNCTIONS ********************************************/
 
-// SET Group isGameActive
-export const startGame = async (groupID: string, isGameActive: boolean): Promise<undefined> => {
+// START Game
+export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
@@ -300,14 +320,25 @@ export const startGame = async (groupID: string, isGameActive: boolean): Promise
 
         
         await updateDoc(groupDocRef, {
-            isGameActive: isGameActive,
-
+            isGameActive: true,
             //set the cycle
             currentPlayersInGame: numberOfPlayers,
             cycleDay: 1,
             cycleCount: 1,
+            totalCycles: totalCycles,
+            dailyTokens: dailyTokens,
+            defaultBetOnSelf: defaultBetOnSelf,
             cycleDuels: cycles,
         });
+        // for each user in users, set their tokens to startingTokens
+        const users = docSnap.data()?.users;
+        for (const user in users) {
+            if (users.hasOwnProperty(user)) {
+                await updateDoc(groupDocRef, {
+                    [`users.${user}.tokens`]: startingTokens,
+                });
+            }
+        }
 
         // Create the duels for cycleDay 1
         const duelsForDay1 = cycles[0]; // Get the first day's duels
@@ -321,7 +352,7 @@ export const startGame = async (groupID: string, isGameActive: boolean): Promise
                     player2: duel.player2,
                     cycleDay: 1,
                     cycleCount: 1,
-                    createdDate: serverTimestamp(), // Add a timestamp for when the duel was created
+                    createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
                 };
 
                 // Add the duel to the 'duels' subcollection of the group document
@@ -330,7 +361,7 @@ export const startGame = async (groupID: string, isGameActive: boolean): Promise
             }
         }
         
-        console.log("startGame - response: ", isGameActive);
+        console.log("startGame - response: ", true);
         return undefined;
     } catch (error) {
          console.error("startGame - Error fetching user document: ", error);
@@ -374,6 +405,33 @@ function createCycle(players: Array<string>): Array<{ [duelKey: string]: { playe
 
     return cycles;
 };
+
+// SET todaysBetTokens
+export const setTodaysBetTokens = async (userID: string, groupID: string, todaysBetTokens: number): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const groupData = groupDoc.data();
+            const users = groupData?.users;
+            
+            // Check if the user is already in the users map
+            if (users && users[userID]) {
+                await updateDoc(groupDocRef, {
+                    [`users.${userID}.todaysBetTokens`]: increment(todaysBetTokens),
+                });
+                console.log(`setTodaysBetTokens - response: User ${userID} todaysBetTokens set to ${todaysBetTokens}`);
+                return;
+            }
+        } else{
+            console.error("setTodaysBetTokens - error: No such document!");
+            return;
+        }
+    } catch (error) {
+         console.error("setTodaysBetTokens - Error fetching group document: ", error);
+         return;
+    }
+}
 
 /*********************************************** MISC FUNCTIONS ********************************************/
 
