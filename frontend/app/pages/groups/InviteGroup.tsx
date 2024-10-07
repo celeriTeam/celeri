@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Image, Button, ActivityIndicator } from 'react-native';
+import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Image, Button, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
@@ -23,6 +23,12 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [currentGroupCode, setCurrentGroupCode] = useState<string | undefined>(undefined);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [isModalVisible, setModalVisible] = useState(false);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const [cycles, setCycles] = useState('5');
+    const [dailyTokens, setDailyTokens] = useState('100');
+    const [startingTokens, setStartingTokens] = useState('1000');
+    const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
     const [isLoading, setIsLoading] = useState(true);
     const [loadingText, setLoadingText] = useState('');
     const [isCreator, setIsCreator] = useState(false);
@@ -64,9 +70,35 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         fetchGroupData();
     }, []);
 
+    useEffect(() => {
+        // Add listeners to track the keyboard state
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setKeyboardVisible(false);
+        });
+
+        // Cleanup listeners
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
+    const openModal = () => {
+        setModalVisible(true);
+    };
+
+    const closeModal = () => {
+        setModalVisible(false);
+    };
+
+    const isFormValid = cycles !== '' && dailyTokens !== '' && startingTokens !== '' && defaultBetOnSelf !== '';
+
     const handleStartPress = async () => {
         console.log('Start game button pressed');
-        await startGame(groupID, true);
+        await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf);
         // navigation.navigate('GroupDetails', { groupID: groupID });
         navigation.reset({
             index: 1,
@@ -79,28 +111,6 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 
     const handleStartReminderPress = async () => {
         console.log('Remind creator to start button pressed');
-
-        // TESTING
-        // const testGroupCode = await generateGroupCode();
-        // const testGroupName = 'Test Group';
-        // const testGroupID = await createGroup(userID, testGroupName, testGroupCode);
-        // if (!testGroupID) {
-        //     Alert.alert('Error', 'Failed to create test group.');
-        //     return;
-        // }
-        // await addGroupToUser(userID, testGroupID);
-
-        // await addUserToGroup('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
-        // await addGroupToUser('07yme5ABE2g7uzJOYV1X7pQU3nj2', testGroupID);
-
-        // await addUserToGroup('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
-        // await addGroupToUser('4K0PDmY9kUMSIrYLm0uHmqHd3C83', testGroupID);
-
-        // await addUserToGroup('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
-        // await addGroupToUser('FQdKt3ZeJWb7WRu2zNgqvzBytDD3', testGroupID);
-
-        // await addUserToGroup('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
-        // await addGroupToUser('rWIz2dEQMthqhnkxNq7gZcIqS2n1', testGroupID);
 
         Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
     };
@@ -171,7 +181,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                 {currentGroupUsersArray.length >= userStartRequirement && (
                     isCreator ? (
                         <TouchableOpacity
-                            onPress={handleStartPress}
+                            onPress={openModal}
                             style={styles.startButton}
                         >
                             <Text style={styles.startButtonText}>Start</Text>
@@ -186,6 +196,79 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                     )
                 )}
             </View>
+            {/* Settings Modal */}
+            <Modal
+                transparent={true}
+                visible={isModalVisible}
+                animationType="slide"
+                onRequestClose={closeModal}
+            >
+                {/* Overlay to dismiss the keyboard */}
+                {keyboardVisible && (
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <View style={styles.dismissOverlay} />
+                    </TouchableWithoutFeedback>
+                )}
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Input fields */}
+                        <Text style={styles.modalTitle}>Game Settings</Text>
+
+                        <Text>Amount of Cycles (Rounds):</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="5"
+                            value={cycles}
+                            onChangeText={setCycles}
+                            keyboardType="numeric"
+                            placeholderTextColor="#888"
+                        />
+
+                        <Text>Amount of Tokens You Get Each Day:</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="100"
+                            value={dailyTokens}
+                            onChangeText={setDailyTokens}
+                            keyboardType="numeric"
+                            placeholderTextColor="#888"
+                        />
+
+                        <Text>Starting Tokens (Minimum 1000):</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="1000"
+                            value={startingTokens}
+                            onChangeText={setStartingTokens}
+                            keyboardType="numeric"
+                            placeholderTextColor="#888"
+                        />
+
+                        <Text>Default Bet on Yourself:</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="100"
+                            value={defaultBetOnSelf}
+                            onChangeText={setDefaultBetOnSelf}
+                            keyboardType="numeric"
+                            placeholderTextColor="#888"
+                        />
+
+                        {/* Buttons */}
+                        <TouchableOpacity 
+                            onPress={isFormValid ? handleStartPress : undefined} 
+                            style={[styles.confirmButton, { backgroundColor: isFormValid ? '#28a745' : '#d3d3d3' }]}
+                            disabled={!isFormValid}
+                        >
+                            <Text style={styles.confirmButtonText}>Confirm & Start</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={closeModal} style={styles.cancelButton}>
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -274,6 +357,57 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         borderRadius: 5,
+    },
+    // Modal styles
+    dismissOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 1,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContainer: {
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        padding: 10,
+        marginVertical: 10,
+        borderRadius: 5,
+    },
+    confirmButton: {
+        backgroundColor: '#28a745',
+        padding: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    confirmButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    cancelButton: {
+        marginTop: 10,
+        padding: 10,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: '#ff0000',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });
 

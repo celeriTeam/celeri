@@ -7,7 +7,7 @@ import { useUser } from '../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
-import { getGroupIsFirstDay, getUserTokens } from '@/backend/src/groups';
+import { getDefaultBetOnSelf, getGroupIsFirstDay, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -41,6 +41,41 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
       await addToFinishedRecap(groupID, userID);
     };
 
+    const fetchUserName = async (matchups: { duelID: string, player1: string; player2: string; }[]) => {
+        try {
+            // Get user's tokens
+            const userTokens = await getUserTokens(userID, groupID);
+            setCurrentUserTokens(userTokens);
+
+            const currentPlayers = matchups[currentMatchupIndex];
+            const player1ID = currentPlayers.player1;
+            setPlayer1ID(player1ID);
+            const player2ID = currentPlayers.player2;
+            setPlayer2ID(player2ID);
+            const player1 = await getUserName(player1ID);
+            setPlayer1(player1);
+            const player2 = await getUserName(player2ID);
+            setPlayer2(player2);
+
+            if (player1ID === userID) {
+                const betOnSelfAmount = await getDefaultBetOnSelf(groupID);
+                setSelectedPlayer(player1ID);
+                setBetAmount1(betOnSelfAmount ? betOnSelfAmount.toString() : '100');
+            } else if (player2ID === userID) {
+                const betOnSelfAmount = await getDefaultBetOnSelf(groupID);
+                setSelectedPlayer(player2ID);
+                setBetAmount2(betOnSelfAmount ? betOnSelfAmount.toString() : '100');
+            } else {
+                // Reset the selection and bet amounts if the current user isn't involved
+                setSelectedPlayer(null);
+                setBetAmount1('');
+                setBetAmount2('');
+            }
+        } catch(error) {
+            console.error("Error fetching user data:", error);
+        }
+    };
+
     const fetchData = async () => {
         try {
             const isFirstDay = await getGroupIsFirstDay(groupID);
@@ -61,39 +96,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             console.error("Error fetching user data:", error);
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const fetchUserName = async (matchups: { duelID: string, player1: string; player2: string; }[]) => {
-        try {
-            // Get user's tokens
-            const userTokens = await getUserTokens(userID, groupID);
-            setCurrentUserTokens(userTokens);
-
-            const currentPlayers = matchups[currentMatchupIndex];
-            const player1ID = currentPlayers.player1;
-            setPlayer1ID(player1ID);
-            const player2ID = currentPlayers.player2;
-            setPlayer2ID(player2ID);
-            const player1 = await getUserName(player1ID);
-            setPlayer1(player1);
-            const player2 = await getUserName(player2ID);
-            setPlayer2(player2);
-
-            if (player1ID === userID) {
-                setSelectedPlayer(player1ID);
-                setBetAmount1('100'); // Automatically set bet amount to 10 for player1
-            } else if (player2ID === userID) {
-                setSelectedPlayer(player2ID);
-                setBetAmount2('100'); // Automatically set bet amount to 10 for player2
-            } else {
-                // Reset the selection and bet amounts if the current user isn't involved
-                setSelectedPlayer(null);
-                setBetAmount1('');
-                setBetAmount2('');
-            }
-        } catch(error) {
-            console.error("Error fetching user data:", error);
         }
     };
 
@@ -128,6 +130,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             console.log('you bet: ', submittedBet);
             console.log('duelid: ', duelID);
             await createBet(userID, groupID, duelID, submittedBet, submittedPlayer ?? '');
+
+            await setTodaysBetTokens(userID, groupID, submittedBet);
+            setCurrentUserTokens(currentUserTokens ? currentUserTokens - submittedBet : 0);
             
             setCurrentMatchupIndex(currentMatchupIndex + 1);
             setChangePageForUserName(true);
@@ -166,6 +171,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         console.log('duelid: ', duelID);
         await createBet(userID, groupID, duelID, submittedBet, submittedPlayer ?? '');
         await addToFinishedBetting(groupID, userID);
+
+        await setTodaysBetTokens(userID, groupID, submittedBet);
 
         // navigation.navigate('BetSummaryPage', { groupID: groupID });
         navigation.reset({
