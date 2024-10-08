@@ -118,7 +118,7 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
 }
 
 // GET duels not bet on yet by user
-export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string } } | undefined> => {
+export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string } }> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -133,7 +133,7 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
 
             if (querySnapshot.empty) {
                 console.log('No duels found for today');
-                return undefined;
+                return {};
             }
             
             const duels: { [key: string]: { duelID: string, player1: string, player2: string } } = {};
@@ -157,11 +157,11 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
             return duels;
         } else{
             console.error("getUnbetDuels - error: No such document!");
-            return undefined;
+            return {};
         }
     } catch (error) {
          console.error("getUnbetDuels - Error fetching user document: ", error);
-         return undefined;
+         return {};
     }
 }
 

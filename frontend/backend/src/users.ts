@@ -37,7 +37,7 @@ export const getUserName = async (id: string): Promise<string> => {
             console.log("getUserName - response:", userDoc.data()?.username);
             return userDoc.data()?.username;
         } else {
-            console.error("getUserName - error: No such document!");
+            console.error(`getUserName - error: No such document for user ${id}!`);
             return '';
         }
     } catch (error) {
