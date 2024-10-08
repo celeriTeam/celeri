@@ -7,7 +7,7 @@ import { useUser } from '../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
-import { getDefaultBetOnSelf, getGroupIsFirstDay, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
+import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -30,6 +30,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [player2ID, setPlayer2ID] = useState('');
     const [player1, setPlayer1] = useState('');
     const [player2, setPlayer2] = useState('');
+    const [totalBetTokens, setTotalBetTokens] = useState(0);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
@@ -84,6 +85,16 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             }
 
             let dailyDuel = await getUnbetDuels(groupID, userID);
+            if (Object.keys(dailyDuel).length === 0) {
+                await addToFinishedBetting(groupID, userID);
+                navigation.reset({
+                    index: 1,
+                    routes: [
+                        { name: 'HomeTab' }, // the first route in the stack
+                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
+                    ],
+                });
+            }
             const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                 return Object.values(duels);
             };
@@ -92,6 +103,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setMatchups(matchups);
             
             fetchUserName(matchups);
+            const todaysBetTokens = await getTodaysBetTokens(userID, groupID);
+            setTotalBetTokens(todaysBetTokens);
         } catch(error) {
             console.error("Error fetching user data:", error);
         } finally {
@@ -133,6 +146,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
             await setTodaysBetTokens(userID, groupID, submittedBet);
             setCurrentUserTokens(currentUserTokens ? currentUserTokens - submittedBet : 0);
+            setTotalBetTokens(totalBetTokens + submittedBet);
             
             setCurrentMatchupIndex(currentMatchupIndex + 1);
             setChangePageForUserName(true);
@@ -173,6 +187,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         await addToFinishedBetting(groupID, userID);
 
         await setTodaysBetTokens(userID, groupID, submittedBet);
+        setTotalBetTokens(totalBetTokens + submittedBet);
 
         // navigation.navigate('BetSummaryPage', { groupID: groupID });
         navigation.reset({
@@ -203,8 +218,12 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.dismissOverlay} />
                 </TouchableWithoutFeedback>
             )}
+            <Text style={styles.reminderText}>Click on which friend{'\n'} you want to bet on!</Text>
             <View style={styles.tokens}>
                 <Text>Your Tokens: {currentUserTokens}</Text>
+            </View>
+            <View style={styles.betTokens}>
+                <Text>Bet Tokens: {totalBetTokens}</Text>
             </View>
 
             {/* Top-left (Player 1) */}
@@ -306,9 +325,27 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         zIndex: 1,
     },
+    reminderText: {
+        position: 'absolute',
+        color: 'red',
+        top: 10,
+        left: 20,
+        zIndex: 100,
+    },
     tokens: {
         position: 'absolute',
         top: 10,
+        right: 20,
+        backgroundColor: '#FFD700',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderColor: '#FF8C00',
+        borderWidth: 2,
+        zIndex: 100,
+    },
+    betTokens: {
+        position: 'absolute',
+        top: 40,
         right: 20,
         backgroundColor: '#FFD700',
         paddingHorizontal: 10,

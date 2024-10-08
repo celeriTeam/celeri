@@ -358,16 +358,6 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         }
         console.log("Game has ended");
       } else {
-        // update the tokens for each player
-        for (let i = 0; i < numberOfPlayers; i++) {
-          const playerID = data.order[i];
-          const playerDocRef = firestore.collection("users").doc(playerID);
-
-          groupBatch.update(playerDocRef, {
-            tokens: FieldValue.increment(data.dailyTokens),
-            todaysBetTokens: 0,
-          });
-        }
         // create new duels
         const duelsForToday = cycleDuels[cycleDay - 1]; // 0-based index
         if (!duelsForToday || typeof duelsForToday !== "object") {
@@ -379,16 +369,32 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         console.log(duelsForToday);
         console.log(cycleDay - 1);
 
+        const usersInDuels = [];
+
         // Create new duel documents for each matchup in duelsForToday
         Object.entries(duelsForToday).forEach(([key, duel]) => {
           console.log("checkpoint 5.5");
           console.log(duel.player1);
           console.log(duel.player2);
+          usersInDuels.push(duel.player1);
+          usersInDuels.push(duel.player2);
           if (!duel.player1 || !duel.player2) {
             console.error(`Invalid duel entry: ${duel} for key: ${key}`);
             return;
             // Skip this iteration if player1 or player2 is undefined
           }
+
+          const player1Bet = {
+            userID: duel.player1,
+            wager: data.defaultBetOnSelf,
+            betOnUserID: duel.player1,
+          };
+
+          const player2Bet = {
+            userID: duel.player2,
+            wager: data.defaultBetOnSelf,
+            betOnUserID: duel.player2,
+          };
 
           const duelData = {
             player1: duel.player1,
@@ -399,6 +405,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
             admin.firestore.FieldValue.serverTimestamp(), // Update this
             ended: false,
             winner: "empty",
+            bets: [player1Bet, player2Bet],
           };
           // Add a new duel document inside the `duels` subcollection
           // Auto-generate a new document ID
@@ -414,6 +421,24 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
         });
+
+        // update the tokens for each player
+        for (let i = 0; i < numberOfPlayers; i++) {
+          const playerID = data.order[i];
+          const playerDocRef = firestore.collection("users").doc(playerID);
+
+          if (usersInDuels.includes(playerID)) {
+            groupBatch.update(playerDocRef, {
+              tokens: FieldValue.increment(data.dailyTokens),
+              todaysBetTokens: data.defaultBetOnSelf,
+            });
+          } else {
+            groupBatch.update(playerDocRef, {
+              tokens: FieldValue.increment(data.dailyTokens),
+              todaysBetTokens: 0,
+            });
+          }
+        }
       }
     });
     // Commit the batch operation to Firestore

@@ -193,6 +193,25 @@ export const getDefaultBetOnSelf = async (groupID: string): Promise<number | und
     }
 }
 
+// GET todaysBetTokens
+export const getTodaysBetTokens = async (userID: string, groupID: string): Promise<number> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const users = groupDoc.data()?.users;
+            const user = users[userID];
+            console.log("getTodaysBetTokens - response: ", user.todaysBetTokens);
+            return user.todaysBetTokens;
+        } else{
+            console.error("getTodaysBetTokens - error: No such document!");
+            return -1;
+        }
+    } catch (error) {
+         console.error("getTodaysBetTokens - Error fetching user document: ", error);
+         return -1;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
