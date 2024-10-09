@@ -301,9 +301,12 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
     }
 
     console.log("Group snapshots found:", groupSnapshots.size);
+
+    const allBatches = [];
+
     const groupBatch = firestore.batch();
     console.log("checkpoint one");
-    groupSnapshots.docs.forEach((doc) => {
+    groupSnapshots.docs.forEach(async (doc) => {
       const data = doc.data();
       const groupDocRef = doc.ref;
 
@@ -347,15 +350,19 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           finishedRecap: admin.firestore.FieldValue.delete(),
         });
         // reset the tokens for each player
+        const newUsers = {};
         for (let i = 0; i < numberOfPlayers; i++) {
           const playerID = data.order[i];
-          const playerDocRef = firestore.collection("users").doc(playerID);
-
-          groupBatch.update(playerDocRef, {
+          const newPlayer = {
+            placedBet: true,
             tokens: 0,
             todaysBetTokens: 0,
-          });
+          };
+          newUsers[playerID] = newPlayer;
         }
+        groupBatch.update(groupDocRef, {
+          users: newUsers,
+        });
         console.log("Game has ended");
       } else {
         // create new duels
@@ -423,27 +430,35 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         });
 
         // update the tokens for each player
+        const newUsers = {};
         for (let i = 0; i < numberOfPlayers; i++) {
           const playerID = data.order[i];
-          const playerDocRef = firestore.collection("users").doc(playerID);
-
+          const newTokens = data.users[playerID].tokens - data.users[playerID].todaysBetTokens + data.dailyTokens;
+          let newTodaysBetTokens = 0;
           if (usersInDuels.includes(playerID)) {
-            groupBatch.update(playerDocRef, {
-              tokens: FieldValue.increment(data.dailyTokens),
-              todaysBetTokens: data.defaultBetOnSelf,
-            });
+            newTodaysBetTokens = data.defaultBetOnSelf;
           } else {
-            groupBatch.update(playerDocRef, {
-              tokens: FieldValue.increment(data.dailyTokens),
-              todaysBetTokens: 0,
-            });
+            newTodaysBetTokens = 0;
           }
+          const newPlayer = {
+            placedBet: true,
+            tokens: newTokens,
+            todaysBetTokens: newTodaysBetTokens,
+          };
+          newUsers[playerID] = newPlayer;
+          console.log(`Setting user ${playerID} to have ${newTodaysBetTokens} bet tokens`);
         }
+        groupBatch.update(groupDocRef, {
+          users: newUsers,
+        });
       }
+      // Add the batch to the array to commit later
+      allBatches.push(groupBatch.commit());
     });
-    // Commit the batch operation to Firestore
+
+    // Wait for all batches to be committed
     console.log("checkpoint seven");
-    await groupBatch.commit();
+    await Promise.all(allBatches);
 
     console.log("Duels created and cycle updated successfully.");
   } catch (error) {
