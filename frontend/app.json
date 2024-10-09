@@ -15,7 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
-      "bundleIdentifier": "com.alp2goose.flex"
+      "bundleIdentifier": "com.alp2goose.flex",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
+      }
     },
     "android": {
       "googleServicesFile": "google-services.json",
@@ -33,6 +39,16 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            {
+              "Lexend": "./assets/fonts/Lexend-Regular.ttf"
+            }
+          ]
+        }
+      ],
       [
         "expo-build-properties",
         {

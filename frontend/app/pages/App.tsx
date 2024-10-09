@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import * as Font from 'expo-font';
 import ProfileTab from './profile/PersonalProfile';
 import TestScreen from './Test';
 import BugReportsPage from './BugReports';
@@ -8,6 +9,7 @@ import HomePage from './home/Home';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { UserProvider } from '../UserProvider';
+import AppLoading from 'expo-app-loading';
 
 const Tab = createBottomTabNavigator();
 const auth = getAuth(app);
@@ -15,6 +17,25 @@ const auth = getAuth(app);
 const AppPage: React.FC = () => {
     const [userID, setUserID] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
+    const [fontsLoaded, setFontsLoaded] = useState(false);
+
+    console.log('In apppage');
+    
+    useEffect(() => {
+        const loadFonts = async () => {
+            console.log('Loading fonts...'); // Add this line to check if the function is running
+            await Font.loadAsync({
+                'Lexend': require('../../assets/fonts/Lexend-Regular.ttf'), // Adjust path as necessary
+            });
+            console.log('Fonts loaded successfully.'); // Add this line to confirm successful font loading
+            setFontsLoaded(true);
+        };
+
+        loadFonts();
+    }, []);
+    if (!fontsLoaded) {
+        return <AppLoading />;
+    }
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {

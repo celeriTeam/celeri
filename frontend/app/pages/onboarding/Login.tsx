@@ -85,7 +85,7 @@ const LoginPage: React.FC<Props> = ({ navigation }) => {
             <SafeAreaView style={styles.contentView}>
                 <View style={styles.container}>
                     <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Login</Text>
+                        <Text style={styles.titleText}>Login here</Text>
                     </View>
                     <View style={styles.mainContent}>
                         <TextInput
@@ -107,12 +107,18 @@ const LoginPage: React.FC<Props> = ({ navigation }) => {
                         />
                     </View>
 
-                    <CTAButton
-                        title="Log In"
+                    <TouchableOpacity 
                         onPress={loginAndGoToMainFlow}
-                        variant="primary"
-                    />
-                    <CTAButton title="Go Back" onPress={nav.goBack} variant="secondary" />
+                        style={[styles.button_container]}
+                    >
+                        <Text style={styles.button_text}>Login</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={nav.goBack}
+                        style={[styles.button_container2]}
+                    >
+                        <Text style={styles.button_text2}>Go Back</Text>
+                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         </Pressable>
@@ -138,19 +144,34 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         textAlign: "center",
         fontSize: 24,
+        fontFamily: "Lexend"
     },
     button_text: {
         textAlign: "center",
-        fontSize: 24,
-        color: "#1976d2"
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
+    },
+    button_text2: {
+        color: 'black',
+        fontSize: 16,
+        fontFamily: 'Lexend',
     },
     button_container: {
-        borderRadius: 15,
+        borderRadius: 30,
         flexDirection: "row",
-        margin: 16,
-        padding: 24,
+        marginVertical: 8,
+        paddingVertical: 18, // Reduce padding to make it smaller
+        paddingHorizontal: 20,
         justifyContent: "center",
-        backgroundColor: "#e6e6e6"
+        backgroundColor: '#1976d2'
+    },
+    button_container2: {
+        flexDirection: "row",
+        paddingVertical: 12, // Reduce padding to make it smaller
+        paddingHorizontal: 20,
+        justifyContent: "center",
+        backgroundColor: '#fff'
     },
     contentView: {
         flex: 1,
@@ -161,16 +182,22 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     titleText: {
-        fontSize: 45,
         textAlign: "center",
+        fontSize: 30,
         fontWeight: "200",
+        fontFamily: 'Lexend',
     },
     loginTextField: {
-        borderBottomWidth: 1,
-        height: 60,
-        fontSize: 30,
-        marginVertical: 10,
-        fontWeight: "300",
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        height: 50,
+        fontSize: 20,
+        paddingHorizontal: 12,
+        marginVertical: 12,
+        fontWeight: "100",
+        fontFamily: 'Lexend'
+        
     },
     mainContent: {
         flex: 6,

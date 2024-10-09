@@ -12,13 +12,33 @@ import { RootStackParamList } from './types';
 import InvitePage from './pages/groups/InviteGroup';
 import AppPage from './pages/App';
 import { ActivityIndicator, View, Text } from 'react-native';
+import * as Font from 'expo-font';
+import AppLoading from 'expo-app-loading';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
+  
     const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Register');
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [fontsLoaded, setFontsLoaded] = useState(false);
     const auth = getAuth();
+
+    console.log('In Index Page');
+    
+    useEffect(() => {
+        const loadFonts = async () => {
+            console.log('Loading fonts...'); // Add this line to check if the function is running
+            await Font.loadAsync({
+                'Lexend': require('../assets/fonts/Lexend-Regular.ttf'), // Adjust path as necessary
+                'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
+            });
+            console.log('Fonts loaded successfully.'); // Add this line to confirm successful font loading
+            setFontsLoaded(true);
+        };
+
+        loadFonts();
+    }, []);
 
     useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {

@@ -169,8 +169,25 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
             <SafeAreaView style={styles.contentView}>
                 <View style={styles.container}>
                     <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Register</Text>
+                        <Text style={styles.titleText}>Create an account</Text>
                     </View>
+
+                    <View style={styles.profileImageContainer}>
+                        <TouchableOpacity onPress={pickImage} style={styles.profileImageWrapper}>
+                            {profileImage ? (
+                                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                            ) : (
+                                <Image
+                                    source={require('@components/blank-profile-picture.png')}
+                                    style={styles.profileImage}
+                                />
+                            )}
+                            <View style={styles.plusIconContainer}>
+                                <Text style={styles.plusIconText}>+</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+
                     <View style={styles.mainContent}>
                         <TextInput
                             style={styles.loginTextField}
@@ -203,20 +220,21 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                             secureTextEntry
                             placeholderTextColor="#999797"
                         />
-                        <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
-                            <Text style={styles.button_text2}>Pick Profile Image</Text>
-                        </TouchableOpacity>
-                        {profileImage && (
-                            <Image source={{ uri: profileImage }} style={styles.profileImage} />
-                        )}
+                    
                     </View>
 
-                    <CTAButton
-                        title="Sign Up"
+                    <TouchableOpacity
                         onPress={registerAndGoToMainFlow}
-                        variant="primary"
-                    />
-                    <CTAButton title="Go Back" onPress={nav.goBack} variant="secondary" />
+                        style={[styles.button_container]}
+                    >
+                        <Text style={styles.button_text}>Sign Up</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={nav.goBack}
+                        style={[styles.button_container2]}
+                    >
+                        <Text style={styles.button_text2}>Go Back</Text>
+                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         </Pressable>
@@ -241,23 +259,34 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         textAlign: "center",
         fontSize: 24,
+        fontFamily: 'Lexend',
     },
     button_text: {
         textAlign: "center",
-        fontSize: 24,
-        color: "#1976d2"
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
     },
     button_text2: {
-        color: 'white',
+        color: 'black',
         fontSize: 16,
+        fontFamily: 'Lexend',
     },
     button_container: {
-        borderRadius: 15,
+        borderRadius: 30,
         flexDirection: "row",
-        margin: 16,
-        padding: 24,
+        marginVertical: 8,
+        paddingVertical: 18, // Reduce padding to make it smaller
+        paddingHorizontal: 20,
         justifyContent: "center",
-        backgroundColor: "#e6e6e6"
+        backgroundColor: '#1976d2'
+    },
+    button_container2: {
+        flexDirection: "row",
+        paddingVertical: 12, // Reduce padding to make it smaller
+        paddingHorizontal: 20,
+        justifyContent: "center",
+        backgroundColor: '#fff'
     },
     imagePickerButton: {
         marginTop: 20,
@@ -273,28 +302,79 @@ const styles = StyleSheet.create({
     titleContainer: {
         flex: 1.2,
         justifyContent: "center",
+        marginBottom: 30,
     },
     titleText: {
-        fontSize: 45,
         textAlign: "center",
+        fontSize: 30,
         fontWeight: "200",
+        fontFamily: 'Lexend',
     },
     loginTextField: {
-        borderBottomWidth: 1,
-        height: 60,
-        fontSize: 30,
-        marginVertical: 10,
-        fontWeight: "300",
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        height: 50,
+        fontSize: 20,
+        paddingHorizontal: 12,
+        marginVertical: 12,
+        fontWeight: "100",
+        fontFamily: 'Lexend'
+        
     },
     mainContent: {
         flex: 6,
     },
     profileImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
         marginVertical: 10,
     },
+    profileImageContainer: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    
+    profileImageWrapper: {
+        width: 120, // Match the size of the profileImage
+        height: 120, // Match the size of the profileImage
+        borderRadius: 60, // Half of the width/height
+        overflow: 'visible',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ccc', // Default gray background
+        position: 'relative', // Enable absolute positioning for the plus icon
+    },
+    
+    
+    plusIconContainer: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 30, // Size of the blue circle
+        height: 30, // Size of the blue circle
+        borderRadius: 15, // Half of the width/height for a perfect circle
+        backgroundColor: '#1976d2', // Blue background color
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    
+    plusIconText: {
+        color: '#fff', // White color for the plus sign
+        fontSize: 20,
+        lineHeight: 20,
+    },
+    
+    defaultProfileImage: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ccc', // Default gray background
+        borderRadius: 60,
+    },
+    
 });
 
 export default SignUpPage;
