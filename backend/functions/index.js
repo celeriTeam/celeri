@@ -433,7 +433,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         const newUsers = {};
         for (let i = 0; i < numberOfPlayers; i++) {
           const playerID = data.order[i];
-          const newTokens = data.users[playerID].tokens + data.dailyTokens;
+          const newTokens = data.users[playerID].tokens - data.users[playerID].todaysBetTokens + data.dailyTokens;
           let newTodaysBetTokens = 0;
           if (usersInDuels.includes(playerID)) {
             newTodaysBetTokens = data.defaultBetOnSelf;
