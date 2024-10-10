@@ -70,11 +70,12 @@ const App: React.FC = () => {
                 <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false}} />
                 <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
                 <Stack.Screen name="AppPage" component={AppPage} options={{ 
-                    title: 'Groups',
-                    headerStyle: { backgroundColor: '#42a5f5' },
-                    headerTitleStyle: { fontWeight: 'bold' },
-                    headerTintColor: '#fff',
-                    headerLeft: () => null
+                    // title: 'Groups',
+                    // headerStyle: { backgroundColor: '#42a5f5' },
+                    // headerTitleStyle: { fontWeight: 'bold' },
+                    // headerTintColor: '#fff',
+                    // headerLeft: () => null
+                    headerShown: false
                 }}
                 />
             </Stack.Navigator>

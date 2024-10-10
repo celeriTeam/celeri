@@ -23,19 +23,13 @@ const AppPage: React.FC = () => {
     
     useEffect(() => {
         const loadFonts = async () => {
-            console.log('Loading fonts...'); // Add this line to check if the function is running
             await Font.loadAsync({
-                'Lexend': require('../../assets/fonts/Lexend-Regular.ttf'), // Adjust path as necessary
+                'Lexend': require('../../assets/fonts/Lexend-Regular.ttf'),
             });
-            console.log('Fonts loaded successfully.'); // Add this line to confirm successful font loading
             setFontsLoaded(true);
         };
-
         loadFonts();
     }, []);
-    if (!fontsLoaded) {
-        return <AppLoading />;
-    }
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {

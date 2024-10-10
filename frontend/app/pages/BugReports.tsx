@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
@@ -44,7 +44,12 @@ const BugReportsPage: React.FC<Props> = () => {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={styles.container}>
-                <Text style={styles.text}>Thanks for using our app! If you have found any issue with this app, please fill out the form below.</Text>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.titleText}>Bug Reports</Text>
+                </View>
+                <Text style={styles.text}>We want to hear your feedback. If you have any questions, comments, or issues with our app,
+                    please feel free to let us know here!
+                </Text>
 
                 <TextInput
                     style={styles.input}
@@ -61,10 +66,15 @@ const BugReportsPage: React.FC<Props> = () => {
                     onChangeText={setIssue}
                     placeholderTextColor="#888"
                     multiline={true}
-                    numberOfLines={4}
+                    numberOfLines={8}
                 />
 
-                <Button title="Submit" onPress={handleSubmit} />
+                <TouchableOpacity 
+                    onPress={handleSubmit}
+                    style={[styles.button_container]}
+                >
+                    <Text style={styles.button_text}>Submit Form</Text>
+                </TouchableOpacity>
             </View>
         </TouchableWithoutFeedback>
     );
@@ -73,32 +83,72 @@ const BugReportsPage: React.FC<Props> = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        backgroundColor: '#fff', 
+        justifyContent: 'flex-start',
         alignItems: 'center',
     },
     text: {
-        fontSize: 24,
+        fontSize: 18,
         marginBottom: 20,
+        marginTop: 20,
+        marginLeft: 10,
+        marginRight: 10,
+        textAlign: 'center',
+        fontFamily: 'Lexend',
+
     },
     input: {
-        height: 40,
-        width: '100%',
-        borderColor: '#ccc',
         borderWidth: 1,
-        borderRadius: 5,
-        padding: 10,
-        marginBottom: 15,
-        fontSize: 16,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        height: 50,
+        width: 350,
+        fontSize: 18,
+        paddingHorizontal: 12,
+        marginVertical: 12,
+        fontWeight: "100",
+        fontFamily: 'Lexend'
     },
+    
     textArea: {
-        height: 100,
-        width: '100%',
+        height: 300,
+        width: 350,
         borderColor: '#ccc',
         borderWidth: 1,
-        borderRadius: 5,
+        borderRadius: 8,
         padding: 10,
         marginBottom: 20,
-        fontSize: 16,
+        fontSize: 18,
+        paddingHorizontal: 12,
+        fontFamily: "Lexend"
+    },
+    titleContainer: {
+        marginBottom: 0,
+        paddingTop: 20,
+        justifyContent: "flex-start"
+    },
+    titleText: {
+        textAlign: "center",
+        fontSize: 30,
+        fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+    },
+
+    button_text: {
+        textAlign: "center",
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
+    },
+    button_container: {
+        borderRadius: 30,
+        width: 175,
+        flexDirection: "row",
+        marginVertical: 8,
+        paddingVertical: 18, // Reduce padding to make it smaller
+        paddingHorizontal: 20,
+        justifyContent: "center",
+        backgroundColor: '#1976d2'
     },
 });
 

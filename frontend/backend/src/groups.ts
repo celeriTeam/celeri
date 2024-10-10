@@ -212,6 +212,23 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
     }
 }
 
+// GET Group Profile Pic
+export const getGroupProfilePic = async (id: string): Promise<string | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", id));
+        if (groupDoc.exists() && groupDoc.data()?.username) {
+            console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
+            return groupDoc.data()?.groupImageUrl;
+        } else {
+            console.error("getGroupPic - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getGroupPic - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group

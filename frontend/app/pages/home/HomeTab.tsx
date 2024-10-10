@@ -1,15 +1,23 @@
 // HomeTab.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator } from 'react-native';
+import { View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    ActivityIndicator,
+    Image,
+    Button,
+    Modal} from 'react-native';
 import { Pedometer } from 'expo-sensors';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupIDFromGroupName, getGroupIsGameActive, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupIDFromGroupName, getGroupIsGameActive, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { auth } from '@/firebaseConfig';
 import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
+import { BlurView } from 'expo-blur';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -17,13 +25,27 @@ type Props = {
     navigation: HomeScreenNavigationProp;
 };
 
+type GroupData = {
+    groupName: string;
+    numberOfUsers: number;
+    isGameActive: boolean | undefined;
+    profilePicture: string | undefined;
+};
+
 const HomeTab: React.FC<Props> = ({ navigation }) => {
+
+    
     const { userID } = useUser();
     const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
-    const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
+    const [isModalVisible, setIsModalVisible] = useState(false);
+    const [currentUserGroups, setCurrentUserGroups] = useState<GroupData[] | undefined>(undefined);
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [shouldReload, setShouldReload] = useState(false);
+
+    const toggleModal = () => {
+        setIsModalVisible(!isModalVisible);
+    };
 
     const fetchUserData = async () => {
         try {
@@ -33,7 +55,34 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             const name = await getUserName(userID);
             setCurrentUserName(name);
             const groups = await getUserGroups(userID);
-            setCurrentUserGroups(groups);
+
+            if (!groups || groups.length == 0) {
+                // If groups is undefined or null, set it to an empty array
+                setCurrentUserGroups([]);
+                return;
+            }
+
+            const groupData = await Promise.all(groups.map(async (groupName: string) => {
+                const groupID = await getGroupIDFromGroupName(groupName);
+                if (!groupID) {
+                    console.log("Error: groupID invalid")
+                    return;
+                }
+                const GroupUsers = await getUsersInGroup(groupID);
+                const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
+                const isGameActive = await getGroupIsGameActive(groupID);
+                const profilePicture = await getGroupProfilePic(groupID);
+                return {
+                    groupName,
+                    numberOfUsers,
+                    isGameActive,
+                    profilePicture,
+                };
+            }));
+            // Filter out undefined values from groupData
+            const filteredGroupData = groupData.filter((group): group is GroupData => group !== undefined);
+
+            setCurrentUserGroups(filteredGroupData);
         } catch (error) {
             console.error("Error fetching user data:", error);
         } finally {
@@ -145,25 +194,80 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     } else {
         return (
             <View style={styles.container}>
-                <Text style={styles.welcome}>
-                    Welcome back, <Text style={styles.username}>{currentUserName}</Text>
-                </Text>
-                <Text style={styles.title}>Your Groups:</Text>
-                {currentUserGroups.map((groupName: string) => (
-                    <Button
-                        key={groupName}
-                        title={String(groupName)}
-                        onPress={() => goToGroup(groupName)}
-                    />
+                <View style={styles.titleContainer}>
+                        <Text style={styles.titleText}>Groups</Text>
+                    </View>
+                <Text style={styles.subTitle}>Your Groups:</Text>
+                {currentUserGroups.map((group) => (
+                    <TouchableOpacity
+                    key={group.groupName}
+                    style={styles.groupButton}
+                    onPress={() => goToGroup(group.groupName)}
+                    >
+                    {group.profilePicture ? (
+                        <Image
+                        source={{ uri: group.profilePicture }}
+                        style={styles.groupImage}
+                        />
+                    ) : (
+                        <Image 
+                        source={require('@components/blank-profile-picture.png')}
+                        style={styles.groupImage}
+                        />
+                    )}
+                    <View style={styles.groupInfo}>
+                        <Text style={styles.groupName}>{group.groupName}</Text>
+                        <Text style={styles.groupDetails}>
+                            {group.numberOfUsers} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
                 ))}
-                <View style={styles.spaceAboveButton}>
-                    <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
-                        <Text style={styles.buttonText}>Join Another Group</Text>
-                    </TouchableOpacity>
-                </View>
-                    <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
-                        <Text style={styles.buttonText}>Create Group</Text>
-                    </TouchableOpacity>
+
+            {/* Floating Action Button */}
+            <TouchableOpacity style={styles.fab} onPress={toggleModal}>
+                <Text style={styles.fabText}>+</Text>
+            </TouchableOpacity>
+
+            {/* Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={isModalVisible}
+                onRequestClose={toggleModal}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={toggleModal} // Closes the modal when clicked outside the content
+                >
+                    <BlurView intensity={50} style={styles.blurView}>
+                        <TouchableOpacity
+                            activeOpacity={1}
+                            style={styles.modalContentWrapper}
+                            onPress={() => {}} // Prevent closing when clicking inside the modal content
+                        >
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Group Options</Text>
+                                <TouchableOpacity style={styles.button} onPress={() => {
+                                    toggleModal();
+                                    joinGroupButtonHandle();
+                                }}
+                                >
+                                    <Text style={styles.buttonText}>Join Group</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.button} onPress={() => {
+                                    toggleModal();
+                                    createGroupButtonHandle();
+                                }}
+                                >
+                                    <Text style={styles.buttonText}>Create Group</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    </BlurView>
+                </TouchableOpacity>
+            </Modal>
             </View>
         );
     }
@@ -172,33 +276,153 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
+        backgroundColor: '#fff', 
     },
     welcome: {
         fontSize: 24,
         marginBottom: 40,
+        fontFamily: 'Lexend'
     },
     username: {
         fontWeight: 'bold',
     },
-    title: {
+    subTitle: {
+        paddingTop: 20,
+        paddingLeft: 20,
+        textAlign: "left",
         fontSize: 20,
+        fontFamily: 'Lexend',
+        alignSelf: 'flex-start',
     },
     button: {
-        backgroundColor: '#1E90FF', // Blue background color
+        backgroundColor: '#1976d2', // Blue background color
         paddingVertical: 10,
         paddingHorizontal: 20,
-        borderRadius: 25, // Oval shape
+        borderRadius: 30, // Oval shape
         marginVertical: 10,
+        width: 175,
     },
     buttonText: {
-        color: '#FFFFFF', // White text color
-        fontSize: 16,
-        fontWeight: 'bold',
+        textAlign: "center",
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
     },
     spaceAboveButton: {
         marginTop: 30,
+    },
+    titleContainer: {
+        justifyContent: "center",
+    },
+    titleText: {
+        textAlign: "center",
+        fontSize: 30,
+        fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+        paddingTop: 20,
+    },
+    groupButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f8f8',
+        padding: 15,
+        borderRadius: 10,
+        marginVertical: 10,
+        width: '90%',
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 5,
+        elevation: 3,
+    },
+    groupImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 15,
+    },
+    groupInfo: {
+        flex: 1,
+    },
+    groupName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: 'Lexend',
+    },
+    groupDetails: {
+        fontSize: 14,
+        color: '#666',
+        fontFamily: 'Lexend',
+    },
+    fab: {
+        position: 'absolute',
+        top: 75,
+        right: 20,
+        backgroundColor: '#1E90FF',
+        width: 45,
+        height: 45,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.3,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 5,
+        elevation: 5,
+    },
+    fabText: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    blurView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 30,
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        fontFamily: "Lexend"
+    },
+    closeButton: {
+        marginTop: 20,
+        padding: 10,
+        backgroundColor: '#1E90FF',
+        borderRadius: 8,
+    },
+    closeButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    modalOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContentWrapper: {
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
 
