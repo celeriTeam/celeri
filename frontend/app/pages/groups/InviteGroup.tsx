@@ -138,28 +138,31 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.groupName}>{currentGroupName}</Text> has been successfully created!
                     </Text>
                 ) : (
-                    <View style={styles.row}>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <View>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.groupNameStandalone}>{currentGroupName}</Text>
+                        </View>
+                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                             <Image
                                 source={require('@components/back-icon.png')}
                                 style={styles.backImage}
                             />
                         </TouchableOpacity>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.groupNameStandalone}>{currentGroupName}</Text>
-                        </View>
                     </View>
                 )}
                 {currentGroupUsersArray.length >= userStartRequirement ? (
                     <Text style={styles.text}>
-                        You have enough members in your group! Click the button below to start a new game.
+                        If your group is ready, click the button below to start a new game.
                     </Text>
                 ) : (
                     <Text style={styles.text}>
-                        You don't have enough members in your group yet. Share the group code below to invite others to join!
+                        You need three members to start a game. Share the group code below to invite others to join!
                     </Text>
                 )}
-                {currentGroupUsersArray ? (
+                <Text style={styles.text}>
+                    Group Members:
+                </Text>
+               {currentGroupUsersArray ? (
                     currentGroupUsersArray.map((user) => (
                         <View key={user.id} style={styles.row}>
                             <Image
@@ -276,30 +279,37 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
     contentView: {
         flex: 1,
+        backgroundColor: 'white'
     },
     container: {
         flex: 1,
-        alignItems: 'center',
-        padding: 20,
+        justifyContent: 'center',
     },
     backButton: {
         position: 'absolute',
-        left: 0,
+        top: 22,
+        left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
+        marginLeft: 20, 
     },
     profileImage: {
         width: 40,
         height: 40,
         borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#D3D3D3",
         marginRight: 10,
     },
     backImage: {
-        width: 24,
-        height: 24,
+        width: 40,
+        height: 40,
     },
     groupNameCreated: {
         marginTop: 40,
@@ -311,21 +321,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     titleContainer: {
-        flex: 1,
-        alignItems: 'center',
+        justifyContent: "center",
     },
     groupNameStandalone: {
-        marginTop: 40,
+        textAlign: "center",
         fontSize: 30,
-        fontWeight: 'bold',
-        marginBottom: 40,
+        fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+        paddingTop: 20,
     },
     text: {
         fontSize: 18,
+        marginTop: 20,
         marginBottom: 40,
+        marginHorizontal: 20,
+        fontFamily: "Lexend",
+        textAlign: "center",
+        alignSelf: "center"
+    },
+    bold_text: {
+        fontSize: 18,
+        marginTop: 20,
+        marginBottom: 40,
+        marginHorizontal: 20,
+        fontFamily: "Lexend-Bold",
+        textAlign: "center",
+        alignSelf: "center"
     },
     username: {
-        fontSize: 18,
+        fontSize: 16,
+        fontFamily: "Lexend"
     },
     centeredGroupCode: {
         flexDirection: 'row',
@@ -335,8 +360,10 @@ const styles = StyleSheet.create({
     },
     groupCode: {
         fontSize: 45,
-        color: '#a34395',
-        backgroundColor: '#cccacc',
+        // color: '#0F1108',
+        // backgroundColor: '#D3D3D3',
+        color: '#0F1108',
+        backgroundColor: '#1E90FF',
         fontWeight: 'bold',
         padding: 15,
         borderRadius: 5,
@@ -345,18 +372,19 @@ const styles = StyleSheet.create({
         marginLeft: 10,
     },
     startButton: {
-        marginTop: 20,
-        paddingVertical: 10,
-        paddingHorizontal: 30,
-        backgroundColor: '#4CAF50',
-        borderRadius: 5,
-        alignItems: 'center',
+        borderRadius: 30,
+        flexDirection: "row",
+        paddingVertical: 13, // Reduce padding to make it smaller
+        justifyContent: "center",
+        backgroundColor: '#1976d2',
+        alignSelf: "center",
+        width: 150,
     },
     startButtonText: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        borderRadius: 5,
+        textAlign: "center",
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
     },
     // Modal styles
     dismissOverlay: {

@@ -7,8 +7,8 @@ import { useUser } from '../../UserProvider';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getProfilePic, getSteps, getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
-import { text } from 'body-parser';
 import { getGroupIsFirstDay, getGroupName, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import Svg, { Circle, G } from 'react-native-svg';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -17,18 +17,26 @@ type Props = {
     navigation: headToHeadPageNavigationProp;
 };
 
+type CircularIconProps = {
+    value: number; // Value from 0 to 1, where 1 is 100%
+    size?: number; // Diameter of the circle
+    strokeWidth?: number; // Width of the border
+};
+
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { userID } = useUser();
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID } = route.params;
     const [isLoading, setIsLoading] = useState(true);
-    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
+    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [totalBetTokens, setTotalBetTokens] = useState(0);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(false);
+
+    let groupPic;
   
     const closeModal = async () => {
       setModalVisible(false);
@@ -49,6 +57,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
                 return Object.values(duels);
             };
+            groupPic = await getProfilePic(groupID);
         
             const flattenedBets = todaysBets ? flattenDuels(todaysBets) : [];
 
@@ -58,6 +67,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     const player2 = await getUserName(bet.player2);
                     const player1Steps = await getSteps(bet.player1);
                     const player2Steps = await getSteps(bet.player2);
+                    const player1Pfp = (await getProfilePic(bet.player1)) ?? 'default_image_url'; // Fetch player1's profile picture
+                    const player2Pfp = (await getProfilePic(bet.player1)) ?? 'default_image_url';
 
                     // if there are no bets, return the duel with the player names
                     console.log('...', bet.bets[0]?.wager);
@@ -66,6 +77,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             duelID: bet.duelID,
                             player1,
                             player2,
+                            player1Pfp,
+                            player2Pfp,
                             player1Bets: [],
                             player2Bets: [],
                             player1Steps,
@@ -96,6 +109,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             duelID: bet.duelID,
                             player1,
                             player2,
+                            player1Pfp,
+                            player2Pfp,
                             player1Bets,
                             player2Bets,
                             player1Steps,
@@ -156,24 +171,64 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         );
     }
 
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number } }) => (
-        <View style={styles.flatList}>
-            {/* Players */}
-            <View style={styles.row}>
-                <Text style={styles.player}>{item.player1}</Text>
-                <Text style={styles.player}>{item.player2}</Text>
+    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number } }) => {
+        
+        const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
+        const totalPlayer2Bets = item.player2Bets.reduce((sum, bet) => sum + bet.wager, 0);
+
+        // Calculate the sum of all bets
+        const totalBets = totalPlayer1Bets + totalPlayer2Bets;
+        
+        // Calculate the ratios for the circular value
+        const player1Ratio = totalBets === 0 ? 0.5 : totalPlayer1Bets / totalBets;
+        const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
+
+        return (
+            <View style={styles.flatList}>
+                {/* Players and Pictures */}
+                <View style={styles.row}>
+                    {/* Column 1 - Player 1 */}
+                <View style={styles.centeredColumn}>
+                    <Text style={styles.player1text}>{item.player1}</Text>
+                    <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
+                    <Text style={styles.stepTitle}>{item.player1Steps} Steps</Text>
+                </View>
+
+                {/* Column 2 - Circular Icon */}
+                <View style={styles.centeredColumn}>
+                    <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
+                    <Text></Text>
+                </View>
+
+                {/* Column 3 - Player 2 */}
+                <View style={styles.centeredColumn}>
+                    <Text style={styles.player2text}>{item.player2}</Text>
+                    <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
+                    <Text style={styles.stepTitle}>{item.player2Steps} Steps</Text>
+                </View>
             </View>
 
-            {/* Steps */}
-            <View style={styles.row}>
-                <Text><Text style={styles.stepTitle}>Steps: </Text>{item.player1Steps}</Text>
-                <Text><Text style={styles.stepTitle}>Steps: </Text>{item.player2Steps}</Text>
-            </View>
-
-            
-            <View style={styles.row}>
+                
+            <View style={styles.rowBets}>
+                {/* Player 1 Bets and Coin */}
+                <View style={styles.betsContainer}>
+                    <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
+                    <Image
+                        source={require('../../../assets/images/gold_coin.png')}
+                        style={styles.coinIcon}
+                    />
+                </View>
+                <Text style={styles.betsColonText}> : </Text>
+                {/* Player 2 Bets and Coin */}
+                <View style={styles.betsContainer}>
+                    <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
+                    <Image
+                        source={require('../../../assets/images/gold_coin.png')}
+                        style={styles.coinIcon}
+                    />
+                </View>
                 {/* Player1's Bets */}
-                <View style={styles.betsListLeft}>
+                {/* <View style={styles.betsListLeft}>
                     <Text style={styles.stepTitle}>Bets:</Text>
                     {item.player1Bets.length === 0 ? (
                         <View>
@@ -186,10 +241,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             ))}
                         </View>
                     )}
-                </View>
+                </View> */}
 
                 {/* Player2's Bets */}
-                <View style={styles.betsListRight}>
+                {/* <View style={styles.betsListRight}>
                     <Text style={styles.stepTitle}>Bets:</Text>
                     {item.player2Bets.length === 0 ? (
                         <View>
@@ -202,49 +257,74 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             ))}
                         </View>
                     )}
-                </View>
+                </View> */}
             </View>
         </View>
-    );
+        );
+    };
 
     return (
         <View style={styles.container}>
-            <View style={styles.row}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Image
-                        source={require('@components/back-icon.png')}
-                        style={styles.backImage}
-                    />
-                </TouchableOpacity>
-                <View style={styles.tokens}>
-                    <Text>Your Tokens: {currentUserTokens}</Text>
-                </View>
-                <View style={styles.betTokens}>
-                    <Text>Bet Tokens: {totalBetTokens}</Text>
-                </View>
+            <View style={styles.titleContainer}>
+                <Text style={styles.groupTitle}>{currentGroupName}</Text>
             </View>
-            <Text style={styles.groupTitle}>{currentGroupName}</Text>
-            {currentGroupUsersArray ? (
-                <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
-                    {currentGroupUsersArray.map((user) => (
-                    <TouchableOpacity
-                        key={user.id}
-                        style={styles.userContainer}
-                        onPress={() => createMemberButtonHandle(user.id)}
-                    >
-                        <Image source={{ uri: user.pfp }} style={styles.profileImage} />
-                        <Text style={styles.username}>{user.name}</Text>
-                    </TouchableOpacity>
-                    ))}
-                </ScrollView>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                <Image
+                    source={require('@components/back-icon.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
+            <View style={styles.tokens}>  
+                <Text style={styles.tokenText}>{currentUserTokens}</Text>
+                <Image
+                    source={require('../../../assets/images/gold_coin.png')}
+                    style={styles.coinIcon}
+                />
+            </View>
+            <View style={styles.betTokens}>
+                <Text style={styles.tokenText}>{totalBetTokens}</Text>
+                <Image
+                    source={require('../../../assets/images/coin_spent.png')}
+                    style={styles.coinIcon}
+                />
+            </View>
+            <View style={styles.groupImageContainer}>
+                {groupPic ? (
+                    <Image source={{ uri: groupPic }} style={styles.groupImage} />
                 ) : (
-                <Text>No users found.</Text>
+                    <Image
+                        source={require('@components/blank-profile-picture.png')}
+                        style={styles.groupImage}
+                    />
                 )}
-            <FlatList
-                data={currentBets}
-                keyExtractor={(item) => item.duelID}
-                renderItem={renderBetItem}
-            />
+            </View>
+            <View style={styles.playerContainer}>
+                <Text style={styles.secondHeader}>Players:</Text>
+                {currentGroupUsersArray ? (
+                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
+                        {currentGroupUsersArray.map((user) => (
+                        <TouchableOpacity
+                            key={user.id}
+                            style={styles.userContainer}
+                            onPress={() => createMemberButtonHandle(user.id)}
+                        >
+                            <Image source={{ uri: user.pfp }} style={styles.profileImage} />
+                            <Text style={styles.username}>{user.name}</Text>
+                        </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    ) : (
+                    <Text>No users found.</Text>
+                )}
+            </View>
+            <View style={styles.betContainer}>
+                <FlatList
+                    data={currentBets}
+                    keyExtractor={(item) => item.duelID}
+                    renderItem={renderBetItem}
+                />
+            </View>
+            
 
             {/* Modal */}
             {!isFirstDay && (
@@ -273,80 +353,196 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     );
 };
 
+const CircularIcon: React.FC<CircularIconProps> = ({ value, size = 100, strokeWidth = 10 }) => {
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const blueStrokeLength = value * circumference;
+    const redStrokeLength = (1 - value) * circumference;
+
+    return (
+        <View style={[styles.circleContainer, { width: size, height: size }]}>
+            <Svg width={size} height={size}>
+                <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+                    {/* Blue portion of the border */}
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#1E90FF"
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={`${blueStrokeLength} ${circumference}`}
+                        strokeLinecap="round"
+                        fill="transparent"
+                    />
+                    {/* Red portion of the border */}
+                    <Circle
+                        cx={size / 2}
+                        cy={size / 2}
+                        r={radius}
+                        stroke="#ff3535"
+                        strokeWidth={strokeWidth}
+                        strokeDasharray={`${redStrokeLength} ${circumference}`}
+                        strokeDashoffset={-blueStrokeLength}
+                        strokeLinecap="round"
+                        fill="transparent"
+                    />
+                </G>
+            </Svg>
+            {/* Center text */}
+            <View style={styles.VStextContainer}>
+                <Text style={styles.VStext}>VS</Text>
+            </View>
+        </View>
+    );
+};
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginTop: 20,
+        backgroundColor: "white",
+    },
+    circleContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 25,
+    },
+    VStextContainer: {
+        position: 'absolute',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 25,
+    },
+    VStext: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'black',
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginHorizontal: 20, // Adjust margin to fit the back button and tokens in the same row
+        width: '100%',
+        //marginHorizontal: 20, // Adjust margin to fit the back button and tokens in the same row
     },
     backImage: {
-        width: 24,
-        height: 24,
+        width: 40,
+        height: 40,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 22,
+        left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
     },
     tokens: {
         position: 'absolute',
-        right: 20,
-        backgroundColor: '#FFD700',
+        right: 10,
+        top: 100,
         paddingHorizontal: 10,
         paddingVertical: 5,
-        borderColor: '#FF8C00',
-        borderWidth: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        // borderColor: '#FF8C00',
+        // borderWidth: 2,
     },
     betTokens: {
         position: 'absolute',
-        right: 20,
-        top: 30,
-        backgroundColor: '#FFD700',
+        right: 10,
+        top: 130,
         paddingHorizontal: 10,
         paddingVertical: 5,
-        borderColor: '#FF8C00',
-        borderWidth: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        // borderColor: '#FF8C00',
+        // borderWidth: 2,
+    },
+    tokenText: {
+        fontFamily: "Lexend",
+        fontSize: 15
+    },
+    secondHeader: {
+        fontFamily: "Lexend",
+        fontSize: 18,
+        paddingLeft: 20,
+        paddingBottom: 10,
+    },
+    playerContainer: {
+        paddingVertical: 10,
+        backgroundColor: "#f0f0f0",
+        width: 380,
+        borderRadius: 30,
+        justifyContent: "center",
+        //alignItems: "center",
+        alignSelf: "center",
+    },
+    betContainer: {
+        marginTop: 10,
+        backgroundColor: "#f0f0f0",
+        width: 380,
+        height: 320,
+        borderRadius: 30,
+        justifyContent: "center",
+        //alignItems: "center",
+        alignSelf: "center",
+    },
+    titleContainer: {
+        justifyContent: "center",
     },
     groupTitle: {
-        marginTop: 40,
+        textAlign: "center",
         fontSize: 30,
-        fontWeight: 'bold',
-        marginBottom: 40,
-        textAlign: 'center',
+        fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+        paddingTop: 20,
     },
     userRow: {
       flexDirection: 'row', 
       alignItems: 'center',
-      padding: 10,
+      paddingHorizontal: 20,
     },
     userContainer: {
-      marginRight: 15,
-      marginTop: 15,
+      marginRight: 20,
       alignItems: 'center',
     },
     profileImage: {
       width: 60,
       height: 60,
       borderRadius: 30,
+      borderWidth: 1,
+      borderColor: "#D3D3D3",
     },
     username: {
       marginTop: 5,
-      fontSize: 18,
+      fontSize: 14,
       textAlign: 'center',
+      fontFamily: 'Lexend',
     },
     flatList: {
-        padding: 25,
+        padding: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#ccc',
         marginTop: 20,
     },
-    player: {
+    player1text: {
+        fontFamily: 'Lexend',
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: 16,
+        color: '#ff3535',
+        marginBottom: 5,
+        textAlign: "center",
+    },
+    player2text: {
+        fontFamily: 'Lexend',
+        fontWeight: 'bold',
+        fontSize: 16,
+        color: '#1E90FF',
+        marginBottom: 5,
+        textAlign: "center",
     },
     stepTitle: {
-        fontWeight: 'bold',
+        fontFamily: "Lexend",
     },
     betsListLeft: {
         marginTop: 10,
@@ -388,6 +584,62 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'black',
       },
+      groupImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginVertical: 10,
+    },
+    groupImageContainer: {
+        alignItems: 'center',
+        //marginBottom: 10,
+    },
+    groupImageWrapper: {
+        width: 120, // Match the size of the profileImage
+        height: 120, // Match the size of the profileImage
+        borderRadius: 60, // Half of the width/height
+        overflow: 'visible',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ccc', // Default gray background
+        position: 'relative', // Enable absolute positioning for the plus icon
+    },
+    coinIcon: {
+        width: 30,
+        height: 30,
+        marginRight: 5, // Adds spacing between the icon and the text
+    },
+    tokenContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    centeredColumn: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    rowBets: {
+        flexDirection: 'row',
+        justifyContent: 'center', // Center the entire row
+        alignItems: 'center', // Align vertically in the center
+    },
+    betsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center', // Align the number and coin vertically
+        marginHorizontal: 10,
+    },
+    betsText: {
+        //marginRight: 5, // Optional: Add some space between the number and the coin
+        textAlign: 'center',
+        fontFamily: 'Lexend-Bold'
+
+    },
+    betsColonText: {
+        //marginRight: 5, // Optional: Add some space between the number and the coin
+        textAlign: 'center',
+        fontFamily: 'Lexend-Bold',
+        paddingHorizontal: 10,
+
+    },
 });
 
 export default BetSummaryPage;

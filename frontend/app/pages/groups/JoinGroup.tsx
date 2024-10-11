@@ -62,17 +62,15 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
     return (
         <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
             <View style={styles.container}>
-                <View style={styles.row}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Image
-                            source={require('@components/back-icon.png')}
-                            style={styles.backImage}
-                        />
-                    </TouchableOpacity>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Join Group Page!</Text>
-                    </View>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.titleText}>Join Group</Text>
                 </View>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <Image
+                        source={require('@components/back-icon.png')}
+                        style={styles.backImage}
+                    />
+                </TouchableOpacity>
                 <Text style={styles.label}>Enter group code:</Text>
                 <TextInput
                     style={styles.input}
@@ -81,10 +79,15 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                     id="groupCode"
                     placeholder="Group Code"
                 />
-                <Button title="Enter" onPress={ToGroupFromJoin} />
-            {currrentGroupInUserResponse !== undefined && (
-                <Text style={styles.errorText}>{currrentGroupInUserResponse}</Text>
-            )}
+                <TouchableOpacity 
+                    onPress={ToGroupFromJoin}
+                    style={[styles.buttonContainer]}
+                >
+                    <Text style={styles.button_text}>Submit</Text>
+                </TouchableOpacity>
+                {currrentGroupInUserResponse !== undefined && (
+                    <Text style={styles.errorText}>{currrentGroupInUserResponse}</Text>
+                )}
             </View>
         </Pressable>
     );
@@ -94,41 +97,45 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'flex-start',
-        padding: 20,
+        backgroundColor: "white",
     },
     contentView: {
         flex: 1,
         backgroundColor: "white",
     },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
     backImage: {
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
     },
     titleContainer: {
-        flex: 1.2,
-        justifyContent: "center",
+        justifyContent: "flex-start",
     },
     titleText: {
-        fontSize: 36,
         textAlign: "center",
+        fontSize: 30,
         fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+        paddingTop: 20,
     },
     label: {
       fontSize: 18,
       marginBottom: 8,
+      paddingTop: 40,
+      paddingLeft: 20,
+      fontFamily: 'Lexend'
     },
     input: {
-        height: 50,
-        borderColor: 'gray',
         borderWidth: 1,
-        marginBottom: 20,
-        paddingHorizontal: 10,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        height: 50,
+        fontSize: 20,
+        paddingHorizontal: 12,
+        marginVertical: 5,
+        marginBottom: 40,
+        marginHorizontal: 20,
+        fontWeight: "100",
+        fontFamily: 'Lexend'
     },
     text: {
         fontSize: 24,
@@ -138,6 +145,29 @@ const styles = StyleSheet.create({
         textAlign: "center",
         color: 'red',
         marginTop: 30,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 22,
+        left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
+    button_text: {
+        textAlign: "center",
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
+    },
+    buttonContainer: {
+        borderRadius: 30,
+        flexDirection: "row",
+        paddingVertical: 13, // Reduce padding to make it smaller
+        justifyContent: "center",
+        backgroundColor: '#1976d2',
+        alignSelf: "center",
+        width: 150,
     },
 });
 

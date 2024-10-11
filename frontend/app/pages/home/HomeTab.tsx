@@ -280,11 +280,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#fff', 
     },
-    welcome: {
-        fontSize: 24,
-        marginBottom: 40,
-        fontFamily: 'Lexend'
-    },
     username: {
         fontWeight: 'bold',
     },

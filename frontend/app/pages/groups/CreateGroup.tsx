@@ -29,9 +29,14 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
     const [groupName, setGroupName] = useState<string | undefined>();
     const [groupImage, setGroupImage] = useState<string | undefined>();
     const [users, setUsers] = useState<Map<string, Map<string, any>> | undefined>();
+    const [errorMessage, setErrorMessage] = useState<string | undefined>(); // State for error message
 
 
     const createGroupFnc = async () => {
+        if (!groupName) {
+            setErrorMessage('Please provide a group name.');
+            return;
+        }
         const groupCode = await generateGroupCode();
         const groupID: any = await createGroup(userID, groupName || '', groupCode);
         await addGroupImage(groupID, groupImage || '');
@@ -72,17 +77,32 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
     return (
         <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
             <View style={styles.container}>
-                <View style={styles.row}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <Image
-                            source={require('@components/back-icon.png')}
-                            style={styles.backImage}
-                        />
-                    </TouchableOpacity>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Fill out group info!</Text>
-                    </View>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.titleText}>Create Group</Text>
                 </View>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <Image
+                        source={require('@components/back-icon.png')}
+                        style={styles.backImage}
+                    />
+                </TouchableOpacity>
+
+                <View style={styles.groupImageContainer}>
+                    <TouchableOpacity onPress={pickImage} style={styles.groupImageWrapper}>
+                        {groupImage ? (
+                            <Image source={{ uri: groupImage }} style={styles.groupImage} />
+                        ) : (
+                            <Image
+                                source={require('@components/blank-profile-picture.png')}
+                                style={styles.groupImage}
+                            />
+                        )}
+                        <View style={styles.plusIconContainer}>
+                            <Text style={styles.plusIconText}>+</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            
                 <View style={styles.mainContent}>
                     <TextInput
                         style={styles.loginTextField}
@@ -91,20 +111,18 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
                         onChangeText={setGroupName}
                         placeholderTextColor="#999797"
                     />
-
-                    <TouchableOpacity onPress={pickImage} style={styles.imagePickerButton}>
-                        <Text style={styles.button_text2}>Pick Group Image</Text>
+                    <TouchableOpacity 
+                    onPress={createGroupFnc}
+                    style={[styles.buttonContainer]}
+                    >
+                        <Text style={styles.button_text}>Submit</Text>
                     </TouchableOpacity>
-                    {groupImage && (
-                        <Image source={{ uri: groupImage }} style={styles.groupImage} />
+                    {errorMessage && ( // Display error message if present
+                        <Text style={styles.errorText}>{errorMessage}</Text>
                     )}
                 </View>
 
-                <CTAButton
-                    title="Create Group"
-                    onPress={createGroupFnc}
-                    variant="primary"
-                />
+        
             </View>
         </Pressable>
     )
@@ -121,31 +139,21 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: 'center',
-        padding: 20,
     },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 20,
-    },
+    // row: {
+    //     flexDirection: 'row',
+    //     alignItems: 'center',
+    //     justifyContent: 'space-between',
+    //     marginBottom: 20,
+    // },
     backImage: {
-        width: 30,
-        height: 30,
+        width: 40,
+        height: 40,
     },
     text: {
         fontWeight: "bold",
         textAlign: "center",
         fontSize: 24,
-    },
-    button_text: {
-        textAlign: "center",
-        fontSize: 24,
-        color: "#1976d2"
-    },
-    button_text2: {
-        color: 'white',
-        fontSize: 16,
     },
     button_container: {
         borderRadius: 15,
@@ -167,29 +175,108 @@ const styles = StyleSheet.create({
         backgroundColor: "white",
     },
     titleContainer: {
-        flex: 1.2,
         justifyContent: "center",
     },
     titleText: {
-        fontSize: 36,
         textAlign: "center",
+        fontSize: 30,
         fontWeight: "200",
+        fontFamily: 'Lexend-Bold',
+        paddingTop: 20,
     },
     loginTextField: {
-        borderBottomWidth: 1,
-        height: 60,
-        fontSize: 25,
-        marginVertical: 10,
-        fontWeight: "300",
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        height: 50,
+        fontSize: 20,
+        paddingHorizontal: 12,
+        marginVertical: 30,
+        marginBottom: 80,
+        marginHorizontal: 20,
+        fontWeight: "100",
+        fontFamily: 'Lexend'
     },
     mainContent: {
         flex: 6,
     },
+    backButton: {
+        position: 'absolute',
+        top: 22,
+        left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
     groupImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
         marginVertical: 10,
+    },
+    groupImageContainer: {
+        alignItems: 'center',
+        paddingTop: 40,
+    },
+    
+    groupImageWrapper: {
+        width: 120, // Match the size of the profileImage
+        height: 120, // Match the size of the profileImage
+        borderRadius: 60, // Half of the width/height
+        overflow: 'visible',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ccc', // Default gray background
+        position: 'relative', // Enable absolute positioning for the plus icon
+    },
+    
+    
+    plusIconContainer: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 30, // Size of the blue circle
+        height: 30, // Size of the blue circle
+        borderRadius: 15, // Half of the width/height for a perfect circle
+        backgroundColor: '#1976d2', // Blue background color
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    
+    plusIconText: {
+        color: '#fff', // White color for the plus sign
+        fontSize: 20,
+        lineHeight: 20,
+    },
+    
+    defaultGroupImage: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#ccc', // Default gray background
+        borderRadius: 60,
+    },
+    button_text: {
+        textAlign: "center",
+        fontSize: 15,
+        color: 'white',
+        fontFamily: 'Lexend',
+    },
+    errorText: {
+        fontSize: 16,
+        textAlign: "center",
+        color: 'red',
+        marginTop: 30,
+    },
+    buttonContainer: {
+        borderRadius: 30,
+        flexDirection: "row",
+        paddingVertical: 13, // Reduce padding to make it smaller
+        justifyContent: "center",
+        backgroundColor: '#1976d2',
+        alignSelf: "center",
+        width: 150,
     },
 });
 
