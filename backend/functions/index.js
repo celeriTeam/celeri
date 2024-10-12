@@ -302,7 +302,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
 
     console.log("Group snapshots found:", groupSnapshots.size);
 
-    const allBatches = [];
+    // const allBatches = [];
 
     const groupBatch = firestore.batch();
     console.log("checkpoint one");
@@ -453,12 +453,13 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         });
       }
       // Add the batch to the array to commit later
-      allBatches.push(groupBatch.commit());
+      // allBatches.push(groupBatch.commit());
     });
 
     // Wait for all batches to be committed
     console.log("checkpoint seven");
-    await Promise.all(allBatches);
+    // await Promise.all(allBatches);
+    await groupBatch.commit();
 
     console.log("Duels created and cycle updated successfully.");
   } catch (error) {
