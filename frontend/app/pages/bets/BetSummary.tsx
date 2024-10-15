@@ -28,7 +28,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [isModalVisible, setModalVisible] = useState(false);
 
     let groupPic;
-    const todaysBets = groups[groupID]?.todaysBets;
+    const todaysBets = groups[groupID]?.todaysDuels;
 
     const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
         return Object.values(duels);
