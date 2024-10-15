@@ -26,7 +26,9 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
 
     const handleCheckPress = () => {
         //set username endpoint
-        editUsername(userID, currentUsername);
+        if (currentUsername !== username){
+            editUsername(userID, currentUsername);
+        }
         setIsEditingUsername(false);
     };
 
@@ -95,7 +97,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                         />
                         <TouchableOpacity onPress={handleCheckPress}>
                             <Image
-                                source={require('@components/edit-icon.jpg')}
+                                source={require('@components/checkmark-icon.png')}
                                 style={styles.editImage}
                             />
                         </TouchableOpacity>
