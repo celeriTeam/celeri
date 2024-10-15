@@ -35,6 +35,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
     const [isModalVisible, setModalVisible] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
   
     const closeModal = async () => {
@@ -149,6 +150,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
+            setIsProcessing(true);
             const duelnumber: any = `duel${matchups.length}`;
             const submittedPlayer = selectedPlayer;
             const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
@@ -164,6 +166,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             
             setCurrentMatchupIndex(currentMatchupIndex + 1);
             setChangePageForUserName(true);
+            setIsProcessing(false);
         }
     };
 
@@ -191,6 +194,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     };
 
     const handleSubmit = async () => {
+        setIsProcessing(true);
         const submittedPlayer = selectedPlayer;
         const submittedBet = +(selectedPlayer === matchups[currentMatchupIndex].player1 ? betAmount1 : betAmount2);
         const duelID = matchups[currentMatchupIndex].duelID;
@@ -299,6 +303,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     style={[styles.submitButton, keyboardVisible && styles.submitButtonWithKeyboard]}
                     underlayColor="#ff7043"
                     onPress={currentMatchupIndex === matchups.length - 1 ? () => handleSubmit() : handleNext}
+                    disabled={isProcessing}
                 >
                     <Text style={styles.submitButtonText}>
                         {currentMatchupIndex === matchups.length - 1 ? 'Submit' : 'Next'}

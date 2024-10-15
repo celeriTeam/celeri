@@ -46,7 +46,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const player2Pfp = (groups[groupID]?.users[bet.player2]?.profilePic) ?? 'default_image_url';
 
         // if there are no bets, return the duel with the player names
-        console.log('...', bet.bets[0]?.wager);
         if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
             return {
                 duelID: bet.duelID,
