@@ -14,14 +14,14 @@ export type RootStackParamList = {
     ProfileTab: undefined;
     PersonalProfilePage: undefined;
     ProfilePage: { selectedUserID: string, groupID: string };
-    EditProfile: { profilePic: string, username: string };
+    EditProfile: undefined;
     // GROUPS
     CreateGroup: undefined;
     InviteGroup: { groupID: string, fromCreate: boolean };
     JoinGroup: undefined;
     // BETS
     BetsPage: { groupID: string };
-    HeadToHeadPage: { groupID: string, isFinishedRecap: boolean };
+    HeadToHeadPage: { groupID: string };
     BetRecapPage: { groupID: string };
     BetSummaryPage: { groupID: string };
 };
