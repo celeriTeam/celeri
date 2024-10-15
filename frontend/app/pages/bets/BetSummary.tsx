@@ -31,7 +31,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [totalBetTokens, setTotalBetTokens] = useState(0);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[]>([]);
     const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
     const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(false);
@@ -136,15 +136,18 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
             // Get group users
             const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
-            let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
+            let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[] = [];
             if (groupUsersIdArray) {
                 // get user names & pfps from user IDs
                 for (let i = 0; i < groupUsersIdArray.length; i++) {
                     const userID = groupUsersIdArray[i];
                     const userName = await getUserName(userID);
                     const profilePic = await getProfilePic(userID);
-                    groupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
+                    const tokens = await getUserTokens(userID, groupID);
+                    groupUsersArray.push({ id: userID, name: userName, pfp: profilePic, tokens: tokens });
                 }
+                // Sort users by tokens in descending order
+                groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
                 setCurrentGroupUsersArray(groupUsersArray);
             }
 
@@ -302,14 +305,42 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.secondHeader}>Players:</Text>
                 {currentGroupUsersArray ? (
                     <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
-                        {currentGroupUsersArray.map((user) => (
+                        {currentGroupUsersArray.map((user, index) => (
                         <TouchableOpacity
                             key={user.id}
                             style={styles.userContainer}
                             onPress={() => createMemberButtonHandle(user.id)}
                         >
-                            <Image source={{ uri: user.pfp }} style={styles.profileImage} />
+                            <View style={styles.imageContainer}>
+                                <Image source={{ uri: user.pfp }} style={styles.profileImage} />
+                                {/* Conditionally render the placement images for the first three users */}
+                                {index === 0 && (
+                                    <Image
+                                        source={require('../../../assets/images/first_place.png')}
+                                        style={styles.placementImage}
+                                    />
+                                )}
+                                {index === 1 && (
+                                    <Image
+                                        source={require('../../../assets/images/second_place.png')}
+                                        style={styles.placementImage}
+                                    />
+                                )}
+                                {index === 2 && (
+                                    <Image
+                                        source={require('../../../assets/images/third_place.png')}
+                                        style={styles.placementImage}
+                                    />
+                                )}
+                            </View>
                             <Text style={styles.username}>{user.name}</Text>
+                            <View style={styles.betsContainer}>
+                                <Text style={styles.username}>{user.tokens}</Text>
+                                <Image
+                                    source={require('../../../assets/images/gold_coin.png')}
+                                    style={styles.coinIcon}
+                                />
+                            </View>
                         </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -513,6 +544,18 @@ const styles = StyleSheet.create({
       borderWidth: 1,
       borderColor: "#D3D3D3",
     },
+    imageContainer: {
+        position: 'relative',
+        width: 60,
+        height: 60,
+      },
+      placementImage: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 15, // Adjust width based on your image size
+        height: 15, // Adjust height based on your image size
+    },
     username: {
       marginTop: 5,
       fontSize: 14,
@@ -615,9 +658,11 @@ const styles = StyleSheet.create({
     },
     centeredColumn: {
         alignItems: 'center',
+        justifyContent: 'center',
         flex: 1,
     },
     rowBets: {
+        width: '100%',
         flexDirection: 'row',
         justifyContent: 'center', // Center the entire row
         alignItems: 'center', // Align vertically in the center
