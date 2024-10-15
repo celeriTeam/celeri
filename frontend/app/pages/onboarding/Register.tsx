@@ -40,15 +40,14 @@ const STATUS_BAR_HEIGHT = Platform.OS === "ios" ? 20 : StatusBar.currentHeight;
 const HEADER_HEIGHT = Platform.OS === "ios" ? 44 : 56;
 
 const RegisterPage: React.FC<Props> = ({ navigation }) => {
-        return (
+    return (
+        <View style={{flex: 1, backgroundColor: '#A6D49F'}}>
+            <StatusBar
+                backgroundColor="#A6D49F"
+                barStyle="dark-content"
+                translucent={true}
+            />
             <SafeAreaView style={styles.container}>
-                <View style={{ height: STATUS_BAR_HEIGHT, backgroundColor: "#5E8D48" }}>
-                    <StatusBar
-                        translucent
-                        backgroundColor="transparent"
-                        barStyle="dark-content"
-                    />
-                </View>
                 <Text style={styles.text}>FLEX</Text>
                 <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.buttonText}>Register</Text>
@@ -57,12 +56,13 @@ const RegisterPage: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.buttonText}>Login</Text>
                 </TouchableOpacity>
             </SafeAreaView>
-        );
-    };
+        </View>
+    );
+};
 
 const styles = StyleSheet.create({
     safeArea: {
-        flex: 1,
+        flex: 0,
         backgroundColor: '#A6D49F'
       },
     container: {
@@ -70,8 +70,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#A6D49F', // Background color
-        width: '100%', // Ensure full width
-        height: '100%',
     },
     text: {
         fontSize: 24,

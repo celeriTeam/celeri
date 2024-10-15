@@ -35,14 +35,14 @@ type GroupData = {
 const HomeTab: React.FC<Props> = ({ navigation }) => {
 
     
-    const { userID, username, groupNames, getGroupID, groups, loading } = useUser();
+    const { userID, username, groupNames, getGroupID, groups } = useUser();
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
     const [currentUserGroups, setCurrentUserGroups] = useState<GroupData[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const currentUserName = username || '';
     const currentGroupNames = groupNames || [];
-    console.log('this is curr group names: ', currentGroupNames);
     
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -66,10 +66,10 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     
             // Filter out undefined values from groupData
             const filteredUserGroups = groupData.filter((group): group is GroupData => group !== undefined);
-            console.log('AAAAAA', filteredUserGroups);
     
             // Set the current user groups after processing
             setCurrentUserGroups(filteredUserGroups);
+            setIsLoading(false);
         }, 5000); // Delay by 5000 milliseconds (5 seconds)
     
         // Cleanup the timeout if the component unmounts before 5 seconds
@@ -141,7 +141,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
