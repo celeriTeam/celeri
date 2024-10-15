@@ -5,8 +5,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import 
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import { addToFinishedRecap, getYesterdaysDuelsSummary } from '@/backend/src/bets';
-import { getUserName } from '@/backend/src/users';
 
 type betRecapPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type betRecapPageRouteProp = RouteProp<RootStackParamList, 'BetRecapPage'>;
@@ -16,92 +14,70 @@ type Props = {
 };
 
 const BetRecapPage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
+    const { userID, groups, loading } = useUser();
     const route = useRoute<betRecapPageRouteProp>();
     const { groupID } = route.params;
-    const [isLoading, setIsLoading] = useState(true);
-    const [currentRecapBets, setCurrentRecapBets] = useState<{ duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number }[]>([]);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
+    const yesterdaysBets = groups[groupID]?.yesterdaysDuels;
 
-    const fetchGroupData = async () => {
-        try {
-            const yesterdaysBets = await getYesterdaysDuelsSummary(groupID);
-
-            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
-                return Object.values(duels);
-            };
-
-            const flattenedBets = yesterdaysBets ? flattenDuels(yesterdaysBets) : [];
-
-            const betsWithUsernames = await Promise.all(
-                flattenedBets.map(async (bet) => {
-                    const player1 = await getUserName(bet.player1);
-                    const player2 = await getUserName(bet.player2);
-                    let winner = 'draw';
-                    if (bet.winner != 'draw') {
-                        winner = await getUserName(bet.winner);
-                    }
-
-                    // if there are no bets, return the duel with the player names
-                    if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
-                        return {
-                            duelID: bet.duelID,
-                            player1,
-                            player2,
-                            player1Bets: [],
-                            player2Bets: [],
-                            winner,
-							playerOneSteps: bet.playerOneSteps,
-							playerTwoSteps: bet.playerTwoSteps,
-                        };
-                    }
-
-                    else {
-                        // Separate bets for player1 and player2
-                        const player1Bets = await Promise.all(
-                            bet.bets
-                                .filter((b) => b.betOnUserID === bet.player1)
-                                .map(async (b) => ({
-                                    user: await getUserName(b.userID),
-                                    wager: b.wager,
-                                }))
-                        );
-
-                        const player2Bets = await Promise.all(
-                            bet.bets
-                                .filter((b) => b.betOnUserID === bet.player2)
-                                .map(async (b) => ({
-                                    user: await getUserName(b.userID),
-                                    wager: b.wager,
-                                }))
-                        );
-                        return {
-                            duelID: bet.duelID,
-                            player1,
-                            player2,
-                            player1Bets,
-                            player2Bets,
-                            winner,
-							playerOneSteps: bet.playerOneSteps,
-							playerTwoSteps: bet.playerTwoSteps,
-                        };
-                    }
-                })
-            );
-            setCurrentRecapBets(betsWithUsernames);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setIsLoading(false);
-        }
+    const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
+        return Object.values(duels);
     };
 
-    useEffect(() => {
-        fetchGroupData();
-    }, []);
+    const flattenedBets = yesterdaysBets ? flattenDuels(yesterdaysBets) : [];
 
-    if (isLoading) {
+    const currentRecapBets = flattenedBets.map((bet) => {
+        const player1 = groups[groupID]?.users[bet.player1]?.username;
+        const player2 = groups[groupID]?.users[bet.player2]?.username;
+        let winner = 'draw';
+        if (bet.winner != 'draw') {
+            winner = groups[groupID]?.users[bet.winner]?.username;
+        }
+
+        // if there are no bets, return the duel with the player names
+        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+            return {
+                duelID: bet.duelID,
+                player1,
+                player2,
+                player1Bets: [],
+                player2Bets: [],
+                winner,
+                playerOneSteps: bet.playerOneSteps,
+                playerTwoSteps: bet.playerTwoSteps,
+            };
+        }
+
+        else {
+            // Separate bets for player1 and player2
+            const player1Bets = bet.bets
+                .filter((b) => b.betOnUserID === bet.player1)
+                .map((b) => ({
+                    user: groups[groupID]?.users[b.userID]?.username,
+                    wager: b.wager,
+                }));
+            const player2Bets = bet.bets
+                .filter((b) => b.betOnUserID === bet.player2)
+                .map((b) => ({
+                    user: groups[groupID]?.users[b.userID]?.username,
+                    wager: b.wager,
+                }));
+
+            return {
+                duelID: bet.duelID,
+                player1,
+                player2,
+                player1Bets,
+                player2Bets,
+                winner,
+                playerOneSteps: bet.playerOneSteps,
+                playerTwoSteps: bet.playerTwoSteps,
+            };
+        }
+    });
+
+    if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />

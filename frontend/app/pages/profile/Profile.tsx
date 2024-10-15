@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { useFocusEffect } from '@react-navigation/native';
-import EditProfilePage from './EditProfile';
-import { getProfilePic, getSteps, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
-import { getUserTokens } from '@/backend/src/groups';
 
 type profilePageNavigationProp = StackNavigationProp<RootStackParamList, 'ProfilePage'>;
 type profilePageRouteProp = RouteProp<RootStackParamList, 'ProfilePage'>;
@@ -18,38 +14,17 @@ type Props = {
 };
 
 const ProfilePage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
+    const { groups, loading } = useUser();
     const route = useRoute<profilePageRouteProp>();
     const { selectedUserID, groupID } = route.params;
-    const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
-    const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
-    const [currentSteps, setCurrentSteps] = useState<number | undefined>(undefined);
-    const [isLoading, setIsLoading] = useState(true);
 
-    const fetchUserData = async () => {
-        try {
-            console.log('selectedUserID: ', selectedUserID);
-            const profilePic = await getProfilePic(selectedUserID);
-            setCurrentProfilePic(profilePic);
-            const name = await getUserName(selectedUserID);
-            setCurrentUserName(name);
-            const tokens = await getUserTokens(selectedUserID, groupID);
-            setCurrentUserTokens(tokens);
-            const steps = await getSteps(selectedUserID);
-            setCurrentSteps(steps);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    console.log('selectedUserID: ', selectedUserID);
+    const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
+    const currentUserName = groups[groupID]?.users[selectedUserID]?.username || '';
+    const currentUserTokens = groups[groupID]?.users[selectedUserID]?.tokens || 0;
+    const currentSteps = groups[groupID]?.users[selectedUserID]?.steps || 0;
 
-    useEffect(() => {
-        fetchUserData();
-    }, []);
-
-    if (isLoading) {
+    if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Image, Button, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
@@ -17,58 +18,32 @@ type Props = {
 };
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
+    const { userID, groups, loading } = useUser();
     const route = useRoute<InviteGroupRouteProp>();
     const { groupID, fromCreate } = route.params;
-    const [currentGroupName, setCurrentGroupName] = useState<string | undefined>(undefined);
-    const [currentGroupCode, setCurrentGroupCode] = useState<string | undefined>(undefined);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [isModalVisible, setModalVisible] = useState(false);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [cycles, setCycles] = useState('5');
     const [dailyTokens, setDailyTokens] = useState('100');
     const [startingTokens, setStartingTokens] = useState('1000');
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
-    const [isLoading, setIsLoading] = useState(true);
-    const [loadingText, setLoadingText] = useState('');
-    const [isCreator, setIsCreator] = useState(false);
     const userStartRequirement = 3;
 
-    const fetchGroupData = async () => {
-        try {
-            setLoadingText('Getting group data...');
-            const groupName = await getGroupName(groupID);
-            setCurrentGroupName(groupName);
-            const groupCode = await getGroupCode(groupID);
-            setCurrentGroupCode(groupCode);
-            setLoadingText('Finding group members...');
-            const groupUsersIdArray = await getUsersInGroup(groupID); // array of user IDs
-            let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
-            if (groupUsersIdArray) {
-                // get user names & pfps from user IDs
-                for (let i = 0; i < groupUsersIdArray.length; i++) {
-                    const userID = groupUsersIdArray[i];
-                    const userName = await getUserName(userID);
-                    const profilePic = await getProfilePic(userID);
-                    groupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
-                }
-                setCurrentGroupUsersArray(groupUsersArray);
-            }
-            const groupCreator = await getGroupCreator(groupID);
-            if (groupCreator === userID) {
-                setIsCreator(true);
-            }
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setIsLoading(false);
-            setLoadingText('');
+    const currentGroupName = groups[groupID]?.groupName;
+    const currentGroupCode = groups[groupID]?.groupCode;
+    const groupUsersIdArray = groups[groupID]?.userList;
+    let currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
+    if (groupUsersIdArray) {
+        // get user names & pfps from user IDs
+        for (let i = 0; i < groupUsersIdArray.length; i++) {
+            const userID = groupUsersIdArray[i];
+            const userName = groups[groupID]?.users[userID].username;
+            const profilePic = groups[groupID]?.users[userID].profilePic;
+            currentGroupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
         }
-    };
-
-    useEffect(() => {
-        fetchGroupData();
-    }, []);
+    }
+    const groupCreator = groups[groupID]?.groupCreator;
+    const isCreator = (groupCreator === userID);
 
     useEffect(() => {
         // Add listeners to track the keyboard state
@@ -120,12 +95,11 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
     };
 
-    if (isLoading) {
+    if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
                 <Text>Loading...</Text>
-                <Text>{loadingText}</Text>
             </View>
         );
     }

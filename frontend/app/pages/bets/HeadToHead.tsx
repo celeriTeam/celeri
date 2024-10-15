@@ -18,9 +18,9 @@ type Props = {
 };
 
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
+    const { userID, groups } = useUser();
     const route = useRoute<headToHeadPageRouteProp>();
-    const { groupID, isFinishedRecap } = route.params;
+    const { groupID } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
@@ -42,10 +42,10 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
       await addToFinishedRecap(groupID, userID);
     };
 
-    const fetchUserName = async (matchups: { duelID: string, player1: string; player2: string; }[]) => {
+    const fetchUserName = (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
             // Get user's tokens
-            const userTokens = await getUserTokens(userID, groupID);
+            const userTokens = groups[groupID]?.userTokens;
             setCurrentUserTokens(userTokens);
 
             const currentPlayers = matchups[currentMatchupIndex];
@@ -53,17 +53,16 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setPlayer1ID(player1ID);
             const player2ID = currentPlayers.player2;
             setPlayer2ID(player2ID);
-            const player1 = await getUserName(player1ID);
+            const player1 = groups[groupID]?.users[player1ID]?.username;
             setPlayer1(player1);
-            const player2 = await getUserName(player2ID);
+            const player2 = groups[groupID]?.users[player2ID]?.username;
             setPlayer2(player2);
 
+            const betOnSelfAmount = groups[groupID]?.users[player1ID]?.betOnSelfAmount;
             if (player1ID === userID) {
-                const betOnSelfAmount = await getDefaultBetOnSelf(groupID);
                 setSelectedPlayer(player1ID);
                 setBetAmount1(betOnSelfAmount ? betOnSelfAmount.toString() : '100');
             } else if (player2ID === userID) {
-                const betOnSelfAmount = await getDefaultBetOnSelf(groupID);
                 setSelectedPlayer(player2ID);
                 setBetAmount2(betOnSelfAmount ? betOnSelfAmount.toString() : '100');
             } else {
@@ -79,12 +78,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const fetchData = async () => {
         try {
-            const isFirstDay = await getGroupIsFirstDay(groupID);
+            const isFirstDay = groups[groupID]?.isFirstDay;
+            const isFinishedRecap = groups[groupID]?.finishedRecap;
             if (isFinishedRecap || isFirstDay) {
                 setModalVisible(false);
             }
 
-            let dailyDuel = await getUnbetDuels(groupID, userID);
+            let dailyDuel = groups[groupID]?.unbetDuels;
             if (Object.keys(dailyDuel).length === 0) {
                 await addToFinishedBetting(groupID, userID);
                 navigation.reset({
@@ -103,7 +103,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setMatchups(matchups);
             
             fetchUserName(matchups);
-            const todaysBetTokens = await getTodaysBetTokens(userID, groupID);
+            const todaysBetTokens = groups[groupID]?.todaysBetTokens;
             setTotalBetTokens(todaysBetTokens);
         } catch(error) {
             console.error("Error fetching user data:", error);
@@ -122,6 +122,20 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             setChangePageForUserName(false);
         }
     }, [changePageForUserName]);
+
+    // if it hits 12:00 am, navigate to hometab
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const date = new Date();
+            if (date.getHours() === 0 && date.getMinutes() === 0) {
+                navigation.reset({
+                    index: 0,  // Index of the screen to be focused on
+                    routes: [{ name: 'AppPage' }],  // Define only the desired route
+                });
+            }
+        }, 60000);
+        return () => clearInterval(interval);
+    }, []);
 
     const handleSelectPlayer = (player: string) => {
         setSelectedPlayer(player);

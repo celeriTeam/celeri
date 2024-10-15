@@ -29,65 +29,55 @@ type GroupData = {
     groupName: string;
     numberOfUsers: number;
     isGameActive: boolean | undefined;
-    profilePicture: string | undefined;
+    groupImageUrl: string | undefined;
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
 
     
-    const { userID } = useUser();
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
+    const { userID, username, groupNames, getGroupID, groups, loading } = useUser();
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [currentUserGroups, setCurrentUserGroups] = useState<GroupData[] | undefined>(undefined);
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [shouldReload, setShouldReload] = useState(false);
+    const [currentUserGroups, setCurrentUserGroups] = useState<GroupData[]>([]);
 
-    const toggleModal = () => {
-        setIsModalVisible(!isModalVisible);
-    };
-
-    const fetchUserData = async () => {
-        try {
-            const user = auth.currentUser;
-            let userID = user?.uid || '';
-            console.log('userid: ', userID)
-            const name = await getUserName(userID);
-            setCurrentUserName(name);
-            const groups = await getUserGroups(userID);
-
-            if (!groups || groups.length == 0) {
-                // If groups is undefined or null, set it to an empty array
-                setCurrentUserGroups([]);
-                return;
-            }
-
-            const groupData = await Promise.all(groups.map(async (groupName: string) => {
-                const groupID = await getGroupIDFromGroupName(groupName);
+    const currentUserName = username || '';
+    const currentGroupNames = groupNames || [];
+    console.log('this is curr group names: ', currentGroupNames);
+    
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            const groupData = currentGroupNames.map((groupName: string) => {
+                const groupID = getGroupID[groupName];
                 if (!groupID) {
-                    console.log("Error: groupID invalid")
+                    console.log("Error: groupID invalid");
                     return;
                 }
-                const GroupUsers = await getUsersInGroup(groupID);
+                const GroupUsers = groups[groupID]?.userList;
                 const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
-                const isGameActive = await getGroupIsGameActive(groupID);
-                const profilePicture = await getGroupProfilePic(groupID);
+                const isGameActive = groups[groupID]?.isGameActive;
+                const groupImageUrl = groups[groupID]?.groupImageUrl;
                 return {
                     groupName,
                     numberOfUsers,
                     isGameActive,
-                    profilePicture,
+                    groupImageUrl,
                 };
-            }));
+            });
+    
             // Filter out undefined values from groupData
-            const filteredGroupData = groupData.filter((group): group is GroupData => group !== undefined);
+            const filteredUserGroups = groupData.filter((group): group is GroupData => group !== undefined);
+            console.log('AAAAAA', filteredUserGroups);
+    
+            // Set the current user groups after processing
+            setCurrentUserGroups(filteredUserGroups);
+        }, 5000); // Delay by 5000 milliseconds (5 seconds)
+    
+        // Cleanup the timeout if the component unmounts before 5 seconds
+        return () => clearTimeout(timeout);
+    }, [currentGroupNames, getGroupID, groups]);  // Dependencies
 
-            setCurrentUserGroups(filteredGroupData);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setIsLoading(false);
-        }
+    const toggleModal = () => {
+        setIsModalVisible(!isModalVisible);
     };
 
     const getStepsSinceMidnight = async () => {
@@ -108,7 +98,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 	};
 
     useEffect(() => {
-        fetchUserData();
 		getStepsSinceMidnight();
 
 		const intervalId = setInterval(() => {
@@ -120,16 +109,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 			clearInterval(intervalId);
 		};
     }, [userID]);
-
-    useFocusEffect(
-        useCallback(() => {
-            fetchUserData();
-            if (shouldReload) {
-                fetchUserData();
-                setShouldReload(false);
-            }
-        }, [shouldReload])
-    );
 
     const createGroupButtonHandle = () => {
         navigation.navigate('CreateGroup');
@@ -143,20 +122,17 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         // get groupID and number of users in group;
         // if number of users in group < 3, then navigate to inviteGroup page
         // else navigate to BetsPage page
-        const groupID: any = await getGroupIDFromGroupName(groupName);
-        const GroupUsers = await getUsersInGroup(groupID);
+        const groupID: any = getGroupID[groupName];
+        const GroupUsers = groups[groupID]?.userList;
         const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
         console.log('groupusers: ', GroupUsers);
-        const isGameActive = await getGroupIsGameActive(groupID);
+        const isGameActive = groups[groupID]?.isGameActive;
         if (GroupUsers === null || GroupUsers === undefined) {
             return;
         } else if (isGameActive) {
-            const isFinishedBetting = await checkFinishedBetting(groupID, userID);
-            const isFinishedRecap = await checkFinishedRecap(groupID, userID);
-            // if (!isFinishedRecap) {
-            //     navigation.navigate('BetRecapPage', { groupID: groupID });
+            const isFinishedBetting = groups[groupID]?.isFinishedBetting;
             if (!isFinishedBetting) {
-                navigation.navigate('HeadToHeadPage', { groupID: groupID, isFinishedRecap: isFinishedRecap });
+                navigation.navigate('HeadToHeadPage', { groupID: groupID });
             } else {
                 navigation.navigate('BetSummaryPage', { groupID: groupID });
             }
@@ -165,7 +141,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }
     }
 
-    if (isLoading) {
+    if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
@@ -204,9 +180,9 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                     style={styles.groupButton}
                     onPress={() => goToGroup(group.groupName)}
                     >
-                    {group.profilePicture ? (
+                    {group.groupImageUrl ? (
                         <Image
-                        source={{ uri: group.profilePicture }}
+                        source={{ uri: group.groupImageUrl }}
                         style={styles.groupImage}
                         />
                     ) : (

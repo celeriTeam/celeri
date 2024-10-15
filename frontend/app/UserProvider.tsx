@@ -15,6 +15,7 @@ export interface UserContextType {
     username: string;
     steps: number;
     groupNames: string[];
+    getGroupID: { [groupName: string]: any };
     groups: { [groupID: string]: any };
     loading: boolean;
 }
@@ -25,6 +26,7 @@ const UserContext = createContext<UserContextType>({
     username: '',
     steps: 0,
     groupNames: [],
+    getGroupID: {},
     groups: {},
     loading: true,
 });
@@ -37,6 +39,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [username, setUsername] = useState<string>('');
     const [steps, setSteps] = useState<number>(0);
     const [groupNames, setGroupNames] = useState<any[]>([]);
+    const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [loading, setLoading] = useState(true);
 
@@ -49,8 +52,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 setUserID('');
                 clearUserData();
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => {
@@ -63,8 +66,11 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const fetchUserData = async (uid: string) => {
-        const unsubscribeUser = onSnapshot(doc(db, "users", uid), async (docSnapshot) => {
+        const usersRef = collection(db, "users");
+        const userDocRef = doc(usersRef, uid);
+        const unsubscribeUser = onSnapshot(userDocRef, async (docSnapshot) => {
             if (docSnapshot.exists()) {
+                const userData = docSnapshot.data();
                 const currentProfilePicUrl = await getProfilePic(uid);
                 setProfileImageUrl(currentProfilePicUrl || '');
                 const currentUsername = await getUserName(uid);
@@ -85,6 +91,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
+        const getGroupID: { [groupName: string]: any } = {};
         if (userGroups) {
             await Promise.all(userGroups.map(async (groupName) => {
                 const groupID = await getGroupIDFromGroupName(groupName);
@@ -99,9 +106,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGroupIsGameActive(groupID),
                             getGroupIsFirstDay(groupID),
                             getGroupCreator(groupID),
-                            getUserTokens(groupID, uid),
+                            getUserTokens(uid, groupID),
                             getDefaultBetOnSelf(groupID),
-                            getTodaysBetTokens(groupID, uid),
+                            getTodaysBetTokens(uid, groupID),
                             getYesterdaysDuelsSummary(groupID),
                             getTodaysDuelsSummary(groupID),
                             getUnbetDuels(groupID, uid),
@@ -117,7 +124,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                     getProfilePic(selectedUserID),
                                     getUserName(selectedUserID),
                                     getSteps(selectedUserID),
-                                    getUserTokens(groupID, selectedUserID)
+                                    getUserTokens(selectedUserID, groupID)
                                 ]);
                         
                                 users[selectedUserID] = {
@@ -127,6 +134,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                     tokens
                                 };
                             }));
+                        }
+                        if (groupName) {
+                            getGroupID[groupName] = groupID;
                         }
                         groups[groupID] = {
                             groupCode,
@@ -151,7 +161,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return unsubscribeGroup;
             }));
         }
+        setGetGroupID(getGroupID);
         setGroups(groups);
+        setLoading(false);
     };
 
     const clearUserData = () => {
@@ -163,7 +175,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <UserContext.Provider value={{ userID, profileImageUrl, username, steps, groupNames, groups, loading }}>
+        <UserContext.Provider value={{ userID, profileImageUrl, username, steps, groupNames, getGroupID, groups, loading }}>
             {children}
         </UserContext.Provider>
     );

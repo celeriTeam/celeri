@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, Button, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
-import { useRoute } from '@react-navigation/native';
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { useFocusEffect } from '@react-navigation/native';
 import EditProfilePage from './EditProfile';
-import { getProfilePic, getSteps, getUserGroups, getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
 type Props = {
@@ -14,65 +12,7 @@ type Props = {
 };
 
 const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
-    const [user, setUser] = useState<User | null>(null);
-    const [currentProfilePic, setCurrentProfilePic] = useState<string | undefined>(undefined);
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
-    const [currentUserGroups, setCurrentUserGroups] = useState<string[] | undefined>(undefined);
-    const [currentSteps, setCurrentSteps] = useState<number | undefined>(undefined);
-    const [fromEditPage, setFromEditPage] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const fetchSteps = async () => {
-        try {
-            const steps = await getSteps(userID);
-            setCurrentSteps(steps);
-        } catch (error) {
-            console.error("Error fetching steps:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchUserData = async () => {
-        try {
-            const profilePic = await getProfilePic(userID);
-            setCurrentProfilePic(profilePic);
-            const name = await getUserName(userID);
-            setCurrentUserName(name);
-            const groups = await getUserGroups(userID);
-            setCurrentUserGroups(groups);
-            const steps = await getSteps(userID);
-            setCurrentSteps(steps);
-        } catch (error) {
-            console.error("Error fetching user data:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const authInstance = getAuth();
-        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
-            setUser(currentUser);
-        });
-
-        fetchUserData();
-
-        return () => unsubscribe(); // Cleanup subscription on unmount
-    }, [userID]);
-
-    useFocusEffect(
-        useCallback(() => {
-            // Check if the user came from the edit page
-            if (fromEditPage) {
-                fetchUserData();
-                setFromEditPage(false);
-            } else {
-                fetchSteps();
-            }
-        }, [fromEditPage])
-    );
+    const { profileImageUrl, username, steps, groupNames, loading } = useUser();
 
     const handleLogout = async () => {
         const authInstance = getAuth();
@@ -90,11 +30,10 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
     };
 
     const handleEditProfile = () => {
-        setFromEditPage(true);
-        navigation.navigate('EditProfile', { profilePic: currentProfilePic || '', username: currentUserName || '' });
+        navigation.navigate('EditProfile');
     };
 
-    if (isLoading) {
+    if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
@@ -105,9 +44,9 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            {currentProfilePic ? (
+            {profileImageUrl ? (
                 <Image
-                source={{ uri: currentProfilePic }}
+                source={{ uri: profileImageUrl }}
                 style={styles.profileImage}
                 />
             ) : (
@@ -116,26 +55,26 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
                 style={styles.profileImage}
                 />
             )}
-            {currentUserName ? (
-                <Text style={styles.name}>{currentUserName}</Text>
+            {username ? (
+                <Text style={styles.name}>{username}</Text>
             ) : (
                 <Text style={styles.name}>Loading...</Text>
             )
             }
 
             <Text style={styles.groupsLabel}>Steps: </Text>
-            {currentSteps != undefined ? (
-                <Text style={styles.text}>{currentSteps}</Text>
+            {steps != undefined ? (
+                <Text style={styles.text}>{steps}</Text>
             ) : (
                 <Text style={styles.text}>Loading...</Text>
             )
             }
             
             <Text style={styles.groupsLabel}>Groups:</Text>
-            {currentUserGroups === undefined || currentUserGroups.length === 0 ? (
+            {groupNames === undefined || groupNames.length === 0 ? (
                 <Text style={styles.text}>No groups found</Text>
             ) : (
-                currentUserGroups.map((groupName) => (
+                groupNames.map((groupName) => (
                     <Text key={groupName} style={styles.text}>{groupName}</Text>
                 ))
             )}
@@ -153,8 +92,6 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
 const ProfileStack = createStackNavigator();
 
 const ProfileTab: React.FC = () => {
-    const { userID } = useUser();
-    
     return (
         <ProfileStack.Navigator>
             <ProfileStack.Screen name="ProfilePage" component={PersonalProfilePage} options={{ headerShown: false }} />

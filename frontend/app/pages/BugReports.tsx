@@ -12,23 +12,9 @@ type Props = {
 };
 
 const BugReportsPage: React.FC<Props> = () => {
-    const { userID } = useUser();
-    const [currentUserName, setCurrentUserName] = useState<string | undefined>(undefined);
+    const { userID, username } = useUser();
     const [subject, setSubject] = useState<string>('');
     const [issue, setIssue] = useState<string>('');
-
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const name = await getUserName(userID);
-                setCurrentUserName(name);
-            } catch (error) {
-                console.error("Error fetching user data:", error);
-            }
-        };
-
-        fetchUserData();
-    }, [userID]);
 
     const handleSubmit = () => {
         if (!subject.trim() || !issue.trim()) {
@@ -38,7 +24,7 @@ const BugReportsPage: React.FC<Props> = () => {
         // Handle form submission here
         setSubject('');
         setIssue('');
-        Alert.alert('Success', `Thank you for your feedback, ${currentUserName}!`);
+        Alert.alert('Success', `Thank you for your feedback, ${username}!`);
     };
 
     return (

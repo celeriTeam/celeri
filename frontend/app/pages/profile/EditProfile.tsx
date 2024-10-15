@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, Button, Image, TouchableOpacity, TextInput } from 'react-native';
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { View, Text, StyleSheet, Alert, Button, TouchableOpacity, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { editProfilePic, editUsername, getUserEmail } from '@backend/src/users';
+import { editProfilePic, editUsername } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
 type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
@@ -15,12 +14,10 @@ type Props = {
 };
 
 const EditProfilePage: React.FC<Props> = ({ navigation }) => {
-    const { userID } = useUser();
-    const route = useRoute();
-    const { profilePic, username } = route.params as { userID: string, profilePic: string, username: string };
+    const { userID, profileImageUrl, username } = useUser();
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [currentUsername, setcurrentUsername] = useState(username);
-    const [currentProfilePic, setcurrentProfilePic] = useState(profilePic);
+    const [currentProfilePic, setcurrentProfilePic] = useState(profileImageUrl);
     const inputRef = useRef<TextInput>(null);
 
     const handleEditPress = () => {
