@@ -26,6 +26,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { groupID } = route.params;
     const { userID, groups, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);
+    const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
     let groupPic;
     const todaysBets = groups[groupID]?.todaysDuels;
@@ -155,6 +156,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
     const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number } }) => {
         
+        const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
+
         const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
         const totalPlayer2Bets = item.player2Bets.reduce((sum, bet) => sum + bet.wager, 0);
 
@@ -167,82 +170,130 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
         return (
             <View style={styles.flatList}>
-                {/* Players and Pictures */}
-                <View style={styles.row}>
-                    {/* Column 1 - Player 1 */}
-                <View style={styles.centeredColumn}>
-                    <Text style={styles.player1text}>{item.player1}</Text>
-                    <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
-                    <Text style={styles.stepTitle}>{item.player1Steps} Steps</Text>
+                <TouchableOpacity onPress={() => toggleItemExpansion(item.duelID)}>
+                    {/* Players and Pictures */}
+                    <View style={styles.row}>
+                        {/* Column 1 - Player 1 */}
+                    <View style={styles.centeredColumn}>
+                        <Text style={styles.player1text}>{item.player1}</Text>
+                        <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
+                        <Text style={styles.stepTitle}>{item.player1Steps} Steps</Text>
+                    </View>
+
+                    {/* Column 2 - Circular Icon */}
+                    <View style={styles.centeredColumn}>
+                        <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
+                        <Text></Text>
+                    </View>
+
+                    {/* Column 3 - Player 2 */}
+                    <View style={styles.centeredColumn}>
+                        <Text style={styles.player2text}>{item.player2}</Text>
+                        <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
+                        <Text style={styles.stepTitle}>{item.player2Steps} Steps</Text>
+                    </View>
                 </View>
 
-                {/* Column 2 - Circular Icon */}
-                <View style={styles.centeredColumn}>
-                    <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
-                    <Text></Text>
-                </View>
+                    
+                <View style={styles.rowBets}>
+                    {/* Player 1 Bets and Coin */}
+                    <View style={styles.betsContainer}>
+                        <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
+                        <Image
+                            source={require('../../../assets/images/gold_coin.png')}
+                            style={styles.coinIcon}
+                        />
+                    </View>
+                    <Text style={styles.betsColonText}> : </Text>
+                    {/* Player 2 Bets and Coin */}
+                    <View style={styles.betsContainer}>
+                        <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
+                        <Image
+                            source={require('../../../assets/images/gold_coin.png')}
+                            style={styles.coinIcon}
+                        />
+                    </View>
+                    {/* Player1's Bets */}
+                    {/* <View style={styles.betsListLeft}>
+                        <Text style={styles.stepTitle}>Bets:</Text>
+                        {item.player1Bets.length === 0 ? (
+                            <View>
+                                <Text>(No bets placed yet)</Text>
+                            </View>
+                        ) : (
+                            <View>
+                                {item.player1Bets.map((bet, index) => (
+                                    <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
+                                ))}
+                            </View>
+                        )}
+                    </View> */}
 
-                {/* Column 3 - Player 2 */}
-                <View style={styles.centeredColumn}>
-                    <Text style={styles.player2text}>{item.player2}</Text>
-                    <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
-                    <Text style={styles.stepTitle}>{item.player2Steps} Steps</Text>
+                    {/* Player2's Bets */}
+                    {/* <View style={styles.betsListRight}>
+                        <Text style={styles.stepTitle}>Bets:</Text>
+                        {item.player2Bets.length === 0 ? (
+                            <View>
+                                <Text>(No bets placed yet)</Text>
+                            </View>
+                        ) : (
+                            <View>
+                                {item.player2Bets.map((bet, index) => (
+                                    <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
+                                ))}
+                            </View>
+                        )}
+                    </View> */}
                 </View>
-            </View>
+            </TouchableOpacity>
 
-                
-            <View style={styles.rowBets}>
-                {/* Player 1 Bets and Coin */}
-                <View style={styles.betsContainer}>
-                    <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
-                    <Image
-                        source={require('../../../assets/images/gold_coin.png')}
-                        style={styles.coinIcon}
-                    />
-                </View>
-                <Text style={styles.betsColonText}> : </Text>
-                {/* Player 2 Bets and Coin */}
-                <View style={styles.betsContainer}>
-                    <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
-                    <Image
-                        source={require('../../../assets/images/gold_coin.png')}
-                        style={styles.coinIcon}
-                    />
-                </View>
-                {/* Player1's Bets */}
-                {/* <View style={styles.betsListLeft}>
-                    <Text style={styles.stepTitle}>Bets:</Text>
-                    {item.player1Bets.length === 0 ? (
-                        <View>
-                            <Text>(No bets placed yet)</Text>
-                        </View>
-                    ) : (
-                        <View>
-                            {item.player1Bets.map((bet, index) => (
-                                <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                            ))}
-                        </View>
-                    )}
-                </View> */}
+            {isExpanded && (
+                    <>
+                        <View style={styles.row}>
+                            {/* Player1's Bets */}
+                            <View style={styles.betsListLeft}>
+                                <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
+								{item.player1Bets.length === 0 ? (
+                                    <View>
+                                        <Text>(No bets placed)</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+                                        {item.player1Bets.map((bet, index) => (
+                                            <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
+                                        ))}
+									</View>
+								)}
+                            </View>
 
-                {/* Player2's Bets */}
-                {/* <View style={styles.betsListRight}>
-                    <Text style={styles.stepTitle}>Bets:</Text>
-                    {item.player2Bets.length === 0 ? (
-                        <View>
-                            <Text>(No bets placed yet)</Text>
+                            {/* Player2's Bets */}
+                            <View style={styles.betsListRight}>
+								{/* Player2's Steps */}
+                                <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
+								{item.player2Bets.length === 0 ? (
+                                    <View>
+                                        <Text>(No bets placed)</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+										{item.player2Bets.map((bet, index) => (
+											<Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
+										))}
+									</View>
+								)}
+                            </View>
                         </View>
-                    ) : (
-                        <View>
-                            {item.player2Bets.map((bet, index) => (
-                                <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-                            ))}
-                        </View>
-                    )}
-                </View> */}
-            </View>
+                    </>
+                )}
         </View>
         );
+    };
+
+    const toggleItemExpansion = (duelID: string) => {
+        setExpandedItems((prevExpandedItems) => ({
+            ...prevExpandedItems,
+            [duelID]: !prevExpandedItems[duelID], // toggle the current duelID
+        }));
     };
 
     return (
@@ -339,7 +390,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             {/* Modal */}
             {!isFirstDay && (
                 <View style={styles.button}>
-                    <Button title="See yesterday's bets" onPress={openModal} />
+                    <Button title="Recap" onPress={openModal} />
                 </View>
             )}
             <Modal
@@ -491,7 +542,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         backgroundColor: "#f0f0f0",
         width: 380,
-        height: 320,
+        height: 250,
         borderRadius: 30,
         justifyContent: "center",
         //alignItems: "center",
@@ -576,8 +627,8 @@ const styles = StyleSheet.create({
     },
     // MODAL
     button: {
-        marginTop: 20,
-        marginBottom: 20,
+        marginTop: 10,
+        marginBottom: 0,
         width: '50%',
         alignSelf: 'center',
     },

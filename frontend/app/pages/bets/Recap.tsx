@@ -5,12 +5,20 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import 
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
+import Svg, { Circle, G } from 'react-native-svg';
 
 type betRecapPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type betRecapPageRouteProp = RouteProp<RootStackParamList, 'BetRecapPage'>;
 
+
 type Props = {
     navigation: betRecapPageNavigationProp;
+};
+
+type CircularIconProps = {
+    value: number; // Value from 0 to 1, where 1 is 100%
+    size?: number; // Diameter of the circle
+    strokeWidth?: number; // Width of the border
 };
 
 const BetRecapPage: React.FC<Props> = ({ navigation }) => {
@@ -93,8 +101,63 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
         }));
     };
 
+    const CircularIcon: React.FC<CircularIconProps> = ({ value, size = 100, strokeWidth = 10 }) => {
+        const radius = (size - strokeWidth) / 2;
+        const circumference = 2 * Math.PI * radius;
+        const blueStrokeLength = value * circumference;
+        const redStrokeLength = (1 - value) * circumference;
+    
+        return (
+            <View style={[styles.circleContainer, { width: size, height: size }]}>
+                <Svg width={size} height={size}>
+                    <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
+                        {/* Blue portion of the border */}
+                        <Circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke="#1E90FF"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${blueStrokeLength} ${circumference}`}
+                            strokeLinecap="round"
+                            fill="transparent"
+                        />
+                        {/* Red portion of the border */}
+                        <Circle
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={radius}
+                            stroke="#ff3535"
+                            strokeWidth={strokeWidth}
+                            strokeDasharray={`${redStrokeLength} ${circumference}`}
+                            strokeDashoffset={-blueStrokeLength}
+                            strokeLinecap="round"
+                            fill="transparent"
+                        />
+                    </G>
+                </Svg>
+                {/* Center text */}
+                <View style={styles.VStextContainer}>
+                    <Text style={styles.VStext}>VS</Text>
+                </View>
+            </View>
+        );
+    };
+
     const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
+
+        const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
+        const totalPlayer2Bets = item.player2Bets.reduce((sum, bet) => sum + bet.wager, 0);
+
+        // Calculate the sum of all bets
+        const totalBets = totalPlayer1Bets + totalPlayer2Bets;
+        
+        // Calculate the ratios for the circular value
+        const player1Ratio = totalBets === 0 ? 0.5 : totalPlayer1Bets / totalBets;
+        const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
+
+    
         return (
             <View style={styles.flatList}>
                 {/* Players */}
@@ -105,6 +168,12 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                             item.winner === item.player1 && styles.winner,
                             styles.playerLeft  // Additional style for player1
                         ]}>{item.player1}{item.winner === item.player1 && ' (winner)'}</Text>
+
+                            {/* Column 2 - Circular Icon */}
+                        <View style={styles.centeredColumn}>
+                            <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
+                            <Text></Text>
+                        </View>
 
                         <View style={styles.playerRightContainer}>
                             <Text style={[
@@ -256,6 +325,27 @@ const styles = StyleSheet.create({
     betsListRight: {
         marginTop: 10,
         paddingLeft: 20,
+    },
+    circleContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 25,
+    },
+    VStextContainer: {
+        position: 'absolute',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 25,
+    },
+    VStext: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'black',
+    },
+    centeredColumn: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
     },
 });
 
