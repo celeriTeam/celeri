@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, Fl
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -233,13 +234,20 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
-          quality: 1,
+          quality: 0.5,
         });
-    
+
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-                addGroupImage(groupID, selectedAsset.uri);
+            // Compress and resize the image
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                selectedAsset.uri,
+                [{ resize: { width: 800 } }], // Resize to 800px width
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+
+            addGroupImage(groupID, selectedAsset.uri);
             }
         }
     };
@@ -445,7 +453,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 )}
             </View>
             <View style={styles.editPic} >
-                <Button title="Edit profile pic" onPress={pickImage} />
+                <Button title="Edit group pic" onPress={pickImage} />
             </View>
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
