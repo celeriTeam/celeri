@@ -44,6 +44,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        setLoading(true);
         let unsubscribeUser: any;
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -55,6 +56,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setLoading(false);
             }
         });
+        setLoading(false);
 
         return () => {
             unsubscribe(); // Cleanup the auth state listener
@@ -69,6 +71,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const usersRef = collection(db, "users");
         const userDocRef = doc(usersRef, uid);
         const unsubscribeUser = onSnapshot(userDocRef, async (docSnapshot) => {
+            setLoading(true);
             if (docSnapshot.exists()) {
                 const userData = docSnapshot.data();
                 const currentProfilePicUrl = await getProfilePic(uid);
@@ -84,6 +87,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     fetchGroupData(userGroups, uid);
                 }
             }
+            setLoading(false);
         });
 
         return unsubscribeUser;
@@ -98,6 +102,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const groupsRef = collection(db, "groups");
                 const groupDocRef = doc(groupsRef, groupID);
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+                    setLoading(true);
                     if (docSnapshot.exists() && groupID) {
                         const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, yesterdaysDuels, todaysDuels, unbetDuels, isFinishedBetting, isFinishedRecap] = await Promise.all([
                             getGroupCode(groupID),
@@ -157,13 +162,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             users
                         };
                     }
+                    setLoading(false);
                 });
                 return unsubscribeGroup;
             }));
         }
         setGetGroupID(getGroupID);
         setGroups(groups);
-        setLoading(false);
     };
 
     const clearUserData = () => {

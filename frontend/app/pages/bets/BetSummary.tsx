@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView } from 'react-native';
+import { app } from "@firebaseConfig";
+import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -7,6 +9,11 @@ import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import BetRecapPage from './Recap';
 import Svg, { Circle, G } from 'react-native-svg';
+import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
+import { getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getTodaysDuelsSummary } from '@/backend/src/bets';
+
+const db = getFirestore(app);
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
@@ -24,100 +31,181 @@ type CircularIconProps = {
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID } = route.params;
-    const { userID, groups, loading } = useUser();
+    const { userID, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
+    const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
+    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    let groupPic;
-    const todaysBets = groups[groupID]?.todaysDuels;
+    useEffect(() => {
+        try {
+            fetchGroupData(userID);
+        } catch (error) {
+            console.error('Error fetching user groups:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userID]);
 
-    const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
-        return Object.values(duels);
+    const fetchGroupData = async (uid: string) => {
+        const currentGroups: { [groupID: string]: any } = {};
+        const groupsRef = collection(db, "groups");
+        const groupDocRef = doc(groupsRef, groupID);
+        let unsubscribeDuels: () => void = () => {};
+        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+            setIsLoading(true);
+            if (docSnapshot.exists() && groupID) {
+                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, todaysDuels] = await Promise.all([
+                    getGroupProfilePic(groupID),
+                    getGroupName(groupID),
+                    getGroupIsFirstDay(groupID),
+                    getUserTokens(uid, groupID),
+                    getTodaysBetTokens(uid, groupID),
+                    getTodaysDuelsSummary(groupID)
+                ]);
+
+                const userList = await getUsersInGroup(groupID); // userIDs
+                const users: { [userID: string]: any } = {};
+                let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[] = [];
+                if (userList) {
+                    await Promise.all(userList.map(async (selectedUserID) => {
+                        const [profilePic, username, steps, tokens] = await Promise.all([
+                            getProfilePic(selectedUserID),
+                            getUserName(selectedUserID),
+                            getSteps(selectedUserID),
+                            getUserTokens(selectedUserID, groupID)
+                        ]);
+                
+                        users[selectedUserID] = {
+                            profilePic,
+                            username,
+                            steps,
+                            tokens
+                        };
+                        groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens });
+                    }));
+                    // Sort users by tokens in descending order
+                    groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
+                }
+                setCurrentGroupUsersArray(groupUsersArray);
+
+                // Set up a listener for today's duels
+                const groupCycleCount = docSnapshot.data()?.cycleCount;
+                const groupCycleDay = docSnapshot.data()?.cycleDay;
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const todayStart = Timestamp.fromDate(today);
+                const todayEnd = Timestamp.fromDate(tomorrow);
+
+                const duelsCollection = collection(groupDocRef, 'duels');
+                const duelsQuery = query(duelsCollection,
+                    where('cycleCount', '==', groupCycleCount),
+                    where('cycleDay', '==', groupCycleDay),
+                    where('createdAt', '>=', todayStart),
+                    where('createdAt', '<', todayEnd)
+                );
+                unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
+                    setIsLoading(true);
+                    const todaysDuels: { [key: string]: any } = {};
+                    duelsSnapshot.forEach((duelDoc) => {
+                        const duelData = duelDoc.data();
+                        todaysDuels[duelDoc.id] = {
+                            duelID: duelDoc.id,
+                            player1: duelData.player1,
+                            player2: duelData.player2,
+                            bets: duelData.bets || []
+                        };
+                    });
+
+                    const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
+                        return Object.values(duels);
+                    };
+        
+                    const flattenedBets = flattenDuels(todaysDuels);
+        
+                    const currBets = flattenedBets.map((bet) => {
+                        const player1 = users[bet.player1]?.username;
+                        const player2 = users[bet.player2]?.username;
+                        const player1Steps = users[bet.player1]?.steps;
+                        const player2Steps = users[bet.player2]?.steps;
+                        const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
+                        const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
+        
+                        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+                            return {
+                                duelID: bet.duelID,
+                                player1,
+                                player2,
+                                player1Pfp,
+                                player2Pfp,
+                                player1Bets: [],
+                                player2Bets: [],
+                                player1Steps,
+                                player2Steps,
+                            };
+                        } else {
+                            const player1Bets = bet.bets
+                                .filter((b) => b.betOnUserID === bet.player1)
+                                .map((b) => ({
+                                    user: users[b.userID]?.username,
+                                    wager: b.wager,
+                                }));
+                            const player2Bets = bet.bets
+                                .filter((b) => b.betOnUserID === bet.player2)
+                                .map((b) => ({
+                                    user: users[b.userID]?.username,
+                                    wager: b.wager,
+                                }));
+        
+                            return {
+                                duelID: bet.duelID,
+                                player1,
+                                player2,
+                                player1Pfp,
+                                player2Pfp,
+                                player1Bets,
+                                player2Bets,
+                                player1Steps,
+                                player2Steps,
+                            };
+                        }
+                    });
+        
+                    // Update the currentGroups with the latest duels data
+                    currentGroups[groupID] = {
+                        ...currentGroups[groupID],
+                        todaysDuels
+                    };
+        
+                    console.log(`Duels for group ${groupID} updated`);
+                    console.log('Updated currentGroups: ', currentGroups);
+                    setCurrentBets(currBets);
+                    setIsLoading(false);
+                });
+                
+                currentGroups[groupID] = {
+                    groupImageUrl,
+                    groupName,
+                    isFirstDay,
+                    userTokens,
+                    todaysBetTokens
+                };
+            }          
+            setIsLoading(false);  
+        });
+        setGroups(currentGroups);
+        return () => {
+            unsubscribeGroup();
+            if (typeof unsubscribeDuels === 'function') {
+                unsubscribeDuels();
+            }
+        };        
     };
-    groupPic = groups[groupID]?.groupImageUrl;
-
-    const flattenedBets = todaysBets ? flattenDuels(todaysBets) : [];
-
-    const currentBets = flattenedBets.map((bet) => {
-        const player1 = groups[groupID]?.users[bet.player1]?.username;
-        const player2 = groups[groupID]?.users[bet.player2]?.username;
-        const player1Steps = groups[groupID]?.users[bet.player1]?.steps;
-        const player2Steps = groups[groupID]?.users[bet.player2]?.steps;
-        const player1Pfp = (groups[groupID]?.users[bet.player1]?.profilePic) ?? 'default_image_url'; // Fetch player1's profile picture
-        const player2Pfp = (groups[groupID]?.users[bet.player2]?.profilePic) ?? 'default_image_url';
-
-        // if there are no bets, return the duel with the player names
-        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
-            return {
-                duelID: bet.duelID,
-                player1,
-                player2,
-                player1Pfp,
-                player2Pfp,
-                player1Bets: [],
-                player2Bets: [],
-                player1Steps,
-                player2Steps,
-            };
-        }
-
-        else {
-            // Separate bets for player1 and player2
-            const player1Bets = bet.bets
-                .filter((b) => b.betOnUserID === bet.player1)
-                .map((b) => ({
-                    user: groups[groupID]?.users[b.userID]?.username,
-                    wager: b.wager,
-                }));
-            const player2Bets = bet.bets
-                .filter((b) => b.betOnUserID === bet.player2)
-                .map((b) => ({
-                    user: groups[groupID]?.users[b.userID]?.username,
-                    wager: b.wager,
-                }));
-
-            return {
-                duelID: bet.duelID,
-                player1,
-                player2,
-                player1Pfp,
-                player2Pfp,
-                player1Bets,
-                player2Bets,
-                player1Steps,
-                player2Steps,
-            };
-        }
-    });
-
-    // Get total bet tokens
-    const totalBetTokens = groups[groupID]?.todaysBetTokens;
-
-    // Check if it's the first day
-    const firstDay = groups[groupID]?.isFirstDay;
-    const isFirstDay = (firstDay == undefined) ? true : firstDay;
-
-    // Get group name
-    const currentGroupName = groups[groupID]?.groupName;
-
-    // Get group users
-    const groupUsersIdArray = groups[groupID]?.userList; // array of user IDs
-    let currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[] = [];
-    if (groupUsersIdArray) {
-        // get user names & pfps from user IDs
-        for (let i = 0; i < groupUsersIdArray.length; i++) {
-            const userID = groupUsersIdArray[i];
-            const userName = groups[groupID]?.users[userID]?.username;
-            const profilePic = groups[groupID]?.users[userID]?.profilePic;
-            const tokens = groups[groupID]?.users[userID]?.tokens;
-            currentGroupUsersArray.push({ id: userID, name: userName, pfp: profilePic, tokens: tokens });
-        }
-        // Sort users by tokens in descending order
-        currentGroupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
-    }
-
-    // Get user's tokens
-    const currentUserTokens = groups[groupID]?.userTokens;
   
     const closeModal = async () => {
       setModalVisible(false);
@@ -145,7 +233,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         return () => clearInterval(interval);
     }, []);
 
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
@@ -299,7 +387,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     return (
         <View style={styles.container}>
             <View style={styles.titleContainer}>
-                <Text style={styles.groupTitle}>{currentGroupName}</Text>
+                <Text style={styles.groupTitle}>{groups[groupID]?.groupName}</Text>
             </View>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Image
@@ -308,22 +396,22 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 />
             </TouchableOpacity>
             <View style={styles.tokens}>  
-                <Text style={styles.tokenText}>{currentUserTokens}</Text>
+                <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
                 <Image
                     source={require('../../../assets/images/gold_coin.png')}
                     style={styles.coinIcon}
                 />
             </View>
             <View style={styles.betTokens}>
-                <Text style={styles.tokenText}>{totalBetTokens}</Text>
+                <Text style={styles.tokenText}>{groups[groupID]?.todaysBetTokens}</Text>
                 <Image
                     source={require('../../../assets/images/coin_spent.png')}
                     style={styles.coinIcon}
                 />
             </View>
             <View style={styles.groupImageContainer}>
-                {groupPic ? (
-                    <Image source={{ uri: groupPic }} style={styles.groupImage} />
+                {groups[groupID]?.groupImageUrl ? (
+                    <Image source={{ uri: groups[groupID]?.groupImageUrl }} style={styles.groupImage} />
                 ) : (
                     <Image
                         source={require('@components/blank-profile-picture.png')}
@@ -388,7 +476,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             
 
             {/* Modal */}
-            {!isFirstDay && (
+            {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
                 <View style={styles.button}>
                     <Button title="Recap" onPress={openModal} />
                 </View>

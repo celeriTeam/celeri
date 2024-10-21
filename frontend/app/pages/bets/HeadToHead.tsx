@@ -18,7 +18,7 @@ type Props = {
 };
 
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
-    const { userID, groups } = useUser();
+    const { userID, groups, loading } = useUser();
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
@@ -42,6 +42,12 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
       setModalVisible(false);
       await addToFinishedRecap(groupID, userID);
     };
+
+    useEffect(() => {
+        if (!loading) {
+          fetchData();
+        }
+    }, [loading]);
 
     const fetchUserName = (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
@@ -85,37 +91,35 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 setModalVisible(false);
             }
 
-            let dailyDuel = groups[groupID]?.unbetDuels;
-            if (Object.keys(dailyDuel).length === 0) {
-                await addToFinishedBetting(groupID, userID);
-                navigation.reset({
-                    index: 1,
-                    routes: [
-                        { name: 'HomeTab' }, // the first route in the stack
-                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
-                    ],
-                });
-            }
-            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
-                return Object.values(duels);
-            };
-        
-            const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
-            setMatchups(matchups);
+            if (isFirstDay) {
+                let dailyDuel = groups[groupID]?.unbetDuels;
+                if (Object.keys(dailyDuel).length === 0) {
+                    await addToFinishedBetting(groupID, userID);
+                    navigation.reset({
+                        index: 1,
+                        routes: [
+                            { name: 'HomeTab' }, // the first route in the stack
+                            { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
+                        ],
+                    });
+                }
+                const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
+                    return Object.values(duels);
+                };
             
-            fetchUserName(matchups);
-            const todaysBetTokens = groups[groupID]?.todaysBetTokens;
-            setTotalBetTokens(todaysBetTokens);
+                const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
+                setMatchups(matchups);
+                
+                fetchUserName(matchups);
+                const todaysBetTokens = groups[groupID]?.todaysBetTokens;
+                setTotalBetTokens(todaysBetTokens);
+            }
         } catch(error) {
             console.error("Error fetching user data:", error);
         } finally {
             setIsLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     useEffect(() => {
         if (changePageForUserName) {
@@ -223,6 +227,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 <Text>Loading...</Text>
             </View>
         );
+    }
+
+    if (!groups[groupID]?.isGameActive) {
+        navigation.reset({
+            index: 0,  // Index of the screen to be focused on
+            routes: [{ name: 'AppPage' }],  // Define only the desired route
+        });
     }
 
     return (
