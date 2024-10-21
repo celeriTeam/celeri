@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
+import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -10,7 +11,7 @@ import { useUser } from '../../UserProvider';
 import BetRecapPage from './Recap';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 
 const db = getFirestore(app);
@@ -219,6 +220,30 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
 
+    const pickImage = async () => {
+        // Request permission to access the media library
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+        if (permissionResult.granted === false) {
+          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+          return;
+        }
+    
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+    
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            if (selectedAsset.uri) {
+                addGroupImage(groupID, selectedAsset.uri);
+            }
+        }
+    };
+
     // if it hits 12:00 am, navigate to hometab
     useEffect(() => {
         const interval = setInterval(() => {
@@ -419,6 +444,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     />
                 )}
             </View>
+            <View style={styles.editPic} >
+                <Button title="Edit profile pic" onPress={pickImage} />
+            </View>
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
                 {currentGroupUsersArray ? (
@@ -585,6 +613,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         elevation: 5,
     },
+    editPic: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginBottom: 40,
+    },
     tokens: {
         position: 'absolute',
         right: 10,
@@ -725,27 +758,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
-      },
-      modalContainer: {
+    },
+    modalContainer: {
         width: '90%',
         height: '90%',
         backgroundColor: 'white',
         borderRadius: 10,
         padding: 20,
         position: 'relative',
-      },
-      closeButton: {
+    },
+    closeButton: {
         position: 'absolute',
         top: 10,
         right: 10,
         zIndex: 1,
-      },
-      closeButtonText: {
+    },
+    closeButtonText: {
         fontSize: 18,
         fontWeight: 'bold',
         color: 'black',
-      },
-      groupImage: {
+    },
+    groupImage: {
         width: 120,
         height: 120,
         borderRadius: 60,

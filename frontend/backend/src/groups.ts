@@ -216,7 +216,7 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
 export const getGroupProfilePic = async (id: string): Promise<string | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", id));
-        if (groupDoc.exists() && groupDoc.data()?.username) {
+        if (groupDoc.exists() && groupDoc.data()?.groupImageUrl) {
             console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
             return groupDoc.data()?.groupImageUrl;
         } else {
@@ -269,7 +269,7 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
 }
 
 // ADD Group Image
-export const addGroupImage = async (groupID: string, groupImageUri: string): Promise<string | undefined> => {
+export const addGroupImage = async (groupID: string, groupImageUri: string): Promise<string | null> => {
     try {
         if (groupImageUri != '') {
             const response = await fetch(groupImageUri);
@@ -279,20 +279,20 @@ export const addGroupImage = async (groupID: string, groupImageUri: string): Pro
             const downloadURL = await getDownloadURL(storageRef);
 
             // Update the user's profile in Firestore with the new image URL
-            const userDocRef = doc(db, 'groups', groupID);
-            await updateDoc(userDocRef, {
+            const groupDocRef = doc(db, 'groups', groupID);
+            await updateDoc(groupDocRef, {
                 groupImageUrl: downloadURL,
             });
-            const userDoc = await getDoc(userDocRef);
-            console.log('addGroupImage - response: ', userDoc.data()?.groupImageUrl);
-            return userDoc.data()?.groupImageUrl;
+            const groupDoc = await getDoc(groupDocRef);
+            console.log('addGroupImage - response: ', groupDoc.data()?.groupImageUrl);
+            return downloadURL;
         } else {
             console.log("addGroupImage - error: No such document!");
-            return undefined
+            return null
         }
     } catch (error) {
         console.error("createGroup - Error fetching user document:", error);
-        return undefined;
+        return null;
     }
 }
 
