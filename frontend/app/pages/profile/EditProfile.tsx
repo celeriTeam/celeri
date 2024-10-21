@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, Button, TouchableOpacity, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
@@ -51,15 +52,22 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
-          quality: 1,
+          quality: 0.5,
         });
     
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-                setcurrentProfilePic(selectedAsset.uri);
-                // set profile pic endpoint
-                editProfilePic(userID, selectedAsset.uri);
+            // Compress and resize the image
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                selectedAsset.uri,
+                [{ resize: { width: 800 } }], // Resize to 800px width
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+
+            setcurrentProfilePic(manipulatedImage.uri);
+            // set profile pic endpoint
+            editProfilePic(userID, manipulatedImage.uri);
             }
         }
     };
@@ -134,8 +142,8 @@ const styles = StyleSheet.create({
         left: 16,
     },
     backImage: {
-        width: 24,
-        height: 24,
+        width: 40,
+        height: 40,
     },
     row: {
         flexDirection: 'row',

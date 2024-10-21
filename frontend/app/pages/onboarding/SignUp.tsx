@@ -13,6 +13,7 @@ import { CTAButton } from "@components/CTAButton";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { RootStackParamList } from '../../types';
 import { Permission, PERMISSIONS, request } from 'react-native-permissions';
@@ -73,23 +74,30 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
     const pickImage = async () => {
         // Request permission to access the media library
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
+    
         if (permissionResult.granted === false) {
-            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-            return;
+          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+          return;
         }
-
+    
         // Launch image picker
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 1,
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.5,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-                setProfileImage(selectedAsset.uri);
+            // Compress and resize the image
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                selectedAsset.uri,
+                [{ resize: { width: 800 } }], // Resize to 800px width
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+
+            setProfileImage(selectedAsset.uri);
             }
         }
     };

@@ -43,7 +43,7 @@ const App: React.FC = () => {
     useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
         if (user) {
-          setInitialRoute('HomePage');
+          setInitialRoute('AppPage');
         } else {
           setInitialRoute('Register');
         }
