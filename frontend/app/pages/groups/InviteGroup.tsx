@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup } from '@backend/src/groups';
+import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 
@@ -91,6 +92,30 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
     };
 
+    const pickImage = async () => {
+        // Request permission to access the media library
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+        if (permissionResult.granted === false) {
+          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+          return;
+        }
+    
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 1,
+        });
+    
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            if (selectedAsset.uri) {
+                addGroupImage(groupID, selectedAsset.uri);
+            }
+        }
+    };
+
     const copyToClipboard = () => {
         Clipboard.setString(currentGroupCode || '');
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
@@ -125,16 +150,29 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
                     </View>
                 )}
+                <View style={styles.groupImageContainer}>
+                    {groups[groupID]?.groupImageUrl ? (
+                        <Image source={{ uri: groups[groupID]?.groupImageUrl }} style={styles.groupImage} />
+                    ) : (
+                        <Image
+                            source={require('@components/blank-profile-picture.png')}
+                            style={styles.groupImage}
+                        />
+                    )}
+                </View>
+                <View style={styles.editPic} >
+                    <Button title="Edit profile pic" onPress={pickImage} />
+                </View>
                 {currentGroupUsersArray.length >= userStartRequirement ? (
-                    <Text style={[styles.text, { marginBottom: 40 }]}>
+                    <Text style={styles.text}>
                         If your group is ready, click the button below to start a new game.
                     </Text>
                 ) : (
-                    <Text style={[styles.text, { marginBottom: 40 }]}>
+                    <Text style={styles.text}>
                         You need three members to start a game. Share the group code below to invite others to join!
                     </Text>
                 )}
-                <Text style={[styles.text, { marginBottom: 20 }]}>
+                <Text style={styles.text}>
                     Group Members:
                 </Text>
                {currentGroupUsersArray ? (
@@ -260,6 +298,21 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
     },
+    groupImageContainer: {
+        alignItems: 'center',
+        //marginBottom: 10,
+    },
+    groupImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginVertical: 10,
+    },
+    editPic: {
+        fontSize: 34,
+        fontWeight: 'bold',
+        marginBottom: 0,
+    },
     backButton: {
         position: 'absolute',
         top: 22,
@@ -311,7 +364,8 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         fontFamily: "Lexend",
         textAlign: "center",
-        alignSelf: "center"
+        alignSelf: "center",
+        marginBottom: 20
     },
     bold_text: {
         fontSize: 18,
