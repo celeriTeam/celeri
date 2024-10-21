@@ -8,16 +8,21 @@ import { View,
     Image,
     Button,
     Modal} from 'react-native';
+import { app } from "@firebaseConfig";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { Pedometer } from 'expo-sensors';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { createGroup, getGroupIDFromGroupName, getGroupIsGameActive, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
-import { auth } from '@/firebaseConfig';
 import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
+
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'HomeTab'>;
 
@@ -35,46 +40,77 @@ type GroupData = {
 const HomeTab: React.FC<Props> = ({ navigation }) => {
 
     
-    const { userID, username, groupNames, getGroupID, groups } = useUser();
+    const { username, groupNames, loading } = useUser();
+    const [userID, setUserID] = useState<string>('');
+    const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
+    const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
-    const [currentUserGroups, setCurrentUserGroups] = useState<GroupData[]>([]);
+    const [groupsState, setGroupsState] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
-    const currentUserName = username || '';
-    const currentGroupNames = groupNames || [];
-    
+    // Getting data because its the first page
     useEffect(() => {
-        const timeout = setTimeout(() => {
-            const groupData = currentGroupNames.map((groupName: string) => {
-                const groupID = getGroupID[groupName];
-                if (!groupID) {
-                    console.log("Error: groupID invalid");
-                    return;
-                }
-                const GroupUsers = groups[groupID]?.userList;
-                const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
-                const isGameActive = groups[groupID]?.isGameActive;
-                const groupImageUrl = groups[groupID]?.groupImageUrl;
-                return {
-                    groupName,
-                    numberOfUsers,
-                    isGameActive,
-                    groupImageUrl,
-                };
-            });
-    
-            // Filter out undefined values from groupData
-            const filteredUserGroups = groupData.filter((group): group is GroupData => group !== undefined);
-    
-            // Set the current user groups after processing
-            setCurrentUserGroups(filteredUserGroups);
-            setIsLoading(false);
-        }, 5000); // Delay by 5000 milliseconds (5 seconds)
-    
-        // Cleanup the timeout if the component unmounts before 5 seconds
-        return () => clearTimeout(timeout);
-    }, [currentGroupNames, getGroupID, groups]);  // Dependencies
+        setIsLoading(true);
+        let unsubscribeUser: any;
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                setUserID(user.uid);
+                const userGroups = await getUserGroups(user.uid);
+                unsubscribeUser = fetchGroupData(userGroups || [], user.uid);
+            } else {
+                console.log('No user signed in');
+            }
+        });
+        setIsLoading(false);
+
+        return () => {
+            unsubscribe(); // Cleanup the auth state listener
+            // Cleanup the user document snapshot listener
+            if (typeof unsubscribeUser === 'function') {
+                unsubscribeUser();
+            }
+        };
+    }, []);
+
+    const fetchGroupData = async (userGroups: string[], uid: string) => {
+        const groups: { [groupID: string]: any } = {};
+        const getGroupID: { [groupName: string]: any } = {};
+        if (userGroups) {
+            await Promise.all(userGroups.map(async (groupName) => {
+                const groupID = await getGroupIDFromGroupName(groupName);
+                const groupsRef = collection(db, "groups");
+                const groupDocRef = doc(groupsRef, groupID);
+                const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+                    setIsLoading(true);
+                    if (docSnapshot.exists() && groupID) {
+                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting] = await Promise.all([
+                            getGroupProfilePic(groupID),
+                            getGroupName(groupID),
+                            getGroupIsGameActive(groupID),
+                            checkFinishedBetting(groupID, uid),
+                        ]);
+
+                        const userList = await getUsersInGroup(groupID); // userIDs
+                        if (groupName) {
+                            getGroupID[groupName] = groupID;
+                        }
+                        groups[groupID] = {
+                            groupImageUrl,
+                            groupName,
+                            isGameActive,
+                            isFinishedBetting,
+                            userList
+                        };
+                    }
+                    setIsLoading(false);
+                });
+                return unsubscribeGroup;
+            }));
+        }
+        setGetGroupID(getGroupID);
+        setGroups(groups);
+    };
 
     const toggleModal = () => {
         setIsModalVisible(!isModalVisible);
@@ -124,7 +160,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         // else navigate to BetsPage page
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
-        const numberOfUsers = GroupUsers ? Object.keys(GroupUsers).length : 0;
         console.log('groupusers: ', GroupUsers);
         const isGameActive = groups[groupID]?.isGameActive;
         if (GroupUsers === null || GroupUsers === undefined) {
@@ -150,13 +185,13 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         );
     }
 
-    if (currentUserGroups === null || currentUserGroups === undefined) {
+    if (groups === null || groups === undefined) {
         return (
             <View style={styles.container}>
                 <Text>Failed to fetch user groups</Text>
             </View>
         );
-    } else if (currentUserGroups.length === 0) {
+    } else if (Object.keys(groups).length === 0) {
         return (
             <View style={styles.container}>
                 <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
@@ -174,30 +209,30 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.titleText}>Groups</Text>
                     </View>
                 <Text style={styles.subTitle}>Your Groups:</Text>
-                {currentUserGroups.map((group) => (
+                {Object.entries(groups).map(([groupID, group]) => (
                     <TouchableOpacity
-                    key={group.groupName}
-                    style={styles.groupButton}
-                    onPress={() => goToGroup(group.groupName)}
+                        key={groupID}
+                        style={styles.groupButton}
+                        onPress={() => goToGroup(group.groupName)}
                     >
-                    {group.groupImageUrl ? (
-                        <Image
-                        source={{ uri: group.groupImageUrl }}
-                        style={styles.groupImage}
-                        />
-                    ) : (
-                        <Image 
-                        source={require('@components/blank-profile-picture.png')}
-                        style={styles.groupImage}
-                        />
-                    )}
-                    <View style={styles.groupInfo}>
-                        <Text style={styles.groupName}>{group.groupName}</Text>
-                        <Text style={styles.groupDetails}>
-                            {group.numberOfUsers} members - {group.isGameActive ? 'Active' : 'Inactive'}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
+                        {group.groupImageUrl ? (
+                            <Image
+                                source={{ uri: group.groupImageUrl }}
+                                style={styles.groupImage}
+                            />
+                        ) : (
+                            <Image 
+                                source={require('@components/blank-profile-picture.png')}
+                                style={styles.groupImage}
+                            />
+                        )}
+                        <View style={styles.groupInfo}>
+                            <Text style={styles.groupName}>{group.groupName}</Text>
+                            <Text style={styles.groupDetails}>
+                                {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
                 ))}
 
             {/* Floating Action Button */}

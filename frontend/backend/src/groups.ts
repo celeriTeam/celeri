@@ -337,7 +337,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
-        //Grab the number of players from the document
+        // Grab the number of players from the document
         let numberOfPlayers;
         let cycles;
 
@@ -348,12 +348,11 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             const data = docSnap.data();
             const orderArray = data.order;
             numberOfPlayers = orderArray.length;
-            cycles = createCycle(orderArray)
+            cycles = createCycle(orderArray);
         } else {
             console.log("startGame - Error: Document does not exist.");
             return undefined;
         }
-
         
         await updateDoc(groupDocRef, {
             isGameActive: true,
@@ -383,12 +382,27 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             if (duelsForDay1.hasOwnProperty(duelKey)) {
                 const duel = duelsForDay1[duelKey];
 
+                const player1Bet = {
+                    userID: duel.player1,
+                    wager: defaultBetOnSelf,
+                    betOnUserID: duel.player1,
+                };
+        
+                  const player2Bet = {
+                    userID: duel.player2,
+                    wager: defaultBetOnSelf,
+                    betOnUserID: duel.player2,
+                };
+
                 const duelData = {
                     player1: duel.player1,
                     player2: duel.player2,
                     cycleDay: 1,
                     cycleCount: 1,
                     createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
+                    winner: "empty",
+                    ended: false,
+                    bets: [player1Bet, player2Bet],
                 };
 
                 // Add the duel to the 'duels' subcollection of the group document

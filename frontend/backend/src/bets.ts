@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -30,10 +30,21 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
 
             console.log('Yesterday\'s cycleCount: ', groupCycleCount);
             console.log('Yesterday\'s cycleDay: ', groupCycleDay);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStart = Timestamp.fromDate(yesterday);
+            const yesterdayEnd = Timestamp.fromDate(today);
             
             // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
-            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where('cycleDay', '==', groupCycleDay),
+                where('createdAt', '>=', yesterdayStart),
+                where('createdAt', '<', yesterdayEnd));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
@@ -80,10 +91,22 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
         if (groupDoc.exists()){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const groupCycleDay = groupDoc.data()?.cycleDay;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const todayStart = Timestamp.fromDate(today);
+            const todayEnd = Timestamp.fromDate(tomorrow);
             
             // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
-            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where('cycleDay', '==', groupCycleDay),
+                where('createdAt', '>=', todayStart),
+                where('createdAt', '<', todayEnd)
+            );
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {

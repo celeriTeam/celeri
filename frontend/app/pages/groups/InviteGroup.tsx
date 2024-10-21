@@ -73,13 +73,14 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 
     const handleStartPress = async () => {
         console.log('Start game button pressed');
+        setModalVisible(false);
         await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf);
         // navigation.navigate('GroupDetails', { groupID: groupID });
         navigation.reset({
             index: 1,
             routes: [
                 { name: 'HomeTab' }, // the first route in the stack
-                { name: 'HeadToHeadPage', params: { groupID: groupID, isFinishedRecap: false } } // the top route in the stack
+                { name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
             ],
         });
     };
@@ -125,15 +126,15 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                     </View>
                 )}
                 {currentGroupUsersArray.length >= userStartRequirement ? (
-                    <Text style={styles.text}>
+                    <Text style={[styles.text, { marginBottom: 40 }]}>
                         If your group is ready, click the button below to start a new game.
                     </Text>
                 ) : (
-                    <Text style={styles.text}>
+                    <Text style={[styles.text, { marginBottom: 40 }]}>
                         You need three members to start a game. Share the group code below to invite others to join!
                     </Text>
                 )}
-                <Text style={styles.text}>
+                <Text style={[styles.text, { marginBottom: 20 }]}>
                     Group Members:
                 </Text>
                {currentGroupUsersArray ? (
@@ -307,7 +308,6 @@ const styles = StyleSheet.create({
     text: {
         fontSize: 18,
         marginTop: 20,
-        marginBottom: 40,
         marginHorizontal: 20,
         fontFamily: "Lexend",
         textAlign: "center",
