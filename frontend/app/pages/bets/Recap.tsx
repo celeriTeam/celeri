@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, Image, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -38,6 +39,8 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
     const currentRecapBets = flattenedBets.map((bet) => {
         const player1 = groups[groupID]?.users[bet.player1]?.username;
         const player2 = groups[groupID]?.users[bet.player2]?.username;
+        const player1pfp = groups[groupID]?.users[bet.player1]?.profilePic;
+        const player2pfp = groups[groupID]?.users[bet.player2]?.profilePic;
         let winner = 'draw';
         if (bet.winner != 'draw') {
             winner = groups[groupID]?.users[bet.winner]?.username;
@@ -49,6 +52,8 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                 duelID: bet.duelID,
                 player1,
                 player2,
+                player1pfp,
+                player2pfp,
                 player1Bets: [],
                 player2Bets: [],
                 winner,
@@ -76,6 +81,8 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                 duelID: bet.duelID,
                 player1,
                 player2,
+                player1pfp,
+                player2pfp,
                 player1Bets,
                 player2Bets,
                 winner,
@@ -144,7 +151,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
         );
     };
 
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
+    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1pfp: string, player2pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } }) => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
 
         const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
@@ -162,84 +169,89 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
             <View style={styles.flatList}>
                 {/* Players */}
                 <TouchableOpacity onPress={() => toggleItemExpansion(item.duelID)}>
-                    <View style={styles.row}>
-                        <Text style={[
-                            styles.player,
-                            item.winner === item.player1 && styles.winner,
-                            styles.playerLeft  // Additional style for player1
-                        ]}>{item.player1}{item.winner === item.player1 && ' (winner)'}</Text>
-
-                            {/* Column 2 - Circular Icon */}
-                        <View style={styles.centeredColumn}>
-                            <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
-                            <Text></Text>
+                    {/* player 1 */}
+                    <View style={styles.playerContainer}>
+                        <View style={styles.row}>
+                            <View style={styles.spacer} />
+                            <View style={[
+                                styles.statusBar,
+                                item.winner === item.player1 && styles.winStatus,
+                                item.winner === item.player2 && styles.loseStatus,
+                                item.winner === 'draw' && styles.drawStatus,
+                            ]}>
+                                <Text style={styles.statusText}>
+                                    {item.winner === item.player1 ? 'Win' : 
+                                    item.winner === item.player2 ? 'Lose' : 'Draw'}
+                                </Text>
+                            </View>
+                            {/* Carrot Icon */}
+                            <View style={styles.spacer}>
+                                {(item.player2Bets.length > 1 || item.player1Bets.length > 1) && (
+                                    <MaterialIcons
+                                        name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                                        size={24}
+                                        style={styles.carrotIcon}
+                                    />
+                                )}
+                            </View>
                         </View>
-
-                        <View style={styles.playerRightContainer}>
+                        <View style={[styles.row, { marginTop: 10 }]}>
+                            <Image
+                                source={{ uri: item.player1pfp }}
+                                style={styles.profileImage}
+                            />
                             <Text style={[
                                 styles.player,
-                                item.winner === item.player2 && styles.winner,
-                                styles.playerRight  // Additional style for player2
-                            ]}>{item.player2}{item.winner === item.player2 && ' (winner)'}</Text>
-
-                            {/* Carrot Icon */}
-                            <MaterialIcons
-                                name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                                size={24}
-                                style={styles.carrotIcon}
-                            />
+                                item.winner === item.player2 && styles.loserText,
+                            ]}>{item.player1}</Text>
+                            {item.winner === item.player1 && (
+                                <Text style={styles.triangleText}>▶</Text>
+                            )}
+                            <Text style={styles.steps}>{item.playerOneSteps}</Text>
                         </View>
-                    </View>
-                </TouchableOpacity>
-
-                {isExpanded && (
-                    <>
-                        <View style={styles.row}>
-                            {/* Player1's Bets */}
-                            <View style={styles.betsListLeft}>
-								{/* Player1's Steps */}
-								<Text><Text style={styles.stepTitle}>Steps: </Text>{item.playerOneSteps}</Text>
-                                <Text style={[styles.stepTitle, styles.spacedText]}>Bets:</Text>
-								{item.player1Bets.length === 0 ? (
-                                    <View>
-                                        <Text>(No bets placed)</Text>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        {item.player1Bets.map((bet, index) => (
-                                            <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                                        ))}
-									</View>
-								)}
-                            </View>
-
-                            {/* Player2's Bets */}
-                            <View style={styles.betsListRight}>
-								{/* Player2's Steps */}
-								<Text><Text style={styles.stepTitle}>Steps: </Text>{item.playerTwoSteps}</Text>
-                                <Text style={[styles.stepTitle, styles.spacedText]}>Bets:</Text>
-								{item.player2Bets.length === 0 ? (
-                                    <View>
-                                        <Text>(No bets placed)</Text>
-                                    </View>
-                                ) : (
-                                    <View>
-										{item.player2Bets.map((bet, index) => (
-											<Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-										))}
-									</View>
-								)}
-                            </View>
-                        </View>
-
-                        {/* No Winner Available */}
-                        {item.winner === 'draw' && (
-                            <View style={styles.spacedText}>
-                                <Text style={styles.noWinner}>(No winner available)</Text>
+                        {isExpanded && (
+                            <View>
+                                {item.player1Bets.map((bet, index) => (
+                                    (bet.user !== item.player1) && (
+                                        <Text key={index}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                    )
+                                ))}
                             </View>
                         )}
-                    </>
-                )}
+                    </View>
+                    {/* player 2 */}
+                    <View style={styles.playerContainer}>
+                        <View style={[styles.row, { marginTop: 10 }]}>
+                            <Image
+                                source={{ uri: item.player2pfp }}
+                                style={[
+                                    styles.profileImage,
+                                    item.winner === item.player1 && styles.loserImage,
+                                ]}
+                            />
+                            <Text style={[
+                                styles.player,
+                                item.winner === item.player1 && styles.loserText,
+                            ]}>{item.player2}</Text>
+                            {item.winner === item.player2 && (
+                                <Text style={styles.triangleText}>▶</Text>
+                            )}
+                            <Text style={[
+                                styles.steps,
+                                item.winner === item.player1 && styles.loserText,
+                            ]}>{item.playerTwoSteps}</Text>
+                        </View>
+                        {isExpanded && (
+                            <View>
+                                {item.player2Bets.map((bet, index) => (
+                                    (bet.user !== item.player2) && (
+                                        <Text key={index}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                    )
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                </TouchableOpacity>
             </View>
         );
     };
@@ -262,6 +274,30 @@ const styles = StyleSheet.create({
         flex: 1,
         marginTop: 20,
     },
+    spacer: {
+        flex: 1,
+    },
+    statusBar: {
+        paddingVertical: 4,
+        paddingHorizontal: 12,
+        alignItems: 'center',
+        borderBottomLeftRadius: 8,
+        borderBottomRightRadius: 8,
+    },
+    statusText: {
+        color: 'white',
+        fontWeight: '500',
+        fontSize: 14,
+    },
+    winStatus: {
+        backgroundColor: '#4CAF50', // Green color
+    },
+    loseStatus: {
+        backgroundColor: '#f44336', // Red color
+    },
+    drawStatus: {
+        backgroundColor: '#9e9e9e', // Gray color
+    },
     title: {
         fontSize: 20,
         fontWeight: 'bold',
@@ -274,9 +310,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     flatList: {
-        padding: 25,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        marginTop: 10,
+        paddingBottom: 25,
     },
     stepTitle: {
         fontWeight: 'bold',
@@ -287,27 +325,48 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
     },
     carrotIcon: {
-        marginLeft: 10,
-        color: '#888',  // Customize the color of the carrot
+        textAlign: 'right',
+        color: '#888',
+    },
+    triangleText: {
+        marginHorizontal: 8,
+        fontSize: 12,
+        color: '#000000',
+        opacity: 0.7, // Makes it slightly faded like in the image
+    },
+    profileImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#D3D3D3",
+        marginRight: 10,
+    },
+    playerContainer: {
+        paddingLeft: 25,
+        paddingRight: 25,
     },
     player: {
         fontWeight: 'bold',
         fontSize: 18,
-    },
-    playerLeft: {
-        flex: 1,   // This makes player1 take up the left space
+        flex: 1,
         textAlign: 'left',
     },
-    playerRightContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end', // Ensures player2 and carrot are on the right
-    },
-    playerRight: {
-        marginRight: 8, // Add some margin between player2 and the carrot icon
+    steps: {
+        marginRight: 30,
         textAlign: 'right',
+        fontSize: 28,
+    },
+    loserText: {
+        color: '#808080',
+        opacity: 0.7,
+    },
+    loserImage: {
+        opacity: 0.5,
     },
     winner: {
         fontWeight: 'bold',
