@@ -44,9 +44,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     };
 
     useEffect(() => {
-        if (!loading) {
+        // if (!loading) {
           fetchData();
-        }
+        // }
     }, [loading]);
 
     const fetchUserName = (matchups: { duelID: string, player1: string; player2: string; }[]) => {
@@ -86,23 +86,22 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const fetchData = async () => {
         try {
             const isFirstDay = groups[groupID]?.isFirstDay;
-            const isFinishedRecap = groups[groupID]?.finishedRecap;
+            const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isFirstDay) {
                 setModalVisible(false);
             }
 
-            if (isFirstDay) {
-                let dailyDuel = groups[groupID]?.unbetDuels;
-                if (Object.keys(dailyDuel).length === 0) {
-                    await addToFinishedBetting(groupID, userID);
-                    navigation.reset({
-                        index: 1,
-                        routes: [
-                            { name: 'HomeTab' }, // the first route in the stack
-                            { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
-                        ],
-                    });
-                }
+            let dailyDuel = groups[groupID]?.unbetDuels;
+            if (isFirstDay && Object.keys(dailyDuel).length === 0) {
+                await addToFinishedBetting(groupID, userID);
+                navigation.reset({
+                    index: 1,
+                    routes: [
+                        { name: 'HomeTab' }, // the first route in the stack
+                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
+                    ],
+                });
+            }
                 const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                     return Object.values(duels);
                 };
@@ -113,7 +112,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 fetchUserName(matchups);
                 const todaysBetTokens = groups[groupID]?.todaysBetTokens;
                 setTotalBetTokens(todaysBetTokens);
-            }
         } catch(error) {
             console.error("Error fetching user data:", error);
         } finally {
