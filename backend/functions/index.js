@@ -88,39 +88,21 @@ function createCycle(players) {
   // Return the array of objects, each representing a round
 }
 
-exports.resetSteps = onSchedule("every day 04:00", async (event) => {
-  const userRef = firestore.collection("users");
-
-  try {
-    const userSnapshots = await userRef.get();
-
-    if (userSnapshots.empty) {
-      console.log("No users found");
-      return;
-    }
-
-    console.log("User snapshots found: ", userSnapshots.size);
-
-    const batch = firestore.batch();
-
-    userSnapshots.forEach((doc) => {
-      const docRef = userRef.doc(doc.id);
-      batch.update(docRef, {steps: 0});
-    });
-
-    await batch.commit();
-    console.log("Batch update successful, all steps reset to 0");
-  } catch (error) {
-    console.error("Error resetting steps: ", error);
-  }
-});
-
 
 exports.updateWinners = onSchedule("every day 04:00", async (event) => {
   console.log("updateWinners is running");
   const groupRef = firestore.collection("groups");
+  const userRef = firestore.collection("users");
 
   try {
+    const userSnapshots = await userRef.get();
+    const userSteps = {};
+
+    // Store all users' steps in memory
+    userSnapshots.forEach((doc) => {
+      userSteps[doc.id] = doc.data().steps || 0;
+    });
+
     const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
     if (groupSnapshots.empty) {
       console.log("No active games found.");
@@ -185,11 +167,8 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
             let winner = "none";
 
             try {
-              const player1Doc = await firestore.collection("users").doc(player1Id).get();
-              const player2Doc = await firestore.collection("users").doc(player2Id).get();
-
-              const player1Steps = player1Doc.exists && player1Doc.data().steps != undefined ? player1Doc.data().steps : 0;
-              const player2Steps = player2Doc.exists && player2Doc.data().steps != undefined ? player2Doc.data().steps : 0;
+              const player1Steps = userSteps[player1Id] || 0;
+              const player2Steps = userSteps[player2Id] || 0;
 
               if (player1Steps > player2Steps) {
                 winner = player1Id;
@@ -281,6 +260,13 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
 
       // Wait for all batches to be committed
       await Promise.all(allBatches);
+
+      // After recording all winners, reset steps for all users
+      const resetBatch = firestore.batch();
+      userSnapshots.forEach((doc) => {
+        resetBatch.update(userRef.doc(doc.id), {steps: 0});
+      });
+      await resetBatch.commit();
       console.log("Batch update completed successfully.");
     });
   } catch (error) {
