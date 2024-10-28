@@ -103,16 +103,17 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     name: {
+        fontFamily: "Lexend-Bold",
         fontSize: 34,
-        fontWeight: 'bold',
         marginBottom: 40,
     },
     groupsLabel: {
+        fontFamily: "Lexend-Bold",
         fontSize: 24,
-        fontWeight: '600',
         marginBottom: 10,
     },
     text: {
+        fontFamily: "Lexend",
         fontSize: 18,
         marginBottom: 20,
     },
