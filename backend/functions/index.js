@@ -127,27 +127,28 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
         console.log(`Group document ${doc.id} not found.`);
         return;
       }
-      // let groupCycleCount = groupDoc.data().cycleCount;
-      // let groupCycleDay = groupDoc.data().cycleDay;
-      // const numberOfPlayers = groupDoc.data().order.length;
+      let groupCycleCount = groupDoc.data().cycleCount;
+      let groupCycleDay = groupDoc.data().cycleDay;
+      const numberOfPlayers = groupDoc.data().order.length;
 
-      // if (groupCycleDay === 1 && groupCycleCount === 1) {
-      //   console.log("error: No duels found for yesterday");
-      //   return undefined;
-      // } else if (groupCycleDay === 1) {
-      //   groupCycleCount -= 1;
-      //   groupCycleDay = numberOfPlayers-1;
-      // } else {
-      //   groupCycleDay -= 1;
-      // }
+      if (groupCycleDay === 1 && groupCycleCount === 1) {
+        console.log("error: No duels found for yesterday");
+        return undefined;
+      } else if (groupCycleDay === 1) {
+        groupCycleCount -= 1;
+        groupCycleDay = numberOfPlayers-1;
+      } else {
+        groupCycleDay -= 1;
+      }
 
-      // console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
+      console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
 
       duelsRef
-        .where("createdAt", ">=", startOfYesterday)
-        .where("createdAt", "<", endOfYesterday)
-        // .where("cycleCount", "==", groupCycleCount)
-        // .where("cycleDay", "==", groupCycleDay)
+        // .where("createdAt", ">=", startOfYesterday)
+        // .where("createdAt", "<", endOfYesterday)
+				.where("winner", "==", "empty")
+				.where("cycleCount", "==", groupCycleCount)
+				.where("cycleDay", "==", groupCycleDay)
         .get()
         .then(async (duelsSnapshot) => {
           if (duelsSnapshot.empty) {
@@ -275,139 +276,167 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
   }
 });
 
-exports.createDuels = onSchedule("every day 04:00", async (event) => {
+exports.createDuels = onSchedule("every day 04:00", async (event) =>{
   console.log("createDuels is running");
   const groupRef = firestore.collection("groups");
 
   try {
-		const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
-		if (groupSnapshots.empty) {
-			console.log("No active games found.");
-			return;
-		}
+    const groupSnapshots =
+    await groupRef.where("isGameActive", "==", true).get();
+    if (groupSnapshots.empty) {
+      console.log("No active games found.");
+      return; // Exit if there are no active games
+    }
 
-		console.log("Group snapshots found:", groupSnapshots.size);
+    console.log("Group snapshots found:", groupSnapshots.size);
 
-		// Process each group sequentially
-		for (const doc of groupSnapshots.docs) {
-			const groupBatch = firestore.batch();
-			const data = doc.data();
-			const groupDocRef = doc.ref;
+    // const allBatches = [];
 
-			let cycleDay = data.cycleDay;
-			let cycleCount = data.cycleCount;
-			let cycleDuels = data.cycleDuels;
-			const players = data.order;
-			const numberOfPlayers = players.length;
+    const groupBatch = firestore.batch();
+    console.log("checkpoint one");
+    groupSnapshots.docs.forEach(async (doc) => {
+      const data = doc.data();
+      const groupDocRef = doc.ref;
 
-			if (data.cycleDay >= numberOfPlayers-1) {
-				cycleDay = 1;
-				cycleCount += 1;
-				cycleDuels = createCycle(players);
-			} else {
-				cycleDay += 1;
-			}
+      // if the cycleDay is equal to the number of players-1,
+      // then create a new cycle and reset the day
+      let cycleDay = data.cycleDay;
+      let cycleCount = data.cycleCount;
+      let cycleDuels = data.cycleDuels;
+      const players = data.order;
+      const numberOfPlayers = players.length;
 
-			if (data.cycleCount > data.totalCycles) {
-					// End game logic
-					groupBatch.update(groupDocRef, {
-						isGameActive: false,
-						cycleDay: 0,
-						cycleCount: 0,
-						cycleDuels: admin.firestore.FieldValue.delete(),
-						dailyTokens: admin.firestore.FieldValue.delete(),
-						defaultBetOnSelf: admin.firestore.FieldValue.delete(),
-						totalCycles: admin.firestore.FieldValue.delete(),
-						finishedBetting: admin.firestore.FieldValue.delete(),
-						finishedRecap: admin.firestore.FieldValue.delete(),
-					});
+      console.log("checkpoint two");
 
-					// Reset user tokens
-					const usersUpdate = {};
-					players.forEach(playerID => {
-						usersUpdate[`users.${playerID}`] = {
-							placedBet: true,
-							tokens: 0,
-							todaysBetTokens: 0
-						};
-					});
-					groupBatch.update(groupDocRef, usersUpdate);
-			} else {
-				// Create new duels
-				const duelsForToday = cycleDuels[cycleDay - 1];
-				if (!duelsForToday || typeof duelsForToday !== "object") {
-					console.error(`Invalid duels for cycleDay: ${cycleDay}`);
-					continue;
-				}
+      if (data.cycleDay >= numberOfPlayers-1) {
+        cycleDay = 1;
+        cycleCount += 1;
+        console.log(`Updating cycleDay to 1 and increasing 
+          cycleCount to ${cycleCount} for group: ${doc.id}`);
 
-				const usersInDuels = new Set();
+        cycleDuels = createCycle(players);
+        console.log("checkpoint three");
+      } else {
+        cycleDay += 1;
+        console.log(`Incrementing cycleDay to ${cycleDay} for group ${doc.id}`);
+        console.log("checkpoint four");
+      }
 
-				// Create duels
-				for (const [key, duel] of Object.entries(duelsForToday)) {
-					if (!duel.player1 || !duel.player2) {
-						console.error(`Invalid duel: ${JSON.stringify(duel)}`);
-						continue;
-					}
+      console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
-					usersInDuels.add(duel.player1);
-					usersInDuels.add(duel.player2);
-
-					const duelData = {
-						player1: duel.player1,
-						player2: duel.player2,
-						cycleDay,
-						cycleCount,
-						createdAt: admin.firestore.FieldValue.serverTimestamp(),
-						ended: false,
-						winner: "empty",
-						bets: [
-							{
-								userID: duel.player1,
-								wager: data.defaultBetOnSelf,
-								betOnUserID: duel.player1
-							},
-							{
-								userID: duel.player2,
-								wager: data.defaultBetOnSelf,
-								betOnUserID: duel.player2
-							}
-						]
-					};
-
-					const duelDocRef = groupDocRef.collection("duels").doc();
-					groupBatch.set(duelDocRef, duelData);
-				}
-
-				// Update group data
-				groupBatch.update(groupDocRef, {
-						cycleDay,
-						cycleCount,
-						cycleDuels,
-						finishedBetting: admin.firestore.FieldValue.delete(),
-						finishedRecap: admin.firestore.FieldValue.delete()
-				});
-
-				// Update user bet tokens
+      if (data.cycleCount > data.totalCycles) {
+        // end the game
+        groupBatch.update(groupDocRef, {
+          isGameActive: false,
+          cycleDay: 0,
+          cycleCount: 0,
+          cycleDuels: admin.firestore.FieldValue.delete(),
+          dailyTokens: admin.firestore.FieldValue.delete(),
+          defaultBetOnSelf: admin.firestore.FieldValue.delete(),
+          totalCycles: admin.firestore.FieldValue.delete(),
+          finishedBetting: admin.firestore.FieldValue.delete(),
+          finishedRecap: admin.firestore.FieldValue.delete(),
+        });
+        // reset the tokens for each player
 				const usersUpdate = {};
 				players.forEach(playerID => {
-						usersUpdate[`users.${playerID}`] = {
-								...currentUserData,
-								placedBet: true,
-								todaysBetTokens: usersInDuels.has(playerID) ? data.defaultBetOnSelf : 0
-						};
+					usersUpdate[`users.${playerID}`] = {
+						placedBet: true,
+						tokens: 0,
+						todaysBetTokens: 0
+					};
 				});
-				groupBatch.update(groupDocRef, usersUpdate);
-			}
+        groupBatch.update(groupDocRef, usersUpdate);
+        console.log("Game has ended");
+      } else {
+        // create new duels
+        const duelsForToday = cycleDuels[cycleDay - 1]; // 0-based index
+        if (!duelsForToday || typeof duelsForToday !== "object") {
+          console.error(`duelsForToday is undefined or
+            not an object for cycleDay: ${cycleDay}`);
+          return; // Exit early if no duels are available
+        }
+        console.log("checkpoint five");
+        console.log(duelsForToday);
+        console.log(cycleDay - 1);
 
-			// Commit batch for this group
-			await groupBatch.commit();
-			console.log(`Updates committed for group ${doc.id}`);
-		}
+        const usersInDuels = [];
 
-		console.log("All duels created and cycles updated successfully.");
+        // Create new duel documents for each matchup in duelsForToday
+        Object.entries(duelsForToday).forEach(([key, duel]) => {
+          console.log("checkpoint 5.5");
+          console.log(duel.player1);
+          console.log(duel.player2);
+          usersInDuels.push(duel.player1);
+          usersInDuels.push(duel.player2);
+          if (!duel.player1 || !duel.player2) {
+            console.error(`Invalid duel entry: ${duel} for key: ${key}`);
+            return;
+            // Skip this iteration if player1 or player2 is undefined
+          }
+
+          const player1Bet = {
+            userID: duel.player1,
+            wager: data.defaultBetOnSelf,
+            betOnUserID: duel.player1,
+          };
+
+          const player2Bet = {
+            userID: duel.player2,
+            wager: data.defaultBetOnSelf,
+            betOnUserID: duel.player2,
+          };
+
+          const duelData = {
+            player1: duel.player1,
+            player2: duel.player2,
+            cycleDay: cycleDay,
+            cycleCount: cycleCount,
+            createdAt:
+            admin.firestore.FieldValue.serverTimestamp(), // Update this
+            ended: false,
+            winner: "empty",
+            bets: [player1Bet, player2Bet],
+          };
+          // Add a new duel document inside the `duels` subcollection
+          // Auto-generate a new document ID
+          const duelDocRef = groupDocRef.collection("duels").doc();
+          groupBatch.set(duelDocRef, duelData);
+          console.log("checkpoint six");
+        });
+
+        groupBatch.update(groupDocRef, {
+          cycleDay: cycleDay,
+          cycleCount: cycleCount,
+          cycleDuels: cycleDuels,
+          finishedBetting: admin.firestore.FieldValue.delete(),
+          finishedRecap: admin.firestore.FieldValue.delete(),
+        });
+
+        // update the bet tokens for each player
+				const usersUpdate = {};
+				players.forEach(playerID => {
+					const currentUserData = data.users[playerID];
+					usersUpdate[`users.${playerID}`] = {
+						placedBet: true,
+						tokens: currentUserData.tokens,
+						todaysBetTokens: usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0
+					};
+				});
+        groupBatch.update(groupDocRef, usersUpdate);
+      }
+      // Add the batch to the array to commit later
+      // allBatches.push(groupBatch.commit());
+    });
+
+    // Wait for all batches to be committed
+    console.log("checkpoint seven");
+    // await Promise.all(allBatches);
+    await groupBatch.commit();
+
+    console.log("Duels created and cycle updated successfully.");
   } catch (error) {
-		console.error("Error in createDuels:", error);
-		throw error; // Re-throw to ensure the function fails properly
+    console.error("Error querying Firestore:", error);
   }
 });
 
