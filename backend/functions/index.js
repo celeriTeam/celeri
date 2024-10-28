@@ -144,11 +144,11 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
       console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
 
       duelsRef
-        // .where("createdAt", ">=", startOfYesterday)
-        // .where("createdAt", "<", endOfYesterday)
-				.where("winner", "==", "empty")
-				.where("cycleCount", "==", groupCycleCount)
-				.where("cycleDay", "==", groupCycleDay)
+        .where("createdAt", ">=", startOfYesterday)
+        .where("createdAt", "<", endOfYesterday)
+				// .where("winner", "==", "empty")
+				// .where("cycleCount", "==", groupCycleCount)
+				// .where("cycleDay", "==", groupCycleDay)
         .get()
         .then(async (duelsSnapshot) => {
           if (duelsSnapshot.empty) {
