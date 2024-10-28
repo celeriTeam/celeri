@@ -47,7 +47,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         // if (!loading) {
           fetchData();
         // }
-    }, [loading]);
+    }, []);
 
     const fetchUserName = (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
@@ -247,10 +247,10 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
             <Text style={styles.reminderText}>Click on which friend{'\n'} you want to bet on!</Text>
             <View style={styles.tokens}>
-                <Text>Your Tokens: {currentUserTokens}</Text>
+                <Text style={{fontFamily: "Lexend"}}>Your Tokens: {currentUserTokens}</Text>
             </View>
             <View style={styles.betTokens}>
-                <Text>Bet Tokens: {totalBetTokens}</Text>
+                <Text style={{fontFamily: "Lexend"}}>Bet Tokens: {totalBetTokens}</Text>
             </View>
 
             {/* Top-left (Player 1) */}
@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
         zIndex: 1,
     },
     reminderText: {
+        fontFamily: "Lexend",
         position: 'absolute',
         color: 'red',
         top: 10,
@@ -409,11 +410,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFDAB9', // Highlight color for player 2
     },
     playerText: {
+        fontFamily: "Lexend-Bold",
         fontSize: 24,
-        fontWeight: 'bold',
         color: '#333',
     },
     input: {
+        fontFamily: "Lexend ",
         backgroundColor: '#FFF',
         borderWidth: 1,
         borderColor: '#AAA',
@@ -447,8 +449,8 @@ const styles = StyleSheet.create({
         bottom: 200,
     },
     submitButtonText: {
+        fontFamily: "Lexend-Bold",
         color: '#FFF',
-        fontWeight: 'bold',
         fontSize: 18,
     },
     // MODAL

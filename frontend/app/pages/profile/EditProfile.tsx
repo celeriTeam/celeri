@@ -91,9 +91,9 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                 style={styles.profileImage}
                 />
             )}
-            <View style={styles.editPic} >
-                <Button title="Edit profile pic" onPress={pickImage} />
-            </View>
+            <TouchableOpacity onPress={pickImage}>
+                <Text style={styles.buttonText}>Edit profile pic</Text>
+            </TouchableOpacity>
             {isEditingUsername ? (
                 <>
                     <View style={styles.row}>
@@ -156,14 +156,15 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         marginBottom: 20,
     },
-    editPic: {
-        fontSize: 34,
-        fontWeight: 'bold',
+    buttonText: {
         marginBottom: 40,
+        fontFamily: "Lexend",
+        textAlign: 'center',
+        color: 'blue',
     },
     name: {
+        fontFamily: "Lexend-Bold",
         fontSize: 34,
-        fontWeight: 'bold',
         marginRight: 20,
     },
     editImage: {
@@ -172,8 +173,8 @@ const styles = StyleSheet.create({
         borderRadius: 50,
     },
     nameInput: {
+        fontFamily: "Lexend-Bold",
         fontSize: 34,
-        fontWeight: 'bold',
         marginRight: 20,
         borderBottomWidth: 3,
         borderColor: '#6b6b6b',

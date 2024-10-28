@@ -168,9 +168,9 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         />
                     )}
                 </View>
-                <View style={styles.editPic} >
-                    <Button title="Edit group pic" onPress={pickImage} />
-                </View>
+            <TouchableOpacity onPress={pickImage}>
+                <Text style={styles.buttonText}>Edit group pic</Text>
+            </TouchableOpacity>
                 {currentGroupUsersArray.length >= userStartRequirement ? (
                     <Text style={styles.text}>
                         If your group is ready, click the button below to start a new game.
@@ -316,10 +316,11 @@ const styles = StyleSheet.create({
         borderRadius: 60,
         marginVertical: 10,
     },
-    editPic: {
-        fontSize: 34,
-        fontWeight: 'bold',
-        marginBottom: 0,
+    buttonText: {
+        marginBottom: 20,
+        fontFamily: "Lexend",
+        textAlign: 'center',
+        color: 'blue',
     },
     backButton: {
         position: 'absolute',
