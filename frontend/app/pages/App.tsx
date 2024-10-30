@@ -9,7 +9,6 @@ import HomePage from './home/Home';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { UserProvider } from '../UserProvider';
-import AppLoading from 'expo-app-loading';
 
 const Tab = createBottomTabNavigator();
 const auth = getAuth(app);
@@ -19,7 +18,7 @@ const AppPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [fontsLoaded, setFontsLoaded] = useState(false);
 
-    console.log('In apppage');
+    console.log('In apppages');
     
     useEffect(() => {
         const loadFonts = async () => {
@@ -31,11 +30,16 @@ const AppPage: React.FC = () => {
         loadFonts();
     }, []);
 
+    console.log('Second test');
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
+                console.log('There is a user. In useEffect.');
+                console.log(user);
                 setUserID(user.uid);
             } else {
+                console.log('User is not signed in.');
                 setUserID(''); // Handle case where user is not signed in
             }
             setIsLoading(false); // Loading is done whether or not we have a user
