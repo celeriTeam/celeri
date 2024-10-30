@@ -88,39 +88,21 @@ function createCycle(players) {
   // Return the array of objects, each representing a round
 }
 
-exports.resetSteps = onSchedule("every day 04:00", async (event) => {
-  const userRef = firestore.collection("users");
-
-  try {
-    const userSnapshots = await userRef.get();
-
-    if (userSnapshots.empty) {
-      console.log("No users found");
-      return;
-    }
-
-    console.log("User snapshots found: ", userSnapshots.size);
-
-    const batch = firestore.batch();
-
-    userSnapshots.forEach((doc) => {
-      const docRef = userRef.doc(doc.id);
-      batch.update(docRef, {steps: 0});
-    });
-
-    await batch.commit();
-    console.log("Batch update successful, all steps reset to 0");
-  } catch (error) {
-    console.error("Error resetting steps: ", error);
-  }
-});
-
 
 exports.updateWinners = onSchedule("every day 04:00", async (event) => {
   console.log("updateWinners is running");
   const groupRef = firestore.collection("groups");
+  const userRef = firestore.collection("users");
 
   try {
+    const userSnapshots = await userRef.get();
+    const userSteps = {};
+
+    // Store all users' steps in memory
+    userSnapshots.forEach((doc) => {
+      userSteps[doc.id] = doc.data().steps || 0;
+    });
+
     const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
     if (groupSnapshots.empty) {
       console.log("No active games found.");
@@ -140,32 +122,33 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
       const groupDocRef = doc.ref;
       const duelsRef = groupDocRef.collection("duels");
 
-      // const groupDoc = await groupDocRef.get();
-      // if (!groupDoc.exists) {
-      //   console.log(`Group document ${doc.id} not found.`);
-      //   return;
-      // }
-      // let groupCycleCount = groupDoc.data().cycleCount;
-      // let groupCycleDay = groupDoc.data().cycleDay;
-      // const numberOfPlayers = groupDoc.data().order.length;
+      const groupDoc = await groupDocRef.get();
+      if (!groupDoc.exists) {
+        console.log(`Group document ${doc.id} not found.`);
+        return;
+      }
+      let groupCycleCount = groupDoc.data().cycleCount;
+      let groupCycleDay = groupDoc.data().cycleDay;
+      const numberOfPlayers = groupDoc.data().order.length;
 
-      // if (groupCycleDay === 1 && groupCycleCount === 1) {
-      //   console.log("error: No duels found for yesterday");
-      //   return undefined;
-      // } else if (groupCycleDay === 1) {
-      //   groupCycleCount -= 1;
-      //   groupCycleDay = numberOfPlayers-1;
-      // } else {
-      //   groupCycleDay -= 1;
-      // }
+      if (groupCycleDay === 1 && groupCycleCount === 1) {
+        console.log("error: No duels found for yesterday");
+        return undefined;
+      } else if (groupCycleDay === 1) {
+        groupCycleCount -= 1;
+        groupCycleDay = numberOfPlayers-1;
+      } else {
+        groupCycleDay -= 1;
+      }
 
-      // console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
+      console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
 
       duelsRef
         .where("createdAt", ">=", startOfYesterday)
         .where("createdAt", "<", endOfYesterday)
-        // .where("cycleCount", "==", groupCycleCount)
-        // .where("cycleDay", "==", groupCycleDay)
+				// .where("winner", "==", "empty")
+				// .where("cycleCount", "==", groupCycleCount)
+				// .where("cycleDay", "==", groupCycleDay)
         .get()
         .then(async (duelsSnapshot) => {
           if (duelsSnapshot.empty) {
@@ -185,11 +168,8 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
             let winner = "none";
 
             try {
-              const player1Doc = await firestore.collection("users").doc(player1Id).get();
-              const player2Doc = await firestore.collection("users").doc(player2Id).get();
-
-              const player1Steps = player1Doc.exists && player1Doc.data().steps != undefined ? player1Doc.data().steps : 0;
-              const player2Steps = player2Doc.exists && player2Doc.data().steps != undefined ? player2Doc.data().steps : 0;
+              const player1Steps = userSteps[player1Id] || 0;
+              const player2Steps = userSteps[player2Id] || 0;
 
               if (player1Steps > player2Steps) {
                 winner = player1Id;
@@ -233,7 +213,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                     // add the amount won
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
                       [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
@@ -243,6 +223,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                   } else if (winner == "draw") {
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
@@ -251,7 +232,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
                   } else { // if they lose, they lose what they wagered
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
                     }).catch((error) => {
@@ -281,6 +262,13 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
 
       // Wait for all batches to be committed
       await Promise.all(allBatches);
+
+      // After recording all winners, reset steps for all users
+      const resetBatch = firestore.batch();
+      userSnapshots.forEach((doc) => {
+        resetBatch.update(userRef.doc(doc.id), {steps: 0});
+      });
+      await resetBatch.commit();
       console.log("Batch update completed successfully.");
     });
   } catch (error) {
@@ -350,19 +338,15 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           finishedRecap: admin.firestore.FieldValue.delete(),
         });
         // reset the tokens for each player
-        const newUsers = {};
-        for (let i = 0; i < numberOfPlayers; i++) {
-          const playerID = data.order[i];
-          const newPlayer = {
-            placedBet: true,
-            tokens: 0,
-            todaysBetTokens: 0,
-          };
-          newUsers[playerID] = newPlayer;
-        }
-        groupBatch.update(groupDocRef, {
-          users: newUsers,
-        });
+				const usersUpdate = {};
+				players.forEach(playerID => {
+					usersUpdate[`users.${playerID}`] = {
+						placedBet: true,
+						tokens: 0,
+						todaysBetTokens: 0
+					};
+				});
+        groupBatch.update(groupDocRef, usersUpdate);
         console.log("Game has ended");
       } else {
         // create new duels
@@ -429,28 +413,17 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           finishedRecap: admin.firestore.FieldValue.delete(),
         });
 
-        // update the tokens for each player
-        const newUsers = {};
-        for (let i = 0; i < numberOfPlayers; i++) {
-          const playerID = data.order[i];
-          const newTokens = data.users[playerID].tokens - data.users[playerID].todaysBetTokens + data.dailyTokens;
-          let newTodaysBetTokens = 0;
-          if (usersInDuels.includes(playerID)) {
-            newTodaysBetTokens = data.defaultBetOnSelf;
-          } else {
-            newTodaysBetTokens = 0;
-          }
-          const newPlayer = {
-            placedBet: true,
-            tokens: newTokens,
-            todaysBetTokens: newTodaysBetTokens,
-          };
-          newUsers[playerID] = newPlayer;
-          console.log(`Setting user ${playerID} to have ${newTodaysBetTokens} bet tokens`);
-        }
-        groupBatch.update(groupDocRef, {
-          users: newUsers,
-        });
+        // update the bet tokens for each player
+				const usersUpdate = {};
+				players.forEach(playerID => {
+					const currentUserData = data.users[playerID];
+					usersUpdate[`users.${playerID}`] = {
+						placedBet: true,
+						tokens: currentUserData.tokens,
+						todaysBetTokens: usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0
+					};
+				});
+        groupBatch.update(groupDocRef, usersUpdate);
       }
       // Add the batch to the array to commit later
       // allBatches.push(groupBatch.commit());

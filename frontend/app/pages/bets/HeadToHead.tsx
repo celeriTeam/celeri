@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, Image, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal, PanResponder, Animated } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
@@ -8,6 +9,7 @@ import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } fr
 import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
+import { RadialControl } from './BettingDial/CircularDial';
 // import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -35,6 +37,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
     const [isModalVisible, setModalVisible] = useState(true);
+    const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
   
@@ -47,7 +50,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         // if (!loading) {
           fetchData();
         // }
-    }, [loading]);
+    }, []);
 
     const fetchUserName = (matchups: { duelID: string, player1: string; player2: string; }[]) => {
         try {
@@ -65,7 +68,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             const player2 = groups[groupID]?.users[player2ID]?.username;
             setPlayer2(player2);
 
-            const betOnSelfAmount = groups[groupID]?.users[player1ID]?.betOnSelfAmount;
+            const betOnSelfAmount = groups[groupID]?.defaultBetOnSelf;
             if (player1ID === userID) {
                 setSelectedPlayer(player1ID);
                 setBetAmount1(betOnSelfAmount ? betOnSelfAmount.toString() : '100');
@@ -172,6 +175,35 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const InfoModal = () => (
+        <Modal
+            animationType="fade"
+            transparent={true}
+            visible={infoModalVisible}
+            onRequestClose={() => setInfoModalVisible(false)}
+        >
+            <TouchableOpacity 
+                style={styles.modalOverlay}
+                activeOpacity={1}
+                onPress={() => setInfoModalVisible(false)}
+            >
+                <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>How to Place a Bet</Text>
+                    <View style={styles.instructionContainer}>
+                        <Text style={styles.instructionText}>1. Click on which friend you want to bet on!</Text>
+                        <Text style={styles.instructionText}>2. To create a bet with a specific number, simply click on the number and type in your desired bet.</Text>
+                    </View>
+                    <TouchableOpacity 
+                        style={styles.closeButton}
+                        onPress={() => setInfoModalVisible(false)}
+                    >
+                        <Text style={styles.closeButtonText}>Got it!</Text>
+                    </TouchableOpacity>
+                </View>
+            </TouchableOpacity>
+        </Modal>
+    );
+
     useEffect(() => {
         // Add listeners to track the keyboard state
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
@@ -245,12 +277,17 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.dismissOverlay} />
                 </TouchableWithoutFeedback>
             )}
-            <Text style={styles.reminderText}>Click on which friend{'\n'} you want to bet on!</Text>
+            <TouchableOpacity 
+                style={styles.infoButton}
+                onPress={() => setInfoModalVisible(true)}
+            >
+                <Ionicons name="information-circle" size={24} color="#666" />
+            </TouchableOpacity>
             <View style={styles.tokens}>
-                <Text>Your Tokens: {currentUserTokens}</Text>
+                <Text style={{fontFamily: "Lexend"}}>Your Tokens: {currentUserTokens}</Text>
             </View>
             <View style={styles.betTokens}>
-                <Text>Bet Tokens: {totalBetTokens}</Text>
+                <Text style={{fontFamily: "Lexend"}}>Bet Tokens: {totalBetTokens}</Text>
             </View>
 
             {/* Top-left (Player 1) */}
@@ -264,17 +301,24 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             >
                 <Text style={styles.playerText}>{player1}</Text>
                 {isSelected(player1ID) && (
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter bet"
-                        value={betAmount1}
-                        onChangeText={setBetAmount1}
-                        keyboardType="numeric"
-                        editable={!isCurrentUser(player1ID)}
-                    />
+                    <>
+                        <RadialControl
+                            onValueChange={(newValue) => setBetAmount1(newValue.toString())}
+                            initialValue={parseInt(betAmount1) || groups[groupID]?.defaultBetOnSelf}
+                            maxValue={currentUserTokens || 0}
+                        />
+                        <TextInput
+                            style={styles.valueText}
+                            placeholder="Enter bet"
+                            value={betAmount1}
+                            onChangeText={setBetAmount1}
+                            keyboardType="numeric"
+                            editable={!isCurrentUser(player1ID)}
+                        />
+                    </>
                 )}
                 {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
-                    <Text style={{ color: 'red' }}>Invalid bet</Text>
+                    <Text style={styles.errorText}>Invalid bet</Text>
                 )}
             </TouchableOpacity>
 
@@ -284,22 +328,32 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     styles.player2Container,
                     isSelected(player2ID) && styles.selectedPlayer2,
                 ]}
-                onPress={() => !isCurrentUser(player1ID) && handleSelectPlayer(player2ID)}
+                onPress={() => !isCurrentUser(player2ID) && handleSelectPlayer(player2ID)}
                 activeOpacity={1}
             >
                 <Text style={styles.playerText}>{player2}</Text>
                 {isSelected(player2ID) && (
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter bet"
-                        value={betAmount2}
-                        onChangeText={setBetAmount2}
-                        keyboardType="numeric"
-                        editable={!isCurrentUser(player2ID)}
-                    />
+                    <>
+                        <RadialControl
+                            onValueChange={(newValue) => setBetAmount2(newValue.toString())}
+                            initialValue={parseInt(betAmount2) || groups[groupID]?.defaultBetOnSelf}
+                            maxValue={currentUserTokens || 0}
+                        />
+                        <TextInput
+                            style={[
+                                styles.valueText,
+                                keyboardVisible && styles.valueTextWithKeyboard
+                            ]}
+                            placeholder="Enter bet"
+                            value={betAmount2}
+                            onChangeText={setBetAmount2}
+                            keyboardType="numeric"
+                            editable={!isCurrentUser(player2ID)}
+                        />
+                    </>
                 )}
                 {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
-                    <Text style={{ color: 'red' }}>Invalid bet</Text>
+                    <Text style={styles.errorText}>Invalid bet</Text>
                 )}
             </TouchableOpacity>
 
@@ -321,6 +375,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
 
             {/* Modal */}
+            <InfoModal />
             <Modal
                 transparent={true}
                 visible={isModalVisible}
@@ -353,12 +408,11 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         zIndex: 1,
     },
-    reminderText: {
+    infoButton: {
         position: 'absolute',
-        color: 'red',
-        top: 10,
+        top: 20,
         left: 20,
-        zIndex: 100,
+        zIndex: 1000,
     },
     tokens: {
         position: 'absolute',
@@ -409,19 +463,43 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFDAB9', // Highlight color for player 2
     },
     playerText: {
+        fontFamily: "Lexend-Bold",
         fontSize: 24,
-        fontWeight: 'bold',
         color: '#333',
     },
-    input: {
+    betContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8, // Adds consistent spacing between elements
+    },
+    valueText: {
+        fontSize: 25,
+        fontFamily: 'Lexend',
+        marginVertical: 4,
+    },
+    valueTextWithKeyboard: {
+        position: 'absolute',
+        fontFamily: 'Lexend',
+        bottom: 200,
+        left: 20,
         backgroundColor: '#FFF',
         borderWidth: 1,
         borderColor: '#AAA',
-        borderRadius: 5,
         padding: 10,
-        marginTop: 10,
-        width: '50%',
-        textAlign: 'center',
+        zIndex: 1000,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 14,
+        fontFamily: 'Lexend',
     },
     dividingLine: {
         position: 'absolute',
@@ -447,9 +525,42 @@ const styles = StyleSheet.create({
         bottom: 200,
     },
     submitButtonText: {
+        fontFamily: "Lexend-Bold",
         color: '#FFF',
-        fontWeight: 'bold',
         fontSize: 18,
+    },
+    // INFO MODAL
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 15,
+        padding: 20,
+        width: '80%',
+        maxWidth: 400,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        fontFamily: 'Lexend',
+    },
+    instructionContainer: {
+        width: '100%',
+        paddingHorizontal: 10,
+    },
+    instructionText: {
+        fontSize: 16,
+        marginBottom: 10,
+        lineHeight: 22,
+        fontFamily: 'Lexend',
     },
     // MODAL
     modalOverlay: {

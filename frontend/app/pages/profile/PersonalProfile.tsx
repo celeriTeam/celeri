@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
@@ -80,8 +80,12 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
             )}
 
             <View style={styles.logoutButtonContainer}>
-            <Button title="Edit Profile" onPress={handleEditProfile} />
-                <Button title="Log Out" onPress={handleLogout} />
+            <TouchableOpacity onPress={handleEditProfile}>
+                <Text style={[styles.buttonText, {color: 'blue'}]}>Edit Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+                <Text style={[styles.buttonText, {color: 'red'}]}>Log Out</Text>
+            </TouchableOpacity>
             </View>
         </View>
     );
@@ -115,18 +119,25 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     name: {
+        fontFamily: "Lexend-Bold",
         fontSize: 34,
-        fontWeight: 'bold',
         marginBottom: 40,
     },
     groupsLabel: {
-        fontSize: 24,
-        fontWeight: '600',
+        fontFamily: "Lexend-Bold",
+        fontSize: 22,
         marginBottom: 10,
     },
     text: {
+        fontFamily: "Lexend",
         fontSize: 18,
         marginBottom: 20,
+    },
+    buttonText: {
+        marginTop: 25,
+        fontFamily: "Lexend",
+        textAlign: 'center',
+        fontSize: 16,
     },
     logoutButtonContainer: {
         position: 'absolute',

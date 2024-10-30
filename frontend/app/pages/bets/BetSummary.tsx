@@ -56,10 +56,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const groupsRef = collection(db, "groups");
         const groupDocRef = doc(groupsRef, groupID);
         let unsubscribeDuels: () => void = () => {};
+        let unsubscribeUsers: () => void = () => {};
         const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
             setIsLoading(true);
             if (docSnapshot.exists() && groupID) {
-                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, todaysDuels] = await Promise.all([
+                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens] = await Promise.all([
                     getGroupProfilePic(groupID),
                     getGroupName(groupID),
                     getGroupIsFirstDay(groupID),
@@ -71,6 +72,22 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 const userList = await getUsersInGroup(groupID); // userIDs
                 const users: { [userID: string]: any } = {};
                 let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[] = [];
+                const usersRef = collection(db, 'users');
+                // user query where userID in userList
+                // const usersQuery = query(usersRef,
+                //     where('__name__', 'in', userList ?? [])
+                // );
+                // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
+                //     usersSnapshot.forEach((userDoc) => {
+                //         const userData = userDoc.data();
+                //         users[userDoc.id] = {
+                //             profilePic: userData.profilePic,
+                //             username: userData.username,
+                //             steps: userData.steps,
+                //             tokens: userData.tokens
+                //         };
+                //     });
+                // });
                 if (userList) {
                     await Promise.all(userList.map(async (selectedUserID) => {
                         const [profilePic, username, steps, tokens] = await Promise.all([
@@ -334,37 +351,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             style={styles.coinIcon}
                         />
                     </View>
-                    {/* Player1's Bets */}
-                    {/* <View style={styles.betsListLeft}>
-                        <Text style={styles.stepTitle}>Bets:</Text>
-                        {item.player1Bets.length === 0 ? (
-                            <View>
-                                <Text>(No bets placed yet)</Text>
-                            </View>
-                        ) : (
-                            <View>
-                                {item.player1Bets.map((bet, index) => (
-                                    <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                                ))}
-                            </View>
-                        )}
-                    </View> */}
-
-                    {/* Player2's Bets */}
-                    {/* <View style={styles.betsListRight}>
-                        <Text style={styles.stepTitle}>Bets:</Text>
-                        {item.player2Bets.length === 0 ? (
-                            <View>
-                                <Text>(No bets placed yet)</Text>
-                            </View>
-                        ) : (
-                            <View>
-                                {item.player2Bets.map((bet, index) => (
-                                    <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-                                ))}
-                            </View>
-                        )}
-                    </View> */}
                 </View>
             </TouchableOpacity>
 
@@ -452,9 +438,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     />
                 )}
             </View>
-            <View style={styles.editPic} >
-                <Button title="Edit group pic" onPress={pickImage} />
-            </View>
+            <TouchableOpacity onPress={pickImage}>
+                <Text style={[styles.buttonText, {marginBottom: 40}]}>Edit group pic</Text>
+            </TouchableOpacity>
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
                 {currentGroupUsersArray ? (
@@ -514,7 +500,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             {/* Modal */}
             {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
                 <View style={styles.button}>
-                    <Button title="Recap" onPress={openModal} />
+                    <TouchableOpacity onPress={openModal}>
+                        <Text style={styles.buttonText}>Recap</Text>
+                    </TouchableOpacity>
                 </View>
             )}
             <Modal
@@ -621,10 +609,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         elevation: 5,
     },
-    editPic: {
-        fontSize: 34,
-        fontWeight: 'bold',
-        marginBottom: 40,
+    buttonText: {
+        fontFamily: "Lexend",
+        textAlign: 'center',
+        color: 'blue',
     },
     tokens: {
         position: 'absolute',
@@ -756,9 +744,9 @@ const styles = StyleSheet.create({
     },
     // MODAL
     button: {
-        marginTop: 10,
-        marginBottom: 0,
-        width: '50%',
+        marginTop: 20,
+        paddingBottom: 20,
+        width: '100%',
         alignSelf: 'center',
     },
     modalOverlay: {
