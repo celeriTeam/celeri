@@ -16,6 +16,10 @@
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.alp2goose.flex",
+      "config": {
+        "usesNonExemptEncryption": false,
+        "supportsPushNotifications": true 
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
