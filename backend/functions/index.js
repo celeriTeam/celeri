@@ -84,6 +84,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
       if (userDoc.exists) {
         console.log("checkpoint four");
         const userData = userDoc.data();
+        const username = userData && userData.username;
         const userTokens = userData && userData.tokens;
 
         if (userTokens && userTokens.length > 0) {
@@ -94,7 +95,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
             const message = {
               token: token,
               notification: {
-                title: `${userID} believes in you`,
+                title: `${username} believes in you`,
                 body: `They just placed a bet on you for ${wager} tokens!`,
               },
             };
