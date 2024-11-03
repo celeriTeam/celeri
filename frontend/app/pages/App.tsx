@@ -62,6 +62,14 @@ async function registerForPushNotificationsAsync(userID: string) {
   }
 }
 
+messaging().onMessage(async (remoteMessage) => {
+    console.log('Notification received in foreground:', remoteMessage);
+  });
+  
+  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    console.log('Notification received in background:', remoteMessage);
+  });
+
 async function saveTokenToDatabase(token: string, uid: string) {
   // Assume user is already signed in
   const userId = uid;
@@ -77,9 +85,14 @@ async function saveTokenToDatabase(token: string, uid: string) {
 
   // Helper function to subscribe token to topic
 async function subscribeTokenToTopic(token: string, topic: string) {
-    messaging()
-    .subscribeToTopic('allUsers')
-    .then(() => console.log('Subscribed to topic!'));
+    getMessaging()
+    .subscribeToTopic('allUsers', token)
+    .then((response: any) => {
+        console.log('Successfully subscribed to topic:', response);
+      })
+      .catch((error: any) => {
+        console.log('Error subscribing to topic:', error);
+      });
   }
   // Notification handler
 Notifications.setNotificationHandler({

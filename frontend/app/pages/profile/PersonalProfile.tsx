@@ -6,6 +6,8 @@ import { StackNavigationProp, createStackNavigator } from '@react-navigation/sta
 import { RootStackParamList } from '../../types';
 import EditProfilePage from './EditProfile';
 import { useUser } from '../../UserProvider';
+import messaging from '@react-native-firebase/messaging';
+import { getMessaging, getToken} from '@react-native-firebase/messaging';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'PersonalProfilePage'>;
@@ -17,6 +19,17 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
     const handleLogout = async () => {
         const authInstance = getAuth();
         try {
+            const token = await messaging().getToken()
+            getMessaging().unsubscribeFromTopic(token, "allUsers")
+            .then((response: any) => {
+                // See the MessagingTopicManagementResponse reference documentation
+                // for the contents of response.
+                console.log('Successfully unsubscribed from topic:', response);
+            })
+            .catch((error: any) => {
+                console.log('Error unsubscribing from topic:', error);
+            });
+
             await signOut(authInstance);
             Alert.alert("Success", "You have been logged out.");
             navigation.navigate("Register");
