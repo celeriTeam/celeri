@@ -2,6 +2,7 @@
 // const {logger} = require("firebase-functions");
 // const {functions} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
 // const {onRequest, onCall, HttpsError} =
 // require("firebase-functions/v2/https");
 // const {onDocumentCreated,
@@ -14,13 +15,13 @@ const {getFirestore, FieldValue} = require("firebase-admin/firestore");
 // const {getFirestore,
 //   doc,
 //   updateDoc} = require("firebase-admin/firestore");
-const {getMessaging} = require("firebase-admin/messaging");
+// const {getMessaging} = require("firebase-admin/messaging");
 // const {getDatabase} = require("firebase-admin/database");
 const admin = require("firebase-admin");
 
 initializeApp();
 
-const messaging = getMessaging();
+// const messaging = getMessaging();
 const firestore = getFirestore();
 // function for sending notifs
 exports.sendNotif = onSchedule("every day 04:00", async (event) => {
@@ -34,10 +35,125 @@ exports.sendNotif = onSchedule("every day 04:00", async (event) => {
   };
 
   try {
-    const response = await messaging.send(message);
+    const response = await admin.messaging().send(message);
     console.log("Successfully sent message:", response);
   } catch (error) {
     console.error("Error sending message:", error);
+  }
+});
+
+exports.sendTestNotif = onSchedule("every day 04:00", async (event) => {
+  const directMessage = {
+    notification: {
+      title: "Test Notification",
+      body: "This is a direct test notification",
+    },
+    token: "eDywtjqNqUd7t19P0SKQ_J:APA91bGXOuXTqjYTTThLUC_tM-IrgCyWiiP1hMjFNnLEqRdJjRGgHV_za-66alxXddpwrNXpkCwoT6X6X9rzkVQJCL7IX6wWGIRy2LQvo7ACyUcmV-sJNkY",
+  };
+
+  try {
+    const response = await admin.messaging().send(directMessage);
+    console.log("Successfully sent direct message:", response);
+  } catch (error) {
+    console.error("Error sending direct message:", error);
+  }
+});
+
+exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", async (event) => {
+  console.log("sendNotifOnBet is running");
+  const newValue = event.data.after.data();
+  const previousValue = event.data.before.data();
+  console.log(newValue);
+  console.log("checkpoint one");
+  if (newValue && newValue.bets.length > previousValue.bets.length) {
+    // Find the newly added bet
+    console.log("checkpoint two");
+    const newBet = newValue.bets[newValue.bets.length-1];
+    const {betOnUserID, userID, wager} = newBet;
+
+    let betAgainstUserID;
+    if (betOnUserID == newValue.player1) {
+      betAgainstUserID = newValue.player2;
+    } else {
+      betAgainstUserID = newValue.player1;
+    }
+    // Fetch target user token from Firebase -- the player you bet on
+    try {
+      const userDoc = await firestore.collection("users").doc(betOnUserID).get();
+      console.log("checkpoint three");
+      if (userDoc.exists) {
+        console.log("checkpoint four");
+        const userData = userDoc.data();
+        const userTokens = userData && userData.tokens;
+
+        if (userTokens && userTokens.length > 0) {
+          console.log("checkpoint five");
+          // send notif for each token
+          for (const token of userTokens) {
+            console.log("checkpoint six");
+            const message = {
+              token: token,
+              notification: {
+                title: `${userID} believes in you`,
+                body: `They just placed a bet on you for ${wager} tokens!`,
+              },
+            };
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log("Notification sent successfully:", response);
+            } catch (error) {
+              console.error("Error sending notification:", error);
+            }
+          }
+        } else {
+          console.log("No tokens found for user:", betOnUserID);
+        }
+      } else {
+        console.log("User document not found:", betOnUserID);
+      }
+    } catch (error) {
+      console.error("Error fetching user document:", error);
+    }
+
+    // Fetch target user token for the user you bet against
+    try {
+      const userDoc = await firestore.collection("users").doc(betAgainstUserID).get();
+      console.log("checkpoint three-two");
+      if (userDoc.exists) {
+        console.log("checkpoint four-two");
+        const userData = userDoc.data();
+        const userTokens = userData && userData.tokens;
+
+        if (userTokens && userTokens.length > 0) {
+          console.log("checkpoint five-two");
+          // send notif for each token
+          for (const token of userTokens) {
+            console.log("checkpoint six-two");
+            const message = {
+              token: token,
+              notification: {
+                title: `Prove ${userID} wrong.`,
+                body: `They just bet against you for ${wager} tokens!`,
+              },
+            };
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log("Notification sent successfully:", response);
+            } catch (error) {
+              console.error("Error sending notification:", error);
+            }
+          }
+        } else {
+          console.log("No tokens found for user:", betOnUserID);
+        }
+      } else {
+        console.log("User document not found:", betOnUserID);
+      }
+    } catch (error) {
+      console.error("Error fetching user document:", error);
+    }
   }
 });
 
@@ -146,9 +262,9 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
       duelsRef
         .where("createdAt", ">=", startOfYesterday)
         .where("createdAt", "<", endOfYesterday)
-				// .where("winner", "==", "empty")
-				// .where("cycleCount", "==", groupCycleCount)
-				// .where("cycleDay", "==", groupCycleDay)
+      // .where("winner", "==", "empty")
+      // .where("cycleCount", "==", groupCycleCount)
+      // .where("cycleDay", "==", groupCycleDay)
         .get()
         .then(async (duelsSnapshot) => {
           if (duelsSnapshot.empty) {
@@ -338,14 +454,14 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           finishedRecap: admin.firestore.FieldValue.delete(),
         });
         // reset the tokens for each player
-				const usersUpdate = {};
-				players.forEach(playerID => {
-					usersUpdate[`users.${playerID}`] = {
-						placedBet: true,
-						tokens: 0,
-						todaysBetTokens: 0
-					};
-				});
+        const usersUpdate = {};
+        players.forEach((playerID) => {
+          usersUpdate[`users.${playerID}`] = {
+            placedBet: true,
+            tokens: 0,
+            todaysBetTokens: 0,
+          };
+        });
         groupBatch.update(groupDocRef, usersUpdate);
         console.log("Game has ended");
       } else {
@@ -414,15 +530,15 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
         });
 
         // update the bet tokens for each player
-				const usersUpdate = {};
-				players.forEach(playerID => {
-					const currentUserData = data.users[playerID];
-					usersUpdate[`users.${playerID}`] = {
-						placedBet: true,
-						tokens: currentUserData.tokens,
-						todaysBetTokens: usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0
-					};
-				});
+        const usersUpdate = {};
+        players.forEach((playerID) => {
+          const currentUserData = data.users[playerID];
+          usersUpdate[`users.${playerID}`] = {
+            placedBet: true,
+            tokens: currentUserData.tokens,
+            todaysBetTokens: usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0,
+          };
+        });
         groupBatch.update(groupDocRef, usersUpdate);
       }
       // Add the batch to the array to commit later
