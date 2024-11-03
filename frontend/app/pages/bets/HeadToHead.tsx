@@ -175,6 +175,12 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const handleOpenModal = () => {
+        Keyboard.dismiss();
+        setKeyboardVisible(false);
+        setInfoModalVisible(true);
+    };
+
     const InfoModal = () => (
         <Modal
             animationType="fade"
@@ -191,7 +197,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.modalTitle}>How to Place a Bet</Text>
                     <View style={styles.instructionContainer}>
                         <Text style={styles.instructionText}>1. Click on which friend you want to bet on!</Text>
-                        <Text style={styles.instructionText}>2. To create a bet with a specific number, simply click on the number and type in your desired bet.</Text>
+                        <Text style={styles.instructionText}>2. Type in your desired bet into the box, and continue.</Text>
                     </View>
                     <TouchableOpacity 
                         style={styles.closeButton}
@@ -279,7 +285,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
             <TouchableOpacity 
                 style={styles.infoButton}
-                onPress={() => setInfoModalVisible(true)}
+                onPress={handleOpenModal}
             >
                 <Ionicons name="information-circle" size={24} color="#666" />
             </TouchableOpacity>
@@ -301,21 +307,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             >
                 <Text style={styles.playerText}>{player1}</Text>
                 {isSelected(player1ID) && (
-                    <>
-                        <RadialControl
-                            onValueChange={(newValue) => setBetAmount1(newValue.toString())}
-                            initialValue={parseInt(betAmount1) || groups[groupID]?.defaultBetOnSelf}
-                            maxValue={currentUserTokens || 0}
-                        />
-                        <TextInput
-                            style={styles.valueText}
-                            placeholder="Enter bet"
-                            value={betAmount1}
-                            onChangeText={setBetAmount1}
-                            keyboardType="numeric"
-                            editable={!isCurrentUser(player1ID)}
-                        />
-                    </>
+                    <TextInput
+                        style={styles.input}
+                        value={betAmount1}
+                        onChangeText={setBetAmount1}
+                        keyboardType="numeric"
+                        editable={!isCurrentUser(player1ID)}
+                    />
                 )}
                 {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
                     <Text style={styles.errorText}>Invalid bet</Text>
@@ -331,26 +329,21 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                 onPress={() => !isCurrentUser(player2ID) && handleSelectPlayer(player2ID)}
                 activeOpacity={1}
             >
-                <Text style={styles.playerText}>{player2}</Text>
+                <Text style={[
+                    styles.playerText,
+                    isSelected(player2ID) && keyboardVisible && styles.usernameWithKeyboard
+                ]}>{player2}</Text>
                 {isSelected(player2ID) && (
-                    <>
-                        <RadialControl
-                            onValueChange={(newValue) => setBetAmount2(newValue.toString())}
-                            initialValue={parseInt(betAmount2) || groups[groupID]?.defaultBetOnSelf}
-                            maxValue={currentUserTokens || 0}
-                        />
-                        <TextInput
-                            style={[
-                                styles.valueText,
-                                keyboardVisible && styles.valueTextWithKeyboard
-                            ]}
-                            placeholder="Enter bet"
-                            value={betAmount2}
-                            onChangeText={setBetAmount2}
-                            keyboardType="numeric"
-                            editable={!isCurrentUser(player2ID)}
-                        />
-                    </>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            keyboardVisible && styles.valueTextWithKeyboard
+                        ]}
+                        value={betAmount2}
+                        onChangeText={setBetAmount2}
+                        keyboardType="numeric"
+                        editable={!isCurrentUser(player2ID)}
+                    />
                 )}
                 {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
                     <Text style={styles.errorText}>Invalid bet</Text>
@@ -467,15 +460,21 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#333',
     },
-    betContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8, // Adds consistent spacing between elements
+    input: {
+        backgroundColor: '#FFF',
+        borderWidth: 1,
+        borderColor: '#AAA',
+        borderRadius: 5,
+        padding: 10,
+        marginTop: 10,
+        width: '50%',
+        textAlign: 'center',
     },
-    valueText: {
-        fontSize: 25,
-        fontFamily: 'Lexend',
-        marginVertical: 4,
+    usernameWithKeyboard: {
+        position: 'absolute',
+        fontFamily: 'Lexend-Bold',
+        bottom: 250,
+        left: 20,
     },
     valueTextWithKeyboard: {
         position: 'absolute',
