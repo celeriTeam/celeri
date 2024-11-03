@@ -304,7 +304,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
       let cycleCount = data.cycleCount;
       let cycleDuels = data.cycleDuels;
       const players = data.order;
-      const numberOfPlayers = players.length;
+      const numberOfPlayers = data.currentPlayersInGame;
 
       console.log("checkpoint two");
 
@@ -315,6 +315,9 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           cycleCount to ${cycleCount} for group: ${doc.id}`);
 
         cycleDuels = createCycle(players);
+        groupBatch.update(groupDocRef, {
+          currentPlayersInGame: players.length,
+        });
         console.log("checkpoint three");
       } else {
         cycleDay += 1;
@@ -330,6 +333,7 @@ exports.createDuels = onSchedule("every day 04:00", async (event) =>{
           isGameActive: false,
           cycleDay: 0,
           cycleCount: 0,
+          currentPlayersInGame: admin.firestore.FieldValue.delete(),
           cycleDuels: admin.firestore.FieldValue.delete(),
           dailyTokens: admin.firestore.FieldValue.delete(),
           defaultBetOnSelf: admin.firestore.FieldValue.delete(),
