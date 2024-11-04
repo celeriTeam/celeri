@@ -327,7 +327,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                   let percentage = 0.0;
                   if (duelData.bets[i].betOnUserID == winner) {
                     percentage = duelData.bets[i].wager / totalWagersOnWinner;
-                    amountWon = percentage * totalWagers;
+                    amountWon = Math.floor(percentage * totalWagers);
                     // add the amount won
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
