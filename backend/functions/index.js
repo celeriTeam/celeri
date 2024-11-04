@@ -24,7 +24,7 @@ initializeApp();
 // const messaging = getMessaging();
 const firestore = getFirestore();
 // function for sending notifs
-exports.sendNotif = onSchedule("every day 04:00", async (event) => {
+exports.sendNotif = onSchedule("every day 05:00", async (event) => {
   const message = {
     notification: {
       title: "It's bettin' time.",
@@ -42,7 +42,7 @@ exports.sendNotif = onSchedule("every day 04:00", async (event) => {
   }
 });
 
-exports.sendTestNotif = onSchedule("every day 04:00", async (event) => {
+exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
   const directMessage = {
     notification: {
       title: "Test Notification",
@@ -69,7 +69,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
     // Find the newly added bet
     console.log("checkpoint two");
     const newBet = newValue.bets[newValue.bets.length-1];
-    const {betOnUserID, userID, wager} = newBet;
+    const {betOnUserID, wager} = newBet;
 
     let betAgainstUserID;
     if (betOnUserID == newValue.player1) {
@@ -124,6 +124,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
       if (userDoc.exists) {
         console.log("checkpoint four-two");
         const userData = userDoc.data();
+        const username = userData && userData.username;
         const userTokens = userData && userData.tokens;
 
         if (userTokens && userTokens.length > 0) {
@@ -134,7 +135,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
             const message = {
               token: token,
               notification: {
-                title: `Prove ${userID} wrong.`,
+                title: `Prove ${username} wrong.`,
                 body: `They just bet against you for ${wager} tokens!`,
               },
             };
@@ -206,7 +207,7 @@ function createCycle(players) {
 }
 
 
-exports.updateWinners = onSchedule("every day 04:00", async (event) => {
+exports.updateWinners = onSchedule("every day 05:00", async (event) => {
   console.log("updateWinners is running");
   const groupRef = firestore.collection("groups");
   const userRef = firestore.collection("users");
@@ -393,7 +394,7 @@ exports.updateWinners = onSchedule("every day 04:00", async (event) => {
   }
 });
 
-exports.createDuels = onSchedule("every day 04:00", async (event) =>{
+exports.createDuels = onSchedule("every day 05:00", async (event) =>{
   console.log("createDuels is running");
   const groupRef = firestore.collection("groups");
 
