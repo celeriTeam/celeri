@@ -40,6 +40,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const increments = [25, 100, 250, 500];
   
     const closeModal = async () => {
       setModalVisible(false);
@@ -175,6 +176,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const increaseBetAmount = (player: string, amount: number) => {
+        if (player === 'player1') {
+            setBetAmount1(((+betAmount1 || 0) + amount).toString());
+        } else if (player === 'player2') {
+            setBetAmount2(((+betAmount2 || 0) + amount).toString());
+        }
+    }
+
     const handleOpenModal = () => {
         Keyboard.dismiss();
         setKeyboardVisible(false);
@@ -307,16 +316,34 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             >
                 <Text style={styles.playerText}>{player1}</Text>
                 {isSelected(player1ID) && (
-                    <TextInput
-                        style={styles.input}
-                        value={betAmount1}
-                        onChangeText={setBetAmount1}
-                        keyboardType="numeric"
-                        editable={!isCurrentUser(player1ID)}
-                    />
-                )}
-                {isSelected(player1ID) && !isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
-                    <Text style={styles.errorText}>Invalid bet</Text>
+                    <>
+                        <Text style={styles.betNumber}>{betAmount1 || 0}</Text>
+                        {!isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
+                            <Text style={styles.errorText}>Invalid bet</Text>
+                        )}
+                        <View style={styles.bettingRow}>
+                            {increments.map((amount) => (
+                            <TouchableOpacity
+                                style={styles.incrementButton}
+                                onPress={() => increaseBetAmount('player1', amount)}
+                            >
+                                <Text style={styles.incrementText}>+{amount}</Text>
+                            </TouchableOpacity>
+                            ))}
+                            <TextInput
+                                style={styles.input}
+                                value={betAmount1}
+                                onChangeText={setBetAmount1}
+                                keyboardType="numeric"
+                                editable={!isCurrentUser(player1ID)}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setBetAmount1('')}
+                            >
+                                <Text style={styles.incrementText}>Clear bet</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
                 )}
             </TouchableOpacity>
 
@@ -334,19 +361,34 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     isSelected(player2ID) && keyboardVisible && styles.usernameWithKeyboard
                 ]}>{player2}</Text>
                 {isSelected(player2ID) && (
-                    <TextInput
-                        style={[
-                            styles.input,
-                            keyboardVisible && styles.valueTextWithKeyboard
-                        ]}
-                        value={betAmount2}
-                        onChangeText={setBetAmount2}
-                        keyboardType="numeric"
-                        editable={!isCurrentUser(player2ID)}
-                    />
-                )}
-                {isSelected(player2ID) && !isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
-                    <Text style={styles.errorText}>Invalid bet</Text>
+                    <>
+                        <Text style={styles.betNumber}>{betAmount2 || 0}</Text>
+                        {!isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
+                            <Text style={styles.errorText}>Invalid bet</Text>
+                        )}
+                        <View style={styles.bettingRow}>
+                            {increments.map((amount) => (
+                            <TouchableOpacity
+                                style={styles.incrementButton}
+                                onPress={() => increaseBetAmount('player2', amount)}
+                            >
+                                <Text style={styles.incrementText}>+{amount}</Text>
+                            </TouchableOpacity>
+                            ))}
+                            <TextInput
+                                style={styles.input}
+                                value={betAmount2}
+                                onChangeText={setBetAmount2}
+                                keyboardType="numeric"
+                                editable={!isCurrentUser(player2ID)}
+                            />
+                            <TouchableOpacity
+                                onPress={() => setBetAmount2('')}
+                            >
+                                <Text style={styles.incrementText}>Clear bet</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
                 )}
             </TouchableOpacity>
 
@@ -460,14 +502,35 @@ const styles = StyleSheet.create({
         fontSize: 24,
         color: '#333',
     },
+    bettingRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        position: 'absolute',
+        bottom: 60,
+        width: '100%',
+        padding: 20,
+    },
+    betNumber: {
+        fontFamily: "Lexend-Bold",
+        fontSize: 36,
+    },
+    incrementButton: {
+        padding: 10,
+        backgroundColor: '#FF5722',
+        borderRadius: 5,
+    },
+    incrementText: {
+        fontFamily: "Lexend-Bold",
+        color: '#FFF',
+    },
     input: {
         backgroundColor: '#FFF',
         borderWidth: 1,
         borderColor: '#AAA',
         borderRadius: 5,
         padding: 10,
-        marginTop: 10,
-        width: '50%',
+        width: 50,
         textAlign: 'center',
     },
     usernameWithKeyboard: {
