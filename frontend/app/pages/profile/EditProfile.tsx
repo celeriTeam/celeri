@@ -41,34 +41,40 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
 
     const pickImage = async () => {
         // Request permission to access the media library
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        console.log('picking image...');
+        const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+        console.log(`picking image2... ${status}`);
     
-        if (permissionResult.granted === false) {
-          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-          return;
-        }
+        if (status === "granted") {
+            // Launch image picker
+            console.log('status granted ~~');
+            const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
+            allowsMultipleSelection: false,
+            });
     
-        // Launch image picker
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.5,
-        });
-    
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const selectedAsset = result.assets[0];
-            if (selectedAsset.uri) {
-            // Compress and resize the image
-            const manipulatedImage = await ImageManipulator.manipulateAsync(
-                selectedAsset.uri,
-                [{ resize: { width: 800 } }], // Resize to 800px width
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const selectedAsset = result.assets[0];
+                if (selectedAsset.uri) {
+                // Compress and resize the image
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    selectedAsset.uri,
+                    [{ resize: { width: 800 } }], // Resize to 800px width
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
 
-            setcurrentProfilePic(manipulatedImage.uri);
-            // set profile pic endpoint
-            editProfilePic(userID, manipulatedImage.uri);
+                setcurrentProfilePic(manipulatedImage.uri);
+                // set profile pic endpoint
+                editProfilePic(userID, manipulatedImage.uri);
+                }
             }
+        } else {
+            Alert.alert(
+                'Permission Required',
+                'Please grant media library permissions to select a profile image.'
+            );
         }
     };
 
