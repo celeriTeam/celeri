@@ -25,7 +25,8 @@
           "fetch",
           "remote-notification"
         ]
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "googleServicesFile": "google-services.json",
