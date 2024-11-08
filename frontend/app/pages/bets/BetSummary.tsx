@@ -264,7 +264,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
             );
 
-            addGroupImage(groupID, selectedAsset.uri);
+            addGroupImage(groupID, manipulatedImage.uri);
             }
         }
     };

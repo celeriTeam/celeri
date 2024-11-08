@@ -77,7 +77,7 @@ const CreateGroupPage: React.FC<Props> = ({ navigation }) => {
                 { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
             );
 
-            setGroupImage(selectedAsset.uri);
+            setGroupImage(manipulatedImage.uri);
             }
         }
     };

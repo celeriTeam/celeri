@@ -424,6 +424,13 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
       const players = data.order;
       const numberOfPlayers = data.currentPlayersInGame;
 
+      console.log("data.order:", data.order);
+      console.log("players.length:", players.length);
+      const playerCount = players.reduce((count, playerId) => {
+        return playerId ? count + 1 : count;
+      }, 0);
+      console.log("playercount: ", playerCount);
+
       console.log("checkpoint two");
 
       if (data.cycleDay >= numberOfPlayers-1) {
@@ -434,7 +441,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
         cycleDuels = createCycle(players);
         groupBatch.update(groupDocRef, {
-          currentPlayersInGame: players.length,
+          currentPlayersInGame: playerCount,
         });
         console.log("checkpoint three");
       } else {
