@@ -129,7 +129,6 @@ const AppPage: React.FC = () => {
                 console.log('There is a user. In useEffect.');
                 console.log(user);
                 setUserID(user.uid);
-                registerForPushNotificationsAsync(user.uid);
             } else {
                 console.log('User is not signed in.');
                 setUserID(''); // Handle case where user is not signed in
@@ -140,7 +139,14 @@ const AppPage: React.FC = () => {
         return () => unsubscribe(); // Clean up the listener on unmount
     }, []);
 
-    if (isLoading) {
+    // Register for push notifications after userID is set
+    useEffect(() => {
+        if (userID) {
+            registerForPushNotificationsAsync(userID);
+        }
+    }, [userID]);
+
+    if (isLoading || !fontsLoaded) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />

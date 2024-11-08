@@ -13,13 +13,12 @@ import InvitePage from './pages/groups/InviteGroup';
 import AppPage from './pages/App';
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App: React.FC = () => {
   
-    const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Register');
+    const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const auth = getAuth();
@@ -53,7 +52,7 @@ const App: React.FC = () => {
       return () => unsubscribe();
     }, [auth]);
   
-    if (isLoading) {
+    if (isLoading || !fontsLoaded || initialRoute === null) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
@@ -64,20 +63,17 @@ const App: React.FC = () => {
     
     return (
         <NavigationContainer independent={true}>
-            <Stack.Navigator initialRouteName={initialRoute}>
-                <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
-                <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
-                <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false}} />
-                <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
-                <Stack.Screen name="AppPage" component={AppPage} options={{ 
-                    // title: 'Groups',
-                    // headerStyle: { backgroundColor: '#42a5f5' },
-                    // headerTitleStyle: { fontWeight: 'bold' },
-                    // headerTintColor: '#fff',
-                    // headerLeft: () => null
-                    headerShown: false
-                }}
-                />
+            <Stack.Navigator>
+                {initialRoute === 'AppPage' ? (
+                    <Stack.Screen name="AppPage" component={AppPage} options={{ headerShown: false }} />
+                ) : (
+                    <>
+                        <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
+                        <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
+                        <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
+                        <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
+                    </>
+                )}
             </Stack.Navigator>
         </NavigationContainer>
     );

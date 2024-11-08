@@ -16,10 +16,6 @@
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "bundleIdentifier": "com.alp2goose.flex",
-      "config": {
-        "usesNonExemptEncryption": false,
-        "supportsPushNotifications": true 
-      },
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
@@ -34,7 +30,10 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.alp2goose.flex"
+      "package": "com.alp2goose.flex",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -70,7 +69,6 @@
           "cameraPermission": "The app needs access to your camera to let you take profile pictures."
         }
       ]
-
     ],
     "experiments": {
       "typedRoutes": true
@@ -82,6 +80,10 @@
       "eas": {
         "projectId": "aced3ed5-7df5-4f2c-8f1c-dc12a8426cd8"
       }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/aced3ed5-7df5-4f2c-8f1c-dc12a8426cd8"
     }
   }
 }

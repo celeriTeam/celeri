@@ -3,6 +3,12 @@
     "version": ">= 10.2.2"
   },
   "build": {
+    "internal": {
+      "distribution": "internal",
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      }
+    },
     "development": {
       "developmentClient": true,
       "distribution": "internal",
