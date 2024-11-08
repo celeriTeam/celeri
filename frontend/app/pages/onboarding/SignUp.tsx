@@ -97,7 +97,7 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                 { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
             );
 
-            setProfileImage(selectedAsset.uri);
+            setProfileImage(manipulatedImage.uri);
             }
         }
     };
