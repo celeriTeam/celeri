@@ -166,8 +166,22 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                     Alert.alert("Error", "An unknown error occurred");
                 }
             }
+        } else if(!email && !password && !username && !profileImage) {
+            Alert.alert("Error", "Please fill out all the fields above!")
+        } else if(!email && !password && !username){ 
+            Alert.alert("Error", "Please enter an email, password, and your username!")
+        } else if(!email && !password){ 
+            Alert.alert("Error", "Please enter your email and password!")
+        } else if(!email){ 
+            Alert.alert("Error", "Please enter your email!")
+        } else if(!password){ 
+            Alert.alert("Error", "Please enter a password!")
+        } else if(!username){ 
+            Alert.alert("Error", "Please enter a username!")
+        } else if(!email){ 
+            Alert.alert("Error", "Please choose a profile picture! You can change this later if you'd like.")
         } else {
-            Alert.alert("Error", "Please enter both email and password.");
+            Alert.alert("Error", "You have not filled out every field!")
         }
     };
 
