@@ -266,21 +266,21 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
         console.log(`Group document ${doc.id} not found.`);
         return;
       }
-      let groupCycleCount = groupDoc.data().cycleCount;
-      let groupCycleDay = groupDoc.data().cycleDay;
-      const numberOfPlayers = groupDoc.data().order.length;
+      // let groupCycleCount = groupDoc.data().cycleCount;
+      // let groupCycleDay = groupDoc.data().cycleDay;
+      // const numberOfPlayers = groupDoc.data().order.length;
 
-      if (groupCycleDay === 1 && groupCycleCount === 1) {
-        console.log("error: No duels found for yesterday");
-        return undefined;
-      } else if (groupCycleDay === 1) {
-        groupCycleCount -= 1;
-        groupCycleDay = numberOfPlayers-1;
-      } else {
-        groupCycleDay -= 1;
-      }
+      // if (groupCycleDay === 1 && groupCycleCount === 1) {
+      //   console.log("error: No duels found for yesterday");
+      //   return undefined;
+      // } else if (groupCycleDay === 1) {
+      //   groupCycleCount -= 1;
+      //   groupCycleDay = numberOfPlayers-1;
+      // } else {
+      //   groupCycleDay -= 1;
+      // }
 
-      console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
+      // console.log(`cycleCount: ${groupCycleCount}, cycleDay: ${groupCycleDay}`);
 
       duelsRef
         .where("createdAt", ">=", startOfYesterday)

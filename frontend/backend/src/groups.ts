@@ -378,9 +378,12 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
         // Create the duels for cycleDay 1
         const duelsForDay1 = cycles[0]; // Get the first day's duels
 
+        const usersInDuels = [];
         for (const duelKey in duelsForDay1) {
             if (duelsForDay1.hasOwnProperty(duelKey)) {
                 const duel = duelsForDay1[duelKey];
+                usersInDuels.push(duel.player1);
+                usersInDuels.push(duel.player2);
 
                 const player1Bet = {
                     userID: duel.player1,
@@ -408,6 +411,15 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
                 // Add the duel to the 'duels' subcollection of the group document
                 const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
                 await setDoc(duelDocRef, duelData);
+            }
+        }
+
+        // update the bet tokens for each player in usersUpdate
+        for (const user in users) {
+            if (users.hasOwnProperty(user)) {
+                await updateDoc(groupDocRef, {
+                    [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
+                });
             }
         }
         
