@@ -61,17 +61,19 @@ const App: React.FC = () => {
         );
     }
     
-    return (
-        <NavigationContainer independent={true}>
-            <Stack.Navigator initialRouteName={initialRoute}>
-                <Stack.Screen name="AppPage" component={AppPage} options={{ headerShown: false }} />
-                <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
-                <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
-                <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
-                <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
-            </Stack.Navigator>
-        </NavigationContainer>
-    );
+    else {
+        return (
+            <NavigationContainer independent={true}>
+                <Stack.Navigator initialRouteName={initialRoute}>
+                    <Stack.Screen name="AppPage" component={AppPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
+                </Stack.Navigator>
+            </NavigationContainer>
+        );
+    }
 };
 
 export default App;

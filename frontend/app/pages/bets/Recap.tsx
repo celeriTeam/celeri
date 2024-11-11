@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, ScrollView, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
@@ -158,22 +158,29 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
     
         return (
             <View style={styles.flatList}>
-                {/* Players */}
-                <TouchableOpacity onPress={() => (item.player2Bets.length > 1 || item.player1Bets.length > 1) ? toggleItemExpansion(item.duelID) : null}
-                    activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}><View style={styles.row}>
-                    <View style={styles.spacer} />
-                        <View style={[
-                            styles.statusBar,
-                            (!item.earnings.hasBet || item.winner === 'draw') ? styles.drawStatus :
-                            (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
-                        ]}>
+                <TouchableOpacity
+                    onPress={() =>
+                        (item.player2Bets.length > 1 || item.player1Bets.length > 1)
+                            ? toggleItemExpansion(item.duelID)
+                            : null
+                    }
+                    activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}
+                >
+                    <View style={styles.row}>
+                        <View style={styles.spacer} />
+                        <View
+                            style={[
+                                styles.statusBar,
+                                (!item.earnings.hasBet || item.winner === 'draw') ? styles.drawStatus :
+                                (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
+                            ]}
+                        >
                             <Text style={styles.statusText}>
                                 {!item.earnings.hasBet ? 'No bet' :
                                 item.winner === 'draw' ? 'Draw' :
                                 item.earnings.hasUserWon ? 'Win' : 'Lose'}
                             </Text>
                         </View>
-                        {/* Carrot Icon */}
                         <View style={styles.spacer}>
                             {(item.player2Bets.length > 1 || item.player1Bets.length > 1) && (
                                 <MaterialIcons
@@ -184,33 +191,28 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                             )}
                         </View>
                     </View>
-                    {/* player 1 */}
+                    {/* Player 1 */}
                     <View style={styles.playerContainer}>
                         <View style={[styles.row, { marginTop: 10 }]}>
-                            <Image
-                                source={{ uri: item.player1pfp }}
-                                style={styles.profileImage}
-                            />
+                            <Image source={{ uri: item.player1pfp }} style={styles.profileImage} />
                             <Text style={[
                                 styles.player,
                                 item.winner === item.player2 && styles.loserText,
                             ]}>{item.player1}</Text>
-                            {item.winner === item.player1 && (
-                                <Text style={styles.triangleText}>▶</Text>
-                            )}
+                            {item.winner === item.player1 && <Text style={styles.triangleText}>▶</Text>}
                             <Text style={styles.steps}>{item.playerOneSteps}</Text>
                         </View>
                         {isExpanded && (
-                            <View>
+                            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                                 {item.player1Bets.map((bet, index) => (
-                                    (bet.user !== item.player1) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
-                                    )
+                                    <Text key={index} style={{ fontFamily: "Lexend" }}>
+                                        {'\t'}{bet.user}: {bet.wager}
+                                    </Text>
                                 ))}
-                            </View>
+                            </ScrollView>
                         )}
                     </View>
-                    {/* player 2 */}
+                    {/* Player 2 */}
                     <View style={styles.playerContainer}>
                         <View style={[styles.row, { marginTop: 10 }]}>
                             <Image
@@ -224,25 +226,23 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                                 styles.player,
                                 item.winner === item.player1 && styles.loserText,
                             ]}>{item.player2}</Text>
-                            {item.winner === item.player2 && (
-                                <Text style={styles.triangleText}>▶</Text>
-                            )}
+                            {item.winner === item.player2 && <Text style={styles.triangleText}>▶</Text>}
                             <Text style={[
                                 styles.steps,
                                 item.winner === item.player1 && styles.loserText,
                             ]}>{item.playerTwoSteps}</Text>
                         </View>
                         {isExpanded && (
-                            <View>
+                            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                                 {item.player2Bets.map((bet, index) => (
-                                    (bet.user !== item.player2) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
-                                    )
+                                    <Text key={index} style={{ fontFamily: "Lexend" }}>
+                                        {'\t'}{bet.user}: {bet.wager} 
+                                    </Text>
                                 ))}
-                            </View>
+                            </ScrollView>
                         )}
                     </View>
-                    {/* earnings */}
+                    {/* Earnings */}
                     {item.earnings.hasBet && item.winner !== 'draw' && (
                         <>
                             <View style={styles.horizontalLine}></View>
@@ -256,6 +256,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
         );
+            
     };
 
     return (

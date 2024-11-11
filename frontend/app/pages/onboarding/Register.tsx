@@ -48,7 +48,7 @@ const RegisterPage: React.FC<Props> = ({ navigation }) => {
                 translucent={true}
             />
             <SafeAreaView style={styles.container}>
-                <Text style={styles.text}>FLEX</Text>
+                <Text style={styles.text}>FLEXBETS</Text>
                 <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.buttonText}>Register</Text>
                 </TouchableOpacity>

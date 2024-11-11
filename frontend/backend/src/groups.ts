@@ -163,7 +163,7 @@ export const getUserTokens = async (userID: string, groupID: string): Promise<nu
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            const tokens = user.tokens - user.todaysBetTokens;
+            const tokens = user.tokens; // - user.todaysBetTokens; removing this bc it makes more sense imo
             console.log("getUserTokens - response: ", tokens);
             return tokens;
         } else{

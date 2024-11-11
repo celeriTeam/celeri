@@ -414,6 +414,12 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
+            <TouchableOpacity style={styles.recapButton} onPress={openModal}>
+                <Image
+                    source={require('../../../assets/images/recap.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
             <View style={styles.tokens}>  
                 <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
                 <Image
@@ -605,6 +611,14 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 22,
         left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
+    recapButton: {
+        position: 'absolute',
+        top: 22,
+        right: 20,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
