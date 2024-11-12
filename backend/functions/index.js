@@ -48,7 +48,7 @@ exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
       title: "Test Notification",
       body: "This is a direct test notification",
     },
-    token: "eDywtjqNqUd7t19P0SKQ_J:APA91bGXOuXTqjYTTThLUC_tM-IrgCyWiiP1hMjFNnLEqRdJjRGgHV_za-66alxXddpwrNXpkCwoT6X6X9rzkVQJCL7IX6wWGIRy2LQvo7ACyUcmV-sJNkY",
+    token: "cQJVXePbF0n3u1gljn6pnA:APA91bHfsQcKlAoaxHkh_eBo7HZEUYjCGuOxqPrpSOz0t1ymY1Dbhu123eD9-7xiNKCHsu5uYuuZjkdmC3whCJX98Dpd-ZNNoNCEv58Y9gRiEG6d3_gW0Sk",
   };
 
   try {
@@ -56,6 +56,23 @@ exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
     console.log("Successfully sent direct message:", response);
   } catch (error) {
     console.error("Error sending direct message:", error);
+  }
+});
+
+exports.sendTestNotiftoAll = onSchedule("every day 05:00", async (event) => {
+  const message = {
+    notification: {
+      title: "Testing notif.",
+      body: "This is a test",
+    },
+    topic: "allUsers",
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent message:", response);
+  } catch (error) {
+    console.error("Error sending message:", error);
   }
 });
 
@@ -69,7 +86,7 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
     // Find the newly added bet
     console.log("checkpoint two");
     const newBet = newValue.bets[newValue.bets.length-1];
-    const {betOnUserID, wager} = newBet;
+    const {betOnUserID, userID, wager} = newBet;
 
     let betAgainstUserID;
     if (betOnUserID == newValue.player1) {
@@ -80,11 +97,13 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
     // Fetch target user token from Firebase -- the player you bet on
     try {
       const userDoc = await firestore.collection("users").doc(betOnUserID).get();
+      const betUserDoc = await firestore.collection("users").doc(userID).get();
       console.log("checkpoint three");
       if (userDoc.exists) {
         console.log("checkpoint four");
         const userData = userDoc.data();
-        const username = userData && userData.username;
+        const betUserData = betUserDoc.data();
+        const username = betUserData && betUserData.username;
         const userTokens = userData && userData.tokens;
 
         if (userTokens && userTokens.length > 0) {
@@ -120,11 +139,13 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
     // Fetch target user token for the user you bet against
     try {
       const userDoc = await firestore.collection("users").doc(betAgainstUserID).get();
+      const betUserDoc = await firestore.collection("users").doc(userID).get();
       console.log("checkpoint three-two");
       if (userDoc.exists) {
         console.log("checkpoint four-two");
         const userData = userDoc.data();
-        const username = userData && userData.username;
+        const betUserData = betUserDoc.data();
+        const username = betUserData && betUserData.username;
         const userTokens = userData && userData.tokens;
 
         if (userTokens && userTokens.length > 0) {
