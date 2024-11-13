@@ -61,7 +61,6 @@
 	<array>
 		<string>fetch</string>
 		<string>remote-notification</string>
-		<string>external-accessory</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>

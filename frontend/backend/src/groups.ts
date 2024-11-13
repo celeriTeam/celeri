@@ -358,6 +358,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             isGameActive: true,
             //set the cycle
             currentPlayersInGame: numberOfPlayers,
+            previousPlayersInGame: numberOfPlayers,
             cycleDay: 1,
             cycleCount: 1,
             totalCycles: totalCycles,

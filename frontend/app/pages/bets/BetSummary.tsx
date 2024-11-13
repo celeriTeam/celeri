@@ -10,6 +10,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import BetRecapPage from './Recap';
+import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
 import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
@@ -35,6 +36,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { groupID } = route.params;
     const { userID, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);
+    const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
@@ -234,6 +236,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
       setModalVisible(true);
     };
 
+    const closeBetHistoryModal = async () => {
+        setBetHistoryModalVisible(false);
+    };
+
+    const openBetHistoryModal = async () => {
+        setBetHistoryModalVisible(true);
+    };
+
     const createMemberButtonHandle = (id: string) => {
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
@@ -414,7 +424,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.recapButton} onPress={openModal}>
+            <TouchableOpacity style={styles.recapButton} onPress={openBetHistoryModal}>
                 <Image
                     source={require('../../../assets/images/recap.png')}
                     style={styles.backImage}
@@ -506,7 +516,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             {/* Modal */}
             {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
                 <View style={styles.button}>
-                    <TouchableOpacity onPress={openModal}>
+                    <TouchableOpacity onPress={openBetHistoryModal}>
                         <Text style={styles.buttonText}>Recap</Text>
                     </TouchableOpacity>
                 </View>
@@ -525,6 +535,23 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
                     {/* BetRecapPage as the modal content */}
                     <BetRecapPage navigation={navigation} />
+                </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isBetHistoryModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    {/* Close button */}
+                    <TouchableOpacity style={styles.closeButton} onPress={closeBetHistoryModal}>
+                        <Text style={styles.closeButtonText}>X</Text>
+                    </TouchableOpacity>
+
+                    {/* BetRecapPage as the modal content */}
+                    <BetHistoryPage navigation={navigation} />
                 </View>
                 </View>
             </Modal>

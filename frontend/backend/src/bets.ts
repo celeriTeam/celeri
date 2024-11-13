@@ -9,21 +9,26 @@ const storage = getStorage();
 /*********************************************** RECAP FUNCTIONS ********************************************/
 
 // GET yesterdays duels
-export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } | undefined> => {
+export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists()){
             let groupCycleCount = groupDoc.data()?.cycleCount;
             let groupCycleDay = groupDoc.data()?.cycleDay;
-            const numberOfPlayers = groupDoc.data()?.order.length;
+            const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
 
             if (groupCycleDay === 1 && groupCycleCount === 1) {
                 console.log('getYesterdaysDuelsSummary - error: No duels found for yesterday');
                 return undefined;
             } else if (groupCycleDay === 1) {
+                console.log('getYesterdayDuelSummary - groupCycleDay === 1');
+                console.log(groupCycleCount);
+                console.log(groupCycleDay);
                 groupCycleCount -= 1;
                 groupCycleDay = numberOfPlayers-1;
+                console.log(groupCycleCount);
+                console.log(groupCycleDay);
             } else {
                 groupCycleDay -= 1;
             }
@@ -37,6 +42,8 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStart = Timestamp.fromDate(yesterday);
             const yesterdayEnd = Timestamp.fromDate(today);
+
+            console.log('getYesterdayDuelsSummary - Checkpoint Zero');
             
             // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
@@ -51,8 +58,9 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
                 console.log('getYesterdaysDuelsSummary - error: No duels found for today');
                 return undefined;
             }
+            console.log('getYesterdayDuelsSummary - Checkpoint One');
             
-            const duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, createdAt: Timestamp, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
             querySnapshot.forEach(doc => {
                 const duelData = doc.data();
                 duels[doc.id] = {
@@ -66,9 +74,11 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
                     },
                     winner: duelData.winner,
                     playerOneSteps: duelData.playerOneSteps,
-                    playerTwoSteps: duelData.playerTwoSteps
+                    playerTwoSteps: duelData.playerTwoSteps,
+                    createdAt: duelData.createdAt,
                 };
             });
+            console.log('getYesterdayDuelsSummary - Checkpoint Two');
             console.log("getYesterdaysDuelsSummary - response: ", duels);
             return duels;
         } else{

@@ -454,6 +454,13 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
       console.log("checkpoint two");
 
+      //make sure that when people are adde to the group, it wont mess up recap (which relies on previousplayersInGame)
+      if(data.cycleDay == 1){ //maybe also add a check where cycleCount is greater than 1 but prolly doesnt matter
+        groupBatch.update(groupDocRef, {
+          previousPlayersInGame: playerCount,
+        })
+      }
+
       if (data.cycleDay >= numberOfPlayers-1) {
         cycleDay = 1;
         cycleCount += 1;
