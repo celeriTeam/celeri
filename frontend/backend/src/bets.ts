@@ -91,6 +91,76 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
     }
 }
 
+// GET more duels
+export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if(groupDoc.exists()){
+        
+
+            // find the parameters of the given day
+
+            // Create a Date object for the current date and set it to the start of today
+            let dayStartTemp = new Date();
+            dayStartTemp.setHours(0, 0, 0, 0);
+            dayStartTemp.setDate(dayStartTemp.getDate() - daysAgo);
+
+            // Create a new Date object for the end of the same day
+            let dayEndTemp = new Date(dayStartTemp);
+            dayEndTemp.setHours(23, 59, 59, 999);
+
+            // Convert to Firestore Timestamps
+            const dayStart = Timestamp.fromDate(dayStartTemp);
+            const dayEnd = Timestamp.fromDate(dayEndTemp);
+
+        // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', dayStart),
+                where('createdAt', '<', dayEnd));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getMoreDuelsSummary - error: No duels found for today');
+                return undefined;
+            }
+            console.log('getMoreDuelsSummary - Checkpoint One');
+                
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, createdAt: Timestamp, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                duels[doc.id] = {
+                    duelID: doc.id,
+                    player1: duelData.player1,
+                    player2: duelData.player2,
+                    bets: duelData.bets || {
+                        userID: '',
+                        wager: 0,
+                        betOnUserID: ''
+                    },
+                    winner: duelData.winner,
+                    playerOneSteps: duelData.playerOneSteps,
+                    playerTwoSteps: duelData.playerTwoSteps,
+                    createdAt: duelData.createdAt,
+                };
+            });
+            console.log('getMoreDuelsSummary - Checkpoint Two');
+            console.log("getMoresDuelsSummary - response: ", duels);
+            return duels;
+        } else{
+            console.error("getMoreDuelsSummary - error: No such document!");
+            return undefined;
+        }
+
+
+    } catch (error) {
+        console.error("getMoreDuelsSummary - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+
 /*********************************************** GET FUNCTIONS ********************************************/
 
 // GET todays duels
