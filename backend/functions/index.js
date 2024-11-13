@@ -494,6 +494,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           totalCycles: admin.firestore.FieldValue.delete(),
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
+          startingTokens: admin.firestore.FieldValue.delete(),
         });
         // reset the tokens for each player
         const usersUpdate = {};
