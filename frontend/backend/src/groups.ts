@@ -250,7 +250,7 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
                 [`users.${userID}`]: {
                     placedBet: false,
                     tokens: 0,
-                    todaysBetTokens: 0,
+                    todaysBetTokens: groupData?.startingTokens,
                 },
                 order: [...groupDoc.data()?.order, userID],
             });
@@ -364,6 +364,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             totalCycles: totalCycles,
             dailyTokens: dailyTokens,
             defaultBetOnSelf: defaultBetOnSelf,
+            startingTokens: startingTokens,
             cycleDuels: cycles,
         });
         // for each user in users, set their tokens to startingTokens
