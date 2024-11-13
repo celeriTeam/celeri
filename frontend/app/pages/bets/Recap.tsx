@@ -195,9 +195,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                                 styles.player,
                                 item.winner === item.player2 && styles.loserText,
                             ]}>{item.player1}</Text>
-                            {item.winner === item.player1 && (
-                                <Text style={styles.triangleText}>▶</Text>
-                            )}
+                            {item.winner === item.player1 && <Text style={styles.triangleText}>▶</Text>}
                             <Text style={styles.steps}>{item.playerOneSteps}</Text>
                         </View>
                         {isExpanded && (

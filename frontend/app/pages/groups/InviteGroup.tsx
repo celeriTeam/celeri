@@ -352,10 +352,13 @@ const styles = StyleSheet.create({
         marginTop: 40,
         fontSize: 20,
         marginBottom: 40,
+        fontFamily: "Lexend",
+        textAlign: "center",
+        alignSelf: "center",
     },
     groupName: {
         fontSize: 24,
-        fontWeight: 'bold',
+        fontFamily: "Lexend-Bold",
     },
     titleContainer: {
         justifyContent: "center",
