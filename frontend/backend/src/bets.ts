@@ -1,6 +1,7 @@
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
+import { useUser } from '../../app/UserProvider'
 
 const db = getFirestore(app);
 const storage = getStorage();
@@ -156,10 +157,146 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
 
     } catch (error) {
         console.error("getMoreDuelsSummary - Error fetching user document: ", error);
-         return undefined;
+        return undefined;
     }
 }
 
+// GET gains
+export const getGainsSummary = async (groupID: string, daysAgo: number, groups: Record<string, any>): Promise<{ gains: Record<string, { gain: number; username: string; profilePic: string; daysAgo: number }>} | undefined> => {
+    try {
+        
+
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        console.log('getGainsSummary - Checkpoint one');
+        if(groupDoc.exists()){
+            const groupData = groupDoc.data();
+            // Extract user IDs from the users map
+            const players = Object.keys(groupData.users || {});
+
+            // Initialize gains map with user IDs as keys and 0 as default values
+            const gains = players.reduce((acc, userID) => {
+                const username =  groups[groupID]?.users[userID]?.username;
+                const profilePic =  groups[groupID]?.users[userID]?.profilePic;
+                acc[userID] = {
+                  gain: 0,
+                  username: username || '',
+                  profilePic: profilePic || '',
+                  daysAgo: daysAgo,
+                };
+                return acc;
+              }, {} as Record<string, { gain: number; username: string; profilePic: string; daysAgo: number }>);
+        
+            console.log("getGainsSummary", gains);
+
+            // find the parameters of the given day
+
+            // Create a Date object for the current date and set it to the start of today
+            let dayStartTemp = new Date();
+            dayStartTemp.setHours(0, 0, 0, 0);
+            dayStartTemp.setDate(dayStartTemp.getDate() - daysAgo);
+
+            // Create a new Date object for the end of the same day
+            let dayEndTemp = new Date(dayStartTemp);
+            dayEndTemp.setHours(23, 59, 59, 999);
+
+            // Convert to Firestore Timestamps
+            const dayStart = Timestamp.fromDate(dayStartTemp);
+            const dayEnd = Timestamp.fromDate(dayEndTemp);
+
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', dayStart),
+                where('createdAt', '<', dayEnd));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getGainsSummary - error: No duels found for today');
+                return undefined;
+            }
+
+            console.log('getGainsSummary - Checkpoint Two');
+            // Process each duel and update gains
+            querySnapshot.forEach((doc) => {
+                const duelData = doc.data();
+                const duel: Duel = {
+                    winner: duelData.winner,
+                    bets: duelData.bets || []
+                };
+
+                duel.bets.forEach((bet) => {
+                    const userID = bet.userID;
+                    const earnings = calculateEarnings(userID, duel);
+          
+                    // Ensure userID exists in gains; initialize if missing
+                    if (!gains[userID]) {
+                      const userInfo = groupData.users[userID] || {};
+                      gains[userID] = {
+                        gain: 0,
+                        username: userInfo.username || '',
+                        profilePic: userInfo.profilePic || '',
+                        daysAgo: 0,
+                      };
+                    }
+          
+                    // Update the gain for the user
+                    gains[userID].gain += earnings;
+                  });
+            });
+            console.log('getGainsSummary - Checkpoint Three', gains);
+            return { gains };
+
+        } else{
+            console.error("getGainsSummary - error: No such document!");
+            return undefined;
+        }
+
+    } catch (error) {
+        console.error("getGainsSummary - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
+// HELPER FUNCTION
+
+interface Bet {
+    userID: string;
+    wager: number;
+    betOnUserID: string;
+}
+
+interface Duel {
+    winner: string;
+    bets: Bet[];
+}
+
+const calculateEarnings = (userID: string, duel: Duel) => {
+    const userBet = duel.bets.find((betItem: Bet) => betItem.userID === userID);
+
+    // No bet
+    if (!userBet) return 0;
+
+    // User lost bet
+    if (userBet.betOnUserID !== duel.winner) {
+        return -userBet.wager;
+    }
+
+    // User won bet
+    let totalWagers = 0;
+    let totalWagersOnWinner = 0;
+    duel.bets.forEach((betItem: Bet) => {
+        totalWagers += betItem.wager;
+        if (betItem.betOnUserID === duel.winner) {
+            totalWagersOnWinner += betItem.wager;
+        }
+    });
+    const percentage = userBet.wager / totalWagersOnWinner;
+    const amountWon = percentage * totalWagers;
+
+    return Math.floor(amountWon - userBet.wager);
+
+}
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
