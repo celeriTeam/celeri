@@ -167,7 +167,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
             if (!isFinishedBetting) {
-                navigation.navigate('HeadToHeadPage', { groupID: groupID });
+                navigation.navigate('HeadToHeadPage', { groupID: groupID, isTutorial: false });
             } else {
                 navigation.navigate('BetSummaryPage', { groupID: groupID });
             }

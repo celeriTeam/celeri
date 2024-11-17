@@ -82,7 +82,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             index: 1,
             routes: [
                 { name: 'HomeTab' }, // the first route in the stack
-                { name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
+                { name: 'HeadToHeadPage', params: { groupID: groupID, isTutorial: true } } // the top route in the stack
             ],
         });
     };

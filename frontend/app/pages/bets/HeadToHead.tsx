@@ -22,7 +22,7 @@ type Props = {
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const { userID, groups, loading } = useUser();
     const route = useRoute<headToHeadPageRouteProp>();
-    const { groupID } = route.params;
+    const { groupID, isTutorial } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
@@ -36,6 +36,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
+    const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(true);
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -89,14 +90,15 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const fetchData = async () => {
         try {
-            const isFirstDay = groups[groupID]?.isFirstDay;
+            const isItFirstDay = groups[groupID]?.isFirstDay;
+            setIsFirstDay(isItFirstDay);
             const isFinishedRecap = groups[groupID]?.isFinishedRecap;
-            if (isFinishedRecap || isFirstDay) {
+            if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
             }
 
             let dailyDuel = groups[groupID]?.unbetDuels;
-            if (isFirstDay && Object.keys(dailyDuel).length === 0) {
+            if (isItFirstDay && Object.keys(dailyDuel).length === 0) {
                 await addToFinishedBetting(groupID, userID);
                 navigation.reset({
                     index: 1,
@@ -106,16 +108,16 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     ],
                 });
             }
-                const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
-                    return Object.values(duels);
-                };
+            const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
+                return Object.values(duels);
+            };
+        
+            const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
+            setMatchups(matchups);
             
-                const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
-                setMatchups(matchups);
-                
-                fetchUserName(matchups);
-                const todaysBetTokens = groups[groupID]?.todaysBetTokens;
-                setTotalBetTokens(todaysBetTokens);
+            fetchUserName(matchups);
+            const todaysBetTokens = groups[groupID]?.todaysBetTokens;
+            setTotalBetTokens(todaysBetTokens);
         } catch(error) {
             console.error("Error fetching user data:", error);
         } finally {
@@ -153,6 +155,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const isCurrentUser = (playerID: string) => playerID === userID;
 
     const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
+
+    const shouldShowTutorial = () => isTutorial || isFirstDay;
 
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
@@ -410,6 +414,9 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
 
             {/* Modal */}
+            {shouldShowTutorial() &&
+                <InfoModal />
+            }
             <InfoModal />
             <Modal
                 transparent={true}

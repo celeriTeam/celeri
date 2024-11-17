@@ -21,7 +21,7 @@ export type RootStackParamList = {
     JoinGroup: undefined;
     // BETS
     BetsPage: { groupID: string };
-    HeadToHeadPage: { groupID: string };
+    HeadToHeadPage: { groupID: string, isTutorial: boolean };
     BetRecapPage: { groupID: string };
     BetHistoryPage: {groupID: string };
     BetSummaryPage: { groupID: string };
