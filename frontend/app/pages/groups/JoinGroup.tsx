@@ -35,7 +35,7 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                             index: 1,
                             routes: [
                                 { name: 'HomeTab' },
-                                { name: 'HeadToHeadPage', params: { groupID: groupID, isFinishedRecap: false } }
+                                { name: 'HeadToHeadPage', params: { groupID: groupID, isTutorial: true } }
                             ],
                         });
                     } else {
