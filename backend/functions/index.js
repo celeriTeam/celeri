@@ -2,7 +2,7 @@
 // const {logger} = require("firebase-functions");
 // const {functions} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onDocumentUpdated} = require("firebase-functions/v2/firestore");
+const {onDocumentUpdated, onDocumentCreated} = require("firebase-functions/v2/firestore");
 // const {onRequest, onCall, HttpsError} =
 // require("firebase-functions/v2/https");
 // const {onDocumentCreated,
@@ -73,6 +73,37 @@ exports.sendTestNotiftoAll = onSchedule("every day 05:00", async (event) => {
     console.log("Successfully sent message:", response);
   } catch (error) {
     console.error("Error sending message:", error);
+  }
+});
+
+exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) => {
+  const snapshot = event.data;
+  if (!snapshot) {
+    console.log("No data associated with the event");
+    return;
+  }
+  const data = snapshot.data();
+
+  const username = data.username;
+  const message = data.message;
+  const tokens = data.tokens;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    const notifMessage = {
+      token: token,
+      notification: {
+        title: `${username} nudged you`,
+        body: message,
+      },
+    };
+
+    try {
+      const response = await admin.messaging().send(notifMessage);
+      console.log("Notification sent successfully:", response);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
   }
 });
 
@@ -347,33 +378,52 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                   let amountWon = 0.0;
                   let percentage = 0.0;
                   if (duelData.bets[i].betOnUserID == winner) {
-                    percentage = duelData.bets[i].wager / totalWagersOnWinner;
-                    amountWon = Math.floor(percentage * totalWagers);
+                    // if they are the winner and there were no bets on them, they get 100%
+                    if(duelData.bets[i].userID === winner && totalWagersOnWinner == 0){
+                      percentage = 100.0;
+                      amountWon = Math.floor(totalWagers);
+                    }
+                    // if they are the winner, then they automatically get 50%
+                    if(duelData.bets[i].userID === winner){
+                      percentage = 50.0; 
+                      amountWon = Math.floor(percentage * totalWagers);
+                    } else if (totalWagersOnWinner == 0) { 
+                      //if nobody bet on you, then winner take all
+                      percentage = 100.0;
+                      amountWon = totalWagers;
+                    } else  {
+                      // divided by two because the winner will get 50% 
+                      percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
+                      amountWon = Math.floor(percentage * totalWagers);
+                    }
                     // add the amount won
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
+                      // this was the issue: you need to subtract by the amount you bet because of the math above
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon - duelData.bets[i].wager),
+                      // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
                       [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
                     }).then(() => {
-                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon - duelData.bets[i].wager} addded`);
                     }).catch((error) => {
                       console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
                   } else if (winner == "draw") {
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
+                      //[`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
                     }).then(() => {
-                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
                     }).catch((error) => {
                       console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
                   } else { // if they lose, they lose what they wagered
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
+                      //[`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
                     }).then(() => {
-                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
                     }).catch((error) => {
                       console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
@@ -490,7 +540,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           currentPlayersInGame: admin.firestore.FieldValue.delete(),
           cycleDuels: admin.firestore.FieldValue.delete(),
           dailyTokens: admin.firestore.FieldValue.delete(),
-          defaultBetOnSelf: admin.firestore.FieldValue.delete(),
+          // defaultBetOnSelf: admin.firestore.FieldValue.delete(),
           totalCycles: admin.firestore.FieldValue.delete(),
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
@@ -536,13 +586,15 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
           const player1Bet = {
             userID: duel.player1,
-            wager: data.defaultBetOnSelf,
+            wager: 0,
+            // wager: data.defaultBetOnSelf,
             betOnUserID: duel.player1,
           };
 
           const player2Bet = {
             userID: duel.player2,
-            wager: data.defaultBetOnSelf,
+            wager: 0,
+            // wager: data.defaultBetOnSelf,
             betOnUserID: duel.player2,
           };
 

@@ -209,10 +209,29 @@ const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
                         totalWagersOnWinner += betItem.wager;
                     }
                 });
-                const percentage = userBet.wager / totalWagersOnWinner;
-                const amountWon = percentage * totalWagers;
-            
-                return Math.floor(amountWon - userBet.wager);
+                console.log("totalWagersOnWinner", totalWagersOnWinner);
+
+                let percentage = 0.0;
+                let amountWon = 0.0;
+                // if they are the winner and there were no bets on them, they get 100%
+                if(userID == bet.winner && totalWagersOnWinner == 0){
+                    percentage = 100.0;
+                    amountWon = totalWagers;
+                    return Math.floor(amountWon);
+                } else if (userID == bet.winner){
+                    percentage = 50.0;
+                    amountWon = percentage * totalWagers
+                    return Math.floor(amountWon - userBet.wager);
+                } else {
+
+                //changed because now winner gets 50% by default
+                    percentage = (userBet.wager / totalWagersOnWinner) / 2;
+                    console.log("percentage", percentage);
+                    amountWon = percentage * totalWagers;
+                    console.log("amountWon", amountWon);
+                    console.log("minus wager: ", Math.floor(amountWon - userBet.wager));
+                    return Math.floor(amountWon - userBet.wager);
+                }
 
             }
             const earning = calculateEarnings();

@@ -291,10 +291,25 @@ const calculateEarnings = (userID: string, duel: Duel) => {
             totalWagersOnWinner += betItem.wager;
         }
     });
-    const percentage = userBet.wager / totalWagersOnWinner;
-    const amountWon = percentage * totalWagers;
 
-    return Math.floor(amountWon - userBet.wager);
+    let percentage = 0.0;
+    let amountWon = 0.0; 
+
+    // if they are the winner and there were no bets on them, they get 100%
+    if(userID == duel.winner && totalWagersOnWinner == 0){
+        percentage = 100.0;
+        amountWon = totalWagers;
+        return Math.floor(amountWon);
+    } else if (userID == duel.winner){
+        percentage = 50.0;
+        amountWon = percentage * totalWagers
+        return Math.floor(amountWon - userBet.wager);
+    } else {
+
+        percentage = userBet.wager / totalWagersOnWinner;
+        amountWon = percentage * totalWagers;
+        return Math.floor(amountWon - userBet.wager);
+    }
 
 }
 
