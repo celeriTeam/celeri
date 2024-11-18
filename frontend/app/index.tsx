@@ -13,6 +13,7 @@ import InvitePage from './pages/groups/InviteGroup';
 import AppPage from './pages/App';
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
+import ForgotPasswordPage from './pages/onboarding/ForgotPassword';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -69,6 +70,7 @@ const App: React.FC = () => {
                     <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
                     <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                     <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} options={{ headerShown: false }} />
                     <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
                 </Stack.Navigator>
             </NavigationContainer>
