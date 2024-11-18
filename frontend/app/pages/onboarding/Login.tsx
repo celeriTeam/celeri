@@ -107,6 +107,12 @@ const LoginPage: React.FC<Props> = ({ navigation }) => {
                         />
                     </View>
 
+                    <TouchableOpacity
+                        onPress={() => nav.navigate("ForgotPassword")}
+                        style={[styles.button_container2]}
+                    >
+                        <Text style={styles.button_text2}>Forgot Password?</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity 
                         onPress={loginAndGoToMainFlow}
                         style={[styles.button_container]}

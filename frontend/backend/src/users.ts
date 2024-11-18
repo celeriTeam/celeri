@@ -136,6 +136,21 @@ export const editUsername = async(userID: string, usernameInput: string) => {
     }
 }
 
+// EDIT password
+export const editPassword = async(userID: string, newPassword: string) => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            password: newPassword,
+        });
+        const userDoc = await getDoc(userDocRef);
+        console.log('editPassword - response: ', userDoc.data()?.password);
+    } catch (error) {
+        console.error('editPassword - Error updating password', error);
+        return null;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD group to user
