@@ -13,7 +13,7 @@ import BetRecapPage from './Recap';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
-import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 
 const db = getFirestore(app);
@@ -62,12 +62,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
             setIsLoading(true);
             if (docSnapshot.exists() && groupID) {
-                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens] = await Promise.all([
+                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds] = await Promise.all([
                     getGroupProfilePic(groupID),
                     getGroupName(groupID),
                     getGroupIsFirstDay(groupID),
                     getUserTokens(uid, groupID),
                     getTodaysBetTokens(uid, groupID),
+                    getUserDiamonds(uid, groupID),
                     getTodaysDuelsSummary(groupID)
                 ]);
 
@@ -157,7 +158,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
                         const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
         
-                        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+                        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
+                            console.log("thisis running!!");
+                            console.log(bet.bets.length);
                             return {
                                 duelID: bet.duelID,
                                 player1,
@@ -171,13 +174,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             };
                         } else {
                             const player1Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player1)
+                                .filter((b) => b.betOnUserID === bet.player1 && b.wager !== 0)
                                 .map((b) => ({
                                     user: users[b.userID]?.username,
                                     wager: b.wager,
                                 }));
                             const player2Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player2)
+                                .filter((b) => b.betOnUserID === bet.player2 && b.wager !== 0)
                                 .map((b) => ({
                                     user: users[b.userID]?.username,
                                     wager: b.wager,
@@ -205,6 +208,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         
                     console.log(`Duels for group ${groupID} updated`);
                     console.log('Updated currentGroups: ', currentGroups);
+                    console.log('current Bets', currBets);
                     setCurrentBets(currBets);
                     setIsLoading(false);
                 });
@@ -214,7 +218,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     groupName,
                     isFirstDay,
                     userTokens,
-                    todaysBetTokens
+                    todaysBetTokens,
+                    userDiamonds,
                 };
             }          
             setIsLoading(false);  
@@ -442,6 +447,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <Image
                     source={require('../../../assets/images/coin_spent.png')}
                     style={styles.coinIcon}
+                />
+            </View>
+            <View style={styles.diamonds}>
+                <Text style={styles.tokenText}>{groups[groupID]?.userDiamonds}</Text>
+                <Image
+                    source={require('../../../assets/images/diamond.png')}
+                    style={styles.diamondIcon}
                 />
             </View>
             <View style={styles.groupImageContainer}>
@@ -677,6 +689,17 @@ const styles = StyleSheet.create({
         // borderColor: '#FF8C00',
         // borderWidth: 2,
     },
+    diamonds: {
+        position: 'absolute',
+        right: 10,
+        top: 160,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        // borderColor: '#FF8C00',
+        // borderWidth: 2,
+    },
     tokenText: {
         fontFamily: "Lexend",
         fontSize: 15
@@ -836,6 +859,11 @@ const styles = StyleSheet.create({
         position: 'relative', // Enable absolute positioning for the plus icon
     },
     coinIcon: {
+        width: 30,
+        height: 30,
+        marginRight: 5, // Adds spacing between the icon and the text
+    },
+    diamondIcon: {
         width: 30,
         height: 30,
         marginRight: 5, // Adds spacing between the icon and the text

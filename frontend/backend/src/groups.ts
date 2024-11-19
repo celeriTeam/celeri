@@ -212,6 +212,26 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
     }
 }
 
+// GET diamonds
+export const getUserDiamonds = async (userID: string, groupID: string): Promise<number> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const users = groupDoc.data()?.users;
+            const user = users[userID];
+            const diamonds = user?.diamonds ?? 0;
+            console.log("getDiamonds - response: ", diamonds);
+            return diamonds;
+        } else{
+            console.error("getDiamonds - error: No such document!");
+            return -1;
+        }
+    } catch (error) {
+         console.error("getDiamonds - Error fetching user document: ", error);
+         return -1;
+    }
+}
+
 // GET Group Profile Pic
 export const getGroupProfilePic = async (id: string): Promise<string | undefined> => {
     try {

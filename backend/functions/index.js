@@ -377,41 +377,41 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                 for (let i = 0; i < duelData.bets.length; i++) {
                   let amountWon = 0.0;
                   let percentage = 0.0;
+                  let diamonds = 0;
                   if (duelData.bets[i].betOnUserID == winner) {
                     // if they are the winner and there were no bets on them, they get 100%
-                    if(duelData.bets[i].userID === winner && totalWagersOnWinner == 0){
-                      percentage = 100.0;
+                    if (duelData.bets[i].userID === winner && totalWagersOnWinner == 0) {
+                      percentage = 1.0;
                       amountWon = Math.floor(totalWagers);
+                      diamonds = 1;
                     }
                     // if they are the winner, then they automatically get 50%
-                    if(duelData.bets[i].userID === winner){
-                      percentage = 50.0; 
-                      amountWon = Math.floor(percentage * totalWagers);
-                    } else if (totalWagersOnWinner == 0) { 
-                      //if nobody bet on you, then winner take all
-                      percentage = 100.0;
-                      amountWon = totalWagers;
-                    } else  {
-                      // divided by two because the winner will get 50% 
+                    if (duelData.bets[i].userID === winner) {
+                      percentage = 0.5;
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
+                      diamonds = 1;
+                    } else {
+                      // divided by two because the winner will get 50%
                       percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
-                      amountWon = Math.floor(percentage * totalWagers);
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
                     }
                     // add the amount won
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
                       // this was the issue: you need to subtract by the amount you bet because of the math above
-                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon - duelData.bets[i].wager),
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
                       // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
+                      [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(diamonds),
                       [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
                     }).then(() => {
-                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon - duelData.bets[i].wager} addded`);
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon} addded`);
                     }).catch((error) => {
                       console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });
                   } else if (winner == "draw") {
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
-                      //[`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
+                      // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
                     }).catch((error) => {
@@ -421,7 +421,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                     groupDocRef.update({
                       [`users.${duelData.bets[i].userID}.placedBet`]: true,
                       [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
-                      //[`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
+                      // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
                     }).catch((error) => {
