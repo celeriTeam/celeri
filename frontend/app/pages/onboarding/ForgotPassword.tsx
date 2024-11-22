@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError, updatePassword } from "firebase/auth";
+import firebase from '@react-native-firebase/app';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
+import { app, auth, db } from "@firebaseConfig";
+import { doc, setDoc } from 'firebase/firestore';
+import { CTAButton } from "@components/CTAButton";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
+import { FirebaseError } from 'firebase/app';
 import { RootStackParamList } from '../../types';
-import { editPassword } from '@/backend/src/users';
 
 
 type ForgotPasswordPageNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
@@ -16,6 +23,35 @@ type Props = {
 
 
 const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
+    const [email, setEmail] = useState<string | undefined>();
+    const [password, setPassword] = useState<string | undefined>();
+
+    const auth = getAuth(app);
+    const nav = useNavigation<NativeStackNavigationProp<any>>();
+
+    const resetPassword = async () => {
+        if (email && password) {
+            try {
+                console.log("Trying to update user password...");
+                const user = auth.currentUser;
+                if (!user) {
+                    Alert.alert('Error', 'No user is currently signed in');
+                    return;
+                }
+                await updatePassword(user, password);
+                Alert.alert('Success', 'Password updated successfully');
+                navigation.reset({
+                    index: 0,  // Index of the screen to be focused on
+                    routes: [{ name: 'AppPage' }],  // Define only the desired route
+                });
+            } catch (error) {
+                const errorCode = (error as AuthError).code;
+                const errorMessage = (error as AuthError).message;
+                console.error("Error updating user password: ", errorCode, errorMessage);
+            }
+        }
+    }
+
     return (
         <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
             <SafeAreaView style={styles.contentView}>
@@ -24,6 +60,15 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.titleText}>Forgot Password</Text>
                     </View>
                     <View style={styles.mainContent}>
+                        <TextInput
+                            style={styles.loginTextField}
+                            placeholder="Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            inputMode="email"
+                            autoCapitalize="none"
+                            placeholderTextColor="#999797"
+                        />
                         <TextInput
                             style={styles.loginTextField}
                             placeholder="New Password"
@@ -35,10 +80,10 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
                     </View>
 
                     <TouchableOpacity 
-                        onPress={loginAndGoToMainFlow}
+                        onPress={() => resetPassword()}
                         style={[styles.button_container]}
                     >
-                        <Text style={styles.button_text}>Login</Text>
+                        <Text style={styles.button_text}>Set Password</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={nav.goBack}
