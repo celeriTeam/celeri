@@ -152,7 +152,7 @@ const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
         }
 
         // if there are no bets, return the duel with the player names
-        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
             return {
                 duelID: bet.duelID,
                 player1,
@@ -244,6 +244,7 @@ const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
             }
 
             console.log(bet.bets);
+            console.log(earnings);
             console.log('player1 bets: ', player1Bets);
             console.log('player2 bets: ', player2Bets);
 
@@ -263,6 +264,8 @@ const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
             };
         }
     });
+
+    console.log("CURRENTRECAPBETS", currentRecapBets);
 
     if (loading) {
         return (

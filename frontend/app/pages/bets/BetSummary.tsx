@@ -10,6 +10,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import BetRecapPage from './Recap';
+import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
@@ -37,6 +38,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { userID, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
+    const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
@@ -249,6 +251,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         setBetHistoryModalVisible(true);
     };
 
+    const closeStoreModal = async () => {
+        setStoreModalVisible(false);
+    };
+
+    const openStoreModal = async () => {
+        setStoreModalVisible(true);
+    };
+
     const createMemberButtonHandle = (id: string) => {
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
@@ -435,6 +445,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.storeButton} onPress={openStoreModal}>
+                <Image
+                    source={require('../../../assets/images/store.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
             <View style={styles.tokens}>  
                 <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
                 <Image
@@ -567,6 +584,26 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 </View>
                 </View>
             </Modal>
+            <Modal
+                transparent={true}
+                visible={isStoreModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    {/* Close button */}
+                    <TouchableOpacity style={styles.closeButton} onPress={closeStoreModal}>
+                        <Text style={styles.closeButtonText}>X</Text>
+                    </TouchableOpacity>
+
+                    {/* StorePageas the modal content */}
+                    <StorePage 
+                        navigation={navigation} 
+                        userDiamonds={groups[groupID]?.userDiamonds} 
+                    />
+                </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -661,6 +698,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
+    },
+    storeButton: {
+        position: 'absolute',
+        top: 70,
+        left: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        zIndex: 10,
     },
     buttonText: {
         fontFamily: "Lexend",

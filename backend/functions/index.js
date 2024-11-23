@@ -384,9 +384,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                       percentage = 1.0;
                       amountWon = Math.floor(totalWagers);
                       diamonds = 1;
-                    }
-                    // if they are the winner, then they automatically get 50%
-                    if (duelData.bets[i].userID === winner) {
+                    } else if (duelData.bets[i].userID === winner) {
+                      // if they are the winner, then they automatically get 50%
                       percentage = 0.5;
                       amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
                       diamonds = 1;

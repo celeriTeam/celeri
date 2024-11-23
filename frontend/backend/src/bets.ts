@@ -279,6 +279,7 @@ const calculateEarnings = (userID: string, duel: Duel) => {
 
     // User lost bet
     if (userBet.betOnUserID !== duel.winner) {
+        console.log("bet test: ", userID, -userBet.wager);
         return -userBet.wager;
     }
 
@@ -299,11 +300,13 @@ const calculateEarnings = (userID: string, duel: Duel) => {
     if(userID == duel.winner && totalWagersOnWinner == 0){
         percentage = 1.0;
         amountWon = totalWagers;
+        console.log("bet test, totalWagersOnWiner == 0: ", userID, amountWon);
         return Math.floor(amountWon);
     } else if (userID == duel.winner){
         percentage = 0.5;
         amountWon = percentage * (totalWagers - totalWagersOnWinner)
-        return Math.floor(amountWon - userBet.wager);
+        console.log("bet test, userID == duel.winner: ", userID, amountWon);
+        return Math.floor(amountWon);
     } else {
 
         percentage = (userBet.wager / totalWagersOnWinner) / 2;

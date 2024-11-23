@@ -47,7 +47,7 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
         }
 
         // if there are no bets, return the duel with the player names
-        if (!bet.bets[0]?.wager || (bet.bets.length === 0)) {
+        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
             return {
                 duelID: bet.duelID,
                 player1,
@@ -103,10 +103,28 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                         totalWagersOnWinner += betItem.wager;
                     }
                 });
-                const percentage = userBet.wager / totalWagersOnWinner;
-                const amountWon = percentage * totalWagers;
-            
-                return Math.floor(amountWon - userBet.wager);
+                let percentage = 0.0;
+                let amountWon = 0.0;
+                // if they are the winner and there were no bets on them, they get 100%
+                if(userID == bet.winner && totalWagersOnWinner == 0){
+                    percentage = 1.0;
+                    amountWon = totalWagers;
+                    return Math.floor(amountWon);
+                } else if (userID == bet.winner){
+                    percentage = 0.5;
+                    amountWon = percentage * (totalWagers - totalWagersOnWinner)
+                    return Math.floor(amountWon - userBet.wager);
+                } else {
+
+                //changed because now winner gets 50% by default
+                    percentage = (userBet.wager / totalWagersOnWinner) / 2;
+                    console.log("percentage", percentage);
+                    amountWon = percentage * (totalWagers - totalWagersOnWinner);
+                    console.log("amountWon", amountWon);
+                    //console.log("minus wager: ", Math.floor(amountWon - userBet.wager));
+                    return Math.floor(amountWon);
+                    //return Math.floor(amountWon - userBet.wager);
+                }
 
             }
             const earning = calculateEarnings();
