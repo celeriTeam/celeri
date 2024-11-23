@@ -33,12 +33,10 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
         if (email && password) {
             try {
                 console.log("Trying to update user password...");
-                const user = auth.currentUser;
-                if (!user) {
-                    Alert.alert('Error', 'No user is currently signed in');
+                if (email) {
+                    Alert.alert('Error', 'Currently not supported');
                     return;
                 }
-                await updatePassword(user, password);
                 Alert.alert('Success', 'Password updated successfully');
                 navigation.reset({
                     index: 0,  // Index of the screen to be focused on
@@ -49,6 +47,8 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
                 const errorMessage = (error as AuthError).message;
                 console.error("Error updating user password: ", errorCode, errorMessage);
             }
+        } else {
+            Alert.alert('Error', 'Please fill in all fields');
         }
     }
 
