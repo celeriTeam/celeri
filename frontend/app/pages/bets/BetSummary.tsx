@@ -20,7 +20,7 @@ import { getTodaysDuelsSummary } from '@/backend/src/bets';
 const db = getFirestore(app);
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
+type betSummaryPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
 
 type Props = {
     navigation: headToHeadPageNavigationProp;
@@ -33,7 +33,7 @@ type CircularIconProps = {
 };
 
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
-    const route = useRoute<headToHeadPageRouteProp>();
+    const route = useRoute<betSummaryPageRouteProp>();
     const { groupID } = route.params;
     const { userID, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);

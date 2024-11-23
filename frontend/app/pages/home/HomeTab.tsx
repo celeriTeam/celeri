@@ -166,8 +166,12 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             return;
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
-            if (!isFinishedBetting) {
-                navigation.navigate('HeadToHeadPage', { groupID: groupID, isTutorial: false });
+            const isFirstDay = groups[groupID]?.isFirstDay;
+            if (isFirstDay) {
+                navigation.navigate('HeadToHeadTutorialPage', { groupID: groupID });
+            }
+            else if (!isFinishedBetting) {
+                navigation.navigate('HeadToHeadPage', { groupID: groupID });
             } else {
                 navigation.navigate('BetSummaryPage', { groupID: groupID });
             }
@@ -279,6 +283,11 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                     </BlurView>
                 </TouchableOpacity>
             </Modal>
+            
+            {/* testing headtohead tutorial */}
+            {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'groupID' }) }}>
+                <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
+            </TouchableOpacity> */}
             </View>
         );
     }

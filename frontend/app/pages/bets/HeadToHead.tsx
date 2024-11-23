@@ -6,11 +6,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
-import { getUserName } from '@/backend/src/users';
 import BetRecapPage from './Recap';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
-import { RadialControl } from './BettingDial/CircularDial';
-// import { addBet } from '@/backend/src/bets';
 
 type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
 type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'HeadToHeadPage'>;
@@ -22,7 +19,7 @@ type Props = {
 const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const { userID, groups, loading } = useUser();
     const route = useRoute<headToHeadPageRouteProp>();
-    const { groupID, isTutorial } = route.params;
+    const { groupID } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
@@ -155,8 +152,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const isCurrentUser = (playerID: string) => playerID === userID;
 
     const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
-
-    const shouldShowTutorial = () => isTutorial || isFirstDay;
 
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
@@ -414,9 +409,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
 
             {/* Modal */}
-            {shouldShowTutorial() &&
-                <InfoModal />
-            }
             <InfoModal />
             <Modal
                 transparent={true}
