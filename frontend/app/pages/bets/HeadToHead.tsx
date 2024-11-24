@@ -151,7 +151,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     const isCurrentUser = (playerID: string) => playerID === userID;
 
-    const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
+    const isValidBet = (tokens: number, bet: number) => (tokens - totalBetTokens) >= bet && bet > 0;
 
     const handleNext = async () => {
         if (currentMatchupIndex < matchups.length - 1) {
