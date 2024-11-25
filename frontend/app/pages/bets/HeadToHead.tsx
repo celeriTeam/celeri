@@ -21,7 +21,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<headToHeadPageRouteProp>();
     const { groupID } = route.params;
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
-    const [currentUserTokens, setCurrentUserTokens] = useState<number | undefined>(undefined);
+    const [currentUserTokens, setCurrentUserTokens] = useState<number>(0);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [betAmount1, setBetAmount1] = useState('');
     const [betAmount2, setBetAmount2] = useState('');
@@ -33,7 +33,6 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
-    const [isFirstDay, setIsFirstDay] = useState(false);
     const [isModalVisible, setModalVisible] = useState(true);
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -88,14 +87,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const fetchData = async () => {
         try {
             const isItFirstDay = groups[groupID]?.isFirstDay;
-            setIsFirstDay(isItFirstDay);
             const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
             }
 
             let dailyDuel = groups[groupID]?.unbetDuels;
-            if (isItFirstDay && Object.keys(dailyDuel).length === 0) {
+            if (Object.keys(dailyDuel).length === 0 || groups[groupID]?.userTokens === 0) {
                 await addToFinishedBetting(groupID, userID);
                 navigation.reset({
                     index: 1,
@@ -166,9 +164,18 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             await createBet(userID, groupID, duelID, submittedBet, submittedPlayer ?? '');
 
             await setTodaysBetTokens(userID, groupID, submittedBet);
-            setCurrentUserTokens(currentUserTokens ? currentUserTokens - submittedBet : 0);
-            setTotalBetTokens(totalBetTokens + submittedBet);
+            if (currentUserTokens - totalBetTokens - submittedBet <= 0) {
+                await addToFinishedBetting(groupID, userID);
+                navigation.reset({
+                    index: 1,
+                    routes: [
+                        { name: 'HomeTab' }, // the first route in the stack
+                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
+                    ],
+                });
+            }
             
+            setTotalBetTokens(totalBetTokens + submittedBet);
             setCurrentMatchupIndex(currentMatchupIndex + 1);
             setChangePageForUserName(true);
             setIsProcessing(false);
