@@ -3,7 +3,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups } from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -104,7 +104,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, yesterdaysDuels, todaysDuels, unbetDuels, isFinishedBetting, isFinishedRecap] = await Promise.all([
+                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, totalCycles, yesterdaysDuels, todaysDuels, unbetDuels, isFinishedBetting, isFinishedRecap] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -114,6 +114,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getUserTokens(uid, groupID),
                             getDefaultBetOnSelf(groupID),
                             getTodaysBetTokens(uid, groupID),
+                            getDailyTokens(groupID),
+                            getTotalCycles(groupID),
                             getYesterdaysDuelsSummary(groupID),
                             getTodaysDuelsSummary(groupID),
                             getUnbetDuels(groupID, uid),
@@ -153,6 +155,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             userTokens,
                             defaultBetOnSelf,
                             todaysBetTokens,
+                            dailyTokens,
+                            totalCycles,
                             yesterdaysDuels,
                             todaysDuels,
                             unbetDuels,

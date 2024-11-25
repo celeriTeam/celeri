@@ -212,6 +212,40 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
     }
 }
 
+// GET daily tokens
+export const getDailyTokens = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.dailyTokens){
+            console.log("getDailyTokens - response: ", groupDoc.data()?.dailyTokens);
+            return groupDoc.data()?.dailyTokens;
+        } else{
+            console.error("getDailyTokens - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getDailyTokens - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET total cycles
+export const getTotalCycles = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.totalCycles){
+            console.log("getTotalCycles - response: ", groupDoc.data()?.totalCycles);
+            return groupDoc.data()?.totalCycles;
+        } else{
+            console.error("getTotalCycles - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getTotalCycles - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 // GET diamonds
 export const getUserDiamonds = async (userID: string, groupID: string): Promise<number> => {
     try {
