@@ -12,6 +12,11 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { Pedometer } from 'expo-sensors';
+import AppleHealthKit, {
+    HealthInputOptions,
+    HealthKitPermissions,
+    HealthUnit,
+  } from "react-native-health";
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';

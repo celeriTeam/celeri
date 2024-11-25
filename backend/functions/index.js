@@ -3,6 +3,11 @@
 // const {functions} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {onDocumentUpdated, onDocumentCreated} = require("firebase-functions/v2/firestore");
+import AppleHealthKit, {
+  HealthInputOptions,
+  HealthKitPermissions,
+  HealthUnit,
+} from "react-native-health";
 // const {onRequest, onCall, HttpsError} =
 // require("firebase-functions/v2/https");
 // const {onDocumentCreated,
@@ -404,6 +409,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                       [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon} addded`);
+                      console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
                     }).catch((error) => {
                       console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
                     });

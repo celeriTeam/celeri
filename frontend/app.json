@@ -68,7 +68,8 @@
           "photosPermission": "The app needs access to your photos to let you set profile pictures.",
           "cameraPermission": "The app needs access to your camera to let you take profile pictures."
         }
-      ]
+      ],
+      "react-native-health"
     ],
     "experiments": {
       "typedRoutes": true
