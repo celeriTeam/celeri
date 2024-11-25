@@ -285,7 +285,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             </Modal>
             
             {/* testing headtohead tutorial */}
-            {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'groupID' }) }}>
+            {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'Ubb0lZjodFbaHrkMfKqF' }) }}>
                 <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
             </TouchableOpacity> */}
             </View>

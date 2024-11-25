@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
@@ -36,7 +36,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 
 	const handleSelectPlayer = () => {
 		setSelectedPlayer(true);
-		setTutorialStep(4);
+		setTutorialStep(5);
 	};
 
 	const increaseBetAmount = (amount: number) => {
@@ -76,18 +76,36 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					return "Welcome! You must be new here. Let me show you the ropes.";
 				case 2:
 					setShowTutorialNext(true);
-					return "Here you can see all the tokens you have, as well as how many of them you have bet for that day. Use them wisely.";
+					return `This game will have ${groups[groupID].totalCycles} rounds. You will start with ${groups[groupID].users[userID].tokens} tokens, and gain ${groups[groupID].dailyTokens} tokens everyday. You will be competing against your ${(groups[groupID].userList).length - 1} friends to see who can earn the most tokens.`;
 				case 3:
+					setShowTutorialNext(true);
+					return "Here you can see all the tokens you have, as well as how many of them you have bet for that day. Use them wisely.";
+				case 4:
 					setShowTutorialNext(false);
 					return "You can see two of your friends' usernames. Choose who you want to bet on, then click anywhere on their half of the screen.";
-				case 4:
+				case 5:
 					if (betAmount === '') {
 						setShowTutorialNext(false);
 					} else {
 						setShowTutorialNext(true);
 					}
 					return "Here, you can add numbers to your bet amount by clicking the orange buttons. You can also write in a custom bet amount. If you want to reset your bet, you can always clear it on the right.";
-				case 5:
+				case 6:
+					setShowTutorialNext(true);
+					return `Here's how the earnings work:\n If you win your head-to-head and nobody bet on you, you get 100%.`;
+				case 7:
+					setShowTutorialNext(true);
+					return "If you win your head-to-head and people bet on you, you get 50%.";
+				case 8:
+					setShowTutorialNext(true);
+					return "If you are just a regular better, you get 50% of the proportion bet.";
+				case 9:
+					setShowTutorialNext(true);
+					return "If you lose, you lose what you bet.";
+				case 10:
+					setShowTutorialNext(true);
+					return "In addition to tokens, we also have a diamond currency. When you win your head-to-head bets, you will earn a diamond, which can be used to purchase power-ups.";
+				case 11:
 					setShowTutorialNext(false);
 					return "You're almost done! Click here to start the competition with your friends. Happy betting!";
 				default:
@@ -104,25 +122,29 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					};
 				case 2:
 					return {
+						width: '80%',
+					};
+				case 3:
+					return {
 						width: '60%',
 						position: 'absolute',
 						// Position near tokens display
 						top: 50,
 						left: 20
 					};
-				case 3:
+				case 4:
 					return {
 						width: '90%',
 						position: 'absolute',
 						bottom: 210,
 					};
-				case 4:
+				case 5:
 					return {
 						width: '90%',
 						position: 'absolute',
 						bottom: 130,
 					};
-				case 5:
+				case 11:
 					return {
 						width: '60%',
 						position: 'absolute',
@@ -130,7 +152,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 						left: 20,
 					};
 				default:
-					return {};
+					return {width: '80%'};
 			}
 		};
 
@@ -138,7 +160,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 			<View style={styles.tutorialOverlay}>
 				
 				{/* Semi-transparent overlay with holes */}
-				<View style={styles.interactiveOverlay}>
+				{/* <View style={styles.interactiveOverlay}>
 					<TouchableWithoutFeedback>
 						<View style={[
 							styles.nonInteractiveArea,
@@ -148,15 +170,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 						]} />
 					</TouchableWithoutFeedback>
 					
-					{/* {getHighlightedElement() && (
-						<View style={[
-							styles.interactiveArea,
-							Array.isArray(getHighlightedElement())
-								? getHighlightedElement()?.map((style: any) => ({ ...style }))
-								: { ...getHighlightedElement() }
-						]} />
-					)} */}
-				</View>
+				</View> */}
 	
 				{/* Tutorial content */}
 				<View style={[
@@ -169,11 +183,17 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 						<Text style={styles.skipButtonText}>{`Skip Tutorial >`}</Text>
 					</TouchableOpacity>
 					<Text style={styles.tutorialText}>{getTutorialMessage()}</Text>
+					{tutorialStep === 10 && (
+						<Image
+							source={require('../../../assets/images/store_tutorial.jpg')}
+							style={styles.image}
+						/>
+					)}
 					{showTutorialNext && (
 						<TouchableOpacity
 							style={styles.tutorialButton}
 							onPress={() => {
-								if (tutorialStep < 5) {
+								if (tutorialStep < 11) {
 									setTutorialStep(tutorialStep + 1);
 								} else {
 									setShowTutorial(false);
@@ -181,7 +201,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 							}}
 						>
 							<Text style={styles.tutorialButtonText}>
-								{tutorialStep === 5 ? 'Finish' : 'Next'}
+								{tutorialStep === 11 ? 'Finish' : 'Next'}
 							</Text>
 						</TouchableOpacity>
 					)}
@@ -198,17 +218,17 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 			
 			<View style={[
 				styles.tokens, 
-				(tutorialStep === 2) && {zIndex: 200},
 				(tutorialStep === 3) && {zIndex: 200},
 				(tutorialStep === 4) && {zIndex: 200},
+				(tutorialStep === 5) && {zIndex: 200},
 				]}>
-				<Text style={{ fontFamily: "Lexend" }}>Your Tokens: 1000</Text>
+				<Text style={{ fontFamily: "Lexend" }}>Your Tokens: {groups[groupID].users[userID].tokens}</Text>
 			</View>
 			<View style={[
 				styles.betTokens, 
-				(tutorialStep === 2) && {zIndex: 200},
 				(tutorialStep === 3) && {zIndex: 200},
 				(tutorialStep === 4) && {zIndex: 200},
+				(tutorialStep === 5) && {zIndex: 200},
 				]}>
 				<Text style={{ fontFamily: "Lexend" }}>Bet Tokens: 0</Text>
 			</View>
@@ -218,8 +238,8 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 				style={[
 					styles.player1Container,
 					selectedPlayer && styles.selectedPlayer1,
-					(tutorialStep === 3) && {zIndex: 199,},
 					(tutorialStep === 4) && {zIndex: 199,},
+					(tutorialStep === 5) && {zIndex: 199,},
 				]}
 				onPress={() => handleSelectPlayer()}
 				activeOpacity={1}
@@ -271,7 +291,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 			<TouchableHighlight
 				style={[
 					styles.submitButton,
-					(tutorialStep === 5) && {zIndex: 200},
+					(tutorialStep === 11) && {zIndex: 200},
 				]}
 				underlayColor="#ff7043"
 				onPress={() => handleSubmit()}
@@ -416,6 +436,12 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 		textAlign: 'right',
 	},
+    image: {
+        width: 200,
+        height: 350,
+		margin: 'auto', // center
+
+    },
 	interactiveOverlay: {
 		...StyleSheet.absoluteFillObject,
 		backgroundColor: 'transparent',
@@ -434,6 +460,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 		alignItems: 'center',
 		zIndex: 100,
+		backgroundColor: 'rgba(0, 0, 0, 0.6)',
 	},
 	tutorialContent: {
 		backgroundColor: 'white',
@@ -468,3 +495,7 @@ const styles = StyleSheet.create({
 });
 
 export default HeadToHeadTutorialPage;
+
+// x amount of rounds, amt of players...
+// explain how betting works
+// then go into how earnings work
