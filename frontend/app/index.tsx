@@ -41,14 +41,20 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-        if (user) {
-          setInitialRoute('AppPage');
-        } else {
-          setInitialRoute('Register');
-        }
-        setIsLoading(false);
-      });
+        const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+            try {
+                if (user) {
+                    setInitialRoute('AppPage');
+                } else {
+                    setInitialRoute('Register');
+                }
+            } catch (error) {
+                console.error('Auth state change error:', error);
+                setInitialRoute('Register'); // Fallback to Register on error
+            } finally {
+                setIsLoading(false);
+            }
+        });
   
       return () => unsubscribe();
     }, [auth]);
