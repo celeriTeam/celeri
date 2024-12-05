@@ -3,11 +3,6 @@
 // const {functions} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {onDocumentUpdated, onDocumentCreated} = require("firebase-functions/v2/firestore");
-import AppleHealthKit, {
-  HealthInputOptions,
-  HealthKitPermissions,
-  HealthUnit,
-} from "react-native-health";
 // const {onRequest, onCall, HttpsError} =
 // require("firebase-functions/v2/https");
 // const {onDocumentCreated,

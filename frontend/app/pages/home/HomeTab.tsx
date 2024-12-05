@@ -12,11 +12,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
+import useHealthData from '../../../backend/src/hooks/useHealthData';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
@@ -43,6 +39,11 @@ type GroupData = {
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
+    //health data stuff -- I moved it down but keeping it here just in case we use thislater
+    // const { steps, distance, flights } = useHealthData();
+    // console.log("printing steps");
+    // console.log(steps);
+
 
     
     const { username, groupNames, loading } = useUser();
@@ -121,7 +122,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         setIsModalVisible(!isModalVisible);
     };
 
-    const getStepsSinceMidnight = async () => {
+    //PEDOMETER 
+    const getStepsSinceMidnightPedometer = async () => {
         const now = new Date();
         const midnight = new Date(now.setHours(0, 0, 0, 0)); // Get 12:00 AM of the current day
         try {
@@ -137,6 +139,21 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 			setStepsSinceMidnight(null);
         }
 	};
+
+    //HEALTHKIT
+    const getStepsSinceMidnight = async() => {
+        try {
+            const { steps, distance, flights } = useHealthData();
+            console.log("printing steps");
+            console.log(steps);
+            const result = steps;
+            setStepsSinceMidnight(result);
+			setSteps(userID, result);
+        } catch (error) {
+            console.error("Error getting step count: ", error);
+            setStepsSinceMidnight(null);
+        }
+    }
 
     useEffect(() => {
 		getStepsSinceMidnight();
