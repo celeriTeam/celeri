@@ -21,7 +21,6 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<betRecapPageRouteProp>();
     const { groupID } = route.params;
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
-    console.log('hi');
 
     const yesterdaysBets = groups[groupID]?.yesterdaysDuels;
 
