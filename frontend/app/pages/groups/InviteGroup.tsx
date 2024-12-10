@@ -11,6 +11,8 @@ import { RootStackParamList } from '../../types';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
+import firestore, { FieldValue } from '@react-native-firebase/firestore';
+import { createNudge } from '@/backend/src/notifs';
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;
 type InviteGroupRouteProp = RouteProp<RootStackParamList, 'InviteGroup'>;
@@ -20,9 +22,14 @@ type Props = {
 };
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
+    
+    
     const { userID, groups, loading } = useUser();
+
     const route = useRoute<InviteGroupRouteProp>();
-    const { groupID, fromCreate } = route.params;
+
+
+    const { leaderID, groupID, fromCreate } = route.params;
     const [isModalVisible, setModalVisible] = useState(false);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [cycles, setCycles] = useState('5');
@@ -90,7 +97,20 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const handleStartReminderPress = async () => {
         console.log('Remind creator to start button pressed');
 
-        Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
+        try {
+            const nudgeMessage = "They're waiting for you to start the game!"
+            const userRef = firestore().collection('users').doc(leaderID);
+            const userDoc = await userRef.get();
+            const tokens = userDoc.data()?.tokens || [];
+
+            createNudge(userID, groupID, nudgeMessage, tokens);
+            Alert.alert('Reminder sent', 'The creator has been reminded to start the game.');
+        } catch (error) {
+            console.error("Error sending nudge notification:", error);
+            Alert.alert("Error", "Failed to send reminder.");
+        }
+
+
     };
 
     const pickImage = async () => {

@@ -18,7 +18,7 @@ export type RootStackParamList = {
     EditProfile: undefined;
     // GROUPS
     CreateGroup: undefined;
-    InviteGroup: { groupID: string, fromCreate: boolean };
+    InviteGroup: { leaderID: string, groupID: string, fromCreate: boolean };
     JoinGroup: undefined;
     // BETS
     BetsPage: { groupID: string };

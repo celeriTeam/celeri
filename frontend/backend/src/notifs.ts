@@ -22,7 +22,7 @@ export const createNudge = async (username: string, groupID: string, message: st
         
         })
         const nudgeID = nudgeRef.id;
-        console.log("createGroup - response:", nudgeID);
+        console.log("createNudge - response:", nudgeID);
         return nudgeID;
     } catch (error) {
 

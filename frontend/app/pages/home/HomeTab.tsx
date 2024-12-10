@@ -197,9 +197,10 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         // else navigate to BetsPage page
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
+        const groupOrder = groups[groupID]?.order;
         console.log('groupusers: ', GroupUsers);
         const isGameActive = groups[groupID]?.isGameActive;
-        if (GroupUsers === null || GroupUsers === undefined) {
+        if (GroupUsers === null || GroupUsers === undefined || groupOrder === null) {
             return;
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
@@ -213,7 +214,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 navigation.navigate('BetSummaryPage', { groupID: groupID });
             }
         } else {
-            navigation.navigate('InviteGroup', { groupID: groupID, fromCreate: false });
+            const groupLeader = groupOrder[0];
+            navigation.navigate('InviteGroup', { leaderID: groupLeader, groupID: groupID, fromCreate: false });
         }
     }
 
