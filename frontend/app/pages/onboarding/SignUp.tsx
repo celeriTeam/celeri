@@ -178,7 +178,7 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
             Alert.alert("Error", "Please enter a password!")
         } else if(!username){ 
             Alert.alert("Error", "Please enter a username!")
-        } else if(!email){ 
+        } else if(!profileImage){ 
             Alert.alert("Error", "Please choose a profile picture! You can change this later if you'd like.")
         } else {
             Alert.alert("Error", "You have not filled out every field!")
