@@ -195,6 +195,9 @@ const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
                 // No bet
                 if (!userBet) return 0;
 
+                // draw
+                if(bet.winner == "draw") return 0;
+
                 // User lost bet
                 if (userBet.betOnUserID !== bet.winner) {
                     return -userBet.wager;

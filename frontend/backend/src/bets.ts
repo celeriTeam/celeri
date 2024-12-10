@@ -277,6 +277,9 @@ const calculateEarnings = (userID: string, duel: Duel) => {
     // No bet
     if (!userBet) return 0;
 
+    // If draw
+    if (duel.winner == "draw") return 0;
+
     // User lost bet
     if (userBet.betOnUserID !== duel.winner) {
         console.log("bet test: ", userID, -userBet.wager);

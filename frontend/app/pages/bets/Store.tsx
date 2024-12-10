@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreDuelsSummary, getGainsSummary } from '@/backend/src/bets';
 
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
+import { buySecondWind } from '../../../backend/src/store';
 import Svg, { Circle, G } from 'react-native-svg';
 
 
@@ -25,6 +26,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
     const route = useRoute<betHistoryPageRouteProp>();
     const { groupID } = route.params;
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
+    const [isBuying, setIsBuying] = useState(false);
 
     const speedBoots = require('../../../assets/images/speed_boot.png');
     const secondWind = require('../../../assets/images/wind.jpg');
@@ -93,8 +95,27 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
                         style={styles.diamondImage} 
                     />
                 </View>
-                <TouchableOpacity style={styles.buyButton}>
-                    <Text style={styles.buyButtonText}>Buy</Text>
+                <TouchableOpacity
+                    style={styles.buyButton}
+                    onPress={async () => {
+                        setIsBuying(true);
+                        let success = false;
+                        if(item.image == "secondWind"){
+                            success = await buySecondWind(userID, groupID);
+                        }
+                        setIsBuying(false);
+
+                        if (success) {
+                            Alert.alert("Success", "Purchase successful!");
+                        } else {
+                            Alert.alert("Error", "Failed to purchase item.");
+                        }
+                    }}
+                    disabled={isBuying} // Disable the button while processing
+                >
+                    <Text style={styles.buyButtonText}>
+                        {isBuying ? "Processing..." : "Buy"}
+                    </Text>
                 </TouchableOpacity>
                 <Text style={styles.description}>{item.description}</Text>
 

@@ -299,12 +299,16 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
                 console.log(`addUserToGroup - response: User ${userID} is already in the group ${groupID}. No update needed.`);
                 return;
             }
+
+             // Ensure startingTokens has a default value
+             const startingTokens = groupData?.startingTokens ?? 0;
+
             
             await updateDoc(groupDocRef, {
                 [`users.${userID}`]: {
                     placedBet: false,
                     tokens: 0,
-                    todaysBetTokens: groupData?.startingTokens,
+                    todaysBetTokens: startingTokens,
                 },
                 order: [...groupDoc.data()?.order, userID],
             });

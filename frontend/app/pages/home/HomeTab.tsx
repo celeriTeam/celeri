@@ -39,10 +39,10 @@ type GroupData = {
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
-    //health data stuff -- I moved it down but keeping it here just in case we use thislater
-    // const { steps, distance, flights } = useHealthData();
-    // console.log("printing steps");
-    // console.log(steps);
+    //health data stuff --
+    const { steps, distance, flights } = useHealthData();
+    console.log("printing steps!!!");
+    console.log(steps);
 
 
     
@@ -54,6 +54,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
     const [groupsState, setGroupsState] = useState({});
     const [isLoading, setIsLoading] = useState(true);
+
+    const [hasInitialized, setHasInitialized] = useState(false);
 
     // Getting data because its the first page
     useEffect(() => {
@@ -78,6 +80,47 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             }
         };
     }, []);
+
+    //HEALTHKIT
+    const getStepsSinceMidnight = async() => {
+        try {
+            console.log("printing steps");
+            console.log(steps);
+            const result = steps;
+            setStepsSinceMidnight(result);
+			setSteps(userID, result);
+        } catch (error) {
+            console.error("Error getting step count: ", error);
+            setStepsSinceMidnight(null);
+        }
+    }
+
+    useEffect(() => {
+        if (!hasInitialized && steps > 0) {
+            // Update backend the first time valid steps are retrieved
+            console.log("First-time backend update with steps:", steps);
+            setStepsSinceMidnight(steps);
+            setSteps(userID, steps); // Call your backend update here
+            setHasInitialized(true); // Mark initialization as complete
+        }
+    }, [steps, hasInitialized, userID]);
+
+    useEffect(() => {
+        if(hasInitialized){
+            getStepsSinceMidnight();
+
+            const intervalId = setInterval(() => {
+                console.log("Regular backend update with steps:", steps);
+                getStepsSinceMidnight();
+            }, 300000); // 5 minutes in milliseconds
+        
+            // Clean up the interval when the component unmounts
+            return () => {
+                clearInterval(intervalId);
+            };
+        }
+    }, [userID]);
+
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
@@ -139,34 +182,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 			setStepsSinceMidnight(null);
         }
 	};
-
-    //HEALTHKIT
-    const getStepsSinceMidnight = async() => {
-        try {
-            const { steps, distance, flights } = useHealthData();
-            console.log("printing steps");
-            console.log(steps);
-            const result = steps;
-            setStepsSinceMidnight(result);
-			setSteps(userID, result);
-        } catch (error) {
-            console.error("Error getting step count: ", error);
-            setStepsSinceMidnight(null);
-        }
-    }
-
-    useEffect(() => {
-		getStepsSinceMidnight();
-
-		const intervalId = setInterval(() => {
-			getStepsSinceMidnight();
-		}, 300000); // 5 minutes in milliseconds
-	
-		// Clean up the interval when the component unmounts
-		return () => {
-			clearInterval(intervalId);
-		};
-    }, [userID]);
 
     const createGroupButtonHandle = () => {
         navigation.navigate('CreateGroup');
