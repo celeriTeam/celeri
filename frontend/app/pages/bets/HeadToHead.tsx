@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
         borderColor: '#AAA',
         borderRadius: 5,
         padding: 10,
-        width: 50,
+		minWidth: 50,
         textAlign: 'center',
     },
     usernameWithKeyboard: {
