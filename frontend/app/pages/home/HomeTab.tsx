@@ -16,7 +16,7 @@ import useHealthData from '../../../backend/src/hooks/useHealthData';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { createGroup, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
@@ -133,11 +133,12 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setIsLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting] = await Promise.all([
+                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting, groupCreator] = await Promise.all([
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
                             checkFinishedBetting(groupID, uid),
+                            getGroupCreator(groupID),
                         ]);
 
                         const userList = await getUsersInGroup(groupID); // userIDs
@@ -149,7 +150,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                             groupName,
                             isGameActive,
                             isFinishedBetting,
-                            userList
+                            userList,
+                            groupCreator
                         };
                     }
                     setIsLoading(false);
@@ -193,14 +195,13 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
 
     const goToGroup = async (groupName: string) => {
         // get groupID and number of users in group;
-        // if number of users in group < 3, then navigate to inviteGroup page
-        // else navigate to BetsPage page
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
-        const groupOrder = groups[groupID]?.order;
         console.log('groupusers: ', GroupUsers);
         const isGameActive = groups[groupID]?.isGameActive;
-        if (GroupUsers === null || GroupUsers === undefined || groupOrder === null) {
+        console.log(isGameActive);
+        if (GroupUsers === null || GroupUsers === undefined) {
+            console.log('Failed to fetch group data');
             return;
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
@@ -214,8 +215,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 navigation.navigate('BetSummaryPage', { groupID: groupID });
             }
         } else {
-            const groupLeader = groupOrder[0];
-            navigation.navigate('InviteGroup', { leaderID: groupLeader, groupID: groupID, fromCreate: false });
+            console.log('navigating to invite group page');
+            navigation.navigate('InviteGroup', { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: false });
         }
     }
 

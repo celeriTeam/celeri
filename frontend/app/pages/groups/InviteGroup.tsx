@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
+import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -188,34 +188,40 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         />
                     )}
                 </View>
-            <TouchableOpacity onPress={pickImage}>
-                <Text style={styles.buttonText}>Edit group pic</Text>
-            </TouchableOpacity>
+                <TouchableOpacity onPress={pickImage}>
+                    <Text style={styles.buttonText}>Edit group pic</Text>
+                </TouchableOpacity>
                 {currentGroupUsersArray.length >= userStartRequirement ? (
-                    <Text style={styles.text}>
+                    <Text style={[styles.text, { textAlign: 'center' }]}>
                         If your group is ready, click the button below to start a new game.
                     </Text>
                 ) : (
-                    <Text style={styles.text}>
+                    <Text style={[styles.text, { textAlign: 'center' }]}>
                         You need three members to start a game. Share the group code below to invite others to join!
                     </Text>
                 )}
-                <Text style={styles.text}>
-                    Group Members:
+
+                <Text style={[styles.text, { fontWeight: "bold", marginBottom: 10 }]}>
+                    Group Members ({groups[groupID]?.userList.length}):
                 </Text>
-               {currentGroupUsersArray ? (
-                    currentGroupUsersArray.map((user) => (
-                        <View key={user.id} style={styles.row}>
-                            <Image
-                                source={{ uri: user.pfp }}
-                                style={styles.profileImage}
-                            />
-                            <Text key={user.id} style={styles.username}>{user.name}</Text>
-                        </View>
-                    ))
-                ) : (
-                    <Text>No users found.</Text>
-                )}
+                <ScrollView
+                    style={styles.scrollContainer}
+                >
+                    {currentGroupUsersArray ? (
+                        currentGroupUsersArray.map((user) => (
+                            <View key={user.id} style={styles.row}>
+                                <Image
+                                    source={{ uri: user.pfp }}
+                                    style={styles.profileImage}
+                                />
+                                <Text key={user.id} style={styles.username}>{user.name}</Text>
+                            </View>
+                        ))
+                    ) : (
+                        <Text>No users found.</Text>
+                    )}
+                </ScrollView>
+
                 <View style={styles.centeredGroupCode}>
                     <Text style={styles.groupCode}>{currentGroupCode}</Text>
                     <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
@@ -337,7 +343,6 @@ const styles = StyleSheet.create({
         marginVertical: 10,
     },
     buttonText: {
-        marginBottom: 20,
         fontFamily: "Lexend",
         textAlign: 'center',
         color: 'blue',
@@ -383,6 +388,14 @@ const styles = StyleSheet.create({
     titleContainer: {
         justifyContent: "center",
     },
+    scrollContainer: {
+        backgroundColor: "#f0f0f0",
+        borderRadius: 5,
+        marginHorizontal: 10,
+        paddingTop: 10,
+        maxHeight: '30%',
+        flexGrow: 0,
+    },
     groupNameStandalone: {
         textAlign: "center",
         fontSize: 30,
@@ -395,9 +408,6 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginHorizontal: 20,
         fontFamily: "Lexend",
-        textAlign: "center",
-        alignSelf: "center",
-        marginBottom: 20
     },
     bold_text: {
         fontSize: 18,
