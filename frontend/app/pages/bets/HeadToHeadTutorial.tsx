@@ -84,7 +84,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					setShowTutorialNext(false);
 					return "You can see two of your friends' usernames. Choose who you want to bet on, then click anywhere on their half of the screen.";
 				case 5:
-					if (betAmount === '') {
+					if (betAmount === '' || !isValidBet(groups[groupID]?.users[userID]?.tokens || 1000, +betAmount) ) {
 						setShowTutorialNext(false);
 					} else {
 						setShowTutorialNext(true);
@@ -136,13 +136,13 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					return {
 						width: '90%',
 						position: 'absolute',
-						bottom: 210,
+						top: '53%',
 					};
 				case 5:
 					return {
 						width: '90%',
 						position: 'absolute',
-						bottom: 130,
+						top: '53%',
 					};
 				case 11:
 					return {
@@ -177,11 +177,11 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					styles.tutorialContent,
 					getModalStyle()
 				]}>
-					<TouchableOpacity
+					{/* <TouchableOpacity
 						onPress={() => handleSubmit()}
 					>
 						<Text style={styles.skipButtonText}>{`Skip Tutorial >`}</Text>
-					</TouchableOpacity>
+					</TouchableOpacity> */}
 					<Text style={styles.tutorialText}>{getTutorialMessage()}</Text>
 					{tutorialStep === 10 && (
 						<Image
@@ -248,7 +248,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 				{selectedPlayer && (
 					<>
 						<Text style={styles.betNumber}>{betAmount || 0}</Text>
-						{!isValidBet(1000, +betAmount) && (betAmount != '') && (
+						{!isValidBet(groups[groupID]?.users[userID]?.tokens || 1000, +betAmount) && (betAmount != '') && (
 							<Text style={styles.errorText}>Invalid bet</Text>
 						)}
 						<View style={styles.bettingRow}>
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
 		borderColor: '#AAA',
 		borderRadius: 5,
 		padding: 10,
-		width: 50,
+		minWidth: 50,
 		textAlign: 'center',
 	},
 	errorText: {
