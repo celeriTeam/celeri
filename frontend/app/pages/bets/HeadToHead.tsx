@@ -190,10 +190,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         }
     }
 
-    const handleOpenModal = () => {
-        Keyboard.dismiss();
-        setKeyboardVisible(false);
-        setInfoModalVisible(true);
+    const handleInfoButton = () => {
+        navigation.reset({
+            index: 1,
+            routes: [
+                { name: 'HomeTab' }, // the first route in the stack
+                { name: 'HeadToHeadTutorialPage', params: { groupID: groupID } } // the top route in the stack
+            ],
+        });
     };
 
     const InfoModal = () => (
@@ -300,7 +304,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
             <TouchableOpacity 
                 style={styles.infoButton}
-                onPress={handleOpenModal}
+                onPress={handleInfoButton}
             >
                 <Ionicons name="information-circle" size={24} color="#666" />
             </TouchableOpacity>
@@ -416,7 +420,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             )}
 
             {/* Modal */}
-            <InfoModal />
+            {/* <InfoModal /> */}
             <Modal
                 transparent={true}
                 visible={isModalVisible}
