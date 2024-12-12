@@ -46,29 +46,6 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 	const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
 
 	const TutorialModal = () => {
-		const getHighlightedElement = () => {
-			switch (tutorialStep) {
-				case 2:
-					return [styles.tokens, styles.betTokens, {position: 'absolute', top: 10, right: 20,}]; // Highlight tokens display
-				case 3:
-					return [{
-						position: 'absolute',
-						top: 0,
-						left: 0,
-						width: '100%',
-						height: '50%',
-						pointerEvents: 'auto', // Enable interaction
-						zIndex: 1000, // Ensure it's above other elements
-					}];
-				case 4:
-					return styles.bettingRow;
-				case 5:
-					return styles.submitButton;
-				default:
-					return null;
-			}
-		};
-
 		const getTutorialMessage = () => {
 			switch (tutorialStep) {
 				case 1:
@@ -158,19 +135,6 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 
 		return (
 			<View style={styles.tutorialOverlay}>
-				
-				{/* Semi-transparent overlay with holes */}
-				{/* <View style={styles.interactiveOverlay}>
-					<TouchableWithoutFeedback>
-						<View style={[
-							styles.nonInteractiveArea,
-							getHighlightedElement() && {
-								...StyleSheet.absoluteFillObject,
-							}
-						]} />
-					</TouchableWithoutFeedback>
-					
-				</View> */}
 	
 				{/* Tutorial content */}
 				<View style={[
