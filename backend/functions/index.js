@@ -338,20 +338,27 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
             let winner = "none";
 
             try {
-              const player1Steps = userSteps[player1Id] || 0;
-              const player2Steps = userSteps[player2Id] || 0;
+              const player1BaseSteps = userSteps[player1Id] || 0;
+              const player2BaseSteps = userSteps[player2Id] || 0;
 
-              if (player1Steps > player2Steps) {
+              // Calculate additional steps from powerups
+              const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id);
+              const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id);
+
+              // Total steps for each player
+              const player1TotalSteps = player1BaseSteps + player1PowerupSteps;
+              const player2TotalSteps = player2BaseSteps + player2PowerupSteps;
+
+
+              if (player1TotalSteps > player2TotalSteps) {
                 winner = player1Id;
-              } else if (player1Steps === player2Steps) {
+              } else if (player1TotalSteps === player2TotalSteps) {
                 winner = "draw";
               } else {
                 winner = player2Id;
               }
 
-              console.log("player1, " + player1Id + " steps is " + player1Steps);
-              console.log("player2, " + player2Id + " steps is " + player2Steps);
-              console.log("winner is " + winner);
+              console.log(`Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
 
               // now, distribute earnings
               // if player1 wins, grab the bets
@@ -437,8 +444,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
               batch.update(duelDoc.ref, {
                 ended: true,
                 winner: winner,
-                playerOneSteps: player1Steps,
-                playerTwoSteps: player2Steps,
+                playerOneSteps: player1TotalSteps,
+                playerTwoSteps: player2TotalSteps,
               });
             } catch (error) {
               console.error(`Error fetching player steps for duel 
@@ -464,6 +471,47 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
     console.error("Error querying Firestore:", error);
   }
 });
+
+const calculatePowerupSteps = async (groupID, userID, duelID) => {
+  const groupDocRef = firestore.collection("groups").doc(groupID);
+  const powerupsCollectionRef = groupDocRef.collection("powerups");
+
+  try {
+    // Get the timestamp for 24 hours ago
+    // Get the timestamp for 24 hours ago
+    const now = new Date();
+    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const startOfDayTimestamp = admin.firestore.Timestamp.fromDate(past24Hours);
+
+    // Query powerups created in the past 24 hours
+    const powerupsSnapshot = await powerupsCollectionRef
+      .where("createdAt", ">=", startOfDayTimestamp)
+      .where("duelID", "==", duelID)
+      .where("targetUserID", "==", userID)
+      .get();
+
+    if (powerupsSnapshot.empty) {
+      console.log(`No powerups found for user ${userID} in group ${groupID} for duel ${duelID}`);
+      return 0; // No steps to add
+    }
+
+    // Calculate total steps added from 'secondWind' powerups
+    let totalAddedSteps = 0;
+    powerupsSnapshot.forEach((doc) => {
+      const powerup = doc.data();
+      if (powerup.type === "secondWind") {
+        totalAddedSteps += 200; // Each secondWind adds 200 steps
+      }
+    });
+
+    console.log(`Total added steps for user ${userID}: ${totalAddedSteps}`);
+    return totalAddedSteps;
+  } catch (error) {
+    console.error(`Error fetching powerups for user ${userID}:`, error);
+    return 0; // Default to no steps added on error
+  }
+};
+
 
 exports.createDuels = onSchedule("every day 05:00", async (event) =>{
   console.log("createDuels is running");

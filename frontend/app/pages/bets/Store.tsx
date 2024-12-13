@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreDuelsSummary, getGainsSummary } from '@/backend/src/bets';
 
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
@@ -19,14 +19,16 @@ type betHistoryPageRouteProp = RouteProp<RootStackParamList, 'StorePage'>;
 type Props = {
     navigation: betHistoryPageNavigationProp;
     userDiamonds: number;
+    currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[];
 };
 
-const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
+const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUsersArray }) => {
     const { userID, groups, loading } = useUser();
     const route = useRoute<betHistoryPageRouteProp>();
     const { groupID } = route.params;
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [isBuying, setIsBuying] = useState(false);
+    const [isModalVisible, setIsModalVisible] = useState(false);
 
     const speedBoots = require('../../../assets/images/speed_boot.png');
     const secondWind = require('../../../assets/images/wind.jpg');
@@ -60,6 +62,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
     ]);
 
     const toggleExpand = (id: string) => {
+        console.log(`Toggling expand for item ${id}`);
         setExpandedItems((prevState) => ({
             ...prevState,
             [id]: !prevState[id],
@@ -70,10 +73,30 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
         const isExpanded = expandedItems[item.id] || false;
         console.log(isExpanded, expandedItems[item.id], item.id);
 
+        const handleBuySecondWind = async (targetUserID: string, targetUserName?: string) => {
+            setIsBuying(true);
+            let success = false;
+    
+            try {
+                success = await buySecondWind(userID, groupID, targetUserID, targetUserName);
+            } catch (error) {
+                console.error("Error purchasing item:", error);
+            } finally {
+                setIsBuying(false); // Re-enable interactions
+                setIsModalVisible(false); // Ensure modal is closed
+            }
+    
+            if (success) {
+                Alert.alert("Success", "Purchase successful!");
+            } else {
+                Alert.alert("Error", "Failed to purchase item.");
+            }
+        };
+
         return (
             <TouchableOpacity
                 style={styles.itemContainer}
-                onPress={() => toggleExpand(item.id)}
+                onPress={async () => toggleExpand(item.id)}
                 activeOpacity={0.8} // For better click feedback
             >
                 {/* <View style={styles.topRow}>
@@ -97,29 +120,50 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds }) => {
                 </View>
                 <TouchableOpacity
                     style={styles.buyButton}
-                    onPress={async () => {
-                        setIsBuying(true);
-                        let success = false;
-                        if(item.image == "secondWind"){
-                            success = await buySecondWind(userID, groupID);
-                        }
-                        setIsBuying(false);
-
-                        if (success) {
-                            Alert.alert("Success", "Purchase successful!");
-                        } else {
-                            Alert.alert("Error", "Failed to purchase item.");
-                        }
-                    }}
-                    disabled={isBuying} // Disable the button while processing
+                    onPress={() => setIsModalVisible(true)}
+                    disabled={isBuying}
                 >
-                    <Text style={styles.buyButtonText}>
-                        {isBuying ? "Processing..." : "Buy"}
+                <Text style={styles.buyButtonText}>
+                        Buy
                     </Text>
                 </TouchableOpacity>
                 <Text style={styles.description}>{item.description}</Text>
-
-                {/* {expandedItems[item.id] && <Text style={styles.description}>{item.description}</Text>} */}
+                <Modal
+                    visible={isModalVisible}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => {
+                        console.log("Modal close requested");
+                        setIsModalVisible(false);
+                    }}
+                >
+                    
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Select a User</Text>
+                            <FlatList
+                                data={currentGroupUsersArray}
+                                keyExtractor={(user) => user.id.toString()}
+                                renderItem={({ item }) => (
+                                    <View style={styles.userRow}>
+                                        <Text style={styles.username}>{item.name}</Text>
+                                        <Button
+                                            title="Select"
+                                            onPress={() => {
+                                                setIsModalVisible(false);
+                                                handleBuySecondWind(item.id, item.name);
+                                            }}
+                                        />
+                                    </View>
+                                )}
+                            />
+                            <Button
+                                title="Close"
+                                onPress={() => setIsModalVisible(false)}
+                            />
+                        </View>
+                    </View>
+                </Modal>
             </TouchableOpacity>
         );
     };
@@ -252,6 +296,32 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    modalContent: {
+        width: "80%",
+        padding: 20,
+        backgroundColor: "white",
+        borderRadius: 10,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 10,
+    },
+    userRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    username: {
+        fontSize: 16,
     },
 });
 

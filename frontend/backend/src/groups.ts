@@ -421,7 +421,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             cycleCount: 1,
             totalCycles: totalCycles,
             dailyTokens: dailyTokens,
-            defaultBetOnSelf: defaultBetOnSelf,
+            defaultBetOnSelf: 0,
             startingTokens: startingTokens,
             cycleDuels: cycles,
         });
@@ -447,13 +447,13 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
 
                 const player1Bet = {
                     userID: duel.player1,
-                    wager: defaultBetOnSelf,
+                    wager: 0,
                     betOnUserID: duel.player1,
                 };
         
                   const player2Bet = {
                     userID: duel.player2,
-                    wager: defaultBetOnSelf,
+                    wager: 0,
                     betOnUserID: duel.player2,
                 };
 

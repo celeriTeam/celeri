@@ -16,6 +16,7 @@ import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
 import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
+import { getPowerups } from '@/backend/src/store';
 
 const db = getFirestore(app);
 
@@ -44,16 +45,28 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
     useEffect(() => {
         try {
             fetchGroupData(userID);
+            fetchPowerups();
         } catch (error) {
             console.error('Error fetching user groups:', error);
         } finally {
             setIsLoading(false);
         }
     }, [userID]);
+
+    const fetchPowerups = async () => {
+        try {
+            const powerupsData = await getPowerups(groupID);
+            setPowerups(powerupsData);
+            console.log("powerups received", powerups);
+        } catch (error) {
+            console.error("Failed to fetch powerups:", error);
+        }
+    };
 
     const fetchGroupData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
@@ -331,6 +344,46 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const player1Ratio = totalBets === 0 ? 0.5 : totalPlayer1Bets / totalBets;
         const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
 
+        // Filter powerups for player1 and player2
+        const player1Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
+            console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player1}`);
+            return duelID === item.duelID && targetUserName === item.player1;
+        });
+        
+        const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
+            console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player2}`);
+            return duelID === item.duelID && targetUserName === item.player2;
+        });
+
+        // Calculate added steps for secondWind powerups
+        let player1AddedSteps = 0;
+        let player2AddedSteps = 0;
+
+        // Create modified versions of the powerups for display
+        const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, userID, duelID]) => {
+            if (type === "secondWind") {
+                player1AddedSteps += 200;
+                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
+            }
+            return [type, targetID, userID, duelID];
+        });
+
+        const modifiedPlayer2Powerups = player2Powerups.map(([type, targetID, userID, duelID]) => {
+            if (type === "secondWind") {
+                player2AddedSteps += 200;
+                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
+            }
+            return [type, targetID, userID, duelID];
+        });
+
+        // Updated step counts
+        const player1TotalSteps = item.player1Steps + player1AddedSteps;
+        const player2TotalSteps = item.player2Steps + player2AddedSteps;
+
+        // change secondWind name to be more descriptive 
+
+        console.log("renderBetItem: ", "player1Powerups: ", modifiedPlayer1Powerups);
+        console.log("renderBetItem: ", "player2Powerups: ", modifiedPlayer2Powerups);
         return (
             <View style={styles.flatList}>
                 <TouchableOpacity onPress={() => toggleItemExpansion(item.duelID)}>
@@ -340,7 +393,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.centeredColumn}>
                         <Text style={styles.player1text}>{item.player1}</Text>
                         <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
-                        <Text style={styles.stepTitle}>{item.player1Steps} Steps</Text>
+                        <Text style={styles.stepTitle}>{player1TotalSteps} Steps</Text>
                     </View>
 
                     {/* Column 2 - Circular Icon */}
@@ -353,7 +406,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.centeredColumn}>
                         <Text style={styles.player2text}>{item.player2}</Text>
                         <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
-                        <Text style={styles.stepTitle}>{item.player2Steps} Steps</Text>
+                        <Text style={styles.stepTitle}>{player2TotalSteps} Steps</Text>
                     </View>
                 </View>
 
@@ -413,6 +466,32 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 										))}
 									</View>
 								)}
+                            </View>
+                        </View>
+                        {/*where the powerups go*/} 
+                        <View style={styles.row}>
+                        {/* Player1's Powerups */}
+                            <View style={styles.betsListLeft}>
+                                <Text style={[styles.stepTitle, styles.betsText]}>Powerups:</Text>
+                                {modifiedPlayer1Powerups.length === 0 ? (
+                                    <Text>(No powerups used)</Text>
+                                ) : (
+                                    modifiedPlayer1Powerups.map(([type, targetID, userID], index) => (
+                                        <Text key={index} style={{ textAlign: 'left' }}>{`${type}`}</Text>
+                                    ))
+                                )}
+                            </View>
+
+                            {/* Player2's Powerups */}
+                            <View style={styles.betsListRight}>
+                                <Text style={[styles.stepTitle, styles.betsText]}>Powerups:</Text>
+                                {modifiedPlayer2Powerups.length === 0 ? (
+                                    <Text>(No powerups used)</Text>
+                                ) : (
+                                    modifiedPlayer2Powerups.map(([type, targetID, userID], index) => (
+                                        <Text key={index} style={{ textAlign: 'right' }}>{`${type}`}</Text>
+                                    ))
+                                )}
                             </View>
                         </View>
                     </>
@@ -590,18 +669,19 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                    {/* Close button */}
-                    <TouchableOpacity style={styles.closeButton} onPress={closeStoreModal}>
-                        <Text style={styles.closeButtonText}>X</Text>
-                    </TouchableOpacity>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={closeStoreModal}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
 
-                    {/* StorePageas the modal content */}
-                    <StorePage 
-                        navigation={navigation} 
-                        userDiamonds={groups[groupID]?.userDiamonds} 
-                    />
-                </View>
+                        {/* StorePageas the modal content */}
+                        <StorePage 
+                            navigation={navigation} 
+                            userDiamonds={groups[groupID]?.userDiamonds} 
+                            currentGroupUsersArray={currentGroupUsersArray}
+                        />
+                    </View>
                 </View>
             </Modal>
         </View>
