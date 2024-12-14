@@ -403,7 +403,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                     }
                     // add the amount won
                     groupDocRef.update({
-                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
                       // this was the issue: you need to subtract by the amount you bet because of the math above
                       [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
                       // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
@@ -417,7 +417,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                     });
                   } else if (winner == "draw") {
                     groupDocRef.update({
-                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
                       // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
                     }).then(() => {
                       console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
@@ -426,7 +426,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                     });
                   } else { // if they lose, they lose what they wagered
                     groupDocRef.update({
-                      [`users.${duelData.bets[i].userID}.placedBet`]: true,
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
                       [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
                       // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
                     }).then(() => {
@@ -598,7 +598,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
         const usersUpdate = {};
         players.forEach((playerID) => {
           usersUpdate[`users.${playerID}`] = {
-            placedBet: true,
+            placedBet: false,
             tokens: 0,
             todaysBetTokens: 0,
           };
@@ -676,11 +676,9 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
         const usersUpdate = {};
         players.forEach((playerID) => {
           const currentUserData = data.users[playerID];
-          usersUpdate[`users.${playerID}`] = {
-            placedBet: true,
-            tokens: currentUserData.tokens,
-            todaysBetTokens: usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0,
-          };
+          usersUpdate[`users.${playerID}.placedBet`] = false;
+          usersUpdate[`users.${playerID}.tokens`] = currentUserData.tokens;
+          usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; //usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
         });
         groupBatch.update(groupDocRef, usersUpdate);
       }

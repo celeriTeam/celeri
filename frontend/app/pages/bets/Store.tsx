@@ -84,12 +84,14 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
             } finally {
                 setIsBuying(false); // Re-enable interactions
                 setIsModalVisible(false); // Ensure modal is closed
-            }
     
-            if (success) {
-                Alert.alert("Success", "Purchase successful!");
-            } else {
-                Alert.alert("Error", "Failed to purchase item.");
+                setTimeout(() => {
+                    if (success) {
+                        Alert.alert("Success", "Purchase successful!");
+                    } else {
+                        Alert.alert("Error", "Failed to purchase item.");
+                    }
+                }, 200); // Delay in milliseconds
             }
         };
 
