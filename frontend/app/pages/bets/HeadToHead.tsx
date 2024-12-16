@@ -294,7 +294,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            // behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             {/* Overlay to dismiss the keyboard */}
             {keyboardVisible && (

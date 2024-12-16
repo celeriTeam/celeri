@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups } from '@/backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles } from '@/backend/src/groups';
-import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
+import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -104,7 +104,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, totalCycles, yesterdaysDuels, todaysDuels, unbetDuels, isFinishedBetting, isFinishedRecap] = await Promise.all([
+                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, totalCycles, yesterdaysDuels, todaysDuels, unbetDuels, isFinishedBetting, isFinishedRecap, isFinishedTutorial] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -120,7 +120,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getTodaysDuelsSummary(groupID),
                             getUnbetDuels(groupID, uid),
                             checkFinishedBetting(groupID, uid),
-                            checkFinishedRecap(groupID, uid)
+                            checkFinishedRecap(groupID, uid),
+                            checkFinishedTutorial(groupID, uid)
                         ]);
 
                         const userList = await getUsersInGroup(groupID); // userIDs
@@ -162,6 +163,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             unbetDuels,
                             isFinishedBetting,
                             isFinishedRecap,
+                            isFinishedTutorial,
                             userList,
                             users
                         };

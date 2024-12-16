@@ -466,6 +466,25 @@ export const checkFinishedRecap = async (groupID: string, userID: string): Promi
     }
 }
 
+// Check if user has finished tutorial
+export const checkFinishedTutorial = async (groupID: string, userID: string): Promise<boolean> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const finishedTutorial = groupDoc.data()?.finishedTutorial || [];
+            console.log("checkFinishedTutorial - response: ", finishedTutorial.includes(userID));
+            return finishedTutorial.includes(userID);
+        } else{
+            console.error("checkFinishedTutorial - error: No such document!");
+            return false;
+        }
+    } catch (error) {
+         console.error("checkFinishedTutorial - Error fetching user document: ", error);
+         return false;
+    }
+}
+
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 //CREATE bet
@@ -521,6 +540,21 @@ export const addToFinishedRecap = async (groupID: string, userID: string): Promi
         return undefined;
     } catch (error) {
         console.error("addToFinishedRecap - Error adding user to finishedRecap: ", error);
+        return undefined;
+    }
+}
+
+// ADD user to finishedTutorial
+export const addToFinishedTutorial = async (groupID: string, userID: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            finishedTutorial: arrayUnion(userID),
+        });
+        console.log(`User ${userID} has finished recap`);
+        return undefined;
+    } catch (error) {
+        console.error("addToFinishedTutorial - Error adding user to finishedTutorial: ", error);
         return undefined;
     }
 }
