@@ -307,8 +307,8 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
             await updateDoc(groupDocRef, {
                 [`users.${userID}`]: {
                     placedBet: false,
-                    tokens: 0,
-                    todaysBetTokens: startingTokens,
+                    tokens: startingTokens,
+                    todaysBetTokens: 0,
                 },
                 order: [...groupDoc.data()?.order, userID],
             });

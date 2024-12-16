@@ -19,7 +19,7 @@ import { RootStackParamList } from '../../types';
 import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
-import { checkFinishedBetting, checkFinishedRecap } from '@/backend/src/bets';
+import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
 
 const auth = getAuth(app);
@@ -133,11 +133,12 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setIsLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting, groupCreator] = await Promise.all([
+                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
                             checkFinishedBetting(groupID, uid),
+                            checkFinishedTutorial(groupID, uid),
                             getGroupCreator(groupID),
                         ]);
 
@@ -150,6 +151,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                             groupName,
                             isGameActive,
                             isFinishedBetting,
+                            isFinishedTutorial,
                             userList,
                             groupCreator
                         };
@@ -206,7 +208,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
             const isFirstDay = groups[groupID]?.isFirstDay;
-            if (isFirstDay) {
+            const isFinishedTutorial = groups[groupID]?.isFinishedTutorial;
+            if (!isFinishedTutorial) {
                 navigation.navigate('HeadToHeadTutorialPage', { groupID: groupID });
             }
             else if (!isFinishedBetting) {
@@ -237,7 +240,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         );
     } else if (Object.keys(groups).length === 0) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { justifyContent: 'center' }]}>
                 <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
                     <Text style={styles.buttonText}>Create Group</Text>
                 </TouchableOpacity>

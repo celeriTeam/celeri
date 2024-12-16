@@ -29,13 +29,14 @@ const JoinGroupPage: React.FC<Props> = ({ navigation }) => {
                 await addUserToGroup( userID, groupID );
                 const groupInUserResponse = await addGroupToUser( userID, groupID );
                 const isGameActive = await getGroupIsGameActive(groupID);
+                console.log('isgameactive: ', isGameActive);
                 if (groupInUserResponse === 'Group added successfully!') {
                     if (isGameActive) {
                         navigation.reset({
                             index: 1,
                             routes: [
                                 { name: 'HomeTab' },
-                                { name: 'HeadToHeadPage', params: { groupID: groupID, isTutorial: true } }
+                                { name: 'HeadToHeadTutorialPage', params: { groupID: groupID } }
                             ],
                         });
                     } else {

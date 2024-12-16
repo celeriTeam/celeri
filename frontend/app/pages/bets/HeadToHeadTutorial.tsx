@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
+import { addToFinishedTutorial } from '@/backend/src/bets';
 
 type headToHeadTutorialPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadTutorialPage'>;
 type headToHeadTutorialPageRouteProp = RouteProp<RootStackParamList, 'HeadToHeadTutorialPage'>;
@@ -21,17 +22,23 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 	const [tutorialStep, setTutorialStep] = useState(1);
 	const [showTutorialNext, setShowTutorialNext] = useState(true);
 	const [showTutorial, setShowTutorial] = useState(true);
+    const [keyboardVisible, setKeyboardVisible] = useState(false);
 	const increments = [25, 100, 250, 500];
 
 	const handleSubmit = async () => {
-		// navigate to HeadToHead
-		navigation.reset({
-			index: 1,
-			routes: [
-				{ name: 'HomeTab' }, // the first route in the stack
-				{ name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
-			],
-		});
+		try {
+			addToFinishedTutorial(groupID, userID);
+			// navigate to HeadToHead
+			navigation.reset({
+				index: 1,
+				routes: [
+					{ name: 'HomeTab' }, // the first route in the stack
+					{ name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
+				],
+			});
+		} catch (error) {
+            console.error("Error going to headToHeadPage: ", error);
+        }
 	};
 
 	const handleSelectPlayer = () => {
@@ -45,6 +52,22 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 
 	const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
 
+    useEffect(() => {
+        // Add listeners to track the keyboard state
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+            setKeyboardVisible(false);
+        });
+
+        // Cleanup listeners
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
 	const TutorialModal = () => {
 		const getTutorialMessage = () => {
 			switch (tutorialStep) {
@@ -53,7 +76,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					return "Welcome! You must be new here. Let me show you the ropes.";
 				case 2:
 					setShowTutorialNext(true);
-					return `This game will have ${groups[groupID].totalCycles} rounds. You will start with ${groups[groupID].users[userID].tokens} tokens, and gain ${groups[groupID].dailyTokens} tokens everyday. You will be competing against your ${(groups[groupID].userList).length - 1} friends to see who can earn the most tokens.`;
+					return `This game will have ${groups[groupID]?.totalCycles} rounds. You will start with ${groups[groupID]?.users[userID]?.tokens} tokens, and gain ${groups[groupID]?.dailyTokens} tokens everyday. You will be competing against your ${(groups[groupID]?.userList).length - 1} friends to see who can earn the most tokens.`;
 				case 3:
 					setShowTutorialNext(true);
 					return "Here you can see all the tokens you have, as well as how many of them you have bet for that day. Use them wisely.";
@@ -175,7 +198,13 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 	};
 
 	return (
-		<View style={styles.container}>
+		<KeyboardAvoidingView style={styles.container}>
+			
+            {keyboardVisible && (
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    <View style={styles.dismissOverlay} />
+                </TouchableWithoutFeedback>
+            )}
 
 			{/* Modal */}
 			<TutorialModal />
@@ -186,7 +215,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 				(tutorialStep === 4) && {zIndex: 200},
 				(tutorialStep === 5) && {zIndex: 200},
 				]}>
-				<Text style={{ fontFamily: "Lexend" }}>Your Tokens: {groups[groupID].users[userID].tokens}</Text>
+				<Text style={{ fontFamily: "Lexend" }}>Your Tokens: {groups[groupID]?.users[userID]?.tokens}</Text>
 			</View>
 			<View style={[
 				styles.betTokens, 
@@ -263,7 +292,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 				<Text style={styles.submitButtonText}>Next</Text>
 			</TouchableHighlight>
 
-		</View>
+		</KeyboardAvoidingView>
 	);
 };
 
@@ -273,6 +302,10 @@ const styles = StyleSheet.create({
 		position: 'relative',
 		backgroundColor: '#F5F5F5',
 	},
+    dismissOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 1000,
+    },
 	tokens: {
 		position: 'absolute',
 		top: 10,
