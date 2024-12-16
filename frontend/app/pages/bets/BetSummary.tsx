@@ -14,7 +14,7 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
-import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getPowerups } from '@/backend/src/store';
 import { BarChart, LineChart } from 'react-native-chart-kit';
@@ -47,19 +47,32 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[]>([]);
+    const [NODaysLeft, setNODaysLeft] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
     useEffect(() => {
-        try {
-            fetchGroupData(userID);
-            fetchPowerups();
-        } catch (error) {
-            console.error('Error fetching user groups:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [userID]);
+        let cleanup: () => void;
+    
+        const initialize = async () => {
+            try {
+                cleanup = await fetchGroupData(userID);
+                await fetchPowerups();
+            } catch (error) {
+                console.error('Error fetching user groups:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+    
+        initialize();
+    
+        return () => {
+            if (cleanup) {
+                cleanup();
+            }
+        };
+    }, [userID, isModalVisible, isBetHistoryModalVisible, isStepsModalVisible, isStoreModalVisible]);
 
     const fetchPowerups = async () => {
         try {
@@ -77,178 +90,197 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const groupDocRef = doc(groupsRef, groupID);
         let unsubscribeDuels: () => void = () => { };
         let unsubscribeUsers: () => void = () => { };
-        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
-            setIsLoading(true);
-            if (docSnapshot.exists() && groupID) {
-                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds] = await Promise.all([
-                    getGroupProfilePic(groupID),
-                    getGroupName(groupID),
-                    getGroupIsFirstDay(groupID),
-                    getUserTokens(uid, groupID),
-                    getTodaysBetTokens(uid, groupID),
-                    getUserDiamonds(uid, groupID),
-                    getTodaysDuelsSummary(groupID)
-                ]);
+        // Set up listener iff modal is not visible
+        if (!isModalVisible && !isBetHistoryModalVisible && !isStepsModalVisible && !isStoreModalVisible) {
+            const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+                setIsLoading(true);
+                if (docSnapshot.exists() && groupID) {
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycleDay, cycleCount, totalCycles] = await Promise.all([
+                        getGroupProfilePic(groupID),
+                        getGroupName(groupID),
+                        getGroupIsFirstDay(groupID),
+                        getUserTokens(uid, groupID),
+                        getTodaysBetTokens(uid, groupID),
+                        getUserDiamonds(uid, groupID),
+                        getCurrentPlayersInGame(groupID),
+                        getCycleDay(groupID),
+                        getCycleCount(groupID),
+                        getTotalCycles(groupID)
+                    ]);
 
-                const userList = await getUsersInGroup(groupID); // userIDs
-                const users: { [userID: string]: any } = {};
-                let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
-                const usersRef = collection(db, 'users');
-                // user query where userID in userList
-                // const usersQuery = query(usersRef,
-                //     where('__name__', 'in', userList ?? [])
-                // );
-                // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
-                //     usersSnapshot.forEach((userDoc) => {
-                //         const userData = userDoc.data();
-                //         users[userDoc.id] = {
-                //             profilePic: userData.profilePic,
-                //             username: userData.username,
-                //             steps: userData.steps,
-                //             tokens: userData.tokens
-                //         };
-                //     });
-                // });
-                if (userList) {
-                    await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, steps, tokens] = await Promise.all([
-                            getProfilePic(selectedUserID),
-                            getUserName(selectedUserID),
-                            getSteps(selectedUserID),
-                            getUserTokens(selectedUserID, groupID)
-                        ]);
+                    const userList = await getUsersInGroup(groupID); // userIDs
+                    const users: { [userID: string]: any } = {};
+                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
+                    const usersRef = collection(db, 'users');
+                    // user query where userID in userList
+                    // const usersQuery = query(usersRef,
+                    //     where('__name__', 'in', userList ?? [])
+                    // );
+                    // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
+                    //     usersSnapshot.forEach((userDoc) => {
+                    //         const userData = userDoc.data();
+                    //         users[userDoc.id] = {
+                    //             profilePic: userData.profilePic,
+                    //             username: userData.username,
+                    //             steps: userData.steps,
+                    //             tokens: userData.tokens
+                    //         };
+                    //     });
+                    // });
+                    if (userList) {
+                        await Promise.all(userList.map(async (selectedUserID) => {
+                            const [profilePic, username, steps, tokens] = await Promise.all([
+                                getProfilePic(selectedUserID),
+                                getUserName(selectedUserID),
+                                getSteps(selectedUserID),
+                                getUserTokens(selectedUserID, groupID)
+                            ]);
 
-                        users[selectedUserID] = {
-                            profilePic,
-                            username,
-                            steps,
-                            tokens
+                            users[selectedUserID] = {
+                                profilePic,
+                                username,
+                                steps,
+                                tokens
+                            };
+                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: steps });
+                        }));
+                        // Sort users by tokens in descending order
+                        groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
+                    }
+                    setCurrentGroupUsersArray(groupUsersArray);
+
+                    // Set up a listener for today's duels
+                    const groupCycleCount = docSnapshot.data()?.cycleCount;
+                    const groupCycleDay = docSnapshot.data()?.cycleDay;
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const todayStart = Timestamp.fromDate(today);
+                    const todayEnd = Timestamp.fromDate(tomorrow);
+
+                    const duelsCollection = collection(groupDocRef, 'duels');
+                    const duelsQuery = query(duelsCollection,
+                        where('cycleCount', '==', groupCycleCount),
+                        where('cycleDay', '==', groupCycleDay),
+                        where('createdAt', '>=', todayStart),
+                        where('createdAt', '<', todayEnd)
+                    );
+                    unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
+                        setIsLoading(true);
+                        const todaysDuels: { [key: string]: any } = {};
+                        duelsSnapshot.forEach((duelDoc) => {
+                            const duelData = duelDoc.data();
+                            todaysDuels[duelDoc.id] = {
+                                duelID: duelDoc.id,
+                                player1: duelData.player1,
+                                player2: duelData.player2,
+                                bets: duelData.bets || []
+                            };
+                        });
+
+                        const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
+                            return Object.values(duels);
                         };
-                        groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: steps });
-                    }));
-                    // Sort users by tokens in descending order
-                    groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
-                }
-                setCurrentGroupUsersArray(groupUsersArray);
 
-                // Set up a listener for today's duels
-                const groupCycleCount = docSnapshot.data()?.cycleCount;
-                const groupCycleDay = docSnapshot.data()?.cycleDay;
+                        const flattenedBets = flattenDuels(todaysDuels);
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const todayStart = Timestamp.fromDate(today);
-                const todayEnd = Timestamp.fromDate(tomorrow);
+                        const currBets = flattenedBets.map((bet) => {
+                            const player1 = users[bet.player1]?.username;
+                            const player2 = users[bet.player2]?.username;
+                            const player1Steps = users[bet.player1]?.steps;
+                            const player2Steps = users[bet.player2]?.steps;
+                            const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
+                            const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
 
-                const duelsCollection = collection(groupDocRef, 'duels');
-                const duelsQuery = query(duelsCollection,
-                    where('cycleCount', '==', groupCycleCount),
-                    where('cycleDay', '==', groupCycleDay),
-                    where('createdAt', '>=', todayStart),
-                    where('createdAt', '<', todayEnd)
-                );
-                unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
-                    setIsLoading(true);
-                    const todaysDuels: { [key: string]: any } = {};
-                    duelsSnapshot.forEach((duelDoc) => {
-                        const duelData = duelDoc.data();
-                        todaysDuels[duelDoc.id] = {
-                            duelID: duelDoc.id,
-                            player1: duelData.player1,
-                            player2: duelData.player2,
-                            bets: duelData.bets || []
+                            if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
+                                console.log("thisis running!!");
+                                console.log(bet.bets.length);
+                                return {
+                                    duelID: bet.duelID,
+                                    player1,
+                                    player2,
+                                    player1Pfp,
+                                    player2Pfp,
+                                    player1Bets: [],
+                                    player2Bets: [],
+                                    player1Steps,
+                                    player2Steps,
+                                };
+                            } else {
+                                const player1Bets = bet.bets
+                                    .filter((b) => b.betOnUserID === bet.player1 && b.wager !== 0)
+                                    .map((b) => ({
+                                        user: users[b.userID]?.username,
+                                        wager: b.wager,
+                                    }));
+                                const player2Bets = bet.bets
+                                    .filter((b) => b.betOnUserID === bet.player2 && b.wager !== 0)
+                                    .map((b) => ({
+                                        user: users[b.userID]?.username,
+                                        wager: b.wager,
+                                    }));
+
+                                return {
+                                    duelID: bet.duelID,
+                                    player1,
+                                    player2,
+                                    player1Pfp,
+                                    player2Pfp,
+                                    player1Bets,
+                                    player2Bets,
+                                    player1Steps,
+                                    player2Steps,
+                                };
+                            }
+                        });
+
+                        // Update the currentGroups with the latest duels data
+                        currentGroups[groupID] = {
+                            ...currentGroups[groupID],
+                            todaysDuels
                         };
+
+                        console.log(`Duels for group ${groupID} updated`);
+                        console.log('Updated currentGroups: ', currentGroups);
+                        console.log('current Bets', currBets);
+                        setCurrentBets(currBets);
+                        setIsLoading(false);
                     });
 
-                    const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
-                        return Object.values(duels);
-                    };
-
-                    const flattenedBets = flattenDuels(todaysDuels);
-
-                    const currBets = flattenedBets.map((bet) => {
-                        const player1 = users[bet.player1]?.username;
-                        const player2 = users[bet.player2]?.username;
-                        const player1Steps = users[bet.player1]?.steps;
-                        const player2Steps = users[bet.player2]?.steps;
-                        const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
-                        const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
-
-                        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
-                            console.log("thisis running!!");
-                            console.log(bet.bets.length);
-                            return {
-                                duelID: bet.duelID,
-                                player1,
-                                player2,
-                                player1Pfp,
-                                player2Pfp,
-                                player1Bets: [],
-                                player2Bets: [],
-                                player1Steps,
-                                player2Steps,
-                            };
-                        } else {
-                            const player1Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player1 && b.wager !== 0)
-                                .map((b) => ({
-                                    user: users[b.userID]?.username,
-                                    wager: b.wager,
-                                }));
-                            const player2Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player2 && b.wager !== 0)
-                                .map((b) => ({
-                                    user: users[b.userID]?.username,
-                                    wager: b.wager,
-                                }));
-
-                            return {
-                                duelID: bet.duelID,
-                                player1,
-                                player2,
-                                player1Pfp,
-                                player2Pfp,
-                                player1Bets,
-                                player2Bets,
-                                player1Steps,
-                                player2Steps,
-                            };
-                        }
-                    });
-
-                    // Update the currentGroups with the latest duels data
                     currentGroups[groupID] = {
-                        ...currentGroups[groupID],
-                        todaysDuels
+                        groupImageUrl,
+                        groupName,
+                        isFirstDay,
+                        userTokens,
+                        userList,
+                        todaysBetTokens,
+                        userDiamonds,
+                        currentPlayersInGame,
+                        cycleDay,
+                        cycleCount,
+                        totalCycles
                     };
+                }
+                setIsLoading(false);
 
-                    console.log(`Duels for group ${groupID} updated`);
-                    console.log('Updated currentGroups: ', currentGroups);
-                    console.log('current Bets', currBets);
-                    setCurrentBets(currBets);
-                    setIsLoading(false);
-                });
+                // Set # of days left in the game
+                console.log('currentplayersingame: ', currentGroups[groupID]?.currentPlayersInGame);
+                console.log('cycleday', currentGroups[groupID]?.cycleDay);
+                const daysLeft = currentGroups[groupID]?.currentPlayersInGame - 1 - currentGroups[groupID]?.cycleDay + ((currentGroups[groupID]?.totalCycles - currentGroups[groupID]?.cycleCount) * (Object.keys(currentGroups[groupID]?.userList).length - 1));
+                setNODaysLeft(daysLeft);
+            });
+            setGroups(currentGroups);
 
-                currentGroups[groupID] = {
-                    groupImageUrl,
-                    groupName,
-                    isFirstDay,
-                    userTokens,
-                    todaysBetTokens,
-                    userDiamonds,
-                };
-            }
-            setIsLoading(false);
-        });
-        setGroups(currentGroups);
-        return () => {
-            unsubscribeGroup();
-            if (typeof unsubscribeDuels === 'function') {
-                unsubscribeDuels();
-            }
-        };
+            return () => {
+                unsubscribeGroup();
+                if (typeof unsubscribeDuels === 'function') {
+                    unsubscribeDuels();
+                }
+            };
+        }
+        return () => {};
     };
 
     const closeModal = async () => {
@@ -511,13 +543,12 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     };
 
     type StepsModalProps = {
-        isVisible: boolean;
-        onClose: () => void;
         groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[];
     };
 
-    const StepsModal: React.FC<StepsModalProps> = ({ isVisible, onClose, groupUsersArray }) => {
+    const StepsModal: React.FC<StepsModalProps> = ({ groupUsersArray }) => {
         const screenWidth = Dimensions.get('window').width;
+        const screenHeight = Dimensions.get('window').height;
         
         // Sort users by steps in descending order
         const sortedUsers = [...groupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0));
@@ -541,29 +572,26 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         };
     
         return (
-            <Modal visible={isVisible} onRequestClose={onClose}>
-                <View style={{ backgroundColor: 'white', padding: 20, paddingTop: 100, borderRadius: 10 }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Player Steps</Text>
-                    <BarChart
-                        data={data}
-                        width={screenWidth - 60}
-                        height={220}
-                        chartConfig={chartConfig}
-                        verticalLabelRotation={30}
-                        showValuesOnTopOfBars={true}
-                        fromZero={true}
-                        yAxisLabel=""
-                        yAxisSuffix=""
-                        xAxisLabel=""
-                        horizontalLabelRotation={-45}
-                        withHorizontalLabels={true}
-                        segments={4}
-                    />
-                    <Button title="Close" onPress={onClose} />
-                </View>
-            </Modal>
+            <View style={ {justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, paddingTop: 100, borderRadius: 10 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Player Steps</Text>
+                <BarChart
+                    data={data}
+                    width={screenWidth - 60}
+                    height={220}
+                    chartConfig={chartConfig}
+                    verticalLabelRotation={30}
+                    showValuesOnTopOfBars={true}
+                    fromZero={true}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    xAxisLabel=""
+                    horizontalLabelRotation={-45}
+                    withHorizontalLabels={true}
+                    segments={4}
+                />
+            </View>
         );
-    };    
+    };
 
     return (
         <View style={styles.container}>
@@ -589,6 +617,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
+            <Text style={styles.daysLeft}>{NODaysLeft} days left!</Text>
             <View style={styles.tokens}>
                 <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
                 <Image
@@ -683,11 +712,25 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
 
             {/* Modal */}
-            <StepsModal
-                isVisible={isStepsModalVisible}
-                onClose={() => setStepsModalVisible(false)}
-                groupUsersArray={currentGroupUsersArray}
-            />
+            <Modal
+                transparent={true}
+                visible={isStepsModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setStepsModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+
+                        {/* StorePageas the modal content */}
+                        <StepsModal
+                            groupUsersArray={currentGroupUsersArray}
+                        />
+                    </View>
+                </View>
+            </Modal>
             {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
                 <View style={styles.button}>
                     <TouchableOpacity onPress={openBetHistoryModal}>
@@ -858,6 +901,16 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         textAlign: 'center',
         color: 'blue',
+    },
+    daysLeft: {
+        position: 'absolute',
+        right: 10,
+        top: 75,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        color: 'red',
     },
     tokens: {
         position: 'absolute',
