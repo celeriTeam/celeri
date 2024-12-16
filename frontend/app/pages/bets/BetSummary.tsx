@@ -72,7 +72,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 cleanup();
             }
         };
-    }, [userID, isModalVisible, isBetHistoryModalVisible, isStepsModalVisible, isStoreModalVisible]);
+    }, [userID, isModalVisible, isStoreModalVisible]);
 
     const fetchPowerups = async () => {
         try {
@@ -91,7 +91,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         let unsubscribeDuels: () => void = () => { };
         let unsubscribeUsers: () => void = () => { };
         // Set up listener iff modal is not visible
-        if (!isModalVisible && !isBetHistoryModalVisible && !isStepsModalVisible && !isStoreModalVisible) {
+        if (!isModalVisible && !isStoreModalVisible) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
