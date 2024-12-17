@@ -678,7 +678,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           const currentUserData = data.users[playerID];
           usersUpdate[`users.${playerID}.placedBet`] = false;
           usersUpdate[`users.${playerID}.tokens`] = currentUserData.tokens;
-          usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; //usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
+          usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; // usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
         });
         groupBatch.update(groupDocRef, usersUpdate);
       }
