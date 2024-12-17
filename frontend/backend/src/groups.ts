@@ -246,6 +246,57 @@ export const getTotalCycles = async (groupID: string): Promise<number | undefine
     }
 }
 
+// GET cycle day
+export const getCycleDay = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.cycleDay){
+            console.log("getCycleDay - response: ", groupDoc.data()?.cycleDay);
+            return groupDoc.data()?.cycleDay;
+        } else{
+            console.error("getCycleDay - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getCycleDay - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET cycle count
+export const getCycleCount = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.cycleCount){
+            console.log("getCycleCount - response: ", groupDoc.data()?.cycleCount);
+            return groupDoc.data()?.cycleCount;
+        } else{
+            console.error("getCycleCount - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getCycleCount - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET current players in game
+export const getCurrentPlayersInGame = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.currentPlayersInGame){
+            console.log("getCurrentPlayersInGame - response: ", groupDoc.data()?.currentPlayersInGame);
+            return groupDoc.data()?.currentPlayersInGame;
+        } else{
+            console.error("getCurrentPlayersInGame - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getCurrentPlayersInGame - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 // GET diamonds
 export const getUserDiamonds = async (userID: string, groupID: string): Promise<number> => {
     try {
@@ -307,8 +358,8 @@ export const addUserToGroup = async (userID: string, groupID: string): Promise<u
             await updateDoc(groupDocRef, {
                 [`users.${userID}`]: {
                     placedBet: false,
-                    tokens: 0,
-                    todaysBetTokens: startingTokens,
+                    tokens: startingTokens,
+                    todaysBetTokens: 0,
                 },
                 order: [...groupDoc.data()?.order, userID],
             });

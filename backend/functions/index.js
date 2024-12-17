@@ -569,6 +569,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
         cycleDuels = createCycle(players);
         groupBatch.update(groupDocRef, {
           currentPlayersInGame: playerCount,
+          finishedTutorial: admin.firestore.FieldValue.delete(),
         });
         console.log("checkpoint three");
       } else {
@@ -592,6 +593,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           totalCycles: admin.firestore.FieldValue.delete(),
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
+          finishedTutorial: admin.firestore.FieldValue.delete(),
           startingTokens: admin.firestore.FieldValue.delete(),
         });
         // reset the tokens for each player
@@ -670,6 +672,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           cycleDuels: cycleDuels,
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
+          finishedTutorial: admin.firestore.FieldValue.delete(),
         });
 
         // update the bet tokens for each player

@@ -14,9 +14,11 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
-import { addGroupImage, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getPowerups } from '@/backend/src/store';
+import { BarChart, LineChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
 
 const db = getFirestore(app);
 
@@ -38,25 +40,39 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { groupID } = route.params;
     const { userID, loading } = useUser();
     const [isModalVisible, setModalVisible] = useState(false);
+    const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[]>([]);
+    const [NODaysLeft, setNODaysLeft] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
     useEffect(() => {
-        try {
-            fetchGroupData(userID);
-            fetchPowerups();
-        } catch (error) {
-            console.error('Error fetching user groups:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [userID]);
+        let cleanup: () => void;
+    
+        const initialize = async () => {
+            try {
+                cleanup = await fetchGroupData(userID);
+                await fetchPowerups();
+            } catch (error) {
+                console.error('Error fetching user groups:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+    
+        initialize();
+    
+        return () => {
+            if (cleanup) {
+                cleanup();
+            }
+        };
+    }, [userID, isModalVisible, isStoreModalVisible]);
 
     const fetchPowerups = async () => {
         try {
@@ -72,188 +88,207 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const currentGroups: { [groupID: string]: any } = {};
         const groupsRef = collection(db, "groups");
         const groupDocRef = doc(groupsRef, groupID);
-        let unsubscribeDuels: () => void = () => {};
-        let unsubscribeUsers: () => void = () => {};
-        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
-            setIsLoading(true);
-            if (docSnapshot.exists() && groupID) {
-                const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds] = await Promise.all([
-                    getGroupProfilePic(groupID),
-                    getGroupName(groupID),
-                    getGroupIsFirstDay(groupID),
-                    getUserTokens(uid, groupID),
-                    getTodaysBetTokens(uid, groupID),
-                    getUserDiamonds(uid, groupID),
-                    getTodaysDuelsSummary(groupID)
-                ]);
+        let unsubscribeDuels: () => void = () => { };
+        let unsubscribeUsers: () => void = () => { };
+        // Set up listener iff modal is not visible
+        if (!isModalVisible && !isStoreModalVisible) {
+            const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+                setIsLoading(true);
+                if (docSnapshot.exists() && groupID) {
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycleDay, cycleCount, totalCycles] = await Promise.all([
+                        getGroupProfilePic(groupID),
+                        getGroupName(groupID),
+                        getGroupIsFirstDay(groupID),
+                        getUserTokens(uid, groupID),
+                        getTodaysBetTokens(uid, groupID),
+                        getUserDiamonds(uid, groupID),
+                        getCurrentPlayersInGame(groupID),
+                        getCycleDay(groupID),
+                        getCycleCount(groupID),
+                        getTotalCycles(groupID)
+                    ]);
 
-                const userList = await getUsersInGroup(groupID); // userIDs
-                const users: { [userID: string]: any } = {};
-                let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[] = [];
-                const usersRef = collection(db, 'users');
-                // user query where userID in userList
-                // const usersQuery = query(usersRef,
-                //     where('__name__', 'in', userList ?? [])
-                // );
-                // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
-                //     usersSnapshot.forEach((userDoc) => {
-                //         const userData = userDoc.data();
-                //         users[userDoc.id] = {
-                //             profilePic: userData.profilePic,
-                //             username: userData.username,
-                //             steps: userData.steps,
-                //             tokens: userData.tokens
-                //         };
-                //     });
-                // });
-                if (userList) {
-                    await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, steps, tokens] = await Promise.all([
-                            getProfilePic(selectedUserID),
-                            getUserName(selectedUserID),
-                            getSteps(selectedUserID),
-                            getUserTokens(selectedUserID, groupID)
-                        ]);
-                
-                        users[selectedUserID] = {
-                            profilePic,
-                            username,
-                            steps,
-                            tokens
+                    const userList = await getUsersInGroup(groupID); // userIDs
+                    const users: { [userID: string]: any } = {};
+                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
+                    const usersRef = collection(db, 'users');
+                    // user query where userID in userList
+                    // const usersQuery = query(usersRef,
+                    //     where('__name__', 'in', userList ?? [])
+                    // );
+                    // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
+                    //     usersSnapshot.forEach((userDoc) => {
+                    //         const userData = userDoc.data();
+                    //         users[userDoc.id] = {
+                    //             profilePic: userData.profilePic,
+                    //             username: userData.username,
+                    //             steps: userData.steps,
+                    //             tokens: userData.tokens
+                    //         };
+                    //     });
+                    // });
+                    if (userList) {
+                        await Promise.all(userList.map(async (selectedUserID) => {
+                            const [profilePic, username, steps, tokens] = await Promise.all([
+                                getProfilePic(selectedUserID),
+                                getUserName(selectedUserID),
+                                getSteps(selectedUserID),
+                                getUserTokens(selectedUserID, groupID)
+                            ]);
+
+                            users[selectedUserID] = {
+                                profilePic,
+                                username,
+                                steps,
+                                tokens
+                            };
+                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: steps });
+                        }));
+                        // Sort users by tokens in descending order
+                        groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
+                    }
+                    setCurrentGroupUsersArray(groupUsersArray);
+
+                    // Set up a listener for today's duels
+                    const groupCycleCount = docSnapshot.data()?.cycleCount;
+                    const groupCycleDay = docSnapshot.data()?.cycleDay;
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const todayStart = Timestamp.fromDate(today);
+                    const todayEnd = Timestamp.fromDate(tomorrow);
+
+                    const duelsCollection = collection(groupDocRef, 'duels');
+                    const duelsQuery = query(duelsCollection,
+                        where('cycleCount', '==', groupCycleCount),
+                        where('cycleDay', '==', groupCycleDay),
+                        where('createdAt', '>=', todayStart),
+                        where('createdAt', '<', todayEnd)
+                    );
+                    unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
+                        setIsLoading(true);
+                        const todaysDuels: { [key: string]: any } = {};
+                        duelsSnapshot.forEach((duelDoc) => {
+                            const duelData = duelDoc.data();
+                            todaysDuels[duelDoc.id] = {
+                                duelID: duelDoc.id,
+                                player1: duelData.player1,
+                                player2: duelData.player2,
+                                bets: duelData.bets || []
+                            };
+                        });
+
+                        const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
+                            return Object.values(duels);
                         };
-                        groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens });
-                    }));
-                    // Sort users by tokens in descending order
-                    groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
-                }
-                setCurrentGroupUsersArray(groupUsersArray);
 
-                // Set up a listener for today's duels
-                const groupCycleCount = docSnapshot.data()?.cycleCount;
-                const groupCycleDay = docSnapshot.data()?.cycleDay;
+                        const flattenedBets = flattenDuels(todaysDuels);
 
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const tomorrow = new Date(today);
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const todayStart = Timestamp.fromDate(today);
-                const todayEnd = Timestamp.fromDate(tomorrow);
+                        const currBets = flattenedBets.map((bet) => {
+                            const player1 = users[bet.player1]?.username;
+                            const player2 = users[bet.player2]?.username;
+                            const player1Steps = users[bet.player1]?.steps;
+                            const player2Steps = users[bet.player2]?.steps;
+                            const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
+                            const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
 
-                const duelsCollection = collection(groupDocRef, 'duels');
-                const duelsQuery = query(duelsCollection,
-                    where('cycleCount', '==', groupCycleCount),
-                    where('cycleDay', '==', groupCycleDay),
-                    where('createdAt', '>=', todayStart),
-                    where('createdAt', '<', todayEnd)
-                );
-                unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
-                    setIsLoading(true);
-                    const todaysDuels: { [key: string]: any } = {};
-                    duelsSnapshot.forEach((duelDoc) => {
-                        const duelData = duelDoc.data();
-                        todaysDuels[duelDoc.id] = {
-                            duelID: duelDoc.id,
-                            player1: duelData.player1,
-                            player2: duelData.player2,
-                            bets: duelData.bets || []
+                            if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
+                                console.log("thisis running!!");
+                                console.log(bet.bets.length);
+                                return {
+                                    duelID: bet.duelID,
+                                    player1,
+                                    player2,
+                                    player1Pfp,
+                                    player2Pfp,
+                                    player1Bets: [],
+                                    player2Bets: [],
+                                    player1Steps,
+                                    player2Steps,
+                                };
+                            } else {
+                                const player1Bets = bet.bets
+                                    .filter((b) => b.betOnUserID === bet.player1 && b.wager !== 0)
+                                    .map((b) => ({
+                                        user: users[b.userID]?.username,
+                                        wager: b.wager,
+                                    }));
+                                const player2Bets = bet.bets
+                                    .filter((b) => b.betOnUserID === bet.player2 && b.wager !== 0)
+                                    .map((b) => ({
+                                        user: users[b.userID]?.username,
+                                        wager: b.wager,
+                                    }));
+
+                                return {
+                                    duelID: bet.duelID,
+                                    player1,
+                                    player2,
+                                    player1Pfp,
+                                    player2Pfp,
+                                    player1Bets,
+                                    player2Bets,
+                                    player1Steps,
+                                    player2Steps,
+                                };
+                            }
+                        });
+
+                        // Update the currentGroups with the latest duels data
+                        currentGroups[groupID] = {
+                            ...currentGroups[groupID],
+                            todaysDuels
                         };
+
+                        console.log(`Duels for group ${groupID} updated`);
+                        console.log('Updated currentGroups: ', currentGroups);
+                        console.log('current Bets', currBets);
+                        setCurrentBets(currBets);
+                        setIsLoading(false);
                     });
 
-                    const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } }) => {
-                        return Object.values(duels);
-                    };
-        
-                    const flattenedBets = flattenDuels(todaysDuels);
-        
-                    const currBets = flattenedBets.map((bet) => {
-                        const player1 = users[bet.player1]?.username;
-                        const player2 = users[bet.player2]?.username;
-                        const player1Steps = users[bet.player1]?.steps;
-                        const player2Steps = users[bet.player2]?.steps;
-                        const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
-                        const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
-        
-                        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
-                            console.log("thisis running!!");
-                            console.log(bet.bets.length);
-                            return {
-                                duelID: bet.duelID,
-                                player1,
-                                player2,
-                                player1Pfp,
-                                player2Pfp,
-                                player1Bets: [],
-                                player2Bets: [],
-                                player1Steps,
-                                player2Steps,
-                            };
-                        } else {
-                            const player1Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player1 && b.wager !== 0)
-                                .map((b) => ({
-                                    user: users[b.userID]?.username,
-                                    wager: b.wager,
-                                }));
-                            const player2Bets = bet.bets
-                                .filter((b) => b.betOnUserID === bet.player2 && b.wager !== 0)
-                                .map((b) => ({
-                                    user: users[b.userID]?.username,
-                                    wager: b.wager,
-                                }));
-        
-                            return {
-                                duelID: bet.duelID,
-                                player1,
-                                player2,
-                                player1Pfp,
-                                player2Pfp,
-                                player1Bets,
-                                player2Bets,
-                                player1Steps,
-                                player2Steps,
-                            };
-                        }
-                    });
-        
-                    // Update the currentGroups with the latest duels data
                     currentGroups[groupID] = {
-                        ...currentGroups[groupID],
-                        todaysDuels
+                        groupImageUrl,
+                        groupName,
+                        isFirstDay,
+                        userTokens,
+                        userList,
+                        todaysBetTokens,
+                        userDiamonds,
+                        currentPlayersInGame,
+                        cycleDay,
+                        cycleCount,
+                        totalCycles
                     };
-        
-                    console.log(`Duels for group ${groupID} updated`);
-                    console.log('Updated currentGroups: ', currentGroups);
-                    console.log('current Bets', currBets);
-                    setCurrentBets(currBets);
-                    setIsLoading(false);
-                });
-                
-                currentGroups[groupID] = {
-                    groupImageUrl,
-                    groupName,
-                    isFirstDay,
-                    userTokens,
-                    todaysBetTokens,
-                    userDiamonds,
-                };
-            }          
-            setIsLoading(false);  
-        });
-        setGroups(currentGroups);
-        return () => {
-            unsubscribeGroup();
-            if (typeof unsubscribeDuels === 'function') {
-                unsubscribeDuels();
-            }
-        };        
+                }
+                setIsLoading(false);
+
+                // Set # of days left in the game
+                console.log('currentplayersingame: ', currentGroups[groupID]?.currentPlayersInGame);
+                console.log('cycleday', currentGroups[groupID]?.cycleDay);
+                const daysLeft = currentGroups[groupID]?.currentPlayersInGame - 1 - currentGroups[groupID]?.cycleDay + ((currentGroups[groupID]?.totalCycles - currentGroups[groupID]?.cycleCount) * (Object.keys(currentGroups[groupID]?.userList).length - 1));
+                setNODaysLeft(daysLeft);
+            });
+            setGroups(currentGroups);
+
+            return () => {
+                unsubscribeGroup();
+                if (typeof unsubscribeDuels === 'function') {
+                    unsubscribeDuels();
+                }
+            };
+        }
+        return () => {};
     };
-  
+
     const closeModal = async () => {
-      setModalVisible(false);
+        setModalVisible(false);
     };
-  
+
     const openModal = async () => {
-      setModalVisible(true);
+        setModalVisible(true);
     };
 
     const closeBetHistoryModal = async () => {
@@ -279,30 +314,30 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const pickImage = async () => {
         // Request permission to access the media library
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
         if (permissionResult.granted === false) {
-          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-          return;
+            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+            return;
         }
-    
+
         // Launch image picker
         const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.5,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-            // Compress and resize the image
-            const manipulatedImage = await ImageManipulator.manipulateAsync(
-                selectedAsset.uri,
-                [{ resize: { width: 800 } }], // Resize to 800px width
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
+                // Compress and resize the image
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    selectedAsset.uri,
+                    [{ resize: { width: 800 } }], // Resize to 800px width
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
 
-            addGroupImage(groupID, manipulatedImage.uri);
+                addGroupImage(groupID, manipulatedImage.uri);
             }
         }
     };
@@ -330,8 +365,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         );
     }
 
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number}[], player2Bets: { user: string, wager: number}[], player1Steps: number, player2Steps: number } }) => {
-        
+    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number } }) => {
+
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
 
         const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
@@ -339,7 +374,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
         // Calculate the sum of all bets
         const totalBets = totalPlayer1Bets + totalPlayer2Bets;
-        
+
         // Calculate the ratios for the circular value
         const player1Ratio = totalBets === 0 ? 0.5 : totalPlayer1Bets / totalBets;
         const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
@@ -349,7 +384,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player1}`);
             return duelID === item.duelID && targetUserName === item.player1;
         });
-        
+
         const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
             console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player2}`);
             return duelID === item.duelID && targetUserName === item.player2;
@@ -390,55 +425,55 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     {/* Players and Pictures */}
                     <View style={styles.row}>
                         {/* Column 1 - Player 1 */}
-                    <View style={styles.centeredColumn}>
-                        <Text style={styles.player1text}>{item.player1}</Text>
-                        <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
-                        <Text style={styles.stepTitle}>{player1TotalSteps} Steps</Text>
+                        <View style={styles.centeredColumn}>
+                            <Text style={styles.player1text}>{item.player1}</Text>
+                            <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
+                            <Text style={styles.stepTitle}>{player1TotalSteps} Steps</Text>
+                        </View>
+
+                        {/* Column 2 - Circular Icon */}
+                        <View style={styles.centeredColumn}>
+                            <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
+                            <Text></Text>
+                        </View>
+
+                        {/* Column 3 - Player 2 */}
+                        <View style={styles.centeredColumn}>
+                            <Text style={styles.player2text}>{item.player2}</Text>
+                            <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
+                            <Text style={styles.stepTitle}>{player2TotalSteps} Steps</Text>
+                        </View>
                     </View>
 
-                    {/* Column 2 - Circular Icon */}
-                    <View style={styles.centeredColumn}>
-                        <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
-                        <Text></Text>
-                    </View>
 
-                    {/* Column 3 - Player 2 */}
-                    <View style={styles.centeredColumn}>
-                        <Text style={styles.player2text}>{item.player2}</Text>
-                        <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
-                        <Text style={styles.stepTitle}>{player2TotalSteps} Steps</Text>
+                    <View style={styles.rowBets}>
+                        {/* Player 1 Bets and Coin */}
+                        <View style={styles.betsContainer}>
+                            <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
+                            <Image
+                                source={require('../../../assets/images/gold_coin.png')}
+                                style={styles.coinIcon}
+                            />
+                        </View>
+                        <Text style={styles.betsColonText}> : </Text>
+                        {/* Player 2 Bets and Coin */}
+                        <View style={styles.betsContainer}>
+                            <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
+                            <Image
+                                source={require('../../../assets/images/gold_coin.png')}
+                                style={styles.coinIcon}
+                            />
+                        </View>
                     </View>
-                </View>
+                </TouchableOpacity>
 
-                    
-                <View style={styles.rowBets}>
-                    {/* Player 1 Bets and Coin */}
-                    <View style={styles.betsContainer}>
-                        <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
-                        <Image
-                            source={require('../../../assets/images/gold_coin.png')}
-                            style={styles.coinIcon}
-                        />
-                    </View>
-                    <Text style={styles.betsColonText}> : </Text>
-                    {/* Player 2 Bets and Coin */}
-                    <View style={styles.betsContainer}>
-                        <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
-                        <Image
-                            source={require('../../../assets/images/gold_coin.png')}
-                            style={styles.coinIcon}
-                        />
-                    </View>
-                </View>
-            </TouchableOpacity>
-
-            {isExpanded && (
+                {isExpanded && (
                     <>
                         <View style={styles.row}>
                             {/* Player1's Bets */}
                             <View style={styles.betsListLeft}>
                                 <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
-								{item.player1Bets.length === 0 ? (
+                                {item.player1Bets.length === 0 ? (
                                     <View>
                                         <Text>(No bets placed)</Text>
                                     </View>
@@ -447,30 +482,30 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                         {item.player1Bets.map((bet, index) => (
                                             <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
                                         ))}
-									</View>
-								)}
+                                    </View>
+                                )}
                             </View>
 
                             {/* Player2's Bets */}
                             <View style={styles.betsListRight}>
-								{/* Player2's Steps */}
+                                {/* Player2's Steps */}
                                 <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
-								{item.player2Bets.length === 0 ? (
+                                {item.player2Bets.length === 0 ? (
                                     <View>
                                         <Text>(No bets placed)</Text>
                                     </View>
                                 ) : (
                                     <View>
-										{item.player2Bets.map((bet, index) => (
-											<Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-										))}
-									</View>
-								)}
+                                        {item.player2Bets.map((bet, index) => (
+                                            <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
+                                        ))}
+                                    </View>
+                                )}
                             </View>
                         </View>
-                        {/*where the powerups go*/} 
+                        {/*where the powerups go*/}
                         <View style={styles.row}>
-                        {/* Player1's Powerups */}
+                            {/* Player1's Powerups */}
                             <View style={styles.betsListLeft}>
                                 <Text style={[styles.stepTitle, styles.betsText]}>Powerups:</Text>
                                 {modifiedPlayer1Powerups.length === 0 ? (
@@ -496,7 +531,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         </View>
                     </>
                 )}
-        </View>
+            </View>
         );
     };
 
@@ -505,6 +540,57 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             ...prevExpandedItems,
             [duelID]: !prevExpandedItems[duelID], // toggle the current duelID
         }));
+    };
+
+    type StepsModalProps = {
+        groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[];
+    };
+
+    const StepsModal: React.FC<StepsModalProps> = ({ groupUsersArray }) => {
+        const screenWidth = Dimensions.get('window').width;
+        const screenHeight = Dimensions.get('window').height;
+        
+        // Sort users by steps in descending order
+        const sortedUsers = [...groupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0));
+        
+        const data = {
+            labels: sortedUsers.map(user => user.name).filter(name => name !== undefined) as string[],
+            datasets: [
+                {
+                    data: sortedUsers.map(user => user.steps).filter(steps => steps !== undefined) as number[],
+                }
+            ]
+        };
+    
+        const chartConfig = {
+            backgroundGradientFrom: '#ffffff',
+            backgroundGradientTo: '#ffffff',
+            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
+            barPercentage: 0.5,
+            decimalPlaces: 0,
+            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+        };
+    
+        return (
+            <View style={ {justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, paddingTop: 100, borderRadius: 10 }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Player Steps</Text>
+                <BarChart
+                    data={data}
+                    width={screenWidth - 60}
+                    height={220}
+                    chartConfig={chartConfig}
+                    verticalLabelRotation={30}
+                    showValuesOnTopOfBars={true}
+                    fromZero={true}
+                    yAxisLabel=""
+                    yAxisSuffix=""
+                    xAxisLabel=""
+                    horizontalLabelRotation={-45}
+                    withHorizontalLabels={true}
+                    segments={4}
+                />
+            </View>
+        );
     };
 
     return (
@@ -524,14 +610,15 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.storeButton} onPress={openStoreModal}>
                 <Image
                     source={require('../../../assets/images/store.png')}
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <View style={styles.tokens}>  
+            <Text style={styles.daysLeft}>{NODaysLeft} days left!</Text>
+            <View style={styles.tokens}>
                 <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
                 <Image
                     source={require('../../../assets/images/gold_coin.png')}
@@ -563,52 +650,55 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 )}
             </View>
             <TouchableOpacity onPress={pickImage}>
-                <Text style={[styles.buttonText, {marginBottom: 40}]}>Edit group pic</Text>
+                <Text style={[styles.buttonText, { marginBottom: 20 }]}>Edit group pic</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setStepsModalVisible(true)} >
+                <Text style={[styles.buttonText, { color: 'blue' }]}>See Race</Text>
             </TouchableOpacity>
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
                 {currentGroupUsersArray ? (
                     <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
                         {currentGroupUsersArray.map((user, index) => (
-                        <TouchableOpacity
-                            key={user.id}
-                            style={styles.userContainer}
-                            onPress={() => createMemberButtonHandle(user.id)}
-                        >
-                            <View style={styles.imageContainer}>
-                                <Image source={{ uri: user.pfp }} style={styles.profileImage} />
-                                {/* Conditionally render the placement images for the first three users */}
-                                {index === 0 && (
+                            <TouchableOpacity
+                                key={user.id}
+                                style={styles.userContainer}
+                                onPress={() => createMemberButtonHandle(user.id)}
+                            >
+                                <View style={styles.imageContainer}>
+                                    <Image source={{ uri: user.pfp }} style={styles.profileImage} />
+                                    {/* Conditionally render the placement images for the first three users */}
+                                    {index === 0 && (
+                                        <Image
+                                            source={require('../../../assets/images/first_place.png')}
+                                            style={styles.placementImage}
+                                        />
+                                    )}
+                                    {index === 1 && (
+                                        <Image
+                                            source={require('../../../assets/images/second_place.png')}
+                                            style={styles.placementImage}
+                                        />
+                                    )}
+                                    {index === 2 && (
+                                        <Image
+                                            source={require('../../../assets/images/third_place.png')}
+                                            style={styles.placementImage}
+                                        />
+                                    )}
+                                </View>
+                                <Text style={styles.username}>{user.name}</Text>
+                                <View style={styles.betsContainer}>
+                                    <Text style={styles.username}>{user.tokens}</Text>
                                     <Image
-                                        source={require('../../../assets/images/first_place.png')}
-                                        style={styles.placementImage}
+                                        source={require('../../../assets/images/gold_coin.png')}
+                                        style={styles.coinIcon}
                                     />
-                                )}
-                                {index === 1 && (
-                                    <Image
-                                        source={require('../../../assets/images/second_place.png')}
-                                        style={styles.placementImage}
-                                    />
-                                )}
-                                {index === 2 && (
-                                    <Image
-                                        source={require('../../../assets/images/third_place.png')}
-                                        style={styles.placementImage}
-                                    />
-                                )}
-                            </View>
-                            <Text style={styles.username}>{user.name}</Text>
-                            <View style={styles.betsContainer}>
-                                <Text style={styles.username}>{user.tokens}</Text>
-                                <Image
-                                    source={require('../../../assets/images/gold_coin.png')}
-                                    style={styles.coinIcon}
-                                />
-                            </View>
-                        </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
-                    ) : (
+                ) : (
                     <Text>No users found.</Text>
                 )}
             </View>
@@ -619,9 +709,28 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     renderItem={renderBetItem}
                 />
             </View>
-            
+
 
             {/* Modal */}
+            <Modal
+                transparent={true}
+                visible={isStepsModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setStepsModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+
+                        {/* StorePageas the modal content */}
+                        <StepsModal
+                            groupUsersArray={currentGroupUsersArray}
+                        />
+                    </View>
+                </View>
+            </Modal>
             {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
                 <View style={styles.button}>
                     <TouchableOpacity onPress={openBetHistoryModal}>
@@ -635,15 +744,15 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                    {/* Close button */}
-                    <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                        <Text style={styles.closeButtonText}>X</Text>
-                    </TouchableOpacity>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
 
-                    {/* BetRecapPage as the modal content */}
-                    <BetRecapPage navigation={navigation} />
-                </View>
+                        {/* BetRecapPage as the modal content */}
+                        <BetRecapPage navigation={navigation} />
+                    </View>
                 </View>
             </Modal>
             <Modal
@@ -652,15 +761,15 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                    {/* Close button */}
-                    <TouchableOpacity style={styles.closeButton} onPress={closeBetHistoryModal}>
-                        <Text style={styles.closeButtonText}>X</Text>
-                    </TouchableOpacity>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={closeBetHistoryModal}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
 
-                    {/* BetRecapPage as the modal content */}
-                    <BetHistoryPage navigation={navigation} />
-                </View>
+                        {/* BetRecapPage as the modal content */}
+                        <BetHistoryPage navigation={navigation} />
+                    </View>
                 </View>
             </Modal>
             <Modal
@@ -676,9 +785,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
 
                         {/* StorePageas the modal content */}
-                        <StorePage 
-                            navigation={navigation} 
-                            userDiamonds={groups[groupID]?.userDiamonds} 
+                        <StorePage
+                            navigation={navigation}
+                            userDiamonds={groups[groupID]?.userDiamonds}
                             currentGroupUsersArray={currentGroupUsersArray}
                         />
                     </View>
@@ -793,6 +902,16 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: 'blue',
     },
+    daysLeft: {
+        position: 'absolute',
+        right: 10,
+        top: 75,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        color: 'red',
+    },
     tokens: {
         position: 'absolute',
         right: 10,
@@ -866,27 +985,27 @@ const styles = StyleSheet.create({
         paddingTop: 20,
     },
     userRow: {
-      flexDirection: 'row', 
-      alignItems: 'center',
-      paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
     },
     userContainer: {
-      marginRight: 20,
-      alignItems: 'center',
+        marginRight: 20,
+        alignItems: 'center',
     },
     profileImage: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      borderWidth: 1,
-      borderColor: "#D3D3D3",
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: "#D3D3D3",
     },
     imageContainer: {
         position: 'relative',
         width: 60,
         height: 60,
-      },
-      placementImage: {
+    },
+    placementImage: {
         position: 'absolute',
         bottom: 0,
         right: 0,
@@ -894,10 +1013,10 @@ const styles = StyleSheet.create({
         height: 15, // Adjust height based on your image size
     },
     username: {
-      marginTop: 5,
-      fontSize: 14,
-      textAlign: 'center',
-      fontFamily: 'Lexend',
+        marginTop: 5,
+        fontSize: 14,
+        textAlign: 'center',
+        fontFamily: 'Lexend',
     },
     flatList: {
         padding: 15,
