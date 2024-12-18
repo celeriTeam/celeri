@@ -672,7 +672,6 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           cycleDuels: cycleDuels,
           finishedBetting: admin.firestore.FieldValue.delete(),
           finishedRecap: admin.firestore.FieldValue.delete(),
-          finishedTutorial: admin.firestore.FieldValue.delete(),
         });
 
         // update the bet tokens for each player
