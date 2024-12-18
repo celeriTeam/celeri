@@ -28,4 +28,5 @@ export type RootStackParamList = {
     BetHistoryPage: {groupID: string };
     BetSummaryPage: { groupID: string };
     StorePage: {groupID: string};
+    EditGroupPage: {groupID: string};
 };

@@ -5,39 +5,43 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { editProfilePic, editUsername } from '@backend/src/users';
+import { addGroupImage, editGroupName } from '@backend/src/groups';
 import { useUser } from '../../UserProvider';
+import { RouteProp, useRoute } from '@react-navigation/native';
 
-type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
+type EditGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'EditGroupPage'>;
+type EditGroupPageRouteProp = RouteProp<RootStackParamList, 'EditGroupPage'>;
 
 type Props = {
-    navigation: EditProfilePageNavigationProp;
+    navigation: EditGroupPageNavigationProp;
 };
 
-const EditProfilePage: React.FC<Props> = ({ navigation }) => {
-    const { userID, profileImageUrl, username } = useUser();
-    const [isEditingUsername, setIsEditingUsername] = useState(false);
-    const [currentUsername, setcurrentUsername] = useState(username);
-    const [currentProfilePic, setcurrentProfilePic] = useState(profileImageUrl);
+const EditGroupPage: React.FC<Props> = ({ navigation }) => {
+    const { userID, groups } = useUser();
+    const route = useRoute<EditGroupPageRouteProp>();
+    const { groupID } = route.params;
+    const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+    const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
+    const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
     const inputRef = useRef<TextInput>(null);
 
     const handleEditPress = () => {
-        setIsEditingUsername(true);
+        setIsEditingGroupName(true);
     };
 
     const handleCheckPress = () => {
         //set username endpoint
-        if (currentUsername !== username){
-            editUsername(userID, currentUsername);
+        if (currentGroupName !== groups[groupID]?.groupName){
+            editGroupName(groupID, currentGroupName);
         }
-        setIsEditingUsername(false);
+        setIsEditingGroupName(false);
     };
 
     useEffect(() => {
-        if (isEditingUsername && inputRef.current) {
+        if (isEditingGroupName && inputRef.current) {
             inputRef.current.focus();
         }
-    }, [isEditingUsername]);
+    }, [isEditingGroupName]);
 
     const pickImage = async () => {
         // Request permission to access the media library
@@ -65,9 +69,9 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                 { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
             );
 
-            setcurrentProfilePic(manipulatedImage.uri);
+            setCurrentGroupPic(manipulatedImage.uri);
             // set profile pic endpoint
-            editProfilePic(userID, manipulatedImage.uri);
+            addGroupImage(groupID, manipulatedImage.uri);
             }
         }
     };
@@ -80,9 +84,9 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            {currentProfilePic != '' ? (
+            {currentGroupPic != '' ? (
                 <Image
-                source={{ uri: currentProfilePic }}
+                source={{ uri: currentGroupPic }}
                 style={styles.profileImage}
                 />
             ) : (
@@ -94,14 +98,14 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity onPress={pickImage}>
                 <Text style={styles.buttonText}>Edit profile pic</Text>
             </TouchableOpacity>
-            {isEditingUsername ? (
+            {isEditingGroupName ? (
                 <>
                     <View style={styles.row}>
                         <TextInput
                             ref={inputRef}
                             style={styles.nameInput}
-                            value={currentUsername}
-                            onChangeText={setcurrentUsername}
+                            value={currentGroupName}
+                            onChangeText={setCurrentGroupName}
                         />
                         <TouchableOpacity onPress={handleCheckPress}>
                             <Image
@@ -114,7 +118,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
             ) : (
                 <>
                     <View style={styles.row}>
-                        <Text style={styles.name}>{currentUsername}</Text>
+                        <Text style={styles.name}>{currentGroupName}</Text>
                         <TouchableOpacity onPress={handleEditPress}>
                             <Image
                             source={require('@components/edit-icon.jpg')}
@@ -183,4 +187,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default EditProfilePage;
+export default EditGroupPage;
