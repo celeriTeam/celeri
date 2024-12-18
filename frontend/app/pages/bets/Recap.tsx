@@ -182,12 +182,13 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.spacer} />
                         <View style={[
                             styles.statusBar,
-                            (!item.earnings.hasBet || item.winner === 'draw') ? styles.drawStatus :
+                            (!item.earnings.hasBet || item.winner === 'draw' || item.earnings.earning === 0) ? styles.drawStatus :
                             (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
                         ]}>
                             <Text style={styles.statusText}>
                                 {!item.earnings.hasBet ? 'No bet' :
                                 item.winner === 'draw' ? 'Draw' :
+                                item.earnings.earning === 0 ? 'No winnings' :
                                 item.earnings.hasUserWon ? 'Win' : 'Lose'}
                             </Text>
                         </View>
@@ -214,7 +215,10 @@ const BetRecapPage: React.FC<Props> = ({ navigation }) => {
                                 item.winner === item.player2 && styles.loserText,
                             ]}>{item.player1}</Text>
                             {item.winner === item.player1 && <Text style={styles.triangleText}>▶</Text>}
-                            <Text style={styles.steps}>{item.playerOneSteps}</Text>
+                            <Text style={[
+                                styles.steps,
+                                item.winner === item.player2 && styles.loserText,
+                            ]}>{item.playerOneSteps}</Text>
                         </View>
                         {isExpanded && (
                             <View>

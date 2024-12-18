@@ -405,6 +405,21 @@ export const addGroupImage = async (groupID: string, groupImageUri: string): Pro
     }
 }
 
+// Edit group name
+export const editGroupName = async(groupID: string, groupNameInput: string) => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            groupName: groupNameInput,
+        });
+        const groupDoc = await getDoc(groupDocRef);
+        console.log('editGroupName - response: ', groupDoc.data()?.groupName);
+    } catch (error) {
+        console.error('editGroupName - Error updating username', error);
+        return null;
+    }
+}
+
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 // CREATE group

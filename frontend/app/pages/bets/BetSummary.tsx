@@ -39,10 +39,12 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<betSummaryPageRouteProp>();
     const { groupID } = route.params;
     const { userID, loading } = useUser();
-    const [isModalVisible, setModalVisible] = useState(false);
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
+    const [isTokensModalVisible, setTokensModalVisible] = useState(false);
+    const [isTokensUsedModalVisible, setTokensUsedModalVisible] = useState(false);
+    const [isDiamondsModalVisible, setDiamondsModalVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
@@ -72,7 +74,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 cleanup();
             }
         };
-    }, [userID, isModalVisible, isStoreModalVisible]);
+    }, [userID, isStoreModalVisible]);
 
     const fetchPowerups = async () => {
         try {
@@ -91,7 +93,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         let unsubscribeDuels: () => void = () => { };
         let unsubscribeUsers: () => void = () => { };
         // Set up listener iff modal is not visible
-        if (!isModalVisible && !isStoreModalVisible) {
+        if (!isStoreModalVisible) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
@@ -266,8 +268,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 setIsLoading(false);
 
                 // Set # of days left in the game
-                console.log('currentplayersingame: ', currentGroups[groupID]?.currentPlayersInGame);
-                console.log('cycleday', currentGroups[groupID]?.cycleDay);
                 const daysLeft = currentGroups[groupID]?.currentPlayersInGame - 1 - currentGroups[groupID]?.cycleDay + ((currentGroups[groupID]?.totalCycles - currentGroups[groupID]?.cycleCount) * (Object.keys(currentGroups[groupID]?.userList).length - 1));
                 setNODaysLeft(daysLeft);
             });
@@ -283,63 +283,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         return () => {};
     };
 
-    const closeModal = async () => {
-        setModalVisible(false);
-    };
-
-    const openModal = async () => {
-        setModalVisible(true);
-    };
-
-    const closeBetHistoryModal = async () => {
-        setBetHistoryModalVisible(false);
-    };
-
-    const openBetHistoryModal = async () => {
-        setBetHistoryModalVisible(true);
-    };
-
-    const closeStoreModal = async () => {
-        setStoreModalVisible(false);
-    };
-
-    const openStoreModal = async () => {
-        setStoreModalVisible(true);
-    };
-
     const createMemberButtonHandle = (id: string) => {
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
-    };
-
-    const pickImage = async () => {
-        // Request permission to access the media library
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (permissionResult.granted === false) {
-            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-            return;
-        }
-
-        // Launch image picker
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 0.5,
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const selectedAsset = result.assets[0];
-            if (selectedAsset.uri) {
-                // Compress and resize the image
-                const manipulatedImage = await ImageManipulator.manipulateAsync(
-                    selectedAsset.uri,
-                    [{ resize: { width: 800 } }], // Resize to 800px width
-                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-                );
-
-                addGroupImage(groupID, manipulatedImage.uri);
-            }
-        }
     };
 
     // if it hits 12:00 am, navigate to hometab
@@ -595,51 +540,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <View style={styles.titleContainer}>
-                <Text style={styles.groupTitle}>{groups[groupID]?.groupName}</Text>
-            </View>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <Image
                     source={require('@components/back-icon.png')}
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.recapButton} onPress={openBetHistoryModal}>
-                <Image
-                    source={require('../../../assets/images/recap.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.storeButton} onPress={openStoreModal}>
-                <Image
-                    source={require('../../../assets/images/store.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-            <Text style={styles.daysLeft}>{NODaysLeft} days left!</Text>
-            <View style={styles.tokens}>
-                <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
-                <Image
-                    source={require('../../../assets/images/gold_coin.png')}
-                    style={styles.coinIcon}
-                />
-            </View>
-            <View style={styles.betTokens}>
-                <Text style={styles.tokenText}>{groups[groupID]?.todaysBetTokens}</Text>
-                <Image
-                    source={require('../../../assets/images/coin_spent.png')}
-                    style={styles.coinIcon}
-                />
-            </View>
-            <View style={styles.diamonds}>
-                <Text style={styles.tokenText}>{groups[groupID]?.userDiamonds}</Text>
-                <Image
-                    source={require('../../../assets/images/diamond.png')}
-                    style={styles.diamondIcon}
-                />
-            </View>
-            <View style={styles.groupImageContainer}>
+            <TouchableOpacity style={styles.groupTitleContainer} onPress={() => navigation.navigate('EditGroupPage', { groupID: groupID })}>
                 {groups[groupID]?.groupImageUrl ? (
                     <Image source={{ uri: groups[groupID]?.groupImageUrl }} style={styles.groupImage} />
                 ) : (
@@ -648,12 +555,53 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         style={styles.groupImage}
                     />
                 )}
-            </View>
-            <TouchableOpacity onPress={pickImage}>
-                <Text style={[styles.buttonText, { marginBottom: 20 }]}>Edit group pic</Text>
+                <View style={styles.groupTitleView}>
+                    <Text style={styles.groupTitle}>{groups[groupID]?.groupName}</Text>
+                </View>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setStepsModalVisible(true)} >
-                <Text style={[styles.buttonText, { color: 'blue' }]}>See Race</Text>
+            <TouchableOpacity style={styles.recapButton} onPress={() => setBetHistoryModalVisible(true)}>
+                <Image
+                    source={require('../../../assets/images/recap.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.storeButton} onPress={() => setStoreModalVisible(true)}>
+                <Image
+                    source={require('../../../assets/images/store.png')}
+                    style={styles.backImage}
+                />
+            </TouchableOpacity>
+            <Text style={styles.daysLeft}>{NODaysLeft} days left!</Text>
+            <TouchableOpacity style={[styles.moneyContainer, { top: 100, }]} onPress={() => setTokensModalVisible(true)}>
+                <View style={styles.tokenTextView}>
+                    <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
+                </View>
+                <Image
+                    source={require('../../../assets/images/gold_coin.png')}
+                    style={styles.moneyIcons}
+                />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.moneyContainer, { top: 130, }]} onPress={() => setTokensUsedModalVisible(true)}>
+                <View style={styles.tokenTextView}>
+                    <Text style={styles.tokenText}>{groups[groupID]?.todaysBetTokens}</Text>
+                </View>
+                <Image
+                    source={require('../../../assets/images/coin_spent.png')}
+                    style={styles.moneyIcons}
+                />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.moneyContainer, { top: 160, }]} onPress={() => setDiamondsModalVisible(true)}>
+                <View style={styles.tokenTextView}>
+                    <Text style={styles.tokenText}>{groups[groupID]?.userDiamonds}</Text>
+                </View>
+                <Image
+                    source={require('../../../assets/images/diamond.png')}
+                    style={styles.diamondIcon}
+                />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.RaceButtonContainer} onPress={() => setStepsModalVisible(true)}>
+                <Text style={styles.buttonText}>See Race</Text>
             </TouchableOpacity>
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
@@ -731,30 +679,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
-            {!((groups[groupID]?.isFirstDay == undefined) ? true : groups[groupID]?.isFirstDay) && (
-                <View style={styles.button}>
-                    <TouchableOpacity onPress={openBetHistoryModal}>
-                        <Text style={styles.buttonText}>Recap</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-            <Modal
-                transparent={true}
-                visible={isModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
-
-                        {/* BetRecapPage as the modal content */}
-                        <BetRecapPage navigation={navigation} />
-                    </View>
-                </View>
-            </Modal>
             <Modal
                 transparent={true}
                 visible={isBetHistoryModalVisible}
@@ -763,7 +687,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={closeBetHistoryModal}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setBetHistoryModalVisible(false)}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
 
@@ -780,7 +704,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={closeStoreModal}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setStoreModalVisible(false)}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
 
@@ -790,6 +714,51 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             userDiamonds={groups[groupID]?.userDiamonds}
                             currentGroupUsersArray={currentGroupUsersArray}
                         />
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isTokensModalVisible}
+                // animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.moneyModalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+                            <Text style={styles.tokenText}>Here are your tokens earned from winning bets. The person with the most tokens wins!</Text>
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isTokensUsedModalVisible}
+                // animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.moneyModalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+                            <Text style={styles.tokenText}>Here are the tokens you bet.</Text>
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isDiamondsModalVisible}
+                // animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.moneyModalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+                            <Text style={styles.tokenText}>Here are your diamonds. Diamonds are won when you win your head-to-head. Use them in the power-ups store.</Text>
                     </View>
                 </View>
             </Modal>
@@ -890,8 +859,9 @@ const styles = StyleSheet.create({
     },
     storeButton: {
         position: 'absolute',
-        top: 70,
+        top: 90,
         left: 20,
+        padding: 10,
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
@@ -912,38 +882,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         color: 'red',
     },
-    tokens: {
+    moneyContainer: {
         position: 'absolute',
         right: 10,
-        top: 100,
         paddingHorizontal: 10,
         paddingVertical: 5,
         flexDirection: 'row',
         alignItems: 'center',
-        // borderColor: '#FF8C00',
-        // borderWidth: 2,
     },
-    betTokens: {
-        position: 'absolute',
-        right: 10,
-        top: 130,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        // borderColor: '#FF8C00',
-        // borderWidth: 2,
-    },
-    diamonds: {
-        position: 'absolute',
-        right: 10,
-        top: 160,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        // borderColor: '#FF8C00',
-        // borderWidth: 2,
+    tokenTextView: {
+        backgroundColor: "#f0f0f0",
+        borderRadius: 5,
+        padding: 4,
+        paddingRight: 20,
     },
     tokenText: {
         fontFamily: "Lexend",
@@ -955,34 +906,48 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         paddingBottom: 10,
     },
+    RaceButtonContainer: {
+        position: 'absolute',
+        top: '30%',
+        alignSelf: 'center',
+    },
     playerContainer: {
+        position: 'absolute',
+        top: '37%',
+        height: '26%',
+        width: '95%',
         paddingVertical: 10,
         backgroundColor: "#f0f0f0",
-        width: 380,
         borderRadius: 30,
         justifyContent: "center",
-        //alignItems: "center",
         alignSelf: "center",
     },
     betContainer: {
+        position: 'absolute',
+        top: '63%',
+        height: '35%',
+        width: '95%',
         marginTop: 10,
         backgroundColor: "#f0f0f0",
-        width: 380,
-        height: 250,
         borderRadius: 30,
         justifyContent: "center",
-        //alignItems: "center",
         alignSelf: "center",
     },
     titleContainer: {
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+    },
+    groupTitleView: {
+        backgroundColor: "#eaeaea",
+        borderRadius: 5,
+        padding: 8,
+        paddingLeft: 33,
     },
     groupTitle: {
-        textAlign: "center",
-        fontSize: 30,
-        fontWeight: "200",
+        fontSize: 25,
         fontFamily: 'Lexend-Bold',
-        paddingTop: 20,
     },
     userRow: {
         flexDirection: 'row',
@@ -1072,6 +1037,13 @@ const styles = StyleSheet.create({
         padding: 20,
         position: 'relative',
     },
+    moneyModalContainer: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        position: 'relative',
+    },
     closeButton: {
         position: 'absolute',
         top: 10,
@@ -1084,14 +1056,19 @@ const styles = StyleSheet.create({
         color: 'black',
     },
     groupImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        marginVertical: 10,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: -20,
+        zIndex: 10,
     },
-    groupImageContainer: {
+    groupTitleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        //marginBottom: 10,
+        width: '30%',
+        alignSelf: 'center',
+        marginVertical: 30,
     },
     groupImageWrapper: {
         width: 120, // Match the size of the profileImage
@@ -1103,15 +1080,22 @@ const styles = StyleSheet.create({
         backgroundColor: '#ccc', // Default gray background
         position: 'relative', // Enable absolute positioning for the plus icon
     },
-    coinIcon: {
-        width: 30,
-        height: 30,
-        marginRight: 5, // Adds spacing between the icon and the text
+    moneyIcons: {
+        width: 35,
+        height: 35,
+        marginLeft: -17,
+        zIndex: 10,
     },
     diamondIcon: {
         width: 30,
         height: 30,
-        marginRight: 5, // Adds spacing between the icon and the text
+        margin: 5,
+        marginLeft: -17,
+        zIndex: 10,
+    },
+    coinIcon: {
+        width: 30,
+        height: 30,
     },
     tokenContainer: {
         flexDirection: 'row',
