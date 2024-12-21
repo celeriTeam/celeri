@@ -35,6 +35,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [cycles, setCycles] = useState('5');
     const [dailyTokens, setDailyTokens] = useState('100');
     const [startingTokens, setStartingTokens] = useState('1000');
+    const [gameType, setGameType] = useState("weekly");
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
     const userStartRequirement = 3;
 
@@ -83,7 +84,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const handleStartPress = async () => {
         console.log('Start game button pressed');
         setModalVisible(false);
-        await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf);
+        await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf, gameType);
         // navigation.navigate('GroupDetails', { groupID: groupID });
         navigation.reset({
             index: 1,
@@ -303,6 +304,16 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             keyboardType="numeric"
                             placeholderTextColor="#888"
                         />
+
+                        <Text>Game Type:</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Weekly"
+                            value={gameType}
+                            onChangeText={setGameType}
+                            keyboardType="default"
+                            placeholderTextColor="#888"
+                        />  
 
                         {/* Buttons */}
                         <TouchableOpacity 

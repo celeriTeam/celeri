@@ -457,7 +457,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // START Game
-export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number): Promise<undefined> => {
+export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number, gameType: string): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
