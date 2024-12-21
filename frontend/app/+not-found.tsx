@@ -1,3 +1,3 @@
-import { Unmatched } from 'expo-router';
+import App from './index';
 
-export default Unmatched;
+export default App;
