@@ -514,6 +514,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         barRadius={3}
                         barColor="#6366f1"
                         baseConfig={{
+                            data: sortedUsers.map(user => user.steps || 0),
+                            height: screenHeight * 0.05 * sortedUsers.length,
+                            width: screenWidth - 50,
                             xAxisLabelStyle: {
                                 rotation: 0,
                                 fontSize: 12,

@@ -495,7 +495,6 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             });
         }
         else {
-
             await updateDoc(groupDocRef, {
                 isGameActive: true,
                 //set the cycle

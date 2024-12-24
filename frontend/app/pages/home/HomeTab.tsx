@@ -40,9 +40,11 @@ type GroupData = {
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
     //health data stuff --
-    const { steps, distance, flights } = useHealthData();
+    const { steps, averageSteps, distance, flights } = useHealthData();
     console.log("printing steps!!!");
     console.log(steps);
+    console.log("printing average steps!!!");
+    console.log(averageSteps);
 
 
     
@@ -51,7 +53,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
     const [groupsState, setGroupsState] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
@@ -87,11 +88,9 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             console.log("printing steps");
             console.log(steps);
             const result = steps;
-            setStepsSinceMidnight(result);
 			setSteps(userID, result);
         } catch (error) {
             console.error("Error getting step count: ", error);
-            setStepsSinceMidnight(null);
         }
     }
 
@@ -99,7 +98,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         if (!hasInitialized && steps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
-            setStepsSinceMidnight(steps);
             setSteps(userID, steps); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
         }
@@ -168,24 +166,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const toggleModal = () => {
         setIsModalVisible(!isModalVisible);
     };
-
-    //PEDOMETER 
-    const getStepsSinceMidnightPedometer = async () => {
-        const now = new Date();
-        const midnight = new Date(now.setHours(0, 0, 0, 0)); // Get 12:00 AM of the current day
-        try {
-            const user = auth.currentUser;
-            let userID = user?.uid || '';
-			const result = await Pedometer.getStepCountAsync(midnight, new Date());
-			setStepsSinceMidnight(result.steps);
-			setSteps(userID, result.steps);
-			console.log('Steps: ', result.steps);
-			console.log('at time: ', now);
-        } catch (error) {
-			console.error("Error getting step count: ", error);
-			setStepsSinceMidnight(null);
-        }
-	};
 
     const createGroupButtonHandle = () => {
         navigation.navigate('CreateGroup');
