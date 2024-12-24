@@ -17,7 +17,7 @@ import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/s
 import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getPowerups } from '@/backend/src/store';
-import { BarChart, LineChart } from 'react-native-chart-kit';
+import HorizontalBarGraph from '@chartiful/react-native-horizontal-bar-graph';
 import { Dimensions } from 'react-native';
 
 const db = getFirestore(app);
@@ -496,48 +496,59 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const screenHeight = Dimensions.get('window').height;
         
         // Sort users by steps in descending order
-        const sortedUsers = [...groupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0));
+        const sortedUsers = [...groupUsersArray].sort((a, b) => (a.steps || 0) - (b.steps || 0));
+
+        const truncateUsername = (username: string, maxLength: number = 9) => {
+            return username.length > maxLength ? username.slice(0, maxLength - 4) + '...' : username;
+        };
         
-        const data = {
-            labels: sortedUsers.map(user => user.name).filter(name => name !== undefined) as string[],
-            datasets: [
-                {
-                    data: sortedUsers.map(user => user.steps).filter(steps => steps !== undefined) as number[],
-                }
-            ]
-        };
-    
-        const chartConfig = {
-            backgroundGradientFrom: '#ffffff',
-            backgroundGradientTo: '#ffffff',
-            color: (opacity = 1) => `rgba(134, 65, 244, ${opacity})`,
-            barPercentage: 0.5,
-            decimalPlaces: 0,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-        };
-    
         return (
-            <View style={ {justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, paddingTop: 100, borderRadius: 10 }}>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Player Steps</Text>
-                <BarChart
-                    data={data}
-                    width={screenWidth - 60}
-                    height={220}
-                    chartConfig={chartConfig}
-                    verticalLabelRotation={30}
-                    showValuesOnTopOfBars={true}
-                    fromZero={true}
-                    yAxisLabel=""
-                    yAxisSuffix=""
-                    xAxisLabel=""
-                    horizontalLabelRotation={-45}
-                    withHorizontalLabels={true}
-                    segments={4}
-                />
+            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
+                <Text style={{ fontSize: 18, fontFamily: 'Lexend-Bold', marginBottom: 50 }}>Player Steps</Text>
+                <View>
+                    <HorizontalBarGraph
+                        data={sortedUsers.map(user => user.steps || 0)}
+                        labels={sortedUsers.map(user => truncateUsername(user.name || ''))}
+                        width={screenWidth - 500 / sortedUsers.length}
+                        height={screenHeight * 0.05 * sortedUsers.length}
+                        barRadius={3}
+                        barColor="#6366f1"
+                        baseConfig={{
+                            xAxisLabelStyle: {
+                                rotation: 0,
+                                fontSize: 12,
+                                width: 80,
+                                yOffset: 4,
+                                xOffset: -25
+                            },
+                            yAxisLabelStyle: {
+                                rotation: -30,
+                                fontSize: 13,
+                                position: 'bottom',
+                                // xOffset: 10,
+                                height: 40,
+                            },
+                        }}
+                    />
+                    {/* Overlay Text components for values */}
+                    {sortedUsers.reverse().map((user, index) => (
+                        <Text
+                            key={user.name}
+                            style={{
+                                position: 'absolute',
+                                right: 20 + 15 * (sortedUsers.length - 8),
+                                top: (index * (screenHeight * 0.36 / 8)) + 10,
+                                fontSize: 12
+                            }}
+                        >
+                            {user.steps || 0}
+                        </Text>
+                    ))}
+                </View>
             </View>
         );
     };
-
+    
     return (
         <View style={styles.container}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
