@@ -218,3 +218,20 @@ export const getSteps = async (id: string): Promise<number> => {
         return -1;
     }
 }
+
+// GET Steps
+export const getWeeklySteps = async (id: string): Promise<number> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.weeklySteps !== undefined) {
+            console.log("getWeeklySteps - response:", userDoc.data()?.weeklySteps);
+            return userDoc.data()?.weeklySteps;
+        } else {
+            console.error("getWeeklySteps - error: No such document!");
+            return -1;
+        }
+    } catch (error) {
+        console.error("getWeeklySteps - Error fetching user document:", error);
+        return -1;
+    }
+}
