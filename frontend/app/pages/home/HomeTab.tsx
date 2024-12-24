@@ -39,22 +39,14 @@ type GroupData = {
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
-    //health data stuff --
-    const { steps, distance, flights } = useHealthData();
+    const { steps, weeklySteps, distance, flights } = useHealthData();
     console.log("printing steps!!!");
     console.log(steps);
-
-
-    
-    const { username, groupNames, loading } = useUser();
     const [userID, setUserID] = useState<string>('');
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null);
-    const [groupsState, setGroupsState] = useState({});
     const [isLoading, setIsLoading] = useState(true);
-
     const [hasInitialized, setHasInitialized] = useState(false);
 
     // Getting data because its the first page
@@ -81,55 +73,27 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         };
     }, []);
 
-    //HEALTHKIT
-    const getStepsSinceMidnight = async() => {
-        try {
-            console.log("printing steps");
-            console.log(steps);
-            const result = steps;
-            setStepsSinceMidnight(result);
-			setSteps(userID, result);
-        } catch (error) {
-            console.error("Error getting step count: ", error);
-            setStepsSinceMidnight(null);
-        }
-    }
-
     useEffect(() => {
         if (!hasInitialized && steps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
-            setStepsSinceMidnight(steps);
             setSteps(userID, steps); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
         }
     }, [steps, hasInitialized, userID]);
 
-    useEffect(() => {
-        if(hasInitialized){
-            getStepsSinceMidnight();
-
-            const intervalId = setInterval(() => {
-                console.log("Regular backend update with steps:", steps);
-                getStepsSinceMidnight();
-            }, 300000); // 5 minutes in milliseconds
-        
-            // Clean up the interval when the component unmounts
-            return () => {
-                clearInterval(intervalId);
-            };
-        }
-    }, [userID]);
-
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
         const getGroupID: { [groupName: string]: any } = {};
+        const loadingGroups = new Set(userGroups);
         if (userGroups) {
+            setIsLoading(true);
             await Promise.all(userGroups.map(async (groupName) => {
                 const groupID = await getGroupIDFromGroupName(groupName);
                 const groupsRef = collection(db, "groups");
                 const groupDocRef = doc(groupsRef, groupID);
+
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setIsLoading(true);
                     if (docSnapshot.exists() && groupID) {
@@ -156,7 +120,14 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                             groupCreator
                         };
                     }
-                    setIsLoading(false);
+                    // Ensures all groups show at first load
+                    loadingGroups.delete(groupName);
+                    setGetGroupID({...getGroupID});
+                    setGroups({...groups});
+                    
+                    if (loadingGroups.size === 0) {
+                        setIsLoading(false);
+                    }
                 });
                 return unsubscribeGroup;
             }));
@@ -168,24 +139,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const toggleModal = () => {
         setIsModalVisible(!isModalVisible);
     };
-
-    //PEDOMETER 
-    const getStepsSinceMidnightPedometer = async () => {
-        const now = new Date();
-        const midnight = new Date(now.setHours(0, 0, 0, 0)); // Get 12:00 AM of the current day
-        try {
-            const user = auth.currentUser;
-            let userID = user?.uid || '';
-			const result = await Pedometer.getStepCountAsync(midnight, new Date());
-			setStepsSinceMidnight(result.steps);
-			setSteps(userID, result.steps);
-			console.log('Steps: ', result.steps);
-			console.log('at time: ', now);
-        } catch (error) {
-			console.error("Error getting step count: ", error);
-			setStepsSinceMidnight(null);
-        }
-	};
 
     const createGroupButtonHandle = () => {
         navigation.navigate('CreateGroup');

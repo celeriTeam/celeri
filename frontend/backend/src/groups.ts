@@ -334,6 +334,23 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
     }
 }
 
+// GET group type
+export const getGroupType = async (groupID: string): Promise<string | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.groupType){
+            console.log("getGroupType - response: ", groupDoc.data()?.groupType);
+            return groupDoc.data()?.groupType;
+        } else{
+            console.error("getGroupType - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupType - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
