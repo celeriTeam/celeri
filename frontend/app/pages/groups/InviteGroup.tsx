@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -36,8 +37,26 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [dailyTokens, setDailyTokens] = useState('100');
     const [startingTokens, setStartingTokens] = useState('1000');
     const [gameType, setGameType] = useState("weekly");
+    const [resetDay, setResetDay] = useState(0);
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
     const userStartRequirement = 3;
+
+    const [gameTypeItems, setGameTypeItems] = useState([
+        { label: 'Weekly', value: 'weekly' },
+        { label: 'Daily', value: 'daily' },
+    ]);
+    const [gameTypeOpen, setGameTypeOpen] = useState(false);
+
+    const [resetDayItems, setResetDayItems] = useState([
+        { label: 'Sunday', value: 0},
+        { label: 'Monday', value: 1},
+        { label: 'Tuesday', value: 2},
+        { label: 'Wednesday', value: 3},
+        { label: 'Thursday', value: 4},
+        { label: 'Friday', value: 5},
+        { label: 'Saturday', value: 6},
+    ])
+    const [resetDayOpen, setResetDayOpen] = useState(false);
 
     const currentGroupName = groups[groupID]?.groupName;
     const currentGroupCode = groups[groupID]?.groupCode;
@@ -84,7 +103,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const handleStartPress = async () => {
         console.log('Start game button pressed');
         setModalVisible(false);
-        await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf, gameType);
+        await startGame(groupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf, gameType, resetDay);
         // navigation.navigate('GroupDetails', { groupID: groupID });
         navigation.reset({
             index: 1,
@@ -275,7 +294,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             placeholderTextColor="#888"
                         />
 
-                        <Text>Amount of Tokens You Get Each Day:</Text>
+                        {/* <Text>Amount of Tokens You Get Each Day:</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="100"
@@ -283,7 +302,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             onChangeText={setDailyTokens}
                             keyboardType="numeric"
                             placeholderTextColor="#888"
-                        />
+                        /> */}
 
                         <Text>Starting Tokens (Minimum 1000):</Text>
                         <TextInput
@@ -295,7 +314,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             placeholderTextColor="#888"
                         />
 
-                        <Text>Default Bet on Yourself:</Text>
+                        {/* <Text>Default Bet on Yourself:</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="100"
@@ -303,17 +322,31 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             onChangeText={setDefaultBetOnSelf}
                             keyboardType="numeric"
                             placeholderTextColor="#888"
-                        />
+                        /> */}
 
                         <Text>Game Type:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Weekly"
+                        <DropDownPicker
+                            open={gameTypeOpen}
                             value={gameType}
-                            onChangeText={setGameType}
-                            keyboardType="default"
-                            placeholderTextColor="#888"
-                        />  
+                            items={gameTypeItems}
+                            setOpen={setGameTypeOpen}
+                            setValue={setGameType}
+                            setItems={() => {}}
+                            containerStyle={styles.dropdownContainer}
+                            dropDownContainerStyle={styles.dropdownStyle}
+                        /> 
+
+                        <Text>Reset Day:</Text>
+                            <DropDownPicker
+                                open={resetDayOpen}
+                                value={resetDay}
+                                items={resetDayItems}
+                                setOpen={setResetDayOpen}
+                                setValue={setResetDay}
+                                setItems={() => {}}
+                                containerStyle={styles.dropdownContainer}
+                                dropDownContainerStyle={styles.dropdownStyle}
+                            /> 
 
                         {/* Buttons */}
                         <TouchableOpacity 
@@ -335,6 +368,14 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+    dropdownContainer: {
+        marginVertical: 10,
+        height: 40,
+        width: '100%',
+    },
+    dropdownStyle: {
+        backgroundColor: '#fafafa',
+    },
     contentView: {
         flex: 1,
         backgroundColor: 'white'

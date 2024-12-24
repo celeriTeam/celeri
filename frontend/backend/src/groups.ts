@@ -457,7 +457,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // START Game
-export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number, gameType: string): Promise<undefined> => {
+export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number, gameType: string, resetDay: number): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
@@ -478,19 +478,39 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
             return undefined;
         }
         
-        await updateDoc(groupDocRef, {
-            isGameActive: true,
-            //set the cycle
-            currentPlayersInGame: numberOfPlayers,
-            previousPlayersInGame: numberOfPlayers,
-            cycleDay: 1,
-            cycleCount: 1,
-            totalCycles: totalCycles,
-            dailyTokens: dailyTokens,
-            defaultBetOnSelf: 0,
-            startingTokens: startingTokens,
-            cycleDuels: cycles,
-        });
+        // set it 
+
+        // if the game is weekly
+        if(gameType == "weekly"){
+            await updateDoc(groupDocRef, {
+                isGameActive: true,
+                currentPlayersInGame: numberOfPlayers,
+                cycleWeek: 1,
+                cycleCount: 1,
+                totalCycles: totalCycles,
+                startingTokens: startingTokens,
+                cycleDuels: cycles,
+                gameType: gameType,
+                resetDay: resetDay,
+            });
+        }
+        else {
+
+            await updateDoc(groupDocRef, {
+                isGameActive: true,
+                //set the cycle
+                currentPlayersInGame: numberOfPlayers,
+                previousPlayersInGame: numberOfPlayers,
+                cycleDay: 1,
+                cycleCount: 1,
+                totalCycles: totalCycles,
+                //dailyTokens: dailyTokens,
+                //defaultBetOnSelf: 0,
+                startingTokens: startingTokens,
+                cycleDuels: cycles,
+                gameType: gameType,
+            });
+        }
         // for each user in users, set their tokens to startingTokens
         const users = docSnap.data()?.users;
         for (const user in users) {

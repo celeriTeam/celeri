@@ -61,6 +61,7 @@
     "react-native": "0.74.5",
     "react-native-accurate-step-counter": "^2.0.4",
     "react-native-chart-kit": "^6.12.0",
+    "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.16.1",
     "react-native-health": "^1.19.0",
     "react-native-image-picker": "^7.1.2",
