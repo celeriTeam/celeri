@@ -13,12 +13,13 @@ import BetRecapPage from './Recap';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
-import { getProfilePic, getSteps, getUserGroups, getUserName } from '@/backend/src/users';
-import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getProfilePic, getSteps, getUserGroups, getUserName, getWeeklySteps } from '@/backend/src/users';
+import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGroupType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getTodaysDuelsSummary } from '@/backend/src/bets';
 import { getPowerups } from '@/backend/src/store';
 import HorizontalBarGraph from '@chartiful/react-native-horizontal-bar-graph';
 import { Dimensions } from 'react-native';
+import useHealthData from '@/backend/src/hooks/useHealthData';
 
 const db = getFirestore(app);
 
@@ -38,6 +39,7 @@ type CircularIconProps = {
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<betSummaryPageRouteProp>();
     const { groupID } = route.params;
+    const { steps, weeklySteps, distance, flights } = useHealthData();
     const { userID, loading } = useUser();
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
@@ -86,6 +88,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const gameTypeSteps = (gameType: string, dailySteps: number, weeklySteps: number) => {
+        if (gameType === "weekly") {
+            return dailySteps + weeklySteps;
+        } else {
+            return dailySteps;
+        }
+    };
+
     const fetchGroupData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
         const groupsRef = collection(db, "groups");
@@ -97,7 +107,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycleDay, cycleCount, totalCycles] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycleDay, cycleCount, totalCycles, groupType] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
@@ -107,44 +117,32 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         getCurrentPlayersInGame(groupID),
                         getCycleDay(groupID),
                         getCycleCount(groupID),
-                        getTotalCycles(groupID)
+                        getTotalCycles(groupID),
+                        getGroupType(groupID)
                     ]);
 
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
                     let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
-                    const usersRef = collection(db, 'users');
-                    // user query where userID in userList
-                    // const usersQuery = query(usersRef,
-                    //     where('__name__', 'in', userList ?? [])
-                    // );
-                    // unsubscribeUsers = onSnapshot(usersQuery, (usersSnapshot) => {
-                    //     usersSnapshot.forEach((userDoc) => {
-                    //         const userData = userDoc.data();
-                    //         users[userDoc.id] = {
-                    //             profilePic: userData.profilePic,
-                    //             username: userData.username,
-                    //             steps: userData.steps,
-                    //             tokens: userData.tokens
-                    //         };
-                    //     });
-                    // });
                     if (userList) {
                         await Promise.all(userList.map(async (selectedUserID) => {
-                            const [profilePic, username, steps, tokens] = await Promise.all([
+                            const [profilePic, username, steps, weeklySteps, tokens] = await Promise.all([
                                 getProfilePic(selectedUserID),
                                 getUserName(selectedUserID),
                                 getSteps(selectedUserID),
+                                getWeeklySteps(selectedUserID),
                                 getUserTokens(selectedUserID, groupID)
                             ]);
+
+                            const newSteps = gameTypeSteps(groupType || "daily", steps, weeklySteps);
 
                             users[selectedUserID] = {
                                 profilePic,
                                 username,
-                                steps,
+                                newSteps,
                                 tokens
                             };
-                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: steps });
+                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: newSteps });
                         }));
                         // Sort users by tokens in descending order
                         groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
@@ -262,7 +260,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         currentPlayersInGame,
                         cycleDay,
                         cycleCount,
-                        totalCycles
+                        totalCycles,
+                        groupType
                     };
                 }
                 setIsLoading(false);

@@ -25,6 +25,7 @@ const useHealthData = () => {
     console.log("useHealthData is running");
     const [steps, setSteps] = useState(0);
     const [averageSteps, setAverageSteps] = useState(0);
+    const [weeklySteps, setWeeklySteps] = useState(0);
     const [flights, setFlights] = useState(0);
     const [distance, setDistance] = useState(0);
 
@@ -43,13 +44,23 @@ const useHealthData = () => {
     }, []);
 
     useEffect(() => {
-        if (!hasPermissions) {
-            return;
-        }
+        if (!hasPermissions) return;
+
+        getDailySteps();
+        getWeeklySteps();
         
+        const intervalId = setInterval(() => {
+            getDailySteps();
+        }, 300000);
+
+        return () => clearInterval(intervalId);
+    }, [hasPermissions]);
+
+    const getDailySteps = async () => {
         // Query Health data
+        const today = new Date();
         const options: HealthInputOptions = {
-            date: new Date().toISOString(),
+            date: today.toISOString(),
         };
         
         AppleHealthKit.getStepCount(options, (err, results) => {
@@ -87,10 +98,54 @@ const useHealthData = () => {
         });
         
 
-    }, [hasPermissions]);
+    };
+
+    // Weekly steps minus current day
+    const getWeeklySteps = async () => {
+        const today = new Date();
+    
+        // Find the most recent Sunday
+        const startDate = new Date(today);
+        while (startDate.getDay() !== 0) { // 0 is Sunday
+            startDate.setDate(startDate.getDate() - 1);
+        }
+        
+        // Initialize sum
+        let totalSteps = 0;
+        
+        // Loop through each day from Sunday to today
+        const currentDate = new Date(startDate);
+        while (currentDate < today) {
+            const options: HealthInputOptions = {
+                date: currentDate.toISOString(),
+            };
+            
+            // Get steps for current date
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    AppleHealthKit.getStepCount(options, (err, results) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(results.value);
+                        }
+                    });
+                });
+                
+                totalSteps += result as number;
+            } catch (error) {
+                console.log('Error getting steps for date:', currentDate);
+            }
+            
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        setWeeklySteps(totalSteps);
+    };
 
 
-    return { steps, averageSteps, flights, distance };
+    return { steps, weeklySteps, averageSteps, flights, distance };
 };
 
 export default useHealthData;
