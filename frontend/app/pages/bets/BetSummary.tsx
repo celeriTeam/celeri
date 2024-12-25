@@ -133,7 +133,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 getWeeklySteps(selectedUserID),
                                 getUserTokens(selectedUserID, groupID)
                             ]);
-
+                            
                             const newSteps = gameTypeSteps(groupType || "daily", steps, weeklySteps);
 
                             users[selectedUserID] = {
@@ -189,8 +189,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         const currBets = flattenedBets.map((bet) => {
                             const player1 = users[bet.player1]?.username;
                             const player2 = users[bet.player2]?.username;
-                            const player1Steps = users[bet.player1]?.steps;
-                            const player2Steps = users[bet.player2]?.steps;
+                            const player1Steps = users[bet.player1]?.newSteps;
+                            const player2Steps = users[bet.player2]?.newSteps;
                             const player1Pfp = users[bet.player1]?.profilePic ?? 'default_image_url';
                             const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
 
@@ -513,9 +513,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         barRadius={3}
                         barColor="#6366f1"
                         baseConfig={{
-                            data: sortedUsers.map(user => user.steps || 0),
-                            height: screenHeight * 0.05 * sortedUsers.length,
-                            width: screenWidth - 50,
                             xAxisLabelStyle: {
                                 rotation: 0,
                                 fontSize: 12,
@@ -524,7 +521,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 xOffset: -25
                             },
                             yAxisLabelStyle: {
-                                rotation: -30,
+                                rotation: 0,
                                 fontSize: 13,
                                 position: 'bottom',
                                 // xOffset: 10,
