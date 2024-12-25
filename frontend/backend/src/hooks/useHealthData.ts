@@ -48,6 +48,7 @@ const useHealthData = () => {
 
         getDailySteps();
         getWeeklySteps();
+        getWeeklyAverageOfSteps();
         
         const intervalId = setInterval(() => {
             getDailySteps();
@@ -71,34 +72,50 @@ const useHealthData = () => {
             setSteps(results.value);
         });
 
-        // Fetch step counts for the past week
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 7); // 7 days ago
-        const endDate = new Date();
-
-        const weeklyOptions = {
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            type: 'Walking' as HealthObserver,
-        };
-
-        AppleHealthKit.getSamples(weeklyOptions, (err, results) => {
-            if (err) {
-                console.log('Error getting weekly steps', err);
-                return;
-            }
-
-            if (results && results.length > 0) {
-                const totalSteps = results.reduce((sum, sample) => sum + sample.value, 0);
-                const avgSteps = totalSteps / results.length;
-                setAverageSteps(avgSteps);
-            } else {
-                setAverageSteps(0);
-            }
-        });
         
 
     };
+
+    const getWeeklyAverageOfSteps = async () => {
+        // Fetch step counts for the past week
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 8); // 8 days ago; you don't want today because the steps may be unfinished, decreasing avg
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        // Initialize sum
+        let totalSteps = 0;
+        const currentDate = new Date(startDate);
+
+        while(currentDate < yesterday){
+            const options: HealthInputOptions = {
+                date: currentDate.toISOString(),
+            };
+            
+            // Get steps for current date
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    AppleHealthKit.getStepCount(options, (err, results) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(results.value);
+                        }
+                    });
+                });
+                
+                totalSteps += result as number;
+            } catch (error) {
+                console.log('Error getting steps for date:', currentDate);
+            }
+            
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+
+        }
+
+        setAverageSteps(Math.round(totalSteps / 7));
+    }
 
     // Weekly steps minus current day
     const getWeeklySteps = async () => {

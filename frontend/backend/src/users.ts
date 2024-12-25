@@ -235,3 +235,10 @@ export const getWeeklySteps = async (id: string): Promise<number> => {
         return -1;
     }
 }
+
+// GET average steps; for the over under 
+// export const getAverageSteps = async (id: string): Promise<number> => {
+//     try {
+//         const userDoc = await getDoc(doc(db, "users", id));
+//     }
+// }
