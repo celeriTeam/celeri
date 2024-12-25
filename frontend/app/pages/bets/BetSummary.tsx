@@ -1,23 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
 import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDoc } from "firebase/firestore";
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import BetRecapPage from './Recap';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
-import { getProfilePic, getSteps, getUserGroups, getUserName, getWeeklySteps } from '@/backend/src/users';
-import { addGroupImage, getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIDFromGroupName, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGroupType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
-import { getTodaysDuelsSummary } from '@/backend/src/bets';
+import { getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
+import { getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGroupType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
-import HorizontalBarGraph from '@chartiful/react-native-horizontal-bar-graph';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 
@@ -495,53 +490,110 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const screenHeight = Dimensions.get('window').height;
         
         // Sort users by steps in descending order
-        const sortedUsers = [...groupUsersArray].sort((a, b) => (a.steps || 0) - (b.steps || 0));
+        const sortedUsers = [...groupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0));
 
-        const truncateUsername = (username: string, maxLength: number = 9) => {
-            return username.length > maxLength ? username.slice(0, maxLength - 4) + '...' : username;
+        const truncateUsername = (username: string, maxLength: number = 10) => {
+            return username.length > maxLength ? username.slice(0, maxLength - 3) + '...' : username;
         };
+
+        // Find the maximum steps for scaling
+        const maxSteps = Math.max(...sortedUsers.map(user => user.steps || 0));
+        const barWidth = screenWidth * 0.7; 
+    
+        const USERNAME_WIDTH = 80; // Width for username section including margin
+        const gridIntervals = Array.from({ length: 5 }, (_, i) => Math.round(maxSteps * i / 4));
         
         return (
             <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
                 <Text style={{ fontSize: 18, fontFamily: 'Lexend-Bold', marginBottom: 50 }}>Player Steps</Text>
-                <View>
-                    <HorizontalBarGraph
-                        data={sortedUsers.map(user => user.steps || 0)}
-                        labels={sortedUsers.map(user => truncateUsername(user.name || ''))}
-                        width={screenWidth - 500 / sortedUsers.length}
-                        height={screenHeight * 0.05 * sortedUsers.length}
-                        barRadius={3}
-                        barColor="#6366f1"
-                        baseConfig={{
-                            xAxisLabelStyle: {
-                                rotation: 0,
-                                fontSize: 12,
+            
+                <View style={{ width: '100%', position: 'relative' }}>
+                    {/* Grid lines */}
+                    <View style={{
+                        position: 'absolute',
+                        left: USERNAME_WIDTH,
+                        right: 0,
+                        height: '100%'
+                    }}>
+                        {gridIntervals.map((value, index) => (
+                            <View
+                                key={value}
+                                style={{
+                                    position: 'absolute',
+                                    left: `${(value / maxSteps) * 100}%`,
+                                    height: '100%',
+                                    width: 1,
+                                    backgroundColor: index === 0 ? '#000' : '#E5E5E5',
+                                    zIndex: 1
+                                }}
+                            />
+                        ))}
+
+                        {/* Bottom numbers */}
+                        <View style={{
+                            flexDirection: 'row',
+                            position: 'absolute',
+                            bottom: -10,
+                            left: 0,
+                            width: '100%'
+                        }}>
+                            {gridIntervals.map((value) => (
+                                <Text
+                                    key={value}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${(value / maxSteps) * 100}%`,
+                                        transform: [{ translateX: -10 }],
+                                        fontSize: 12,
+                                        color: '#666'
+                                    }}
+                                >
+                                    {value}
+                                </Text>
+                            ))}
+                        </View>
+                    </View>
+
+                    {/* Bars */}
+                    {sortedUsers.map((user, index) => (
+                        <View key={user.id} style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginBottom: 10,
+                            width: '100%',
+                            zIndex: 2
+                        }}>
+                            <Text style={{
                                 width: 80,
-                                yOffset: 4,
-                                xOffset: -25
-                            },
-                            yAxisLabelStyle: {
-                                rotation: 0,
-                                fontSize: 13,
-                                position: 'bottom',
-                                // xOffset: 10,
-                                height: 40,
-                            },
-                        }}
-                    />
-                    {/* Overlay Text components for values */}
-                    {sortedUsers.reverse().map((user, index) => (
-                        <Text
-                            key={user.name}
-                            style={{
-                                position: 'absolute',
-                                right: 20 + 15 * (sortedUsers.length - 8),
-                                top: (index * (screenHeight * 0.36 / 8)) + 10,
-                                fontSize: 12
-                            }}
-                        >
-                            {user.steps || 0}
-                        </Text>
+                                fontSize: 14,
+                                fontFamily: 'Lexend-Regular',
+                            }}>
+                                {truncateUsername(user.name || '')}
+                            </Text>
+                            
+                            <View style={{
+                                flex: 1,
+                                flexDirection: 'row',
+                                alignItems: 'center'
+                            }}>
+                                <View style={{
+                                    width: `${((user.steps || 0) / maxSteps) * 100}%`,
+                                    height: 30,
+                                    backgroundColor: '#4C7BF4',
+                                    borderRadius: 5,
+                                    zIndex: 2
+                                }} />
+                                
+                                <Text style={{
+                                    marginLeft: 10,
+                                    fontSize: 14,
+                                    fontFamily: 'Lexend-Regular',
+                                    color: '#4C7BF4'
+                                }}>
+                                    {user.steps}
+                                </Text>
+                            </View>
+                        </View>
                     ))}
                 </View>
             </View>
