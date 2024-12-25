@@ -97,6 +97,20 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         }
     }, [steps, hasInitialized, userID]);
 
+    useEffect(() => {
+        if(hasInitialized){
+            getStepsSinceMidnight();
+            const intervalId = setInterval(() => {
+                console.log("Regular backend update with steps:", steps);
+                getStepsSinceMidnight();
+            }, 300000); // 5 minutes in milliseconds
+        
+            // Clean up the interval when the component unmounts
+            return () => {
+                clearInterval(intervalId);
+            };
+        }
+    }, [userID]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};

@@ -9,7 +9,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import 
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
-import { buySecondWind } from '../../../backend/src/store';
+import { buyPowerup } from '../../../backend/src/store';
 import Svg, { Circle, G } from 'react-native-svg';
 
 
@@ -73,12 +73,12 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
         const isExpanded = expandedItems[item.id] || false;
         console.log(isExpanded, expandedItems[item.id], item.id);
 
-        const handleBuySecondWind = async (targetUserID: string, targetUserName?: string) => {
+        const handleBuyPowerup = async (targetUserID: string, id: string, targetUserName?: string) => {
             setIsBuying(true);
             let success = false;
     
             try {
-                success = await buySecondWind(userID, groupID, targetUserID, targetUserName);
+                success = await buyPowerup(userID, groupID, targetUserID, id, targetUserName);
             } catch (error) {
                 console.error("Error purchasing item:", error);
             } finally {
@@ -153,7 +153,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                                             title="Select"
                                             onPress={() => {
                                                 setIsModalVisible(false);
-                                                handleBuySecondWind(item.id, item.name);
+                                                handleBuyPowerup(item.id, item.id, item.name);
                                             }}
                                         />
                                     </View>

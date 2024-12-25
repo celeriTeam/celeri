@@ -54,7 +54,7 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
 /*********************************************** BUY FUNCTIONS ********************************************/
 
 
-export const buySecondWind = async (userID: string, groupID: string, targetUserID: string, targetUserName?: string): Promise<boolean> => {
+export const buyPowerup = async (userID: string, groupID: string, targetUserID: string, powerup: string, targetUserName?: string,): Promise<boolean> => {
     const groupDocRef = doc(db, 'groups', groupID);
 
     try {
@@ -117,6 +117,7 @@ export const buySecondWind = async (userID: string, groupID: string, targetUserI
         return false; // Return false if the transaction fails
     }
 };
+
 
 /*********************************************** HELPER FUNCTIONS ********************************************/
 
