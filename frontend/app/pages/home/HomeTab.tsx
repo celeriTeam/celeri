@@ -13,6 +13,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { Pedometer } from 'expo-sensors';
 import useHealthData from '../../../backend/src/hooks/useHealthData';
+import fetchHealthData from '../../../backend/src/hooks/useHealthData';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
@@ -40,6 +41,7 @@ type GroupData = {
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
     const { steps, averageSteps, weeklySteps, distance, flights } = useHealthData();
+    const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     console.log("printing steps!!!");
     console.log(steps);
     console.log("printing average steps!!!");
@@ -82,9 +84,11 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             console.log("printing steps");
             console.log(steps);
             const result = steps;
-			setSteps(userID, result);
+            setStepsSinceMidnight(result);
+			setSteps(userID, result, averageSteps);
         } catch (error) {
             console.error("Error getting step count: ", error);
+            setStepsSinceMidnight(null);
         }
     }
 
@@ -92,7 +96,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         if (!hasInitialized && steps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
-            setSteps(userID, steps); // Call your backend update here
+            setStepsSinceMidnight(steps);
+            setSteps(userID, steps, averageSteps); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
         }
     }, [steps, hasInitialized, userID]);
@@ -109,6 +114,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             return () => {
                 clearInterval(intervalId);
             };
+        } else {
+            console.log("has not been initialized");
         }
     }, [userID]);
 

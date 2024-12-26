@@ -43,18 +43,18 @@ const useHealthData = () => {
         });
     }, []);
 
-    useEffect(() => {
+    const fetchHealthData = () => {
         if (!hasPermissions) return;
 
         getDailySteps();
         getWeeklySteps();
         getWeeklyAverageOfSteps();
-        
-        const intervalId = setInterval(() => {
-            getDailySteps();
-        }, 300000);
+    };
 
-        return () => clearInterval(intervalId);
+    useEffect(() => {
+        if (hasPermissions) {
+            fetchHealthData(); // Fetch data initially
+        }
     }, [hasPermissions]);
 
     const getDailySteps = async () => {

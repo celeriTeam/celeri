@@ -56,6 +56,14 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
 
 export const buyPowerup = async (userID: string, groupID: string, targetUserID: string, powerup: string, targetUserName?: string,): Promise<boolean> => {
     const groupDocRef = doc(db, 'groups', groupID);
+    console.log("buyPowerup - powerup number: ", powerup);
+    let powerupName = "none";
+    // match the powerup
+    if(powerup == '1'){
+        powerupName = "secondWind";
+    } else if(powerup == '2'){
+        powerupName = "brickWall";
+    }
 
     try {
         return await runTransaction(db, async (transaction) => {
@@ -97,7 +105,7 @@ export const buyPowerup = async (userID: string, groupID: string, targetUserID: 
                 //add new document to powerup
                 const newPowerup = {
                     createdAt: serverTimestamp(),
-                    type: "secondWind",
+                    type: powerupName,
                     userID: userID,
                     targetUserID: targetUserID,
                     targetUserName: targetUserName,

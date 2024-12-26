@@ -337,7 +337,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, userID, duelID]) => {
             if (type === "secondWind") {
                 player1AddedSteps += 200;
-                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
+                return ["Second Wind \n(+200 steps)", targetID, userID, duelID];
+            }
+            else if (type === "brickWall") {
+                player1AddedSteps -= 200;
+                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
             }
             return [type, targetID, userID, duelID];
         });
@@ -346,6 +350,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             if (type === "secondWind") {
                 player2AddedSteps += 200;
                 return ["secondWind \n(+200 steps)", targetID, userID, duelID];
+            }
+            else if (type === "brickWall") {
+                player2AddedSteps -= 200;
+                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
             }
             return [type, targetID, userID, duelID];
         });

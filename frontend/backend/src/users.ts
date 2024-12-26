@@ -38,8 +38,6 @@ export const getUserName = async (id: string): Promise<string> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.username) {
-            console.log("userDoc - Document data:", userDoc.data());
-            console.log("getUserName - response:", userDoc.data()?.username);
             return userDoc.data()?.username;
         } else {
             console.error(`getUserName - error: No such document for user ${id}!`);
@@ -187,12 +185,13 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 
 /*********************************************** HEALTH DATA FUNCTIONS ********************************************/
 
-// SET Steps
-export const setSteps = async(userID: string, steps: number) => {
+// SET Steps and average steps
+export const setSteps = async(userID: string, steps: number, averageSteps: number) => {
     try {
         const userDocRef = doc(db, 'users', userID);
         await updateDoc(userDocRef, {
             steps: steps,
+            averageSteps: averageSteps,
         });
         const userDoc = await getDoc(userDocRef);
         console.log('setSteps - response: ', userDoc.data()?.steps);

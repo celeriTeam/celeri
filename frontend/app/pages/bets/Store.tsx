@@ -29,6 +29,8 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [isBuying, setIsBuying] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
 
     const speedBoots = require('../../../assets/images/speed_boot.png');
     const secondWind = require('../../../assets/images/wind.jpg');
@@ -73,17 +75,20 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
         const isExpanded = expandedItems[item.id] || false;
         console.log(isExpanded, expandedItems[item.id], item.id);
 
-        const handleBuyPowerup = async (targetUserID: string, id: string, targetUserName?: string) => {
+        const handleBuyPowerup = async (targetUserID: string, targetUserName?: string) => {
+            console.log("targetUserID: ", targetUserID, "selectedItemId: ", selectedItemId);
             setIsBuying(true);
             let success = false;
     
             try {
-                success = await buyPowerup(userID, groupID, targetUserID, id, targetUserName);
+                if (selectedItemId) {
+                    success = await buyPowerup(userID, groupID, targetUserID, selectedItemId, targetUserName);
+                }
             } catch (error) {
                 console.error("Error purchasing item:", error);
             } finally {
-                setIsBuying(false); // Re-enable interactions
-                setIsModalVisible(false); // Ensure modal is closed
+                setIsBuying(false);
+                setIsModalVisible(false);
     
                 setTimeout(() => {
                     if (success) {
@@ -91,7 +96,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                     } else {
                         Alert.alert("Error", "Failed to purchase item.");
                     }
-                }, 200); // Delay in milliseconds
+                }, 200);
             }
         };
 
@@ -122,7 +127,10 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                 </View>
                 <TouchableOpacity
                     style={styles.buyButton}
-                    onPress={() => setIsModalVisible(true)}
+                    onPress={() => {
+                        setSelectedItemId(item.id);
+                        setIsModalVisible(true)
+                    }}
                     disabled={isBuying}
                 >
                 <Text style={styles.buyButtonText}>
@@ -137,6 +145,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                     onRequestClose={() => {
                         console.log("Modal close requested");
                         setIsModalVisible(false);
+                        setSelectedItemId(null);
                     }}
                 >
                     
@@ -152,8 +161,9 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                                         <Button
                                             title="Select"
                                             onPress={() => {
+                                                console.log("handleBuyPowerup: ", selectedItemId)
                                                 setIsModalVisible(false);
-                                                handleBuyPowerup(item.id, item.id, item.name);
+                                                handleBuyPowerup(item.id, item.name);
                                             }}
                                         />
                                     </View>
