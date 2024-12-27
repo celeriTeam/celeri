@@ -47,7 +47,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[]>([]);
-    const [NODaysLeft, setNODaysLeft] = useState(0);
+    const [NODaysLeft, setNODaysLeft] = useState("0");
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
@@ -145,22 +145,50 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         getGameType(groupID)
                     ]);
 
+                    let daysLeft = 0;
+
                     // Set # of days left in the game
-                    const daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-                    setNODaysLeft(daysLeft);
+                    if(gameType == "weekly"){
+                        daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                        console.log("daysLeft -- ", daysLeft)
+                        if(daysLeft == 1){
+                            setNODaysLeft(`${daysLeft} week left!`)
+                        } else {
+                            setNODaysLeft(`${daysLeft} weeks left!`)
+                        }
+                    } else {
+                        daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                        if(daysLeft == 1){
+                            setNODaysLeft(`${daysLeft} day left!`)
+                        } else {
+                            setNODaysLeft(`${daysLeft} days left!`)
+                        }
+                    }
+
+                    
 
                     // Set up a listener for today's duels
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-                    const tomorrow = new Date(today);
-                    tomorrow.setDate(tomorrow.getDate() + 1);
+
+                    const startDate = new Date(today);
+                    const endDate = new Date(today);
+
+                    if (gameType === 'weekly') {
+                        // Start date is 7 days ago
+                        startDate.setDate(startDate.getDate() - 7);
+                        endDate.setDate(endDate.getDate() + 1);
+                    } else {
+                        // Start date is today, end date is tomorrow
+                        endDate.setDate(endDate.getDate() + 1);
+                    }
 
                     const duelsCollection = collection(groupDocRef, 'duels');
                     const duelsQuery = query(duelsCollection,
                         where('cycleCount', '==', cycleCount),
                         where(gameType === 'weekly' ? 'cycleWeek' : 'cycleDay', '==', cycle),
-                        where('createdAt', '>=', Timestamp.fromDate(today)),
-                        where('createdAt', '<', Timestamp.fromDate(tomorrow))
+                        where('createdAt', '>=', Timestamp.fromDate(startDate)),
+                        where('createdAt', '<', Timestamp.fromDate(endDate))
                     );
 
                     currentGroups[groupID] = {
@@ -637,7 +665,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <Text style={styles.daysLeft}>{NODaysLeft} days left!</Text>
+            <Text style={styles.daysLeft}>{NODaysLeft}</Text>
             <TouchableOpacity style={[styles.moneyContainer, { top: 100, }]} onPress={() => setTokensModalVisible(true)}>
                 <View style={styles.tokenTextView}>
                     <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>

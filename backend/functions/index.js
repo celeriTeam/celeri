@@ -292,9 +292,9 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
     startOfYesterday.setDate(endOfYesterday.getDate() - 1); // Go back one day
 
     const endOfLastWeek = new Date();
-    endOfLastWeek.setHours(0,0,0,0); // Midnight today
+    endOfLastWeek.setHours(0, 0, 0, 0); // Midnight today
     const startOfLastWeek = new Date(endOfLastWeek);
-    startOfLastWeek.setDate(endofLastWeek.getDate() - 7); // Go back seven days 
+    startOfLastWeek.setDate(endOfLastWeek.getDate() - 7); // Go back seven days
 
     const allBatches = [];
 
@@ -308,17 +308,16 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
         console.log(`Group document ${doc.id} not found.`);
         return;
       }
-      
+
       // Don't update winners if it's a weekly game and it's not the right day
-      let gameType = data.gameType;
-      if(gameType && gameType == "weekly"){
-        const currentDay = new Date.getDay();
-        let resetDay = data.resetDay;
+      const gameType = data.gameType;
+      if (gameType && gameType == "weekly") {
+        const currentDay = new Date().getDay();
+        const resetDay = data.resetDay;
 
-         //if it is the correct day of the week 
-         if(currentDay == resetDay){
-
-            duelsRef
+        // if it is the correct day of the week
+        if (currentDay == resetDay) {
+          duelsRef
             .where("createdAt", ">=", startOfLastWeek)
             .where("createdAt", "<", endOfLastWeek)
             .get()
@@ -468,14 +467,10 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           });
           await resetBatch.commit();
           console.log("Batch update completed successfully.");
-
-         } else {
+        } else {
           return;
-         }
-
-
+        }
       } else {
-
         duelsRef
           .where("createdAt", ">=", startOfYesterday)
           .where("createdAt", "<", endOfYesterday)
@@ -697,15 +692,15 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
       const groupDocRef = doc.ref;
 
       // Check if gameType exists and is valid
-      let gameType = data.gameType;
+      const gameType = data.gameType;
       if (gameType && gameType == "weekly") {
         console.log(`gameType is weekly for group ID: ${doc.id}`);
 
-        const currentDay = new Date.getDay();
-        let resetDay = data.resetDay;
+        const currentDay = new Date().getDay();
+        const resetDay = data.resetDay;
 
-        //if it is the correct day of the week 
-        if(currentDay == resetDay){
+        // if it is the correct day of the week
+        if (currentDay == resetDay) {
           let cycleWeek = data.cycleWeek;
           let cycleCount = data.cycleCount;
           let cycleDuels = data.cycleDuels;
@@ -741,7 +736,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
             console.log("checkpoint three");
           } else {
             cycleWeek += 1;
-            console.log(`Incrementing cycleDay to ${cycleDay} for group ${doc.id}`);
+            console.log(`Incrementing cycleDay to ${cycleWeek} for group ${doc.id}`);
             console.log("checkpoint four");
           }
 
@@ -856,9 +851,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
         } else {
           return; // not the correct day to be creating new duels
         }
-
-      } else { // IF THIS IS THE DAILY DUELS, NOT THE WEEKLY DUELS 
-
+      } else { // IF THIS IS THE DAILY DUELS, NOT THE WEEKLY DUELS
         // if the cycleDay is equal to the number of players-1,
         // then create a new cycle and reset the day
         let cycleDay = data.cycleDay;

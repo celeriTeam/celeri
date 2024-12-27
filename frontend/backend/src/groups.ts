@@ -562,17 +562,31 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
                     wager: 0,
                     betOnUserID: duel.player2,
                 };
+                let duelData = {};
+                if(gameType == "weekly"){
+                    duelData = {
+                        player1: duel.player1,
+                        player2: duel.player2,
+                        cycleWeek: 1,
+                        cycleCount: 1,
+                        createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
+                        winner: "empty",
+                        ended: false,
+                        bets: [player1Bet, player2Bet],
+                    };
+                } else {
 
-                const duelData = {
-                    player1: duel.player1,
-                    player2: duel.player2,
-                    cycleDay: 1,
-                    cycleCount: 1,
-                    createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
-                    winner: "empty",
-                    ended: false,
-                    bets: [player1Bet, player2Bet],
-                };
+                    duelData = {
+                        player1: duel.player1,
+                        player2: duel.player2,
+                        cycleDay: 1,
+                        cycleCount: 1,
+                        createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
+                        winner: "empty",
+                        ended: false,
+                        bets: [player1Bet, player2Bet],
+                    };
+                }
 
                 // Add the duel to the 'duels' subcollection of the group document
                 const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection

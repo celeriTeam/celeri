@@ -22,6 +22,7 @@ import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
+import { NativeEventEmitter, NativeModules } from 'react-native';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -54,6 +55,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasInitialized, setHasInitialized] = useState(false);
 
+    console.log('AppleHealthKit:', NativeModules.AppleHealthKit);
+
     // Getting data because its the first page
     useEffect(() => {
         setIsLoading(true);
@@ -77,6 +80,52 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             }
         };
     }, []);
+
+    const enableBackgroundDelivery = async (): Promise<void> => {
+        try {
+            await NativeModules.AppleHealthKit.enableBackgroundDeliveryForType(
+                'StepCount',
+                1, // Frequency in hours
+                (error: string | null) => {
+                    if (error) {
+                        console.error('Error enabling background delivery:', error);
+                    } else {
+                        console.log('Background delivery enabled for StepCount');
+                    }
+                }
+            );
+        } catch (error) {
+            console.error('Unexpected error while enabling background delivery:', error);
+        }
+    };
+    
+    useEffect(() => {
+        enableBackgroundDelivery();
+    }, []);
+    
+
+    useEffect(() => {
+        console.log("HomeTab -- inside NativeEventEmitter useEffect")
+        new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
+          'healthKit:StepCount:setup:success',
+          async () => {
+            console.log('HomeTab -- Async StepCount Observer Setup Success');
+          },
+        );
+        // new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
+        //     'healthKit:StepCount:setup:failure',
+        //     async () => {
+        //       console.log('HomeTab -- Async StepCount Observer Setup Failure');
+        //     },
+        // );
+        // new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
+        //     'healthKit:StepCount:new',
+        //     async () => {
+        //       console.log('HomeTab -- StepCount Observer Triggered');
+              
+        //     },
+        //   );
+      });
 
     //HEALTHKIT
     const getStepsSinceMidnight = async() => {
