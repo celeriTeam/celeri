@@ -11,7 +11,7 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycleDay, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGroupType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -37,6 +37,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const { steps, weeklySteps, distance, flights } = useHealthData();
     const { userID, loading } = useUser();
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
+    const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [isTokensModalVisible, setTokensModalVisible] = useState(false);
@@ -102,20 +103,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycleDay, cycleCount, totalCycles, groupType] = await Promise.all([
-                        getGroupProfilePic(groupID),
-                        getGroupName(groupID),
-                        getGroupIsFirstDay(groupID),
-                        getUserTokens(uid, groupID),
-                        getTodaysBetTokens(uid, groupID),
-                        getUserDiamonds(uid, groupID),
-                        getCurrentPlayersInGame(groupID),
-                        getCycleDay(groupID),
-                        getCycleCount(groupID),
-                        getTotalCycles(groupID),
-                        getGroupType(groupID)
-                    ]);
-
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
                     let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
@@ -129,7 +116,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 getUserTokens(selectedUserID, groupID)
                             ]);
                             
-                            const newSteps = gameTypeSteps(groupType || "daily", steps, weeklySteps);
+                            const newSteps = gameTypeSteps(gameType || "daily", steps, weeklySteps);
 
                             users[selectedUserID] = {
                                 profilePic,
@@ -141,27 +128,56 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         }));
                         // Sort users by tokens in descending order
                         groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
+                        setCurrentGroupUsersArray(groupUsersArray);
                     }
-                    setCurrentGroupUsersArray(groupUsersArray);
+
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType] = await Promise.all([
+                        getGroupProfilePic(groupID),
+                        getGroupName(groupID),
+                        getGroupIsFirstDay(groupID),
+                        getUserTokens(uid, groupID),
+                        getTodaysBetTokens(uid, groupID),
+                        getUserDiamonds(uid, groupID),
+                        getCurrentPlayersInGame(groupID),
+                        getCycle(groupID),
+                        getCycleCount(groupID),
+                        getTotalCycles(groupID),
+                        getGameType(groupID)
+                    ]);
+
+                    // Set # of days left in the game
+                    const daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                    setNODaysLeft(daysLeft);
 
                     // Set up a listener for today's duels
-                    const groupCycleCount = docSnapshot.data()?.cycleCount;
-                    const groupCycleDay = docSnapshot.data()?.cycleDay;
-
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const tomorrow = new Date(today);
                     tomorrow.setDate(tomorrow.getDate() + 1);
-                    const todayStart = Timestamp.fromDate(today);
-                    const todayEnd = Timestamp.fromDate(tomorrow);
 
                     const duelsCollection = collection(groupDocRef, 'duels');
                     const duelsQuery = query(duelsCollection,
-                        where('cycleCount', '==', groupCycleCount),
-                        where('cycleDay', '==', groupCycleDay),
-                        where('createdAt', '>=', todayStart),
-                        where('createdAt', '<', todayEnd)
+                        where('cycleCount', '==', cycleCount),
+                        where(gameType === 'weekly' ? 'cycleWeek' : 'cycleDay', '==', cycle),
+                        where('createdAt', '>=', Timestamp.fromDate(today)),
+                        where('createdAt', '<', Timestamp.fromDate(tomorrow))
                     );
+
+                    currentGroups[groupID] = {
+                        groupImageUrl,
+                        groupName,
+                        isFirstDay,
+                        userTokens,
+                        userList,
+                        todaysBetTokens,
+                        userDiamonds,
+                        currentPlayersInGame,
+                        gameType
+                    };
+                    console.log('gametype1: ', gameType);
+                    setGroups(currentGroups);
+                    setIsLoading(false);
+
                     unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
                         setIsLoading(true);
                         const todaysDuels: { [key: string]: any } = {};
@@ -243,29 +259,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         setCurrentBets(currBets);
                         setIsLoading(false);
                     });
-
-                    currentGroups[groupID] = {
-                        groupImageUrl,
-                        groupName,
-                        isFirstDay,
-                        userTokens,
-                        userList,
-                        todaysBetTokens,
-                        userDiamonds,
-                        currentPlayersInGame,
-                        cycleDay,
-                        cycleCount,
-                        totalCycles,
-                        groupType
-                    };
                 }
-                setIsLoading(false);
-
-                // Set # of days left in the game
-                const daysLeft = currentGroups[groupID]?.currentPlayersInGame - 1 - currentGroups[groupID]?.cycleDay + ((currentGroups[groupID]?.totalCycles - currentGroups[groupID]?.cycleCount) * (Object.keys(currentGroups[groupID]?.userList).length - 1));
-                setNODaysLeft(daysLeft);
             });
-            setGroups(currentGroups);
 
             return () => {
                 unsubscribeGroup();
@@ -673,6 +668,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity style={styles.RaceButtonContainer} onPress={() => setStepsModalVisible(true)}>
                 <Text style={styles.buttonText}>See Race</Text>
             </TouchableOpacity>
+            {groups[groupID]?.gameType === 'weekly' && (
+                <TouchableOpacity style={styles.PropBetContainer} onPress={() => setPropBetModalVisible(true)}>
+                    <Text style={styles.buttonText}>Daily Prop Bet</Text>
+                </TouchableOpacity>
+            )}
             <View style={styles.playerContainer}>
                 <Text style={styles.secondHeader}>Players:</Text>
                 {currentGroupUsersArray ? (
@@ -746,6 +746,21 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         <StepsModal
                             groupUsersArray={currentGroupUsersArray}
                         />
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isPropBetModalVisible}
+                // animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.moneyModalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setPropBetModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+                            <Text style={styles.tokenText}>Welcome to the prop bet for today.</Text>
                     </View>
                 </View>
             </Modal>
@@ -980,6 +995,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '30%',
         alignSelf: 'center',
+    },
+    PropBetContainer: {
+        position: 'absolute',
+        top: '30%',
+        right: 10,
     },
     playerContainer: {
         position: 'absolute',
