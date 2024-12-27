@@ -246,20 +246,24 @@ export const getTotalCycles = async (groupID: string): Promise<number | undefine
     }
 }
 
-// GET cycle day
-export const getCycleDay = async (groupID: string): Promise<number | undefined> => {
+// GET cycle day OR week
+export const getCycle = async (groupID: string): Promise<number | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.cycleDay){
-            console.log("getCycleDay - response: ", groupDoc.data()?.cycleDay);
-            return groupDoc.data()?.cycleDay;
-        } else{
-            console.error("getCycleDay - error: No such document!");
+        if (groupDoc.exists()) {
+            const gameType = groupDoc.data()?.gameType;
+            const field = gameType === 'weekly' ? 'cycleWeek' : 'cycleDay';
+            const value = groupDoc.data()?.[field];
+            
+            console.log(`getCycle - response: ${value}`);
+            return value;
+        } else {
+            console.error("getCycle - error: No such document!");
             return undefined;
         }
     } catch (error) {
-         console.error("getCycleDay - Error fetching user document: ", error);
-         return undefined;
+        console.error("getCycle - Error fetching user document: ", error);
+        return undefined;
     }
 }
 
@@ -335,18 +339,18 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
 }
 
 // GET group type
-export const getGroupType = async (groupID: string): Promise<string | undefined> => {
+export const getGameType = async (groupID: string): Promise<string | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.groupType){
-            console.log("getGroupType - response: ", groupDoc.data()?.groupType);
-            return groupDoc.data()?.groupType;
+        if (groupDoc.exists() && groupDoc.data()?.gameType){
+            console.log("getGameType - response: ", groupDoc.data()?.gameType);
+            return groupDoc.data()?.gameType;
         } else{
-            console.error("getGroupType - error: No such document!");
+            console.error("getGameType - error: No such document!");
             return undefined;
         }
     } catch (error) {
-         console.error("getGroupType - Error fetching user document: ", error);
+         console.error("getGameType - Error fetching user document: ", error);
          return undefined;
     }
 }
