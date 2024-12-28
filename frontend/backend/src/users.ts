@@ -194,7 +194,7 @@ export const setSteps = async(userID: string, steps: number, averageSteps: numbe
             averageSteps: averageSteps,
         });
         const userDoc = await getDoc(userDocRef);
-        console.log('setSteps - response: ', userDoc.data()?.steps);
+        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps);
     } catch (error) {
         console.error('setSteps - Error updating username', error);
         return null;

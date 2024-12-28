@@ -742,7 +742,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
           console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
-          if (data.cycleCount > data.totalCycles) {
+          if (cycleCount > data.totalCycles) {
             // end the game
             groupBatch.update(groupDocRef, {
               isGameActive: false,
@@ -751,9 +751,9 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               currentPlayersInGame: admin.firestore.FieldValue.delete(),
               cycleDuels: admin.firestore.FieldValue.delete(),
               dailyTokens: admin.firestore.FieldValue.delete(),
-              // defaultBetOnSelf: admin.firestore.FieldValue.delete(),
               totalCycles: admin.firestore.FieldValue.delete(),
               finishedBetting: admin.firestore.FieldValue.delete(),
+              finishedPropBet: admin.firestore.FieldValue.delete(),
               finishedRecap: admin.firestore.FieldValue.delete(),
               finishedTutorial: admin.firestore.FieldValue.delete(),
               startingTokens: admin.firestore.FieldValue.delete(),
@@ -833,6 +833,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               cycleCount: cycleCount,
               cycleDuels: cycleDuels,
               finishedBetting: admin.firestore.FieldValue.delete(),
+              finishedPropBet: admin.firestore.FieldValue.delete(),
               finishedRecap: admin.firestore.FieldValue.delete(),
             });
 

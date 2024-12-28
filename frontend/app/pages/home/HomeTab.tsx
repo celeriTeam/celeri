@@ -55,8 +55,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasInitialized, setHasInitialized] = useState(false);
 
-    console.log('AppleHealthKit:', NativeModules.AppleHealthKit);
-
     // Getting data because its the first page
     useEffect(() => {
         setIsLoading(true);
