@@ -577,3 +577,18 @@ export const addToFinishedTutorial = async (groupID: string, userID: string): Pr
         return undefined;
     }
 }
+
+// ADD user to finishedPropBet
+export const addToFinishedPropBet = async (groupID: string, userID: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
+            finishedPropBet: arrayUnion(userID),
+        });
+        console.log(`User ${userID} has finished prop bet`);
+        return undefined;
+    } catch (error) {
+        console.error("addToFinishedPropBet - Error adding user to finishedPropBet: ", error);
+        return undefined;
+    }
+}

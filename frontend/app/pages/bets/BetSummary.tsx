@@ -11,11 +11,11 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
-import { checkFinishedPropBet } from '@/backend/src/bets';
+import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 
 const db = getFirestore(app);
 
@@ -52,6 +52,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageSteps: number; }[]>([]);
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
     const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
+    const [currentPropBet, setCurrentPropBet] = useState<{ betOnUserID: string; averageSteps: number; overUnder: string; } | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
@@ -189,6 +190,12 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
                     // Set the prop bet player
                     setFinishedPropBet(isFinishedPropBet);
+
+                    if (isFinishedPropBet) {
+                        const propBetInfo = await getPropBet(groupID, uid);
+                        setCurrentPropBet(propBetInfo);
+                    }
+
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
@@ -822,7 +829,13 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 </Text>
                                 {finishedPropBet ? (
                                     <View>
-                                        <Text style={{ fontFamily: "Lexend", textAlign: 'center'  }}>You have already bet</Text>
+                                        <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 20  }}>You have entered:</Text>
+                                        <View style={{ backgroundColor: currentPropBet?.overUnder === 'over' ? "#90EE90" : "#ff817e", padding: 10, borderRadius: 10, alignSelf: 'center', marginTop: 10 }}>
+                                            <Text style={{ fontFamily: "Lexend", fontSize: 20 }}>
+                                                <Text style={{ fontFamily: "Lexend-bold", textAlign: 'center' }}>{currentPropBet?.overUnder === 'over' ? 'Over' : 'Under'} </Text>
+                                                {currentPropBet?.averageSteps}
+                                            </Text>
+                                        </View>
                                     </View>
                                 ) : (
                                     <View>
@@ -864,6 +877,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                             <Text 
                                                 style={{ fontFamily: "Lexend-bold" }} 
                                                 onPress={() => {
+                                                    addToFinishedPropBet(groupID, userID);
+                                                    addPropBet(groupID, userID, player.id, player.averageSteps, selectedPropBet === 'over' ? 'over' : 'under');
                                                     setFinishedPropBet(true);
                                                 }}
                                             >
