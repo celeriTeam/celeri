@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -355,6 +355,33 @@ export const getGameType = async (groupID: string): Promise<string | undefined> 
     }
 }
 
+// GET prop bet info
+export const getPropBet = async (groupID: string, userID: string): Promise<{ betOnUserID: string, averageSteps: number, overUnder: string } | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.propBets){
+            const propBets = groupDoc.data()?.propBets;
+            for (const propBet of propBets) {
+                if (propBet.userID === userID) {
+                    const currentBet = {
+                        betOnUserID: propBet.betOnUserID,
+                        averageSteps: propBet.averageSteps,
+                        overUnder: propBet.overUnder,
+                    };
+                    console.log("getPropBet - response: ", currentBet);
+                    return currentBet;
+                }
+            }
+        } else{
+            console.error("getPropBet - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getPropBet - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
@@ -437,6 +464,32 @@ export const editGroupName = async(groupID: string, groupNameInput: string) => {
         console.log('editGroupName - response: ', groupDoc.data()?.groupName);
     } catch (error) {
         console.error('editGroupName - Error updating username', error);
+        return null;
+    }
+}
+
+export const addPropBet = async (groupID: string, userID: string, betOnUserID: string, averageSteps: number, overUnder: string) => {
+    // add to groups[groupID].propBets where propBets = {betOnUserID, userID, averageSteps, overUnder}
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            const propBetData = {
+                betOnUserID: betOnUserID,
+                userID: userID,
+                averageSteps: averageSteps,
+                overUnder: overUnder,
+            };
+            await updateDoc(groupDocRef, {
+                propBets: arrayUnion(propBetData),
+            });
+            console.log('addPropBet - response: ', propBetData);
+        } else {
+            console.error('addPropBet - error: No such document!');
+            return null;
+        }
+    } catch (error) {
+        console.error('addPropBet - Error adding prop bet:', error);
         return null;
     }
 }
