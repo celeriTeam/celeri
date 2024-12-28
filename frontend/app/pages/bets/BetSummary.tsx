@@ -200,6 +200,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
 
+                    // So it opens up immediately if you haven't made a prop bet yet
+                    if (!isFinishedPropBet){
+                        setPropBetModalVisible(true);
+                    }
+
                     // Set up a listener for today's duels
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
@@ -821,7 +826,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
-                        <Text style={[styles.tokenText, { textAlign: 'center', marginBottom: 15 }]}>Welcome to the prop bet for today.</Text>
+                        <Text style={[styles.tokenText, { textAlign: 'center', marginBottom: 15 }]}>How many steps will the following player walk today? If you win the prop bet, you'll get +1 diamond. </Text>
                         {propBetPlayer.map(player => (
                             <View>
                                 <Text key={player.id} style={{ fontFamily: "Lexend-bold", fontSize: 20, textAlign: 'center' }}>

@@ -267,15 +267,10 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
   try {
     const userSnapshots = await userRef.get();
     const userSteps = {};
-    const userWeeklySteps = {};
 
     // Store all users' steps in memory
     userSnapshots.forEach((doc) => {
       userSteps[doc.id] = doc.data().steps || 0;
-    });
-
-    userSnapshots.forEach((doc) => {
-      userWeeklySteps[doc.id] = doc.data().weeklySteps || 0;
     });
 
     const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
@@ -312,6 +307,11 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
       if (gameType && gameType == "weekly") {
+
+        // propogate userWeeklySteps, should be a map 
+        const userWeeklySteps = data.weeklySteps;
+
+
         const currentDay = new Date().getDay();
         const resetDay = data.resetDay;
 
@@ -668,6 +668,84 @@ const calculatePowerupSteps = async (groupID, userID, duelID) => {
   }
 };
 
+exports.managePropBets = onSchedule("every day 05:00", async (event) => {
+  console.log("managePropBets -- START");
+  const groupRef = firestore.collection("groups");
+  try {
+    const groupSnapshots = 
+    await groupRef
+    .where("isGameActive", "==", true)
+    .where("gameType", "==", "weekly")
+    .get();
+    if (groupSnapshots.empty) {
+      console.log("No active games found.");
+      return;
+    }
+
+    console.log("Group snapshots found: ", groupSnapshots.size);
+    const groupBatch = firestore.batch();
+    groupSnapshots.docs.forEach(async (doc) => {
+      const data = doc.data();
+      const groupDocRef = doc.ref;
+
+      const propBetsArray = data.propBets;
+
+      // Iterate through the array and fetch steps for each betOnUserID
+      propBetsArray.map(async (bet) => {
+          const betOnUserID = bet.betOnUserID;
+          const userID = bet.userID;
+          const averageSteps = bet.averageSteps;
+          const overUnder = bet.overUnder; 
+          if (betOnUserID) {
+              const userDoc = await db.collection("users").doc(userID).get();
+              if (userDoc.exists) {
+                  const userData = userDoc.data();
+                  const steps = userData.steps;
+
+                  let win = false; 
+                  if (overUnder === "under" && averageSteps >= steps){
+                    win = true;
+                  } else if (overUnder === "over" && averageSteps < steps){
+                    win = true;
+                  }
+
+                  // if player won the propBet
+                  if(win){
+                    await groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(1),
+                    }).then(() => {
+                      console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  }
+                  // Add a document to the `propBets` subcollection
+                  await groupDocRef.collection("propBets").add({
+                    ...bet, // Include all bet data
+                    win, // Include the win status
+                    createdAt: FieldValue.serverTimestamp(), // Add the timestamp
+                  });
+                  console.log(`Added propBet record for user ${userID} in group ${groupDocRef.id}.`);
+                
+              }
+            }
+      })
+      
+
+      groupBatch.update(groupDocRef, {
+        finishedPropBet: admin.firestore.FieldValue.delete(),
+        propBets: admin.firestore.FieldValue.delete(),
+      }); 
+
+      // No need to check for gameType because propBets are only in weekly
+      
+    })
+    
+  } catch (error) {
+    console.error("Error querying Firestore:", error);
+  }
+});
+
 
 exports.createDuels = onSchedule("every day 05:00", async (event) =>{
   console.log("createDuels is running");
@@ -753,7 +831,6 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               dailyTokens: admin.firestore.FieldValue.delete(),
               totalCycles: admin.firestore.FieldValue.delete(),
               finishedBetting: admin.firestore.FieldValue.delete(),
-              finishedPropBet: admin.firestore.FieldValue.delete(),
               finishedRecap: admin.firestore.FieldValue.delete(),
               finishedTutorial: admin.firestore.FieldValue.delete(),
               startingTokens: admin.firestore.FieldValue.delete(),
@@ -833,7 +910,6 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               cycleCount: cycleCount,
               cycleDuels: cycleDuels,
               finishedBetting: admin.firestore.FieldValue.delete(),
-              finishedPropBet: admin.firestore.FieldValue.delete(),
               finishedRecap: admin.firestore.FieldValue.delete(),
             });
 
