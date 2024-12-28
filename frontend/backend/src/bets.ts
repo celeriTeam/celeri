@@ -485,6 +485,25 @@ export const checkFinishedTutorial = async (groupID: string, userID: string): Pr
     }
 }
 
+// Check if user has finished prop betting
+export const checkFinishedPropBet = async (groupID: string, userID: string): Promise<boolean> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const finishedPropBet = groupDoc.data()?.finishedPropBet || [];
+            console.log("checkFinishedPropBet - response: ", finishedPropBet.includes(userID));
+            return finishedPropBet.includes(userID);
+        } else{
+            console.error("checkFinishedPropBet - error: No such document!");
+            return false;
+        }
+    } catch (error) {
+         console.error("checkFinishedPropBet - Error fetching user document: ", error);
+         return false;
+    }
+}
+
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 //CREATE bet
