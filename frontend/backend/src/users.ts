@@ -235,6 +235,23 @@ export const getWeeklySteps = async (id: string): Promise<number> => {
     }
 }
 
+// GET Average Steps
+export const getAverageSteps = async (id: string): Promise<number> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
+            console.log("getAverageSteps - response:", userDoc.data()?.averageSteps);
+            return userDoc.data()?.averageSteps;
+        } else {
+            console.error("getAverageSteps - error: No such document!");
+            return -1;
+        }
+    } catch (error) {
+        console.error("getAverageSteps - Error fetching user document:", error);
+        return -1;
+    }
+}
+
 // GET average steps; for the over under 
 // export const getAverageSteps = async (id: string): Promise<number> => {
 //     try {

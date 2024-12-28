@@ -10,11 +10,12 @@ import { useUser } from '../../UserProvider';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
-import { getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
+import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
 import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
+import { checkFinishedPropBet } from '@/backend/src/bets';
 
 const db = getFirestore(app);
 
@@ -34,7 +35,7 @@ type CircularIconProps = {
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const route = useRoute<betSummaryPageRouteProp>();
     const { groupID } = route.params;
-    const { steps, weeklySteps, distance, flights } = useHealthData();
+    const { steps, weeklySteps, averageSteps, distance, flights } = useHealthData();
     const { userID, loading } = useUser();
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
@@ -46,8 +47,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[]>([]);
     const [NODaysLeft, setNODaysLeft] = useState("0");
+    const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageSteps: number; }[]>([]);
+    const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
+    const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
 
@@ -92,6 +96,22 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         }
     };
 
+    const setPropBetPlayerLogic = (userList: string[], cycle: number, cycleCount: number) => {
+        // Find current user's index
+        const currentUserIndex = userList.indexOf(userID);
+        
+        // Calculate initial chosen index with wraparound
+        let chosenIndex = (currentUserIndex + cycle + cycleCount) % userList.length;
+        
+        // If chosen player is current user, increment index
+        if (userList[chosenIndex] === userID) {
+            chosenIndex = (chosenIndex + 1) % userList.length;
+        }
+        
+        // Set the prop bet player
+        return userList[chosenIndex];
+    };
+
     const fetchGroupData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
         const groupsRef = collection(db, "groups");
@@ -105,14 +125,15 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 if (docSnapshot.exists() && groupID) {
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
-                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[] = [];
+                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[] = [];
                     if (userList) {
                         await Promise.all(userList.map(async (selectedUserID) => {
-                            const [profilePic, username, steps, weeklySteps, tokens] = await Promise.all([
+                            const [profilePic, username, steps, weeklySteps, averageSteps, tokens] = await Promise.all([
                                 getProfilePic(selectedUserID),
                                 getUserName(selectedUserID),
                                 getSteps(selectedUserID),
                                 getWeeklySteps(selectedUserID),
+                                getAverageSteps(selectedUserID),
                                 getUserTokens(selectedUserID, groupID)
                             ]);
                             
@@ -124,14 +145,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 newSteps,
                                 tokens
                             };
-                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: newSteps });
+                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: newSteps, averageSteps: averageSteps });
                         }));
                         // Sort users by tokens in descending order
                         groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
                         setCurrentGroupUsersArray(groupUsersArray);
                     }
 
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType, isFinishedPropBet] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
@@ -142,7 +163,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         getCycle(groupID),
                         getCycleCount(groupID),
                         getTotalCycles(groupID),
-                        getGameType(groupID)
+                        getGameType(groupID),
+                        checkFinishedPropBet(groupID, uid)
                     ]);
 
                     let daysLeft = 0;
@@ -165,7 +187,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         }
                     }
 
-                    
+                    // Set the prop bet player
+                    setFinishedPropBet(isFinishedPropBet);
+                    const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
+                    const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
+                    setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
 
                     // Set up a listener for today's duels
                     const today = new Date();
@@ -785,10 +811,69 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.moneyModalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setPropBetModalVisible(false)}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
-                            <Text style={styles.tokenText}>Welcome to the prop bet for today.</Text>
+                        <Text style={[styles.tokenText, { textAlign: 'center', marginBottom: 15 }]}>Welcome to the prop bet for today.</Text>
+                        {propBetPlayer.map(player => (
+                            <View>
+                                <Text key={player.id} style={{ fontFamily: "Lexend-bold", fontSize: 20, textAlign: 'center' }}>
+                                    {player.name}
+                                </Text>
+                                {finishedPropBet ? (
+                                    <View>
+                                        <Text style={{ fontFamily: "Lexend", textAlign: 'center'  }}>You have already bet</Text>
+                                    </View>
+                                ) : (
+                                    <View>
+                                        <View style={{
+                                                marginTop: 20, 
+                                                flexDirection: 'row',
+                                                justifyContent: 'space-between',
+                                                width: '70%',
+                                                alignSelf: 'center'
+                                            }}
+                                        >
+                                            <TouchableOpacity
+                                                style={{
+                                                    backgroundColor: selectedPropBet === 'over' ? "#50C850" : "#90EE90",
+                                                    padding: 10, 
+                                                    borderRadius: 10, 
+                                                    transform: [{ scale: selectedPropBet === 'over' ? 1.1 : 1 }] 
+                                                }}
+                                                onPress={() => setSelectedPropBet('over')}
+                                            >
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {player.averageSteps}</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={{ 
+                                                    backgroundColor: selectedPropBet === 'under' ? "#ff4d4d" : "#ff817e", 
+                                                    padding: 10, 
+                                                    borderRadius: 10, 
+                                                    transform: [{ scale: selectedPropBet === 'under' ? 1.1 : 1 }] 
+                                                }}
+                                                onPress={() => setSelectedPropBet('under')}
+                                            >
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {player.averageSteps}</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        <TouchableOpacity
+                                            style={{ backgroundColor: selectedPropBet === null ? "#9abddc" : "#1E90FF", padding: 10, borderRadius: 10, marginTop: 30, alignSelf: 'center' }}
+                                            disabled={selectedPropBet === null}
+                                        >
+                                            <Text 
+                                                style={{ fontFamily: "Lexend-bold" }} 
+                                                onPress={() => {
+                                                    setFinishedPropBet(true);
+                                                }}
+                                            >
+                                                Submit
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </View>
+                        ))}
                     </View>
                 </View>
             </Modal>
