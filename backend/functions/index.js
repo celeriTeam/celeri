@@ -310,6 +310,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
         // propogate userWeeklySteps, should be a map 
         const userWeeklySteps = data.weeklySteps;
+        const users = data.users;
 
 
         const currentDay = new Date().getDay();
@@ -460,6 +461,47 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Wait for all batches to be committed
           await Promise.all(allBatches);
 
+          // Now do the race distirbution
+          console.log("updateWinners -- race distribution starting now");
+          
+          //userWeeklySteps was declared much earlier
+          let maxSteps = -Infinity; // Start with the lowest possible value
+          let maxUser = null; // To store the key corresponding to the max value
+          for (const [key, value] of userWeeklySteps) {
+            if (value > maxSteps) {
+              maxSteps = value;
+              maxUser = key;
+            }
+          }
+
+          let totalDecrease = 0; // Track total token decrease
+
+          // Iterate over each user to calculate decreases and updates
+          for (const userID in users) {
+            if (users.hasOwnProperty(userID)) {
+              const userData = users[userID];
+
+              // If not the maxUser, calculate and decrease tokens
+              if (userID !== maxUser) {
+                const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
+                totalDecrease += decrease; // Accumulate total decrease
+                await groupDocRef.update({
+                  [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
+                });
+              }
+            }
+          }
+
+          // Add the total decrease to the maxUser's tokens
+          if (users[maxUser]) {
+            await groupDocRef.update({
+              [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
+            });
+          }
+
+          console.log("updateWinners -- Successfully updated tokens for all users after race.");
+          
+
           // After recording all winners, reset steps for all users
           const resetBatch = firestore.batch();
           userSnapshots.forEach((doc) => {
@@ -470,7 +512,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
         } else {
           return;
         }
-      } else {
+      } else { // DAILY
         duelsRef
           .where("createdAt", ">=", startOfYesterday)
           .where("createdAt", "<", endOfYesterday)
