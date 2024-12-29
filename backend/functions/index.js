@@ -307,8 +307,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
       if (gameType && gameType == "weekly") {
-
-        // propogate userWeeklySteps, should be a map 
+        // propogate userWeeklySteps, should be a map
         const userWeeklySteps = data.weeklySteps;
         const users = data.users;
 
@@ -463,8 +462,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           // Now do the race distirbution
           console.log("updateWinners -- race distribution starting now");
-          
-          //userWeeklySteps was declared much earlier
+
+          // userWeeklySteps was declared much earlier
           let maxSteps = -Infinity; // Start with the lowest possible value
           let maxUser = null; // To store the key corresponding to the max value
           for (const [key, value] of userWeeklySteps) {
@@ -477,30 +476,26 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           let totalDecrease = 0; // Track total token decrease
 
           // Iterate over each user to calculate decreases and updates
-          for (const userID in users) {
-            if (users.hasOwnProperty(userID)) {
-              const userData = users[userID];
-
-              // If not the maxUser, calculate and decrease tokens
-              if (userID !== maxUser) {
-                const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
-                totalDecrease += decrease; // Accumulate total decrease
-                await groupDocRef.update({
-                  [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
-                });
-              }
+          for (const [userID, userData] in users) {
+            // If not the maxUser, calculate and decrease tokens
+            if (userID !== maxUser) {
+              const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
+              totalDecrease += decrease; // Accumulate total decrease
+              await groupDocRef.update({
+                [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
+              });
             }
           }
 
           // Add the total decrease to the maxUser's tokens
-          if (users[maxUser]) {
+          if (users.has(maxUser)) {
             await groupDocRef.update({
               [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
             });
           }
 
           console.log("updateWinners -- Successfully updated tokens for all users after race.");
-          
+
 
           // After recording all winners, reset steps for all users
           const resetBatch = firestore.batch();
@@ -714,11 +709,11 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
   console.log("managePropBets -- START");
   const groupRef = firestore.collection("groups");
   try {
-    const groupSnapshots = 
+    const groupSnapshots =
     await groupRef
-    .where("isGameActive", "==", true)
-    .where("gameType", "==", "weekly")
-    .get();
+      .where("isGameActive", "==", true)
+      .where("gameType", "==", "weekly")
+      .get();
     if (groupSnapshots.empty) {
       console.log("No active games found.");
       return;
@@ -734,55 +729,52 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
 
       // Iterate through the array and fetch steps for each betOnUserID
       propBetsArray.map(async (bet) => {
-          const betOnUserID = bet.betOnUserID;
-          const userID = bet.userID;
-          const averageSteps = bet.averageSteps;
-          const overUnder = bet.overUnder; 
-          if (betOnUserID) {
-              const userDoc = await db.collection("users").doc(userID).get();
-              if (userDoc.exists) {
-                  const userData = userDoc.data();
-                  const steps = userData.steps;
+        const betOnUserID = bet.betOnUserID;
+        const userID = bet.userID;
+        const averageSteps = bet.averageSteps;
+        const overUnder = bet.overUnder;
+        if (betOnUserID) {
+          const userDoc = await firestore.collection("users").doc(userID).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            const steps = userData.steps;
 
-                  let win = false; 
-                  if (overUnder === "under" && averageSteps >= steps){
-                    win = true;
-                  } else if (overUnder === "over" && averageSteps < steps){
-                    win = true;
-                  }
-
-                  // if player won the propBet
-                  if(win){
-                    await groupDocRef.update({
-                      [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(1),
-                    }).then(() => {
-                      console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
-                    }).catch((error) => {
-                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
-                    });
-                  }
-                  // Add a document to the `propBets` subcollection
-                  await groupDocRef.collection("propBets").add({
-                    ...bet, // Include all bet data
-                    win, // Include the win status
-                    createdAt: FieldValue.serverTimestamp(), // Add the timestamp
-                  });
-                  console.log(`Added propBet record for user ${userID} in group ${groupDocRef.id}.`);
-                
-              }
+            let win = false;
+            if (overUnder === "under" && averageSteps >= steps) {
+              win = true;
+            } else if (overUnder === "over" && averageSteps < steps) {
+              win = true;
             }
-      })
-      
+
+            // if player won the propBet
+            if (win) {
+              await groupDocRef.update({
+                [`users.${userID}.diamonds`]: FieldValue.increment(1),
+              }).then(() => {
+                console.log(`Successfully updated diamonds for user ${userID} by 1 addded`);
+              }).catch((error) => {
+                console.error(`Failed to update tokens for user ${userID}: `, error);
+              });
+            }
+            // Add a document to the `propBets` subcollection
+            await groupDocRef.collection("propBets").add({
+              ...bet, // Include all bet data
+              win, // Include the win status
+              createdAt: FieldValue.serverTimestamp(), // Add the timestamp
+            });
+            console.log(`Added propBet record for user ${userID} in group ${groupDocRef.id}.`);
+          }
+        }
+      });
+
 
       groupBatch.update(groupDocRef, {
         finishedPropBet: admin.firestore.FieldValue.delete(),
         propBets: admin.firestore.FieldValue.delete(),
-      }); 
+      });
 
       // No need to check for gameType because propBets are only in weekly
-      
-    })
-    
+    });
   } catch (error) {
     console.error("Error querying Firestore:", error);
   }
