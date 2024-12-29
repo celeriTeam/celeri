@@ -219,21 +219,24 @@ export const getSteps = async (id: string): Promise<number> => {
 }
 
 // GET Steps
-export const getWeeklySteps = async (id: string): Promise<number> => {
+export const getWeeklySteps = async (groupID: string, userID: string): Promise<number> => {
     try {
-        const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.weeklySteps !== undefined) {
-            console.log("getWeeklySteps - response:", userDoc.data()?.weeklySteps);
-            return userDoc.data()?.weeklySteps;
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        // weeklySteps is a map with weeklySteps[userID] = steps
+        const weeklySteps = groupDoc.data()?.weeklySteps;
+        if (weeklySteps !== undefined && weeklySteps[userID] !== undefined) {
+            console.log("getWeeklySteps - response:", weeklySteps[userID]);
+            return weeklySteps[userID];
         } else {
             console.error("getWeeklySteps - error: No such document!");
             return -1;
         }
     } catch (error) {
-        console.error("getWeeklySteps - Error fetching user document:", error);
+        console.error("getWeeklySteps - Error fetching group document:", error);
         return -1;
     }
 }
+
 
 // GET Average Steps
 export const getAverageSteps = async (id: string): Promise<number> => {
