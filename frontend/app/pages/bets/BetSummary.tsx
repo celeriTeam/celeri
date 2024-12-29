@@ -198,7 +198,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
-                    if (!isFinishedPropBet){
+                    if (!isFinishedPropBet && gameType === 'weekly') {
                         setPropBetModalVisible(true);
                     }
 
