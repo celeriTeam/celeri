@@ -148,7 +148,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 getProfilePic(selectedUserID),
                                 getUserName(selectedUserID),
                                 getSteps(selectedUserID),
-                                getWeeklySteps(selectedUserID),
+                                getWeeklySteps(groupID, selectedUserID),
                                 getAverageSteps(selectedUserID),
                                 getUserTokens(selectedUserID, groupID)
                             ]);
