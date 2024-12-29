@@ -124,6 +124,21 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType, isFinishedPropBet] = await Promise.all([
+                        getGroupProfilePic(groupID),
+                        getGroupName(groupID),
+                        getGroupIsFirstDay(groupID),
+                        getUserTokens(uid, groupID),
+                        getTodaysBetTokens(uid, groupID),
+                        getUserDiamonds(uid, groupID),
+                        getCurrentPlayersInGame(groupID),
+                        getCycle(groupID),
+                        getCycleCount(groupID),
+                        getTotalCycles(groupID),
+                        getGameType(groupID),
+                        checkFinishedPropBet(groupID, uid)
+                    ]);
+
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
                     let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[] = [];
@@ -153,38 +168,20 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         setCurrentGroupUsersArray(groupUsersArray);
                     }
 
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType, isFinishedPropBet] = await Promise.all([
-                        getGroupProfilePic(groupID),
-                        getGroupName(groupID),
-                        getGroupIsFirstDay(groupID),
-                        getUserTokens(uid, groupID),
-                        getTodaysBetTokens(uid, groupID),
-                        getUserDiamonds(uid, groupID),
-                        getCurrentPlayersInGame(groupID),
-                        getCycle(groupID),
-                        getCycleCount(groupID),
-                        getTotalCycles(groupID),
-                        getGameType(groupID),
-                        checkFinishedPropBet(groupID, uid)
-                    ]);
-
-                    let daysLeft = 0;
-
                     // Set # of days left in the game
+                    const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
                     if(gameType == "weekly"){
-                        daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-                        console.log("daysLeft -- ", daysLeft)
-                        if(daysLeft == 1){
-                            setNODaysLeft(`${daysLeft} week left!`)
+                        console.log("weeksLeft -- ", timeLeft);
+                        if(timeLeft == 1){
+                            setNODaysLeft(`${timeLeft} week left!`)
                         } else {
-                            setNODaysLeft(`${daysLeft} weeks left!`)
+                            setNODaysLeft(`${timeLeft} weeks left!`)
                         }
                     } else {
-                        daysLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-                        if(daysLeft == 1){
-                            setNODaysLeft(`${daysLeft} day left!`)
+                        if(timeLeft == 1){
+                            setNODaysLeft(`${timeLeft} day left!`)
                         } else {
-                            setNODaysLeft(`${daysLeft} days left!`)
+                            setNODaysLeft(`${timeLeft} days left!`)
                         }
                     }
 
@@ -847,9 +844,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                         <View style={{
                                                 marginTop: 20, 
                                                 flexDirection: 'row',
-                                                justifyContent: 'space-between',
+                                                justifyContent: 'center',
                                                 width: '70%',
-                                                alignSelf: 'center'
+                                                alignSelf: 'center',
+                                                gap: 20,
                                             }}
                                         >
                                             <TouchableOpacity

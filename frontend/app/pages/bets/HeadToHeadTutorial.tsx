@@ -50,6 +50,25 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 		setBetAmount(((+betAmount || 0) + amount).toString());
 	}
 
+	const isWeekly = groups[groupID]?.gameType == "weekly";
+
+	const calculateTimeLeft = () => {
+		const timeLeft = (groups[groupID]?.currentPlayersInGame ?? 0) - 1 - (groups[groupID]?.cycle ?? 0) + ((groups[groupID]?.totalCycles ?? 0) - (groups[groupID]?.cycleCount ?? 0)) * (Object.keys(groups[groupID]?.userList ?? []).length - 1);
+		if(isWeekly){
+			if(timeLeft == 1){
+				return `${timeLeft} week`
+			} else {
+				return `${timeLeft} weeks`
+			}
+		} else {
+			if(timeLeft == 1){
+				return `${timeLeft} day`
+			} else {
+				return `${timeLeft} days`
+			}
+		}
+	}
+
 	const isValidBet = (tokens: number, bet: number) => tokens >= bet && bet > 0;
 
     useEffect(() => {
@@ -76,7 +95,9 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					return "Welcome! You must be new here. Let me show you the ropes.";
 				case 2:
 					setShowTutorialNext(true);
-					return `This game will have ${groups[groupID]?.totalCycles} rounds. You will start with ${groups[groupID]?.users[userID]?.tokens} tokens, and gain ${groups[groupID]?.dailyTokens} tokens everyday. You will be competing against your ${(groups[groupID]?.userList).length - 1} friends to see who can earn the most tokens.`;
+					const timeLeft = calculateTimeLeft();
+					const time = isWeekly ? "week" : "day";
+					return `This game will last ${timeLeft}. You will start with ${groups[groupID]?.users[userID]?.tokens} tokens. You can bet once every ${time} against your ${(groups[groupID]?.userList).length - 1} friends to see who can earn the most tokens.`;
 				case 3:
 					setShowTutorialNext(true);
 					return "Here you can see all the tokens you have, as well as how many of them you have bet for that day. Use them wisely.";
@@ -104,10 +125,33 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					return "If you lose, you lose what you bet.";
 				case 10:
 					setShowTutorialNext(true);
-					return "In addition to tokens, we also have a diamond currency. When you win your head-to-head bets, you will earn a diamond, which can be used to purchase power-ups.";
+					if (isWeekly) {
+						return "At the end of the week, the person with the most total steps of that week gets 5% of everybody's tokens.";
+					} else {
+						return "In addition to tokens, we also have a diamond currency. When you win your head-to-head bets, you will earn a diamond, which can be used to purchase power-ups.";
+					}
 				case 11:
-					setShowTutorialNext(false);
-					return "You're almost done! Click here to start the competition with your friends. Happy betting!";
+					if (isWeekly) {
+						setShowTutorialNext(true);
+						return "You'll get a random prop bet every week - if you're right about the over/under, you get a diamond.";
+					} else {
+						setShowTutorialNext(false);
+						return "You're almost done! Click here to start the competition with your friends. Happy betting!";
+					}
+				case 12:
+					if (isWeekly) {
+						setShowTutorialNext(true);
+						return "You can use your diamonds to then buy powerups to influence the weekly bets.";
+					} else {
+						return "";
+					}
+				case 13:
+					if (isWeekly) {
+						setShowTutorialNext(false);
+						return "You're almost done! Click here to start the competition with your friends. Happy betting!";
+					} else {
+						return "";
+					}
 				default:
 					setShowTutorialNext(true);
 					return "";
@@ -145,12 +189,25 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 						top: '53%',
 					};
 				case 11:
-					return {
-						width: '60%',
-						position: 'absolute',
-						bottom: 0,
-						left: 20,
-					};
+					if (isWeekly) {
+						return {width: '80%'};
+					} else {
+						return {
+							width: '60%',
+							position: 'absolute',
+							bottom: 0,
+							left: 20,
+						};
+					}
+				case 13:
+					if (isWeekly) {
+						return {
+							width: '60%',
+							position: 'absolute',
+							bottom: 0,
+							left: 20,
+						};
+					}
 				default:
 					return {width: '80%'};
 			}
@@ -164,33 +221,56 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 					styles.tutorialContent,
 					getModalStyle()
 				]}>
-					{/* <TouchableOpacity
-						onPress={() => handleSubmit()}
-					>
-						<Text style={styles.skipButtonText}>{`Skip Tutorial >`}</Text>
-					</TouchableOpacity> */}
 					<Text style={styles.tutorialText}>{getTutorialMessage()}</Text>
-					{tutorialStep === 10 && (
+					{isWeekly && tutorialStep === 10 && (
+						<Image
+							source={require('../../../assets/images/steps_race.jpg')}
+							style={styles.raceImage}
+						/>
+					)}
+					{isWeekly && tutorialStep === 11 && (
+						<Image
+							source={require('../../../assets/images/prop_bet.jpg')}
+							style={styles.propBetImage}
+						/>
+					)}
+					{((!isWeekly && tutorialStep === 10) || (isWeekly && tutorialStep === 12)) && (
 						<Image
 							source={require('../../../assets/images/store_tutorial.jpg')}
-							style={styles.image}
+							style={styles.storeImage}
 						/>
 					)}
 					{showTutorialNext && (
-						<TouchableOpacity
-							style={styles.tutorialButton}
-							onPress={() => {
-								if (tutorialStep < 11) {
-									setTutorialStep(tutorialStep + 1);
-								} else {
-									setShowTutorial(false);
-								}
-							}}
-						>
-							<Text style={styles.tutorialButtonText}>
-								{tutorialStep === 11 ? 'Finish' : 'Next'}
-							</Text>
-						</TouchableOpacity>
+						<View style={{ flexDirection: 'row', width: '100%', marginTop: 20 }}>
+							{tutorialStep > 6 && ((!isWeekly && tutorialStep < 11) || (isWeekly && tutorialStep < 13)) && (
+								<TouchableOpacity
+									style={[
+										styles.tutorialButton,
+										{ flex: 0.5, marginRight: 5 },
+									]}
+									onPress={() => { setTutorialStep(tutorialStep - 1); }}
+								>
+									<Text style={styles.tutorialButtonText}>Previous</Text>
+								</TouchableOpacity>
+							)}
+							<TouchableOpacity
+								style={[
+									styles.tutorialButton,
+									{ flex: tutorialStep <= 6 ? 1 : 0.5 },
+								]}
+								onPress={() => {
+									if ((!isWeekly && tutorialStep < 11) || (isWeekly && tutorialStep < 13)) {
+										setTutorialStep(tutorialStep + 1);
+									} else {
+										setShowTutorial(false);
+									}
+								}}
+							>
+								<Text style={styles.tutorialButtonText}>
+									{(!isWeekly && tutorialStep === 11) || (isWeekly && tutorialStep === 13) ? 'Finish' : 'Next'}
+								</Text>
+							</TouchableOpacity>
+						</View>
 					)}
 				</View>
 			</View>
@@ -284,7 +364,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 			<TouchableHighlight
 				style={[
 					styles.submitButton,
-					(tutorialStep === 11) && {zIndex: 200},
+					((!isWeekly && tutorialStep === 11) || (isWeekly && tutorialStep === 13)) && {zIndex: 200},
 				]}
 				underlayColor="#ff7043"
 				onPress={() => handleSubmit()}
@@ -433,11 +513,23 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 		textAlign: 'right',
 	},
-    image: {
+    raceImage: {
+		marginTop: 30,
+        width: 280,
+        height: 200,
+		margin: 'auto', // center
+    },
+    propBetImage: {
+		marginTop: 30,
+        width: 270,
+        height: 160,
+		margin: 'auto', // center
+    },
+    storeImage: {
+		marginTop: 30,
         width: 200,
         height: 350,
 		margin: 'auto', // center
-
     },
 	interactiveOverlay: {
 		...StyleSheet.absoluteFillObject,
@@ -467,7 +559,6 @@ const styles = StyleSheet.create({
 	tutorialText: {
 		fontSize: 16,
 		fontFamily: 'Lexend',
-		marginBottom: 20,
 		textAlign: 'center',
 	},
 	tutorialButtons: {
