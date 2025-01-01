@@ -128,8 +128,8 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     //HEALTHKIT
     const getStepsSinceMidnight = async() => {
         try {
-            console.log("printing steps");
-            console.log(steps);
+            console.log("getStepsSinceMidnight - printing steps", steps);
+            console.log("getStepsSinceMidnight - printing averageSteps", averageSteps);
             const result = steps;
             setStepsSinceMidnight(result);
 			setSteps(userID, result, averageSteps);
@@ -140,7 +140,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     }
 
     useEffect(() => {
-        if (!hasInitialized && steps > 0) {
+        if (!hasInitialized && steps > 0 && averageSteps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
             setStepsSinceMidnight(steps);

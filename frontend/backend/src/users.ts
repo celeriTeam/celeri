@@ -21,7 +21,6 @@ export const getProfilePic = async (id: string): Promise<string | undefined> => 
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.username) {
-            console.log("getProfilePic - response:", userDoc.data()?.profileImageUrl);
             return userDoc.data()?.profileImageUrl;
         } else {
             console.error("getProfilePic - error: No such document!");
@@ -189,6 +188,7 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 export const setSteps = async(userID: string, steps: number, averageSteps: number) => {
     try {
         const userDocRef = doc(db, 'users', userID);
+        console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
         await updateDoc(userDocRef, {
             steps: steps,
             averageSteps: averageSteps,
