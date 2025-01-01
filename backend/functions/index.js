@@ -725,7 +725,7 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
       const data = doc.data();
       const groupDocRef = doc.ref;
 
-      const propBetsArray = data.propBets;
+      const propBetsArray = data.propBets || [];
 
       // Iterate through the array and fetch steps for each betOnUserID
       propBetsArray.map(async (bet) => {
@@ -768,13 +768,18 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
       });
 
 
+      // Delete finishedPropBet and propBets fields in the group
       groupBatch.update(groupDocRef, {
         finishedPropBet: admin.firestore.FieldValue.delete(),
         propBets: admin.firestore.FieldValue.delete(),
       });
+      console.log(`Prepared field deletions for group ${groupDocRef.id}.`);
+
 
       // No need to check for gameType because propBets are only in weekly
     });
+    // Commit the batch
+    await groupBatch.commit();
   } catch (error) {
     console.error("Error querying Firestore:", error);
   }
