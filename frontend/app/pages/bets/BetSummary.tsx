@@ -117,8 +117,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const currentGroups: { [groupID: string]: any } = {};
         const groupsRef = collection(db, "groups");
         const groupDocRef = doc(groupsRef, groupID);
-        let unsubscribeDuels: () => void = () => { };
-        let unsubscribeUsers: () => void = () => { };
+
+        // Unsubscribe firebase listener functions
+        const unsubscribeFunctions: (() => void)[] = [];
         // Set up listener iff modal is not visible
         if (!isStoreModalVisible) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
@@ -167,6 +168,18 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
                         setCurrentGroupUsersArray(groupUsersArray);
                     }
+                    currentGroups[groupID] = {
+                        groupImageUrl,
+                        groupName,
+                        isFirstDay,
+                        userTokens,
+                        userList,
+                        todaysBetTokens,
+                        userDiamonds,
+                        currentPlayersInGame,
+                        gameType
+                    };
+                    setGroups(currentGroups);
 
                     // Set # of days left in the game
                     const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
@@ -187,12 +200,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
                     // Set the prop bet player
                     setFinishedPropBet(isFinishedPropBet);
-
                     if (isFinishedPropBet) {
                         const propBetInfo = await getPropBet(groupID, uid);
                         setCurrentPropBet(propBetInfo);
                     }
-
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
@@ -205,7 +216,6 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     // Set up a listener for today's duels
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-
                     const startDate = new Date(today);
                     const endDate = new Date(today);
 
@@ -226,22 +236,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         where('createdAt', '<', Timestamp.fromDate(endDate))
                     );
 
-                    currentGroups[groupID] = {
-                        groupImageUrl,
-                        groupName,
-                        isFirstDay,
-                        userTokens,
-                        userList,
-                        todaysBetTokens,
-                        userDiamonds,
-                        currentPlayersInGame,
-                        gameType
-                    };
-                    console.log('gametype1: ', gameType);
-                    setGroups(currentGroups);
-                    setIsLoading(false);
+                    // Clean up previous duels listener if exists
+                    if (unsubscribeFunctions.length > 0) {
+                        unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
+                        unsubscribeFunctions.length = 0;
+                    }
 
-                    unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
+                    // New duels listener
+                    const unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
                         setIsLoading(true);
                         const todaysDuels: { [key: string]: any } = {};
                         duelsSnapshot.forEach((duelDoc) => {
@@ -322,17 +324,19 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         setCurrentBets(currBets);
                         setIsLoading(false);
                     });
+
+                    unsubscribeFunctions.push(unsubscribeGroup, unsubscribeDuels);
+                }
+                setIsLoading(false);
+            });
+        }
+        return () => {
+            unsubscribeFunctions.forEach(unsubscribe => {
+                if (typeof unsubscribe === 'function') {
+                    unsubscribe();
                 }
             });
-
-            return () => {
-                unsubscribeGroup();
-                if (typeof unsubscribeDuels === 'function') {
-                    unsubscribeDuels();
-                }
-            };
-        }
-        return () => {};
+        };
     };
 
     const createMemberButtonHandle = (id: string) => {
@@ -929,6 +933,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                             navigation={navigation}
                             userDiamonds={groups[groupID]?.userDiamonds}
                             currentGroupUsersArray={currentGroupUsersArray}
+                            setStoreModalVisible={setStoreModalVisible}
                         />
                     </View>
                 </View>
