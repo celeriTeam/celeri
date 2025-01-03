@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     SafeAreaView, Pressable, Keyboard,
-    View, Image, Text, TouchableOpacity, TextInput, Alert, StyleSheet
+    View, Image, Text, TouchableOpacity, TextInput, Alert, StyleSheet,
+    KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -36,6 +37,8 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
     const [email, setEmail] = useState<string | undefined>();
     const [password, setPassword] = useState<string | undefined>();
     const [user, setUser] = useState<User | null>(null);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
+    const [focusedInput, setFocusedInput] = useState<string>('');
 
     const auth = getAuth(app);
     const nav = useNavigation<NativeStackNavigationProp<any>>();
@@ -69,6 +72,27 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
         });
 
         return () => unsubscribe(); // Cleanup subscription on unmount
+    }, []);
+
+    useEffect(() => {
+        const keyboardWillShow = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => {
+                setKeyboardHeight(e.endCoordinates.height);
+            }
+        );
+    
+        const keyboardWillHide = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardHeight(0);
+            }
+        );
+    
+        return () => {
+            keyboardWillShow.remove();
+            keyboardWillHide.remove();
+        };
     }, []);
 
     const pickImage = async () => {
@@ -226,20 +250,52 @@ const SignUpPage: React.FC<Props> = ({ navigation }) => {
                             placeholderTextColor="#999797"
                         />
                         <TextInput
-                            style={styles.loginTextField}
+                            style={[
+                                styles.loginTextField,
+                                focusedInput === 'email' && keyboardHeight > 0 && {
+                                    position: 'absolute',
+                                    bottom: '50%',
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: 'white',
+                                    zIndex: 1000,
+                                    elevation: 5, // for Android
+                                    shadowColor: '#000', // for iOS
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 3.84,
+                                }
+                            ]}
                             placeholder="Email"
                             value={email}
                             onChangeText={setEmail}
                             inputMode="email"
+                            onFocus={() => setFocusedInput('email')}
                             autoCapitalize="none"
                             placeholderTextColor="#999797"
                         />
                         <TextInput
-                            style={styles.loginTextField}
+                            style={[
+                                styles.loginTextField,
+                                focusedInput === 'password' && keyboardHeight > 0 && {
+                                    position: 'absolute',
+                                    bottom: '50%',
+                                    left: 0,
+                                    right: 0,
+                                    backgroundColor: 'white',
+                                    zIndex: 1000,
+                                    elevation: 5, // for Android
+                                    shadowColor: '#000', // for iOS
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 3.84,
+                                }
+                            ]}
                             placeholder="Password"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
+                            onFocus={() => setFocusedInput('password')}
                             placeholderTextColor="#999797"
                         />
                     
