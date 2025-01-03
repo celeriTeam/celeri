@@ -11,7 +11,7 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -48,7 +48,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[]>([]);
-    const [NODaysLeft, setNODaysLeft] = useState("0");
+    const [gameTimeLeft, setGameTimeLeft] = useState("");
+    const [betTimeLeft, setBetTimeLeft] = useState("");
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageSteps: number; }[]>([]);
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
     const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
@@ -125,7 +126,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, gameType, isFinishedPropBet] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
@@ -136,6 +137,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         getCycle(groupID),
                         getCycleCount(groupID),
                         getTotalCycles(groupID),
+                        getResetDay(groupID),
                         getGameType(groupID),
                         checkFinishedPropBet(groupID, uid)
                     ]);
@@ -181,20 +183,34 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     };
                     setGroups(currentGroups);
 
-                    // Set # of days left in the game
+                    // Set # of days/weeks left in the game
                     const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
                     if(gameType == "weekly"){
                         console.log("weeksLeft -- ", timeLeft);
                         if(timeLeft == 1){
-                            setNODaysLeft(`${timeLeft} week left!`)
+                            setGameTimeLeft(`${timeLeft} week left in the game!`)
                         } else {
-                            setNODaysLeft(`${timeLeft} weeks left!`)
+                            setGameTimeLeft(`${timeLeft} weeks left in the game!`)
                         }
                     } else {
                         if(timeLeft == 1){
-                            setNODaysLeft(`${timeLeft} day left!`)
+                            setGameTimeLeft(`${timeLeft} day left!`)
                         } else {
-                            setNODaysLeft(`${timeLeft} days left!`)
+                            setGameTimeLeft(`${timeLeft} days left!`)
+                        }
+                    }
+
+                    // If weekly, get # of days left in the week
+
+                    if (resetDay) {
+                        const today = new Date();
+                        const currentDay = today.getDay();
+                        if (currentDay === resetDay) {
+                            setBetTimeLeft("7 days left to bet!");
+                        } else if (currentDay > resetDay) {
+                            setBetTimeLeft(`${7 - (currentDay - resetDay)} days left to bet!`);
+                        } else {
+                            setBetTimeLeft(`${resetDay - currentDay} days left to bet!`);
                         }
                     }
 
@@ -704,7 +720,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <Text style={styles.daysLeft}>{NODaysLeft}</Text>
+            <Text style={[styles.daysLeft, {top: 120}]}>{gameTimeLeft}</Text>
+            <Text style={[styles.daysLeft, {top: 140,}]}>{betTimeLeft}</Text>
             <TouchableOpacity style={[styles.moneyContainer, { top: 100, }]} onPress={() => setTokensModalVisible(true)}>
                 <View style={styles.tokenTextView}>
                     <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
@@ -1095,13 +1112,12 @@ const styles = StyleSheet.create({
     },
     daysLeft: {
         position: 'absolute',
-        right: 10,
-        top: 75,
         paddingHorizontal: 10,
         paddingVertical: 5,
         flexDirection: 'row',
         alignItems: 'center',
         color: 'red',
+        alignSelf: 'center',
     },
     moneyContainer: {
         position: 'absolute',
