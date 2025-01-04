@@ -30,6 +30,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [player1, setPlayer1] = useState('');
     const [player2, setPlayer2] = useState('');
     const [totalBetTokens, setTotalBetTokens] = useState(0);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
@@ -231,11 +232,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
 
     useEffect(() => {
         // Add listeners to track the keyboard state
-        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
             setKeyboardVisible(true);
+            setKeyboardHeight(e.endCoordinates.height/3);
         });
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
             setKeyboardVisible(false);
+            setKeyboardHeight(0);
         });
 
         // Cleanup listeners
@@ -386,7 +389,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                             </TouchableOpacity>
                             ))}
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, isSelected(player2ID) && keyboardVisible && { ...styles.inputWithKeyboard, bottom: keyboardHeight + 40 }]}
                                 value={betAmount2}
                                 onChangeText={setBetAmount2}
                                 keyboardType="numeric"
@@ -547,6 +550,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         fontFamily: 'Lexend-Bold',
         bottom: 250,
+        left: 20,
+    },
+    inputWithKeyboard: {
+        position: 'absolute',
+        fontFamily: 'Lexend-Bold',
         left: 20,
     },
     valueTextWithKeyboard: {

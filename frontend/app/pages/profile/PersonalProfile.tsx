@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
@@ -84,13 +84,15 @@ const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
             }
             
             <Text style={styles.groupsLabel}>Groups:</Text>
-            {groupNames === undefined || groupNames.length === 0 ? (
-                <Text style={styles.text}>No groups found</Text>
-            ) : (
-                groupNames.map((groupName) => (
-                    <Text key={groupName} style={styles.text}>{groupName}</Text>
-                ))
-            )}
+            <ScrollView style={styles.scrollContainer}>
+                {groupNames === undefined || groupNames.length === 0 ? (
+                    <Text style={styles.text}>No groups found</Text>
+                ) : (
+                    groupNames.map((groupName) => (
+                        <Text key={groupName} style={styles.text}>{groupName}</Text>
+                    ))
+                )}
+            </ScrollView>
 
             <View style={styles.logoutButtonContainer}>
             <TouchableOpacity onPress={handleEditProfile}>
@@ -141,10 +143,22 @@ const styles = StyleSheet.create({
         fontSize: 22,
         marginBottom: 10,
     },
+    scrollContainer: {
+        maxHeight: 150, // Adjust based on your needs
+        marginVertical: 10,
+        backgroundColor: 'white',
+        width: '50%',
+        borderRadius: 10,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: 'gray',
+    },
     text: {
         fontFamily: "Lexend",
         fontSize: 18,
         marginBottom: 20,
+        // center
+        textAlign: 'center',
     },
     buttonText: {
         marginTop: 25,

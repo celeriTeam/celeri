@@ -338,6 +338,23 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
     }
 }
 
+// GET reset day (if gameType is weekly)
+export const getResetDay = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.resetDay){
+            console.log("getResetDay - response: ", groupDoc.data()?.resetDay);
+            return groupDoc.data()?.resetDay;
+        } else{
+            console.error("getResetDay - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getResetDay - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 // GET group type
 export const getGameType = async (groupID: string): Promise<string | undefined> => {
     try {

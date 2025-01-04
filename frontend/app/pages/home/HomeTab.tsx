@@ -7,7 +7,8 @@ import { View,
     ActivityIndicator,
     Image,
     Button,
-    Modal} from 'react-native';
+    Modal,
+    ScrollView} from 'react-native';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -248,31 +249,33 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.titleText}>Groups</Text>
                     </View>
                 <Text style={styles.subTitle}>Your Groups:</Text>
-                {Object.entries(groups).map(([groupID, group]) => (
-                    <TouchableOpacity
-                        key={groupID}
-                        style={styles.groupButton}
-                        onPress={() => goToGroup(group.groupName)}
-                    >
-                        {group.groupImageUrl ? (
-                            <Image
-                                source={{ uri: group.groupImageUrl }}
-                                style={styles.groupImage}
-                            />
-                        ) : (
-                            <Image 
-                                source={require('@components/blank-profile-picture.png')}
-                                style={styles.groupImage}
-                            />
-                        )}
-                        <View style={styles.groupInfo}>
-                            <Text style={styles.groupName}>{group.groupName}</Text>
-                            <Text style={styles.groupDetails}>
-                                {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                ))}
+                <ScrollView style={styles.scrollContainer}>
+                    {Object.entries(groups).map(([groupID, group]) => (
+                        <TouchableOpacity
+                            key={groupID}
+                            style={styles.groupButton}
+                            onPress={() => goToGroup(group.groupName)}
+                        >
+                            {group.groupImageUrl ? (
+                                <Image
+                                    source={{ uri: group.groupImageUrl }}
+                                    style={styles.groupImage}
+                                />
+                            ) : (
+                                <Image 
+                                    source={require('@components/blank-profile-picture.png')}
+                                    style={styles.groupImage}
+                                />
+                            )}
+                            <View style={styles.groupInfo}>
+                                <Text style={styles.groupName}>{group.groupName}</Text>
+                                <Text style={styles.groupDetails}>
+                                    {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
 
             {/* Floating Action Button */}
             <TouchableOpacity style={styles.fab} onPress={toggleModal}>
@@ -373,6 +376,10 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend-Bold',
         paddingTop: 20,
     },
+    scrollContainer: {
+        flex: 1,
+        width: '100%',
+    },
     groupButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -386,6 +393,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowRadius: 5,
         elevation: 3,
+        alignSelf: 'center',
     },
     groupImage: {
         width: 50,

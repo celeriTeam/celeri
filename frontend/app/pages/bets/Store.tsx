@@ -20,9 +20,10 @@ type Props = {
     navigation: betHistoryPageNavigationProp;
     userDiamonds: number;
     currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[];
+    setStoreModalVisible: (visible: boolean) => void;
 };
 
-const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUsersArray }) => {
+const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUsersArray, setStoreModalVisible }) => {
     const { userID, groups, loading } = useUser();
     const route = useRoute<betHistoryPageRouteProp>();
     const { groupID } = route.params;
@@ -162,6 +163,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
                                             title="Select"
                                             onPress={() => {
                                                 console.log("handleBuyPowerup: ", selectedItemId)
+                                                setStoreModalVisible(false);
                                                 setIsModalVisible(false);
                                                 handleBuyPowerup(item.id, item.name);
                                             }}
