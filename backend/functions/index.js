@@ -309,15 +309,12 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
     console.log("Group snapshots found: ", groupSnapshots.size);
 
-    const endOfYesterday = new Date();
-    endOfYesterday.setHours(0, 0, 0, 0); // Midnight today
-    const startOfYesterday = new Date(endOfYesterday);
-    startOfYesterday.setDate(endOfYesterday.getDate() - 1); // Go back one day
-
-    const endOfLastWeek = new Date();
-    endOfLastWeek.setHours(0, 0, 0, 0); // Midnight today
-    const startOfLastWeek = new Date(endOfLastWeek);
-    startOfLastWeek.setDate(endOfLastWeek.getDate() - 7); // Go back seven days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Midnight today
+    const startOfYesterday = new Date(today);
+    startOfYesterday.setDate(today.getDate() - 1); // Go back one day
+    const startOfLastWeek = new Date(today);
+    startOfLastWeek.setDate(today.getDate() - 7); // Go back seven days
 
     const allBatches = [];
 
@@ -336,9 +333,22 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       const gameType = data.gameType;
       if (gameType && gameType == "weekly") {
         // propogate userWeeklySteps, should be a map
-        const userWeeklySteps = data.weeklySteps;
+        let weeklySteps = data.weeklySteps || {};
         const users = data.users;
 
+        // Get all users in the group and their current steps
+        for (const userID in users) {
+            const currentSteps = userSteps[userID] || 0;
+            
+            // If user exists in weeklySteps, add today's steps
+            // If not, initialize with today's steps
+            weeklySteps[userID] = (weeklySteps[userID] || 0) + currentSteps;
+        }
+    
+        // Update the group document with new weeklySteps
+        await groupDocRef.update({
+            weeklySteps: weeklySteps
+        });
 
         const currentDay = new Date().getDay();
         const resetDay = data.resetDay;
@@ -347,7 +357,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
         if (currentDay == resetDay) {
           duelsRef
             .where("createdAt", ">=", startOfLastWeek)
-            .where("createdAt", "<", endOfLastWeek)
+            .where("createdAt", "<", today)
             .get()
             .then(async (duelsSnapshot) => {
               if (duelsSnapshot.empty) {
@@ -531,6 +541,10 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
             resetBatch.update(userRef.doc(doc.id), {steps: 0});
           });
           await resetBatch.commit();
+          // remove weeklySteps
+          await groupDocRef.update({
+            weeklySteps: FieldValue.delete(),
+          });
           console.log("Batch update completed successfully.");
         } else {
           return;
@@ -538,7 +552,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       } else { // DAILY
         duelsRef
           .where("createdAt", ">=", startOfYesterday)
-          .where("createdAt", "<", endOfYesterday)
+          .where("createdAt", "<", today)
           .get()
           .then(async (duelsSnapshot) => {
             if (duelsSnapshot.empty) {
