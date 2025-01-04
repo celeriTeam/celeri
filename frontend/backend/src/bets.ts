@@ -387,15 +387,17 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
         const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists()){
             const groupCycleCount = groupDoc.data()?.cycleCount;
-            const groupCycleDay = groupDoc.data()?.cycleDay;
+            const gameType = groupDoc.data()?.gameType;
+            const groupCurrentCycle = gameType === 'weekly' ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             
             // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
-            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where('cycleDay', '==', groupCycleDay));
+            const cycleBlank = gameType === 'weekly' ? 'cycleWeek' : 'cycleDay';
+            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where(cycleBlank, '==', groupCurrentCycle));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('No duels found for today');
+                console.log('No duels found for today for group: ', groupID);
                 return {};
             }
             
