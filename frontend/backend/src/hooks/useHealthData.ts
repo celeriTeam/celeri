@@ -38,19 +38,6 @@ const useHealthData = () => {
     useEffect(() => {
         console.log("inside useHealthData, useEFfect");
 
-        // const enableBackgroundDelivery = () => {
-        //     NativeModules.AppleHealthKit.enableBackgroundDeliveryForType(
-        //         { type: "StepCount", frequency: AppleHealthKit.Constants.Frequency.IMMEDIATE },
-        //         (err, success) => {
-        //             if (err) {
-        //                 console.log("Error enabling background delivery:", err);
-        //                 return;
-        //             }
-        //             console.log("Background delivery enabled for StepCount:", success);
-        //         }
-        //     );
-        // };
-
         AppleHealthKit.initHealthKit(permissions, (err) => {
             if (err) {
                 console.log('Error getting permissions', err);
@@ -89,23 +76,25 @@ const useHealthData = () => {
 
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
                     console.log("Fetching HealthKit data from silent notification (background)...");
-                    fetchHealthData();
+                    console.log("Has permissions: ", hasPermissions);
 
-                    const auth = getAuth();
-                    const user = auth.currentUser;
-                    let userID = "";
-
-                    if (user) {
-                    userID = user.uid; // Get the user's unique ID
-                    console.log("User ID:", userID);
-                    } else {
-                    console.log("No user is signed in.");
+                    const permissionsGranted = await checkPermissions();
+                    if (!permissionsGranted) {
+                        console.log("Permissions not granted. Exiting.");
+                        return;
                     }
 
-                    // now that it's fetched, set it
-                    console.log("userID is ", userID);
-                    console.log("Fetched HealthKit data, steps is ", steps, " and averageSteps is ", averageSteps);
-                    setStepsFirebase(userID, steps, averageSteps);
+                    console.log("Permissions are granted. Fetching data...");
+                    const healthData = await fetchHealthDataBackground();
+
+                    if (healthData) {
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+                        const userID = user ? user.uid : "unknown_user";
+            
+                        console.log("Fetched HealthKit data:", healthData);
+                        setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps);
+                    }
                 }
             });
 
@@ -117,10 +106,29 @@ const useHealthData = () => {
 
     const fetchHealthData = () => {
         if (!hasPermissions) return;
-
         getDailySteps();
         getWeeklySteps();
         getWeeklyAverageOfSteps();
+    };
+
+    const fetchHealthDataBackground = async () => {
+        try {
+            const dailySteps = await getDailySteps();
+            const weeklySteps = await getWeeklySteps();
+            const avgSteps = await getWeeklyAverageOfSteps();
+    
+            console.log("Fetched data: ", { dailySteps, weeklySteps, avgSteps });
+    
+            // Update state explicitly after fetching
+            setSteps(dailySteps);
+            setWeeklySteps(weeklySteps);
+            setAverageSteps(avgSteps);
+    
+            return { dailySteps, weeklySteps, avgSteps };
+        } catch (error) {
+            console.error("Error fetching health data in background:", error);
+            return null;
+        }
     };
 
     useEffect(() => {
@@ -129,45 +137,42 @@ const useHealthData = () => {
         }
     }, [hasPermissions]);
 
-    const getDailySteps = async () => {
-        // Query Health data
-        const today = new Date();
-        const options: HealthInputOptions = {
-            date: today.toISOString(),
-        };
-        
-        AppleHealthKit.getStepCount(options, (err, results) => {
-            if (err) {
-                console.log('Error getting the steps');
-                return;
-            }
-            setSteps(results.value);
+    const getDailySteps = async (): Promise<number> => {
+        return new Promise((resolve, reject) => {
+            const today = new Date();
+            const options: HealthInputOptions = {
+                date: today.toISOString(),
+            };
+    
+            AppleHealthKit.getStepCount(options, (err, results) => {
+                if (err) {
+                    console.log('Error getting the steps');
+                    reject(err);
+                    return;
+                }
+                console.log("getDailySteps succeeded -- getStepCount: ", results.value);
+                setSteps(results.value);
+                resolve(results.value);
+            });
         });
-        
-
-        
-
     };
 
-    const getWeeklyAverageOfSteps = async () => {
-        // Fetch step counts for the past week
+    const getWeeklyAverageOfSteps = async (): Promise<number> => {
         const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 8); // 8 days ago; you don't want today because the steps may be unfinished, decreasing avg
+        startDate.setDate(startDate.getDate() - 8); // 8 days ago to avoid including today
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-
-        // Initialize sum
+    
         let totalSteps = 0;
         const currentDate = new Date(startDate);
-
-        while(currentDate < yesterday){
+    
+        while (currentDate < yesterday) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
             };
-            
-            // Get steps for current date
+    
             try {
-                const result = await new Promise((resolve, reject) => {
+                const result = await new Promise<number>((resolve, reject) => {
                     AppleHealthKit.getStepCount(options, (err, results) => {
                         if (err) {
                             reject(err);
@@ -176,43 +181,40 @@ const useHealthData = () => {
                         }
                     });
                 });
-                
-                totalSteps += result as number;
+    
+                totalSteps += result;
             } catch (error) {
-                console.log('Error getting steps for date:', currentDate);
+                console.log("Error getting steps for date:", currentDate.toISOString(), error);
             }
-            
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
-
+    
+            currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
         }
-
-        setAverageSteps(Math.round(totalSteps / 7));
-    }
+    
+        const averageSteps = Math.round(totalSteps / 7);
+        setAverageSteps(averageSteps); // Update state
+        return averageSteps; // Return the calculated value
+    };
+    
 
     // Weekly steps minus current day
-    const getWeeklySteps = async () => {
+    const getWeeklySteps = async (): Promise<number> => {
         const today = new Date();
     
-        // Find the most recent Sunday
         const startDate = new Date(today);
-        while (startDate.getDay() !== 0) { // 0 is Sunday
+        while (startDate.getDay() !== 0) { // Find the most recent Sunday
             startDate.setDate(startDate.getDate() - 1);
         }
-        
-        // Initialize sum
+    
         let totalSteps = 0;
-        
-        // Loop through each day from Sunday to today
         const currentDate = new Date(startDate);
+    
         while (currentDate < today) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
             };
-            
-            // Get steps for current date
+    
             try {
-                const result = await new Promise((resolve, reject) => {
+                const result = await new Promise<number>((resolve, reject) => {
                     AppleHealthKit.getStepCount(options, (err, results) => {
                         if (err) {
                             reject(err);
@@ -221,18 +223,34 @@ const useHealthData = () => {
                         }
                     });
                 });
-                
-                totalSteps += result as number;
+    
+                totalSteps += result;
             } catch (error) {
-                console.log('Error getting steps for date:', currentDate);
+                console.log("Error getting steps for date:", currentDate.toISOString(), error);
             }
-            
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
+    
+            currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
         }
-        
-        setWeeklySteps(totalSteps);
+    
+        setWeeklySteps(totalSteps); // Update state
+        return totalSteps; // Return the total steps
     };
+    
+
+    const checkPermissions = async () => {
+        return new Promise((resolve, reject) => {
+            AppleHealthKit.initHealthKit(permissions, (err) => {
+                if (err) {
+                    console.log('Error checking permissions:', err);
+                    resolve(false); // Permissions not granted
+                } else {
+                    console.log('Permissions are valid.');
+                    resolve(true); // Permissions granted
+                }
+            });
+        });
+    };
+    
 
 
     return { steps, weeklySteps, averageSteps, flights, distance };
