@@ -17,7 +17,7 @@ export const getGroupIDFromGroupName = async (groupName: string): Promise<string
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
             const groupID = doc.id;
-            console.log("getGroupIDFromGroupName - response: ", groupID);
+            //console.log("getGroupIDFromGroupName - response: ", groupID);
             return groupID;
         } else {
             console.error("getNumberOfUsersByGroupName - error: No matching documents found for groupName", groupName);
@@ -35,7 +35,7 @@ export const getUsersInGroup = async (groupID: string): Promise<string[] | undef
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.order) {
             const users = groupDoc.data()?.order;
-            console.log("getUsersInGroup - response: ", users);
+            //console.log("getUsersInGroup - response: ", users);
             return users;
         } else {
             console.error("getUsersInGroup - error: No such document!");
@@ -217,7 +217,7 @@ export const getDailyTokens = async (groupID: string): Promise<number | undefine
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.dailyTokens){
-            console.log("getDailyTokens - response: ", groupDoc.data()?.dailyTokens);
+            //console.log("getDailyTokens - response: ", groupDoc.data()?.dailyTokens);
             return groupDoc.data()?.dailyTokens;
         } else{
             console.error("getDailyTokens - error: No such document!");

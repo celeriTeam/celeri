@@ -18,7 +18,7 @@ import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/nativ
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
-import { getUserGroups, getUserName, setSteps } from '@backend/src/users';
+import { getUserGroups, getUserName, setStepsFirebase } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
@@ -79,52 +79,6 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         };
     }, []);
 
-    const enableBackgroundDelivery = async (): Promise<void> => {
-        try {
-            await NativeModules.AppleHealthKit.enableBackgroundDeliveryForType(
-                'StepCount',
-                1, // Frequency in hours
-                (error: string | null) => {
-                    if (error) {
-                        console.error('Error enabling background delivery:', error);
-                    } else {
-                        console.log('Background delivery enabled for StepCount');
-                    }
-                }
-            );
-        } catch (error) {
-            console.error('Unexpected error while enabling background delivery:', error);
-        }
-    };
-    
-    useEffect(() => {
-        enableBackgroundDelivery();
-    }, []);
-    
-
-    useEffect(() => {
-        console.log("HomeTab -- inside NativeEventEmitter useEffect")
-        new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
-          'healthKit:StepCount:setup:success',
-          async () => {
-            console.log('HomeTab -- Async StepCount Observer Setup Success');
-          },
-        );
-        // new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
-        //     'healthKit:StepCount:setup:failure',
-        //     async () => {
-        //       console.log('HomeTab -- Async StepCount Observer Setup Failure');
-        //     },
-        // );
-        // new NativeEventEmitter(NativeModules.AppleHealthKit).addListener(
-        //     'healthKit:StepCount:new',
-        //     async () => {
-        //       console.log('HomeTab -- StepCount Observer Triggered');
-              
-        //     },
-        //   );
-      });
-
     //HEALTHKIT
     const getStepsSinceMidnight = async() => {
         try {
@@ -132,7 +86,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             console.log("getStepsSinceMidnight - printing averageSteps", averageSteps);
             const result = steps;
             setStepsSinceMidnight(result);
-			setSteps(userID, result, averageSteps);
+			setStepsFirebase(userID, result, averageSteps);
         } catch (error) {
             console.error("Error getting step count: ", error);
             setStepsSinceMidnight(null);
@@ -140,17 +94,19 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
     }
 
     useEffect(() => {
+        console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
         if (!hasInitialized && steps > 0 && averageSteps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
             setStepsSinceMidnight(steps);
-            setSteps(userID, steps, averageSteps); // Call your backend update here
+            setStepsFirebase(userID, steps, averageSteps); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
         }
-    }, [steps, hasInitialized, userID]);
+    }, [steps, averageSteps, hasInitialized, userID]);
 
     useEffect(() => {
         if(hasInitialized){
+            console.log("HomeTab -- already initialized");
             getStepsSinceMidnight();
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);

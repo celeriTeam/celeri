@@ -14,8 +14,18 @@ import AppPage from './pages/App';
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
 import ForgotPasswordPage from './pages/onboarding/ForgotPassword';
+import messaging from '@react-native-firebase/messaging';
+
 
 const Stack = createStackNavigator<RootStackParamList>();
+
+// messaging().onMessage(async (remoteMessage) => {
+//     console.log('Notification received in foreground:', remoteMessage);
+// });
+  
+// messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+//     console.log('Notification received in background:', remoteMessage);
+// });
 
 const App: React.FC = () => {
   

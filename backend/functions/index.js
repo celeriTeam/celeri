@@ -42,6 +42,34 @@ exports.sendNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
+exports.sendTestSilentNotif = onSchedule("every day 05:00", async (event) => {
+  const message = {
+    data: {
+      "type": "silent",
+      "action": "fetchSteps",
+    },
+    apns: {
+      payload: {
+        aps: {
+          contentAvailable: true,
+        },
+      },
+      headers: {
+        "apns-priority": "5",
+        "apns-push-type": "background",
+      },
+    },
+    topic: "allUsers",
+  };
+
+  try {
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent silent notification:", response);
+  } catch (error) {
+    console.error("Error sending silent notification:", error);
+  }
+});
+
 exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
   const directMessage = {
     notification: {

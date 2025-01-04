@@ -80,7 +80,7 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
                 };
             });
             console.log('getYesterdayDuelsSummary - Checkpoint Two');
-            console.log("getYesterdaysDuelsSummary - response: ", duels);
+            //console.log("getYesterdaysDuelsSummary - response: ", duels);
             return duels;
         } else{
             console.error("getYesterdaysDuelsSummary - error: No such document!");
@@ -435,7 +435,7 @@ export const checkFinishedBetting = async (groupID: string, userID: string): Pro
         const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists()){
             const finishedBetting = groupDoc.data()?.finishedBetting || [];
-            console.log("checkFinishedBetting - response: ", finishedBetting.includes(userID));
+            //console.log("checkFinishedBetting - response: ", finishedBetting.includes(userID));
             return finishedBetting.includes(userID);
         } else{
             console.error("checkFinishedBetting - error: No such document!");

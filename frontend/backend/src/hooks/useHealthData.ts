@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import { NativeEventEmitter, NativeModules } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
+import { setStepsFirebase } from '../users'; 
+import { getAuth } from "firebase/auth";
 
 import AppleHealthKit, {
     HealthInputOptions,
@@ -33,6 +37,20 @@ const useHealthData = () => {
 
     useEffect(() => {
         console.log("inside useHealthData, useEFfect");
+
+        // const enableBackgroundDelivery = () => {
+        //     NativeModules.AppleHealthKit.enableBackgroundDeliveryForType(
+        //         { type: "StepCount", frequency: AppleHealthKit.Constants.Frequency.IMMEDIATE },
+        //         (err, success) => {
+        //             if (err) {
+        //                 console.log("Error enabling background delivery:", err);
+        //                 return;
+        //             }
+        //             console.log("Background delivery enabled for StepCount:", success);
+        //         }
+        //     );
+        // };
+
         AppleHealthKit.initHealthKit(permissions, (err) => {
             if (err) {
                 console.log('Error getting permissions', err);
@@ -40,6 +58,60 @@ const useHealthData = () => {
             }
             console.log('Apple Health Data: Permissions received!');
             setHasPermission(true);
+
+            // Only register observers after permissions are confirmed
+            console.log("Setting up observers...");
+
+            const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
+            healthKitEventEmitter.addListener('healthKit:StepCount:setup:success', () => {
+                console.log('StepCount Observer Setup Success');
+            });
+            healthKitEventEmitter.addListener('healthKit:StepCount:setup:failure', () => {
+                console.log('StepCount Observer Setup Failure');
+            });
+            healthKitEventEmitter.addListener('healthKit:StepCount:new', () => {
+                console.log('StepCount Observer Triggered');
+            });
+
+            // Firebase Messaging Handlers
+            const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+                console.log("Silent push notification received in foreground:", remoteMessage);
+
+                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+                    console.log("Fetching HealthKit data from silent notification (foreground)...");
+                    fetchHealthData();
+
+                }
+            });
+
+            messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+                console.log("Silent push notification received in background:", remoteMessage);
+
+                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+                    console.log("Fetching HealthKit data from silent notification (background)...");
+                    fetchHealthData();
+
+                    const auth = getAuth();
+                    const user = auth.currentUser;
+                    let userID = "";
+
+                    if (user) {
+                    userID = user.uid; // Get the user's unique ID
+                    console.log("User ID:", userID);
+                    } else {
+                    console.log("No user is signed in.");
+                    }
+
+                    // now that it's fetched, set it
+                    console.log("userID is ", userID);
+                    console.log("Fetched HealthKit data, steps is ", steps, " and averageSteps is ", averageSteps);
+                    setStepsFirebase(userID, steps, averageSteps);
+                }
+            });
+
+            return () => {
+                unsubscribeForeground();
+            };
         });
     }, []);
 
@@ -71,6 +143,7 @@ const useHealthData = () => {
             }
             setSteps(results.value);
         });
+        
 
         
 

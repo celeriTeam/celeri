@@ -74,7 +74,7 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
             let groups: string[] = [];
             for (const groupID of groupIDs) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                console.log("Group Document data:", groupDoc.data());
+                //console.log("Group Document data:", groupDoc.data());
                 groups.push(groupDoc.data()?.groupName);
             }
             console.log("getUserGroups - response: ", groups);
@@ -185,7 +185,7 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 /*********************************************** HEALTH DATA FUNCTIONS ********************************************/
 
 // SET Steps and average steps
-export const setSteps = async(userID: string, steps: number, averageSteps: number) => {
+export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number) => {
     try {
         const userDocRef = doc(db, 'users', userID);
         console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)

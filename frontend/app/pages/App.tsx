@@ -25,25 +25,20 @@ const auth = getAuth(app);
 async function registerForPushNotificationsAsync(userID: string) {
   if (Device.isDevice) {
       console.log("check point one!!");
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      console.log("check point two!!");
-      console.log(existingStatus);
 
-      if (existingStatus !== 'granted') {
-        console.log("right before the notifications request!!");
-          const { status } = await Notifications.requestPermissionsAsync();
-          console.log("right after the notifications request!!");
-          finalStatus = status;
-          console.log("checkpoint three!!");
-          console.log('Notification permissions requested: ' + finalStatus);
-      }
+      // Request permission for notifications
+      const authStatus = await messaging().requestPermission();
+      const isAuthorized =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-      if (finalStatus !== 'granted') {
-          alert('Failed to get push token for push notification!');
+      if (!isAuthorized) {
+          console.log('Push notification permissions denied.');
           return;
+      } else {
+        console.log('Authorization status:', authStatus);
       }
-
+      
       // Retrieve Firebase push token (ensure Firebase is initialized)
       try {
           await messaging().registerDeviceForRemoteMessages();
@@ -61,14 +56,6 @@ async function registerForPushNotificationsAsync(userID: string) {
       alert('Must use physical device for Push Notifications');
   }
 }
-
-messaging().onMessage(async (remoteMessage) => {
-    console.log('Notification received in foreground:', remoteMessage);
-  });
-  
-  messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-    console.log('Notification received in background:', remoteMessage);
-  });
 
 async function saveTokenToDatabase(token: string, uid: string) {
   // Assume user is already signed in
@@ -94,14 +81,6 @@ async function subscribeTokenToTopic(token: string, topic: string) {
         console.log('Error subscribing to topic:', error);
       });
   }
-  // Notification handler
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
 
 
 const AppPage: React.FC = () => {
