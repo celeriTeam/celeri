@@ -171,6 +171,7 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 });
                 return unsubscribeGroup;
             }));
+            setIsLoading(false);
         }
         setGetGroupID(getGroupID);
         setGroups(groups);
