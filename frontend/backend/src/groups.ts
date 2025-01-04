@@ -123,7 +123,9 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()){
-            const isFirstDay = groupDoc.data()?.cycleCount == 1 && groupDoc.data()?.cycleDay == 1;
+            const gameType = groupDoc.data()?.gameType;
+            const currentCycle = gameType === 'weekly' ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
+            const isFirstDay = groupDoc.data()?.cycleCount == 1 && currentCycle == 1;
             console.log("getGroupIsFirstDay - response: ", isFirstDay);
             return isFirstDay;
         } else{
@@ -668,7 +670,8 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
         for (const user in users) {
             if (users.hasOwnProperty(user)) {
                 await updateDoc(groupDocRef, {
-                    [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
+                    // [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
+                    [`users.${user}.todaysBetTokens`]: 0,
                 });
             }
         }

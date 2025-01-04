@@ -94,6 +94,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             }
 
             let dailyDuel = groups[groupID]?.unbetDuels;
+            console.log('this is dailyduel length: ', Object.keys(dailyDuel).length);
             if (Object.keys(dailyDuel).length === 0 || groups[groupID]?.userTokens === 0) {
                 await addToFinishedBetting(groupID, userID);
                 navigation.reset({
