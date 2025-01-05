@@ -100,26 +100,32 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
         if (!hasInitialized && steps > 0 && averageSteps > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
-            setStepsSinceMidnight(steps);
+            //setStepsSinceMidnight(steps);
             setStepsFirebase(userID, steps, averageSteps); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
+        } else if(hasInitialized){
+            // Updates backend every time the listener runs, since listener cannot wait 
+            // for useHealthData, but this function can
+            console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageSteps);
+            setStepsFirebase(userID, steps, averageSteps);
         }
     }, [steps, averageSteps, hasInitialized, userID]);
 
     useEffect(() => {
         if(hasInitialized){
             console.log("HomeTab -- already initialized");
-            getStepsSinceMidnight();
+            //getStepsSinceMidnight();
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);
-                // Toggle the needsUpdate value
+
+                // Toggle the needsUpdate value, triggering UI rebuild
                 setNeedsUpdate((prevNeedsUpdate) => {
                     const newNeedsUpdate = !prevNeedsUpdate;
                     console.log("needsUpdate toggled to: ", newNeedsUpdate);
                     return newNeedsUpdate;
                 });
                 //getStepsSinceMidnight();
-            }, 6000); // 5 minutes in milliseconds
+            }, 300000); // 5 minutes in milliseconds
         
             // Clean up the interval when the component unmounts
             return () => {

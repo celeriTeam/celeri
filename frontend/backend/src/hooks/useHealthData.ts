@@ -33,109 +33,7 @@ const useHealthData = () => {
     const [flights, setFlights] = useState(0);
     const [distance, setDistance] = useState(0);
 
-    const [hasPermissions, setHasPermission] = useState(false);
-
-    useEffect(() => {
-        console.log("inside useHealthData, useEFfect");
-
-        AppleHealthKit.initHealthKit(permissions, (err) => {
-            if (err) {
-                console.log('Error getting permissions', err);
-                return;
-            }
-            console.log('Apple Health Data: Permissions received!');
-            setHasPermission(true);
-
-            // Only register observers after permissions are confirmed
-            console.log("Setting up observers...");
-
-            const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
-            healthKitEventEmitter.addListener('healthKit:StepCount:setup:success', () => {
-                console.log('StepCount Observer Setup Success');
-            });
-            healthKitEventEmitter.addListener('healthKit:StepCount:setup:failure', () => {
-                console.log('StepCount Observer Setup Failure');
-            });
-            healthKitEventEmitter.addListener('healthKit:StepCount:new', () => {
-                console.log('StepCount Observer Triggered');
-            });
-
-            // Firebase Messaging Handlers
-            const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-                console.log("Silent push notification received in foreground:", remoteMessage);
-
-                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    console.log("Fetching HealthKit data from silent notification (foreground)...");
-                    fetchHealthData();
-
-                }
-            });
-
-            messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-                console.log("Silent push notification received in background:", remoteMessage);
-
-                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    console.log("Fetching HealthKit data from silent notification (background)...");
-                    console.log("Has permissions: ", hasPermissions);
-
-                    const permissionsGranted = await checkPermissions();
-                    if (!permissionsGranted) {
-                        console.log("Permissions not granted. Exiting.");
-                        return;
-                    }
-
-                    console.log("Permissions are granted. Fetching data...");
-                    const healthData = await fetchHealthDataBackground();
-
-                    if (healthData) {
-                        const auth = getAuth();
-                        const user = auth.currentUser;
-                        const userID = user ? user.uid : "unknown_user";
-            
-                        console.log("Fetched HealthKit data:", healthData);
-                        setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps);
-                    }
-                }
-            });
-
-            return () => {
-                unsubscribeForeground();
-            };
-        });
-    }, []);
-
-    const fetchHealthData = () => {
-        if (!hasPermissions) return;
-        getDailySteps();
-        getWeeklySteps();
-        getWeeklyAverageOfSteps();
-    };
-
-    const fetchHealthDataBackground = async () => {
-        try {
-            const dailySteps = await getDailySteps();
-            const weeklySteps = await getWeeklySteps();
-            const avgSteps = await getWeeklyAverageOfSteps();
-    
-            console.log("Fetched data: ", { dailySteps, weeklySteps, avgSteps });
-    
-            // Update state explicitly after fetching
-            setSteps(dailySteps);
-            setWeeklySteps(weeklySteps);
-            setAverageSteps(avgSteps);
-    
-            return { dailySteps, weeklySteps, avgSteps };
-        } catch (error) {
-            console.error("Error fetching health data in background:", error);
-            return null;
-        }
-    };
-
-    useEffect(() => {
-        if (hasPermissions) {
-            fetchHealthData(); // Fetch data initially
-        }
-    }, [hasPermissions]);
+    const [hasPermissions, setHasPermissions] = useState(false);
 
     const getDailySteps = async (): Promise<number> => {
         return new Promise((resolve, reject) => {
@@ -234,6 +132,189 @@ const useHealthData = () => {
     
         setWeeklySteps(totalSteps); // Update state
         return totalSteps; // Return the total steps
+    };
+
+    const fetchHealthData = () => {
+        if (!hasPermissions) return;
+        getDailySteps();
+        getWeeklySteps();
+        getWeeklyAverageOfSteps();
+    };
+
+    if(hasPermissions){
+        console.log("hasPermissions -- fetchHealthData");
+        fetchHealthData();
+    }
+
+    useEffect(() => {
+        if (hasPermissions) {
+            fetchHealthData(); // Fetch data initially
+        }
+    }, [hasPermissions]);
+
+    // Run initialization only once
+    // useEffect(() => {
+    //     const initializeHealthKit = async () => {
+    //         console.log("Initializing Apple HealthKit...");
+    //         AppleHealthKit.initHealthKit(permissions, (err) => {
+    //             if (err) {
+    //                 console.error("Error initializing HealthKit:", err);
+    //                 return;
+    //             }
+    //             console.log("Apple HealthKit initialized successfully.");
+    //             setHasPermissions(true);
+
+    //             // Set up observers or listeners here if needed
+    //             setupObservers();
+
+    //             // Firebase Messaging Handlers
+    //             const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+    //                 console.log("Silent push notification received in foreground:", remoteMessage);
+
+    //                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+    //                     console.log("Fetching HealthKit data from silent notification (foreground)...");
+    //                     fetchHealthData();
+
+    //                 }
+    //             });
+
+    //             messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    //                 console.log("Silent push notification received in background:", remoteMessage);
+    
+    //                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+    //                     console.log("Fetching HealthKit data from silent notification (background)...");
+    //                     console.log("Has permissions: ", hasPermissions);
+    
+    //                     const permissionsGranted = await checkPermissions();
+    //                     if (!permissionsGranted) {
+    //                         console.log("Permissions not granted. Exiting.");
+    //                         return;
+    //                     }
+    
+    //                     console.log("Permissions are granted. Fetching data...");
+    //                     const healthData = await fetchHealthDataBackground();
+    
+    //                     if (healthData) {
+    //                         const auth = getAuth();
+    //                         const user = auth.currentUser;
+    //                         const userID = user ? user.uid : "unknown_user";
+                
+    //                         console.log("Fetched HealthKit data:", healthData);
+    //                         setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps);
+    //                     }
+    //                 }
+    //             });
+    
+    //             return () => {
+    //                 unsubscribeForeground();
+    //             };
+    //         });
+    //     };
+
+    //     const setupObservers = () => {
+    //         const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
+
+    //         healthKitEventEmitter.addListener('healthKit:StepCount:new', () => {
+    //             console.log("Step count observer triggered. Refreshing health data...");
+    //             fetchHealthData(); // Fetch data when a step count event occurs
+    //         });
+
+    //         console.log("HealthKit observers set up.");
+    //     };
+
+    //     initializeHealthKit();
+    // }, []); // Run once on component mount
+
+    
+    useEffect(() => {
+        console.log("inside useHealthData, useEFfect");
+
+        AppleHealthKit.initHealthKit(permissions, (err) => {
+            if (err) {
+                console.log('Error getting permissions', err);
+                return;
+            }
+            console.log('Apple Health Data: Permissions received!');
+            setHasPermissions(true);
+
+            // Only register observers after permissions are confirmed
+            console.log("Setting up observers...");
+
+            const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
+            healthKitEventEmitter.addListener('healthKit:StepCount:setup:success', () => {
+                console.log('StepCount Observer Setup Success');
+            });
+            healthKitEventEmitter.addListener('healthKit:StepCount:setup:failure', () => {
+                console.log('StepCount Observer Setup Failure');
+            });
+            healthKitEventEmitter.addListener('healthKit:StepCount:new', () => {
+                console.log('StepCount Observer Triggered');
+            });
+
+            // Firebase Messaging Handlers
+            const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+                console.log("Silent push notification received in foreground:", remoteMessage);
+
+                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+                    console.log("Fetching HealthKit data from silent notification (foreground)...");
+                    fetchHealthData();
+
+                }
+            });
+
+            messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+                console.log("Silent push notification received in background:", remoteMessage);
+
+                if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
+                    console.log("Fetching HealthKit data from silent notification (background)...");
+                    console.log("Has permissions: ", hasPermissions);
+
+                    const permissionsGranted = await checkPermissions();
+                    if (!permissionsGranted) {
+                        console.log("Permissions not granted. Exiting.");
+                        return;
+                    }
+
+                    console.log("Permissions are granted. Fetching data...");
+                    const healthData = await fetchHealthDataBackground();
+
+                    if (healthData) {
+                        const auth = getAuth();
+                        const user = auth.currentUser;
+                        const userID = user ? user.uid : "unknown_user";
+            
+                        console.log("Fetched HealthKit data:", healthData);
+                        setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps);
+                    }
+                }
+            });
+
+            return () => {
+                unsubscribeForeground();
+            };
+        });
+    }, []);
+
+
+
+    const fetchHealthDataBackground = async () => {
+        try {
+            const dailySteps = await getDailySteps();
+            const weeklySteps = await getWeeklySteps();
+            const avgSteps = await getWeeklyAverageOfSteps();
+    
+            console.log("Fetched data: ", { dailySteps, weeklySteps, avgSteps });
+    
+            // Update state explicitly after fetching
+            setSteps(dailySteps);
+            setWeeklySteps(weeklySteps);
+            setAverageSteps(avgSteps);
+    
+            return { dailySteps, weeklySteps, avgSteps };
+        } catch (error) {
+            console.error("Error fetching health data in background:", error);
+            return null;
+        }
     };
     
 
