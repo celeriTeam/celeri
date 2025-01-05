@@ -44,6 +44,7 @@ type GroupData = {
 const HomeTab: React.FC<Props> = ({ navigation }) => {
     const { steps, averageSteps, weeklySteps, distance, flights } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
+    const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
     console.log("printing steps!!!");
     console.log(steps);
     console.log("printing average steps!!!");
@@ -111,17 +112,23 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             getStepsSinceMidnight();
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);
-                getStepsSinceMidnight();
-            }, 300000); // 5 minutes in milliseconds
+                // Toggle the needsUpdate value
+                setNeedsUpdate((prevNeedsUpdate) => {
+                    const newNeedsUpdate = !prevNeedsUpdate;
+                    console.log("needsUpdate toggled to: ", newNeedsUpdate);
+                    return newNeedsUpdate;
+                });
+                //getStepsSinceMidnight();
+            }, 6000); // 5 minutes in milliseconds
         
             // Clean up the interval when the component unmounts
             return () => {
                 clearInterval(intervalId);
             };
         } else {
-            console.log("has not been initialized");
+            console.log("HomeTab -- has not been initialized");
         }
-    }, [userID]);
+    }, [userID, hasInitialized]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
