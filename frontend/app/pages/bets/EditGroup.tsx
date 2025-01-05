@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, Button, TouchableOpacity, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { addGroupImage, editGroupName } from '@backend/src/groups';
 import { useUser } from '../../UserProvider';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type EditGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'EditGroupPage'>;
 type EditGroupPageRouteProp = RouteProp<RootStackParamList, 'EditGroupPage'>;
@@ -36,6 +38,11 @@ const EditGroupPage: React.FC<Props> = ({ navigation }) => {
         }
         setIsEditingGroupName(false);
     };
+    
+        const copyToClipboard = () => {
+            Clipboard.setString(groups[groupID]?.groupCode || '');
+            Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
+        };
 
     useEffect(() => {
         if (isEditingGroupName && inputRef.current) {
@@ -128,7 +135,15 @@ const EditGroupPage: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </>
             )}
-            
+            <View style={styles.centeredGroupCode}>
+                <Text style={styles.groupCodeInvite}>Invite more people!</Text>
+                <View style={styles.row}>
+                    <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
+                    <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
+                        <MaterialIcons name="content-copy" size={24} color="black" />
+                    </TouchableOpacity>
+                </View>
+            </View>
         </View>
     );
 };
@@ -184,6 +199,29 @@ const styles = StyleSheet.create({
         borderColor: '#6b6b6b',
         backgroundColor: '#d9d9d9', // Light gray input area
         padding: 5,
+    },
+    groupCodeInvite: {
+        fontFamily: "Lexend",
+        fontSize: 20,
+        marginBottom: 20,
+    },
+    centeredGroupCode: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    groupCode: {
+        fontSize: 45,
+        // color: '#0F1108',
+        // backgroundColor: '#D3D3D3',
+        color: '#0F1108',
+        backgroundColor: '#1E90FF',
+        fontWeight: 'bold',
+        padding: 15,
+        borderRadius: 5,
+    },
+    clipboardIcon: {
+        marginLeft: 10,
     },
 });
 

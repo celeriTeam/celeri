@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion, deleteDoc, deleteField } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -123,7 +123,9 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()){
-            const isFirstDay = groupDoc.data()?.cycleCount == 1 && groupDoc.data()?.cycleDay == 1;
+            const gameType = groupDoc.data()?.gameType;
+            const currentCycle = gameType === 'weekly' ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
+            const isFirstDay = groupDoc.data()?.cycleCount == 1 && currentCycle == 1;
             console.log("getGroupIsFirstDay - response: ", isFirstDay);
             return isFirstDay;
         } else{
@@ -545,6 +547,70 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
     }
 }
 
+/*********************************************** DELETE FUNCTIONS ********************************************/
+
+export const deleteGroup = async (groupID: string) => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        
+        if (groupDoc.exists()) {
+            const orderArray = groupDoc.data()?.order || [];
+            
+            // Remove group from each user's groups array
+            for (const userID of orderArray) {
+                const userDocRef = doc(db, 'users', userID);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userGroups = userDoc.data()?.groups || [];
+                    await updateDoc(userDocRef, {
+                        groups: userGroups.filter((group: string) => group !== groupID)
+                    });
+                }
+            }
+            
+            // Delete the group document
+            await deleteDoc(groupDocRef);
+            console.log('deleteGroup - response: Group deleted');
+        } else {
+            console.error('deleteGroup - error: No such document!');
+        }
+    } catch (error) {
+        console.error('deleteGroup - Error deleting group:', error);
+    }
+}
+
+export const leaveGroup = async (groupID: string, userID: string) => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const userDocRef = doc(db, 'users', userID);
+        
+        const groupDoc = await getDoc(groupDocRef);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (groupDoc.exists() && userDoc.exists()) {
+            // Remove user from group's order array and users map
+            await updateDoc(groupDocRef, {
+                order: groupDoc.data()?.order.filter((id: string) => id !== userID),
+                [`users.${userID}`]: deleteField()
+            });
+            
+            // Remove group from user's groups array
+            const userGroups = userDoc.data()?.groups || [];
+            await updateDoc(userDocRef, {
+                groups: userGroups.filter((id: string) => id !== groupID)
+            });
+            
+            console.log('leaveGroup - response: User left group');
+        } else {
+            console.error('leaveGroup - error: Document does not exist');
+        }
+    } catch (error) {
+        console.error('leaveGroup - Error leaving group:', error);
+    }
+}
+
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // START Game
@@ -668,7 +734,8 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
         for (const user in users) {
             if (users.hasOwnProperty(user)) {
                 await updateDoc(groupDocRef, {
-                    [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
+                    // [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
+                    [`users.${user}.todaysBetTokens`]: 0,
                 });
             }
         }
