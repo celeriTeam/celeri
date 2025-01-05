@@ -9,7 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage } from '@backend/src/groups';
+import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
@@ -23,15 +23,11 @@ type Props = {
 };
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
-    
-    
     const { userID, groups, loading } = useUser();
-
     const route = useRoute<InviteGroupRouteProp>();
-
-
     const { leaderID, groupID, fromCreate } = route.params;
     const [isModalVisible, setModalVisible] = useState(false);
+    const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [cycles, setCycles] = useState('5');
     const [dailyTokens, setDailyTokens] = useState('100');
@@ -40,6 +36,14 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [resetDay, setResetDay] = useState(0);
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
     const userStartRequirement = 3;
+
+    // if groups[groupID]?.isGameActive is true, then nav to headtohead page
+    useEffect(() => {
+        if (groups && groupID && groups[groupID]?.isGameActive) {
+            navigation.navigate('HeadToHeadPage', { groupID });
+        }
+    }, [groups, groupID, navigation]);
+
 
     const [gameTypeItems, setGameTypeItems] = useState([
         { label: 'Weekly', value: 'weekly' },
@@ -58,8 +62,6 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     ])
     const [resetDayOpen, setResetDayOpen] = useState(false);
 
-    const currentGroupName = groups[groupID]?.groupName;
-    const currentGroupCode = groups[groupID]?.groupCode;
     const groupUsersIdArray = groups[groupID]?.userList;
     let currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
     if (groupUsersIdArray) {
@@ -71,8 +73,6 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             currentGroupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
         }
     }
-    const groupCreator = groups[groupID]?.groupCreator;
-    const isCreator = (groupCreator === userID);
 
     useEffect(() => {
         // Add listeners to track the keyboard state
@@ -89,14 +89,6 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             keyboardDidHideListener.remove();
         };
     }, []);
-
-    const openModal = () => {
-        setModalVisible(true);
-    };
-
-    const closeModal = () => {
-        setModalVisible(false);
-    };
 
     const isFormValid = cycles !== '' && dailyTokens !== '' && startingTokens !== '' && defaultBetOnSelf !== '';
 
@@ -129,9 +121,19 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             console.error("Error sending nudge notification:", error);
             Alert.alert("Error", "Failed to send reminder.");
         }
-
-
     };
+
+    const handleDeleteOrLeave = async () => {
+        if (isDeleteModalVisible === 'delete') {
+            deleteGroup(groupID);
+        } else if (isDeleteModalVisible === 'leave') {
+            leaveGroup(groupID, userID);
+        }
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'HomeTab' }],
+        });
+    }
 
     const pickImage = async () => {
         // Request permission to access the media library
@@ -165,7 +167,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     };
 
     const copyToClipboard = () => {
-        Clipboard.setString(currentGroupCode || '');
+        Clipboard.setString(groups[groupID]?.groupCode || '');
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
     };
 
@@ -183,12 +185,12 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
             <View style={styles.container}>
                 {fromCreate ? (
                     <Text style={styles.groupNameCreated}>
-                        <Text style={styles.groupName}>{currentGroupName}</Text> has been successfully created!
+                        <Text style={styles.groupName}>{groups[groupID]?.groupName}</Text> has been successfully created!
                     </Text>
                 ) : (
                     <View>
                         <View style={styles.titleContainer}>
-                            <Text style={styles.groupNameStandalone}>{currentGroupName}</Text>
+                            <Text style={styles.groupNameStandalone}>{groups[groupID]?.groupName}</Text>
                         </View>
                         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                             <Image
@@ -243,15 +245,15 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                 </ScrollView>
 
                 <View style={styles.centeredGroupCode}>
-                    <Text style={styles.groupCode}>{currentGroupCode}</Text>
+                    <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
                     <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
                         <MaterialIcons name="content-copy" size={24} color="black" />
                     </TouchableOpacity>
                 </View>
                 {currentGroupUsersArray.length >= userStartRequirement && (
-                    isCreator ? (
+                    groups[groupID]?.groupCreator === userID ? (
                         <TouchableOpacity
-                            onPress={openModal}
+                            onPress={() => {setModalVisible(true);}}
                             style={styles.startButton}
                         >
                             <Text style={styles.startButtonText}>Start</Text>
@@ -265,13 +267,23 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
                     )
                 )}
+                {groups[groupID]?.groupCreator === userID && (
+                    <TouchableOpacity onPress={() => {setDeleteModalVisible('delete');}} style={styles.cancelButton}>
+                        <Text style={styles.cancelButtonText}>Delete Group</Text>
+                    </TouchableOpacity>
+                )}
+                {groups[groupID]?.groupCreator !== userID && (
+                    <TouchableOpacity onPress={() => {setDeleteModalVisible('leave');}} style={styles.cancelButton}>
+                        <Text style={styles.cancelButtonText}>Leave Group</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             {/* Settings Modal */}
             <Modal
                 transparent={true}
                 visible={isModalVisible}
                 animationType="slide"
-                onRequestClose={closeModal}
+                onRequestClose={() => {setModalVisible(false);}}
             >
                 {/* Overlay to dismiss the keyboard */}
                 {keyboardVisible && (
@@ -357,8 +369,25 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             <Text style={styles.confirmButtonText}>Confirm & Start</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity onPress={closeModal} style={styles.cancelButton}>
+                        <TouchableOpacity onPress={() => {setModalVisible(false);}} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                transparent={true}
+                visible={isDeleteModalVisible !== ''}
+                onRequestClose={() => {setDeleteModalVisible('');}}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 10 }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
+                        <TouchableOpacity style={styles.button}>
+                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setDeleteModalVisible('')}>
+                            <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -406,6 +435,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
+    },
+    button: {
+        marginTop: 10,
+        padding: 10,
+        borderRadius: 10,
+        alignSelf: 'center',
+        backgroundColor: '#f24646',
     },
     row: {
         flexDirection: 'row',
@@ -473,6 +509,17 @@ const styles = StyleSheet.create({
     username: {
         fontSize: 16,
         fontFamily: "Lexend"
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        zIndex: 1,
+    },
+    closeButtonText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'black',
     },
     centeredGroupCode: {
         flexDirection: 'row',
