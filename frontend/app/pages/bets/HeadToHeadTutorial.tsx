@@ -133,7 +133,7 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 				case 11:
 					if (isWeekly) {
 						setShowTutorialNext(true);
-						return "You'll get a random prop bet every week - if you're right about the over/under, you get a diamond.";
+						return "You'll get a random prop bet every day - if you're right about the over/under, you get a diamond.";
 					} else {
 						setShowTutorialNext(false);
 						return "You're almost done! Click here to start the competition with your friends. Happy betting!";

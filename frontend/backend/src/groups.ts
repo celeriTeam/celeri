@@ -206,11 +206,11 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
             return user.todaysBetTokens;
         } else{
             console.error("getTodaysBetTokens - error: No such document!");
-            return -1;
+            return 0;
         }
     } catch (error) {
          console.error("getTodaysBetTokens - Error fetching user document: ", error);
-         return -1;
+         return 0;
     }
 }
 
@@ -315,11 +315,11 @@ export const getUserDiamonds = async (userID: string, groupID: string): Promise<
             return diamonds;
         } else{
             console.error("getDiamonds - error: No such document!");
-            return -1;
+            return 0;
         }
     } catch (error) {
          console.error("getDiamonds - Error fetching user document: ", error);
-         return -1;
+         return 0;
     }
 }
 
@@ -344,7 +344,7 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
 export const getResetDay = async (groupID: string): Promise<number | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists() && groupDoc.data()?.resetDay){
+        if (groupDoc.exists() && (groupDoc.data()?.resetDay !== undefined)){
             console.log("getResetDay - response: ", groupDoc.data()?.resetDay);
             return groupDoc.data()?.resetDay;
         } else{

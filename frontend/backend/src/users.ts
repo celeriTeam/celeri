@@ -210,15 +210,15 @@ export const getSteps = async (id: string): Promise<number> => {
             return userDoc.data()?.steps;
         } else {
             console.error("getSteps - error: No such document!");
-            return -1;
+            return 0;
         }
     } catch (error) {
         console.error("getSteps - Error fetching user document:", error);
-        return -1;
+        return 0;
     }
 }
 
-// GET Steps
+// GET weekly steps
 export const getWeeklySteps = async (groupID: string, userID: string): Promise<number> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
@@ -229,11 +229,11 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
             return weeklySteps[userID];
         } else {
             console.error("getWeeklySteps - error: No such document!");
-            return -1;
+            return 0;
         }
     } catch (error) {
         console.error("getWeeklySteps - Error fetching group document:", error);
-        return -1;
+        return 0;
     }
 }
 
@@ -247,11 +247,11 @@ export const getAverageSteps = async (id: string): Promise<number> => {
             return userDoc.data()?.averageSteps;
         } else {
             console.error("getAverageSteps - error: No such document!");
-            return -1;
+            return 0;
         }
     } catch (error) {
         console.error("getAverageSteps - Error fetching user document:", error);
-        return -1;
+        return 0;
     }
 }
 
