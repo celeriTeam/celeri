@@ -141,10 +141,10 @@ const useHealthData = () => {
         getWeeklyAverageOfSteps();
     };
 
-    if(hasPermissions){
-        console.log("hasPermissions -- fetchHealthData");
-        fetchHealthData();
-    }
+    // if(hasPermissions){
+    //     console.log("hasPermissions -- fetchHealthData");
+    //     fetchHealthData();
+    // }
 
     useEffect(() => {
         if (hasPermissions) {
