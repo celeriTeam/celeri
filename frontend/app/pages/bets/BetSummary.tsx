@@ -78,7 +78,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 cleanup();
             }
         };
-    }, [userID, isStoreModalVisible]);
+    }, [userID, isStoreModalVisible, isPropBetModalVisible]);
 
     const fetchPowerups = async () => {
         try {
@@ -122,7 +122,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         // Unsubscribe firebase listener functions
         const unsubscribeFunctions: (() => void)[] = [];
         // Set up listener iff modal is not visible
-        if (!isStoreModalVisible) {
+        if (!isStoreModalVisible && !isPropBetModalVisible) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
@@ -201,8 +201,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     }
 
                     // If weekly, get # of days left in the week
-
-                    if (resetDay) {
+                    if (resetDay !== undefined) {
                         const today = new Date();
                         const currentDay = today.getDay();
                         if (currentDay === resetDay) {
@@ -720,8 +719,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     style={styles.backImage}
                 />
             </TouchableOpacity>
-            <Text style={[styles.daysLeft, {top: 120}]}>{gameTimeLeft}</Text>
-            <Text style={[styles.daysLeft, {top: 140,}]}>{betTimeLeft}</Text>
+            <Text style={styles.daysLeft}>{gameTimeLeft}</Text>
+            <Text style={styles.daysLeft}>{betTimeLeft}</Text>
             <TouchableOpacity style={[styles.moneyContainer, { top: 100, }]} onPress={() => setTokensModalVisible(true)}>
                 <View style={styles.tokenTextView}>
                     <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
@@ -841,9 +840,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.modalOverlay}>
                     <View style={styles.moneyModalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
+                        {finishedPropBet && (
+                            <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
+                                <Text style={styles.closeButtonText}>X</Text>
+                            </TouchableOpacity>
+                        )}
                         <Text style={[styles.tokenText, { textAlign: 'center', marginBottom: 15 }]}>How many steps will the following player walk today? If you win the prop bet, you'll get +1 diamond. </Text>
                         {propBetPlayer.map(player => (
                             <View>
@@ -1112,13 +1113,10 @@ const styles = StyleSheet.create({
         color: 'blue',
     },
     daysLeft: {
-        position: 'absolute',
+        color: 'red',
         paddingHorizontal: 10,
         paddingVertical: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        color: 'red',
-        alignSelf: 'center',
+        textAlign: 'center',
     },
     moneyContainer: {
         position: 'absolute',
@@ -1311,7 +1309,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '30%',
         alignSelf: 'center',
-        marginVertical: 30,
+        marginTop: 30,
     },
     groupImageWrapper: {
         width: 120, // Match the size of the profileImage

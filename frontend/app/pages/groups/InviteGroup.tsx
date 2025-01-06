@@ -296,7 +296,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                         {/* Input fields */}
                         <Text style={styles.modalTitle}>Game Settings</Text>
 
-                        <Text>Amount of Cycles (Rounds):</Text>
+                        <Text style={styles.settingText}>Amount of Cycles (Rounds):</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="5"
@@ -316,7 +316,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             placeholderTextColor="#888"
                         /> */}
 
-                        <Text>Starting Tokens (Minimum 1000):</Text>
+                        <Text style={styles.settingText}>Starting Tokens (Minimum 1000):</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="1000"
@@ -336,7 +336,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             placeholderTextColor="#888"
                         /> */}
 
-                        <Text>Game Type:</Text>
+                        <Text style={styles.settingText}>Game Type:</Text>
                         <DropDownPicker
                             open={gameTypeOpen}
                             value={gameType}
@@ -344,11 +344,13 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                             setOpen={setGameTypeOpen}
                             setValue={setGameType}
                             setItems={() => {}}
-                            containerStyle={styles.dropdownContainer}
+                            containerStyle={[styles.dropdownContainer, {zIndex: 100}]}
                             dropDownContainerStyle={styles.dropdownStyle}
+                            textStyle={styles.settingText}
+                            style={{ borderColor: '#ccc', minHeight: 40, }}
                         /> 
 
-                        <Text>Reset Day:</Text>
+                        <Text style={styles.settingText}>Reset Day:</Text>
                             <DropDownPicker
                                 open={resetDayOpen}
                                 value={resetDay}
@@ -356,8 +358,10 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
                                 setOpen={setResetDayOpen}
                                 setValue={setResetDay}
                                 setItems={() => {}}
-                                containerStyle={styles.dropdownContainer}
+                                containerStyle={[styles.dropdownContainer, {zIndex: 99}]}
                                 dropDownContainerStyle={styles.dropdownStyle}
+                                textStyle={styles.settingText}
+                                style={{ borderColor: '#ccc', minHeight: 40, }}
                             /> 
 
                         {/* Buttons */}
@@ -399,11 +403,12 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
     dropdownContainer: {
         marginVertical: 10,
-        height: 40,
         width: '100%',
     },
     dropdownStyle: {
         backgroundColor: '#fafafa',
+        fontFamily: 'Lexend',
+        borderColor: '#ccc',
     },
     contentView: {
         flex: 1,
@@ -422,6 +427,9 @@ const styles = StyleSheet.create({
         height: 120,
         borderRadius: 60,
         marginVertical: 10,
+    },
+    settingText: {
+        fontFamily: "Lexend",
     },
     buttonText: {
         fontFamily: "Lexend",
@@ -573,8 +581,9 @@ const styles = StyleSheet.create({
         width: '80%',
     },
     modalTitle: {
+        textAlign: 'center',
+        fontFamily: 'Lexend-Bold',
         fontSize: 20,
-        fontWeight: 'bold',
         marginBottom: 20,
     },
     input: {
@@ -583,6 +592,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginVertical: 10,
         borderRadius: 5,
+        fontFamily: 'Lexend',
     },
     confirmButton: {
         backgroundColor: '#28a745',
