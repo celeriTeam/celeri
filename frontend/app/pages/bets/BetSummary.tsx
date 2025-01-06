@@ -880,7 +880,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                                 }}
                                                 onPress={() => setSelectedPropBet('over')}
                                             >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {player.averageSteps}</Text>
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {(player.averageSteps < 100) ? 100 : player.averageSteps}</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 style={{ 
@@ -891,7 +891,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                                 }}
                                                 onPress={() => setSelectedPropBet('under')}
                                             >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {player.averageSteps}</Text>
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {(player.averageSteps < 100) ? 100 : player.averageSteps}</Text>
                                             </TouchableOpacity>
                                         </View>
                                         <TouchableOpacity
