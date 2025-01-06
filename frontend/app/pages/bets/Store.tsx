@@ -19,11 +19,12 @@ type betHistoryPageRouteProp = RouteProp<RootStackParamList, 'StorePage'>;
 type Props = {
     navigation: betHistoryPageNavigationProp;
     userDiamonds: number;
+    gameType: string;
     currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[];
     setStoreModalVisible: (visible: boolean) => void;
 };
 
-const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUsersArray, setStoreModalVisible }) => {
+const StorePage: React.FC<Props> = ({ navigation, userDiamonds, gameType, currentGroupUsersArray, setStoreModalVisible }) => {
     const { userID, groups, loading } = useUser();
     const route = useRoute<betHistoryPageRouteProp>();
     const { groupID } = route.params;
@@ -83,7 +84,7 @@ const StorePage: React.FC<Props> = ({ navigation, userDiamonds, currentGroupUser
     
             try {
                 if (selectedItemId) {
-                    success = await buyPowerup(userID, groupID, targetUserID, selectedItemId, targetUserName);
+                    success = await buyPowerup(userID, groupID, targetUserID, selectedItemId, gameType, targetUserName);
                 }
             } catch (error) {
                 console.error("Error purchasing item:", error);

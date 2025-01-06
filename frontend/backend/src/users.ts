@@ -206,7 +206,7 @@ export const getSteps = async (id: string): Promise<number> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.steps !== undefined) {
-            console.log("getSteps - response:", userDoc.data()?.steps);
+            console.log("getSteps - response: ", userDoc.data()?.steps, " id: ", id);
             return userDoc.data()?.steps;
         } else {
             console.error("getSteps - error: No such document!");

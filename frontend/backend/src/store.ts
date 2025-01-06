@@ -54,7 +54,7 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
 /*********************************************** BUY FUNCTIONS ********************************************/
 
 
-export const buyPowerup = async (userID: string, groupID: string, targetUserID: string, powerup: string, targetUserName?: string,): Promise<boolean> => {
+export const buyPowerup = async (userID: string, groupID: string, targetUserID: string, powerup: string, gameType: string, targetUserName?: string,): Promise<boolean> => {
     const groupDocRef = doc(db, 'groups', groupID);
     console.log("buyPowerup - powerup number: ", powerup);
     let powerupName = "none";
@@ -87,7 +87,7 @@ export const buyPowerup = async (userID: string, groupID: string, targetUserID: 
             const userData = users[userID];
             const currentDiamonds = userData.diamonds || 0;
             const currentSecondWind = userData.secondWind || 0;
-            const duelID = await findDuelID(groupID, targetUserID);
+            const duelID = await findDuelID(groupID, targetUserID, gameType);
 
             console.log("currentDiamonds: " + currentDiamonds);
 
@@ -129,7 +129,7 @@ export const buyPowerup = async (userID: string, groupID: string, targetUserID: 
 
 /*********************************************** HELPER FUNCTIONS ********************************************/
 
-export const findDuelID = async (groupID: string, targetUserID: string): Promise<string | null> => {
+export const findDuelID = async (groupID: string, targetUserID: string, gameType: string): Promise<string | null> => {
     console.log("the groupID is ", groupID);
     console.log("the targetUserID is ", targetUserID);
     const groupDocRef = doc(db, "groups", groupID);
@@ -138,12 +138,18 @@ export const findDuelID = async (groupID: string, targetUserID: string): Promise
     try {
         // Get the timestamp for 24 hours ago
         const now = new Date();
-        const past24Hours = Timestamp.fromDate(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+        let time;
+        if(gameType == "weekly"){
+            time = Timestamp.fromDate(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
+
+        } else {
+            time = Timestamp.fromDate(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+        }
 
         // Query for documents where player1 == targetUserID or player2 == targetUserID
         const query1 = query(
             duelCollectionRef,
-            where("createdAt", ">=", past24Hours),
+            where("createdAt", ">=", time),
             where("player1", "==", targetUserID)
         );
 
@@ -155,7 +161,7 @@ export const findDuelID = async (groupID: string, targetUserID: string): Promise
 
         const query2 = query(
             duelCollectionRef,
-            where("createdAt", ">=", past24Hours),
+            where("createdAt", ">=", time),
             where("player2", "==", targetUserID)
         );
 

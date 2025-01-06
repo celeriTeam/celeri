@@ -331,23 +331,27 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
+      console.log("gameType: ", data.gameType);
       if (gameType && gameType == "weekly") {
-        // propogate userWeeklySteps, should be a map
-        let weeklySteps = data.weeklySteps || {};
+        // propogate weeklySteps, should be a map
+        const weeklySteps = data.weeklySteps || {};
         const users = data.users;
 
         // Get all users in the group and their current steps
-        for (const userID in users) {
-            const currentSteps = userSteps[userID] || 0;
-            
-            // If user exists in weeklySteps, add today's steps
-            // If not, initialize with today's steps
-            weeklySteps[userID] = (weeklySteps[userID] || 0) + currentSteps;
-        }
-    
+
+        Object.keys(users).forEach((userID) => {
+          const currentSteps = userSteps[userID] || 0;
+          // If user exists in weeklySteps, add today's steps
+          // If not, initialize with today's steps
+          weeklySteps[userID] = (weeklySteps[userID] || 0) + currentSteps;
+        });
+
+        console.log("weeklySteps: ", weeklySteps);
+        console.log("users: ", users);
+
         // Update the group document with new weeklySteps
         await groupDocRef.update({
-            weeklySteps: weeklySteps
+          weeklySteps: weeklySteps,
         });
 
         const currentDay = new Date().getDay();
@@ -377,8 +381,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                 let winner = "none";
 
                 try {
-                  const player1BaseSteps = userWeeklySteps[player1Id] || 0;
-                  const player2BaseSteps = userWeeklySteps[player2Id] || 0;
+                  const player1BaseSteps = weeklySteps[player1Id] || 0;
+                  const player2BaseSteps = weeklySteps[player2Id] || 0;
 
                   // Calculate additional steps from powerups
                   const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id);
@@ -501,10 +505,10 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Now do the race distirbution
           console.log("updateWinners -- race distribution starting now");
 
-          // userWeeklySteps was declared much earlier
+          // weeklySteps was declared much earlier
           let maxSteps = -Infinity; // Start with the lowest possible value
           let maxUser = null; // To store the key corresponding to the max value
-          for (const [key, value] of userWeeklySteps) {
+          for (const [key, value] of weeklySteps) {
             if (value > maxSteps) {
               maxSteps = value;
               maxUser = key;

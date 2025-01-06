@@ -949,6 +949,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         <StorePage
                             navigation={navigation}
                             userDiamonds={groups[groupID]?.userDiamonds}
+                            gameType = {groups[groupID]?.gameType}
                             currentGroupUsersArray={currentGroupUsersArray}
                             setStoreModalVisible={setStoreModalVisible}
                         />
