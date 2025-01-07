@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, } from 'react-native';
+import { app } from "@firebaseConfig";
+import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import DropDownPicker from 'react-native-dropdown-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -9,11 +11,13 @@ import * as Clipboard from 'expo-clipboard';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup } from '@backend/src/groups';
+import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
+
+const db = getFirestore(app);
 
 type InviteGroupNavigationProp = StackNavigationProp<RootStackParamList, 'InviteGroup'>;
 type InviteGroupRouteProp = RouteProp<RootStackParamList, 'InviteGroup'>;
@@ -23,9 +27,11 @@ type Props = {
 };
 
 const InvitePage: React.FC<Props> = ({ navigation }) => {
-    const { userID, groups, loading } = useUser();
+    const { userID } = useUser();
     const route = useRoute<InviteGroupRouteProp>();
     const { leaderID, groupID, fromCreate } = route.params;
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setModalVisible] = useState(false);
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -35,7 +41,92 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
     const [gameType, setGameType] = useState("weekly");
     const [resetDay, setResetDay] = useState(0);
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
+    const [isLoading, setIsLoading] = useState(true);
     const userStartRequirement = 3;
+
+    // Direct firebase listener in InviteGroup page
+    useEffect(() => {
+            let cleanup: () => void;
+        
+            const initialize = async () => {
+                try {
+                    cleanup = await fetchData(userID);
+                } catch (error) {
+                    console.error('Error fetching user groups:', error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+        
+            initialize();
+        
+            return () => {
+                if (cleanup) {
+                    cleanup();
+                }
+            };
+        }, [userID]);
+
+    const fetchData = async (uid: string) => {
+        const currentGroups: { [groupID: string]: any } = {};
+        const groupsRef = collection(db, "groups");
+        const groupDocRef = doc(groupsRef, groupID);
+
+        // Unsubscribe firebase listener functions
+        const unsubscribeFunctions: (() => void)[] = [];
+        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+            setIsLoading(true);
+            if (docSnapshot.exists() && groupID) {
+                const [isGameActive, groupCode, groupName, groupImageUrl, groupCreator] = await Promise.all([
+                    getGroupIsGameActive(groupID),
+                    getGroupCode(groupID),
+                    getGroupName(groupID),
+                    getGroupProfilePic(groupID),
+                    getGroupCreator(groupID),
+                ]);
+                
+                const userList = await getUsersInGroup(groupID); // userIDs
+                const users: { [userID: string]: any } = {};
+                let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined }[] = [];
+                if (userList) {
+                    await Promise.all(userList.map(async (selectedUserID) => {
+                        const [profilePic, username] = await Promise.all([
+                            getProfilePic(selectedUserID),
+                            getUserName(selectedUserID),
+                        ]);
+
+                        users[selectedUserID] = {
+                            profilePic,
+                            username,
+                        };
+                        groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic });
+                    }));
+                    setCurrentGroupUsersArray(groupUsersArray);
+                }
+                currentGroups[groupID] = {
+                    isGameActive, 
+                    groupCode, 
+                    groupName, 
+                    groupImageUrl, 
+                    groupCreator,
+                    userList,
+                };
+                setGroups(currentGroups);
+            }
+            
+            unsubscribeFunctions.push(unsubscribeGroup);
+            setIsLoading(false);
+        });
+
+        return () => {
+            unsubscribeFunctions.forEach(unsubscribe => {
+                if (typeof unsubscribe === 'function') {
+                    unsubscribe();
+                }
+            });
+        };
+
+    }
 
     // if groups[groupID]?.isGameActive is true, then nav to headtohead page
     useEffect(() => {
@@ -61,18 +152,6 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         { label: 'Saturday', value: 6},
     ])
     const [resetDayOpen, setResetDayOpen] = useState(false);
-
-    const groupUsersIdArray = groups[groupID]?.userList;
-    let currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; }[] = [];
-    if (groupUsersIdArray) {
-        // get user names & pfps from user IDs
-        for (let i = 0; i < groupUsersIdArray.length; i++) {
-            const userID = groupUsersIdArray[i];
-            const userName = groups[groupID]?.users[userID].username;
-            const profilePic = groups[groupID]?.users[userID].profilePic;
-            currentGroupUsersArray.push({ id: userID, name: userName, pfp: profilePic });
-        }
-    }
 
     useEffect(() => {
         // Add listeners to track the keyboard state
@@ -171,7 +250,7 @@ const InvitePage: React.FC<Props> = ({ navigation }) => {
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
     };
 
-    if (loading) {
+    if (isLoading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
