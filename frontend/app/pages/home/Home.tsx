@@ -13,6 +13,7 @@ import HeadToHeadPage from '../bets/HeadToHead';
 import { UserProvider } from '../../UserProvider';
 import HeadToHeadTutorialPage from '../bets/HeadToHeadTutorial';
 import EditGroupPage from '../bets/EditGroup';
+import NewBetSummaryPage from '../bets/NewBetSummary';
 
 const HomeStack = createStackNavigator();
 
@@ -32,6 +33,7 @@ const HomePage: React.FC = () => {
                 <HomeStack.Screen name="BetSummaryPage" component={BetSummaryPage} options={{ headerShown: false }} />
                 <HomeStack.Screen name="BetRecapPage" component={BetRecapPage} options={{ presentation: 'modal', headerShown: false }} />
                 <HomeStack.Screen name="EditGroupPage" component={EditGroupPage} options={{ headerShown: false }} />
+                <HomeStack.Screen name="NewBetSummaryPage" component={NewBetSummaryPage} options={{ headerShown: false }} />
             </HomeStack.Navigator>
         </UserProvider>
     );
