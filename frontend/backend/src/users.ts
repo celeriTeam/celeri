@@ -103,14 +103,14 @@ export const getActiveUserGroupIDs = async (id: string): Promise<string[] | unde
                     groups.push(groupID);
                 }
             }
-            console.log("getUserGroups - response: ", groups);
+            console.log("getActiveUserGroupIDs - response: ", groups);
             return groups;
         } else {
-            console.error("getUserGroups - error: No such document!");
+            console.error("getActiveUserGroupIDs - error: No such document!");
             return [];
         }
     } catch (error) {
-        console.error("getUserGroups - Error fetching user document:", error);
+        console.error("getActiveUserGroupIDs - Error fetching user document:", error);
         return undefined;
     }
 }

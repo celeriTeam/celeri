@@ -86,8 +86,8 @@ async function saveTokenToDatabase(token: string, uid: string) {
 
   // Helper function to subscribe token to topic
 async function subscribeTokenToTopic(token: string, topic: string) {
-    getMessaging()
-    .subscribeToTopic(topic, token)
+    messaging()
+    .subscribeToTopic(topic)
     .then((response: any) => {
         console.log('Successfully subscribed to topic:', topic);
       })

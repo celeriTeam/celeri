@@ -8,27 +8,45 @@ import EditProfilePage from './EditProfile';
 import { useUser } from '../../UserProvider';
 import messaging from '@react-native-firebase/messaging';
 import { getMessaging, getToken} from '@react-native-firebase/messaging';
+import { getActiveUserGroupIDs } from '@/backend/src/users';
 
 type Props = {
     navigation: StackNavigationProp<RootStackParamList, 'PersonalProfilePage'>;
 };
 
 const PersonalProfilePage: React.FC<Props> = ({ navigation }) => {
-    const { profileImageUrl, username, steps, groupNames, loading } = useUser();
+    const { userID, profileImageUrl, username, steps, groupNames, loading } = useUser();
 
     const handleLogout = async () => {
         const authInstance = getAuth();
         try {
             const token = await messaging().getToken()
-            getMessaging().unsubscribeFromTopic(token, "allUsers")
-            .then((response: any) => {
-                // See the MessagingTopicManagementResponse reference documentation
-                // for the contents of response.
-                console.log('Successfully unsubscribed from topic:', response);
-            })
-            .catch((error: any) => {
-                console.log('Error unsubscribing from topic:', error);
-            });
+
+            if (!token) {
+                console.error("Failed to get a valid Firebase token.");
+                return;
+              }
+          
+            console.log("Token retrieved successfully:", token);
+
+            const subscribedTopics = await getActiveUserGroupIDs(userID) || [];
+
+            // Ensure 'allUsers' is always included in the topics list
+            if (!subscribedTopics.includes("allUsers")) {
+                subscribedTopics.push("allUsers");
+            }
+
+            // Unsubscribe from all topics
+            for (const topic of subscribedTopics) {
+                console.log(`Attempting to unsubscribe from topic: ${topic}`);
+
+                try {
+                    await messaging().unsubscribeFromTopic(topic);
+                    console.log(`Successfully unsubscribed from topic: ${topic}`);
+                } catch (error) {
+                    console.error(`Error unsubscribing from topic ${topic}:`, error);
+                }
+            }
 
             await signOut(authInstance);
             Alert.alert("Success", "You have been logged out.");
