@@ -15,6 +15,7 @@ import Constants from 'expo-constants';
 import messaging from '@react-native-firebase/messaging';
 import { getMessaging, getToken} from '@react-native-firebase/messaging';
 import firestore from '@react-native-firebase/firestore';
+import { getActiveUserGroupIDs } from '@/backend/src/users';
 
 
 
@@ -49,6 +50,19 @@ async function registerForPushNotificationsAsync(userID: string) {
 
           // Subscribe Firebase token to topic
           await subscribeTokenToTopic(token, 'allUsers');
+
+          // Subscribe to group-specific tokens
+          let activeUserGroups = await getActiveUserGroupIDs(userID);
+
+          if (activeUserGroups && Array.isArray(activeUserGroups)) {
+            for (const group of activeUserGroups) {
+                try {
+                await subscribeTokenToTopic(token, group);
+                } catch (error) {
+                console.error(`Failed to subscribe token to topic ${group}:`, error);
+                }
+            }
+        }
       } catch (error) {
           console.error("Error getting Firebase token:", error);
       }
@@ -73,9 +87,9 @@ async function saveTokenToDatabase(token: string, uid: string) {
   // Helper function to subscribe token to topic
 async function subscribeTokenToTopic(token: string, topic: string) {
     getMessaging()
-    .subscribeToTopic('allUsers', token)
+    .subscribeToTopic(topic, token)
     .then((response: any) => {
-        console.log('Successfully subscribed to topic:', response);
+        console.log('Successfully subscribed to topic:', topic);
       })
       .catch((error: any) => {
         console.log('Error subscribing to topic:', error);

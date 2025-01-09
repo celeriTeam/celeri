@@ -89,6 +89,56 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
     }
 }
 
+// GET List of Active User Group ID
+export const getActiveUserGroupIDs = async (id: string): Promise<string[] | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.groups) {
+            const groupIDs = userDoc.data()?.groups;
+            let groups: string[] = [];
+            for (const groupID of groupIDs) {
+                const groupDoc = await getDoc(doc(db, "groups", groupID));
+                if(groupDoc.data()?.isGameActive){
+                    console.log("Group Document isGameActive: true");
+                    groups.push(groupID);
+                }
+            }
+            console.log("getUserGroups - response: ", groups);
+            return groups;
+        } else {
+            console.error("getUserGroups - error: No such document!");
+            return [];
+        }
+    } catch (error) {
+        console.error("getUserGroups - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+
+// GET if user is in a weekly group
+
+export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        let isWeekly =  false;
+        if (userDoc.exists() && userDoc.data()?.groups) {
+            const groupIDs = userDoc.data()?.groups;
+            for (const groupID of groupIDs) {
+                const groupDoc = await getDoc(doc(db, "groups", groupID));
+                //console.log("Group Document data:", groupDoc.data());
+                if(groupDoc.data()?.gameType == "weekly"){
+                    isWeekly = true; 
+                }
+            }
+        }
+        return isWeekly;
+    } catch (error) {
+        console.error("getIfWeekly - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
 
 /*********************************************** EDIT FUNCTIONS ********************************************/
 

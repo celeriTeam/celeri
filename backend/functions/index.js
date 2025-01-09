@@ -23,22 +23,70 @@ initializeApp();
 
 // const messaging = getMessaging();
 const firestore = getFirestore();
-// function for sending notifs
-exports.sendNotif = onSchedule("every day 05:00", async (event) => {
-  const message = {
-    notification: {
-      title: "It's bettin' time.",
-      body: "Who's going to win their head to head? " +
-      "You've got 24 hours to make your bet!",
-    },
-    topic: "allUsers",
-  };
 
-  try {
-    const response = await admin.messaging().send(message);
-    console.log("Successfully sent message:", response);
-  } catch (error) {
-    console.error("Error sending message:", error);
+// function for sending daily notifs to all users
+exports.sendNotif = onSchedule("every day 05:00", async (event) => {
+  // get the groups
+  const groupsRef = firestore.collection("groups");
+  const activeGroupsSnapshot = await groupsRef.where("isGameActive", "==", true).get();
+  let message = "";
+
+  // Check if there are any active groups
+  if (activeGroupsSnapshot.empty) {
+    console.log("No active groups found.");
+    return;
+  }
+
+  console.log(`Found ${activeGroupsSnapshot.size} active groups.`);
+
+  for (const groupDoc of activeGroupsSnapshot.docs) {
+    const groupData = groupDoc.data();
+    const groupID = groupDoc.id;
+
+    if (groupData.gameType == "weekly") {
+      console.log(`${groupID} is weekly.`);
+      const today = new Date().getDay();
+      if (groupData.resetDay == today) {
+        console.log(`${groupID} resetDay is today.`);
+        message = {
+          notification: {
+            title: `It's bettin' time for ${groupData.groupName}.`,
+            body: "Who's going to win their head to head? " +
+            "You've got a week to make your bet!",
+          },
+          topic: groupID,
+        };
+      } else {
+        console.log(`${groupID} resetDay is not today.`);
+        message = {
+          notification: {
+            title: `You've got a new prop bet for ${groupData.groupName}.`,
+            body: "Ready to make your over-under?" +
+            "You've got 24 hours to win a diamond!",
+          },
+          topic: groupID,
+        };
+      }
+    } else {
+      // daily groups
+      console.log(`${groupID} is daily.`);
+      message = {
+        notification: {
+          title: `It's bettin' time for ${groupData.groupName}`,
+          body: "Who's going to win their head to head? " +
+          "You've got 24 hours to make your bet!",
+        },
+        topic: groupID,
+      };
+    }
+
+    // now send the message
+    try {
+      const response = await admin.messaging().send(message);
+      console.log("Successfully sent message:", response);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   }
 });
 
