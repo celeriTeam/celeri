@@ -7,6 +7,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
+import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
@@ -16,6 +17,7 @@ import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
+import { ClientRequest } from 'http';
 
 const db = getFirestore(app);
 
@@ -26,17 +28,11 @@ type Props = {
     navigation: headToHeadPageNavigationProp;
 };
 
-type CircularIconProps = {
-    value: number; // Value from 0 to 1, where 1 is 100%
-    size?: number; // Diameter of the circle
-    strokeWidth?: number; // Width of the border
-};
-
 const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
+    const { userID, loading } = useUser();
     const route = useRoute<betSummaryPageRouteProp>();
     const { groupID } = route.params;
     const { steps, weeklySteps, averageSteps, distance, flights } = useHealthData();
-    const { userID, loading } = useUser();
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
@@ -54,8 +50,11 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
     const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
     const [currentPropBet, setCurrentPropBet] = useState<{ betOnUserID: string; averageSteps: number; overUnder: string; } | undefined>(undefined);
+    const [currentBetIndex, setCurrentBetIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
+    const [selectedTab, setSelectedTab] = useState('Tokens');
+    const [isDuelExpanded, setIsDuelExpanded] = useState(false);
 
     useEffect(() => {
         let cleanup: () => void;
@@ -92,9 +91,9 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
     const gameTypeSteps = (gameType: string, dailySteps: number, weeklySteps: number) => {
         if (gameType === "weekly") {
-            return dailySteps + weeklySteps;
+            return Math.round(dailySteps + weeklySteps);
         } else {
-            return dailySteps;
+            return Math.round(dailySteps);
         }
     };
 
@@ -358,6 +357,20 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
     };
 
+    const handleDuelPress = () => {
+        setIsDuelExpanded(!isDuelExpanded);
+    };
+
+    const handleRightArrowPress = () => {
+        setIsDuelExpanded(false);
+        if (currentBetIndex > 0) setCurrentBetIndex(currentBetIndex - 1);
+    };
+
+    const handleLeftArrowPress = () => {
+        setIsDuelExpanded(false);
+        if (currentBetIndex < (currentBets.length - 1)) setCurrentBetIndex(currentBetIndex + 1);
+    };
+
     // if it hits 12:00 am, navigate to hometab
     useEffect(() => {
         const interval = setInterval(() => {
@@ -380,6 +393,62 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
             </View>
         );
     }
+
+    const getBetPlayerInfo = () => {
+        const totalPlayer1Bets = currentBets[currentBetIndex]?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
+        const totalPlayer2Bets = currentBets[currentBetIndex]?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0);
+
+        // Calculate the sum of all bets
+        const totalBets = totalPlayer1Bets + totalPlayer2Bets;
+
+        const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
+
+        // Filter powerups for player1 and player2
+        const player1Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
+            console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
+            return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player1;
+        });
+
+        const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
+            console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player2}`);
+            return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player2;
+        });
+
+        // Calculate added steps for secondWind powerups
+        let player1AddedSteps = 0;
+        let player2AddedSteps = 0;
+
+        // Create modified versions of the powerups for display
+        const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, userID, duelID]) => {
+            if (type === "secondWind") {
+                player1AddedSteps += 200;
+                return ["Second Wind \n(+200 steps)", targetID, userID, duelID];
+            }
+            else if (type === "brickWall") {
+                player1AddedSteps -= 200;
+                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
+            }
+            return [type, targetID, userID, duelID];
+        });
+
+        const modifiedPlayer2Powerups = player2Powerups.map(([type, targetID, userID, duelID]) => {
+            if (type === "secondWind") {
+                player2AddedSteps += 200;
+                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
+            }
+            else if (type === "brickWall") {
+                player2AddedSteps -= 200;
+                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
+            }
+            return [type, targetID, userID, duelID];
+        });
+
+        // Updated step counts
+        const player1TotalSteps = currentBets[currentBetIndex]?.player1Steps + player1AddedSteps;
+        const player2TotalSteps = currentBets[currentBetIndex]?.player2Steps + player2AddedSteps;
+
+        return {player1Steps: player1TotalSteps, player2Steps: player2TotalSteps, player2Ratio: player2Ratio, player1Powerups: modifiedPlayer1Powerups, player2Powerups: modifiedPlayer2Powerups};
+    };
 
     const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number } }) => {
 
@@ -566,276 +635,341 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         }));
     };
 
-    type StepsModalProps = {
-        groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined }[];
-    };
-
-    const StepsModal: React.FC<StepsModalProps> = ({ groupUsersArray }) => {
-        const screenWidth = Dimensions.get('window').width;
-        const screenHeight = Dimensions.get('window').height;
-        
-        // Sort users by steps in descending order
-        const sortedUsers = [...groupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0));
-
-        const truncateUsername = (username: string, maxLength: number = 10) => {
-            return username.length > maxLength ? username.slice(0, maxLength - 3) + '...' : username;
-        };
-
-        // Find the maximum steps for scaling
-        const maxSteps = Math.max(...sortedUsers.map(user => user.steps || 0));
-        const barWidth = screenWidth * 0.7; 
-    
-        const USERNAME_WIDTH = 80; // Width for username section including margin
-        const gridIntervals = Array.from({ length: 5 }, (_, i) => Math.round(maxSteps * i / 4));
-        
-        return (
-            <View style={{ justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', padding: 20, borderRadius: 10 }}>
-                <Text style={{ fontSize: 18, fontFamily: 'Lexend-Bold', marginBottom: 50 }}>Player Steps</Text>
-            
-                <View style={{ width: '100%', position: 'relative' }}>
-                    {/* Grid lines */}
-                    <View style={{
-                        position: 'absolute',
-                        left: USERNAME_WIDTH,
-                        right: 0,
-                        height: '100%'
-                    }}>
-                        {gridIntervals.map((value, index) => (
-                            <View
-                                key={value}
-                                style={{
-                                    position: 'absolute',
-                                    left: `${(value / maxSteps) * 100}%`,
-                                    height: '100%',
-                                    width: 1,
-                                    backgroundColor: index === 0 ? '#000' : '#E5E5E5',
-                                    zIndex: 1
-                                }}
+    return (
+        <>
+            <LinearGradient
+                colors={['#000000', '#024407']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    {/* Header Section */}
+                    <View style={styles.header}>
+                        <Button
+                            title="Back"
+                            onPress={() => navigation.goBack()}
+                        />
+                        <Button
+                            title="History"
+                            onPress={() => setBetHistoryModalVisible(true)}
+                        />
+                        <Button
+                            title="Store"
+                            onPress={() => setStoreModalVisible(true)}
+                        />
+                        {groups[groupID]?.gameType === 'weekly' && (
+                            <Button
+                                title="Prop Bet"
+                                onPress={() => setPropBetModalVisible(true)}
                             />
-                        ))}
-
-                        {/* Bottom numbers */}
-                        <View style={{
-                            flexDirection: 'row',
-                            position: 'absolute',
-                            bottom: -10,
-                            left: 0,
-                            width: '100%'
-                        }}>
-                            {gridIntervals.map((value) => (
-                                <Text
-                                    key={value}
-                                    style={{
-                                        position: 'absolute',
-                                        left: `${(value / maxSteps) * 100}%`,
-                                        transform: [{ translateX: -10 }],
-                                        fontSize: 12,
-                                        color: '#666'
-                                    }}
-                                >
-                                    {value}
-                                </Text>
-                            ))}
+                        )}
+                    </View>
+                    <View style={styles.groupInfo}>
+                        <Image 
+                            source={groups[groupID]?.groupImageUrl ? 
+                                { uri: groups[groupID]?.groupImageUrl } : 
+                                require('@components/blank-profile-picture.png')
+                            }
+                            style={styles.groupImage}
+                        />
+                        <View style={styles.groupNameContainer}>
+                            <Text style={styles.groupName}>{groups[groupID]?.groupName || 'Group Name'}</Text>
+                            <Text style={styles.timeLeft}>{gameTimeLeft}</Text>
+                            <Text style={styles.timeLeft}>{betTimeLeft}</Text>
                         </View>
                     </View>
 
-                    {/* Bars */}
-                    {sortedUsers.map((user, index) => (
-                        <View key={user.id} style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            marginBottom: 10,
-                            width: '100%',
-                            zIndex: 2
-                        }}>
-                            <Text style={{
-                                width: 80,
-                                fontSize: 14,
-                                fontFamily: 'Lexend-Regular',
-                            }}>
-                                {truncateUsername(user.name || '')}
-                            </Text>
-                            
-                            <View style={{
-                                flex: 1,
-                                flexDirection: 'row',
-                                alignItems: 'center'
-                            }}>
-                                <View style={{
-                                    width: `${((user.steps || 0) / maxSteps) * 100}%`,
-                                    height: 30,
-                                    backgroundColor: '#4C7BF4',
-                                    borderRadius: 5,
-                                    zIndex: 2
-                                }} />
-                                
-                                <Text style={{
-                                    marginLeft: 10,
-                                    fontSize: 14,
-                                    fontFamily: 'Lexend-Regular',
-                                    color: '#4C7BF4'
-                                }}>
-                                    {user.steps}
-                                </Text>
-                            </View>
-                        </View>
-                    ))}
-                </View>
-            </View>
-        );
-    };
-    
-    return (
-        <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                <Image
-                    source={require('@components/back-icon.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.groupTitleContainer} onPress={() => navigation.navigate('EditGroupPage', { groupID: groupID })}>
-                {groups[groupID]?.groupImageUrl ? (
-                    <Image source={{ uri: groups[groupID]?.groupImageUrl }} style={styles.groupImage} />
-                ) : (
-                    <Image
-                        source={require('@components/blank-profile-picture.png')}
-                        style={styles.groupImage}
-                    />
-                )}
-                <View style={styles.groupTitleView}>
-                    <Text style={styles.groupTitle}>{groups[groupID]?.groupName}</Text>
-                </View>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.recapButton} onPress={() => setBetHistoryModalVisible(true)}>
-                <Image
-                    source={require('../../../assets/images/recap.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
+                    {/* Stats Container */}
+                    <View style={styles.statsContainer}>
+                        <TouchableOpacity style={styles.statItem} onPress={() => setTokensModalVisible(true)}>
+                            <Text style={styles.statValue}>{groups[groupID]?.userTokens}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.statItem} onPress={() => setTokensUsedModalVisible(true)}>
+                            <Text style={styles.statValue}>{groups[groupID]?.todaysBetTokens}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.statItem} onPress={() => setDiamondsModalVisible(true)}>
+                            <Text style={styles.statValue}>{groups[groupID]?.userDiamonds}</Text>
+                        </TouchableOpacity>
+                    </View>
 
-            <TouchableOpacity style={styles.storeButton} onPress={() => setStoreModalVisible(true)}>
-                <Image
-                    source={require('../../../assets/images/store.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-            <Text style={styles.daysLeft}>{gameTimeLeft}</Text>
-            <Text style={styles.daysLeft}>{betTimeLeft}</Text>
-            <TouchableOpacity style={[styles.moneyContainer, { top: 100, }]} onPress={() => setTokensModalVisible(true)}>
-                <View style={styles.tokenTextView}>
-                    <Text style={styles.tokenText}>{groups[groupID]?.userTokens}</Text>
-                </View>
-                <Image
-                    source={require('../../../assets/images/gold_coin.png')}
-                    style={styles.moneyIcons}
-                />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.moneyContainer, { top: 130, }]} onPress={() => setTokensUsedModalVisible(true)}>
-                <View style={styles.tokenTextView}>
-                    <Text style={styles.tokenText}>{groups[groupID]?.todaysBetTokens}</Text>
-                </View>
-                <Image
-                    source={require('../../../assets/images/coin_spent.png')}
-                    style={styles.moneyIcons}
-                />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.moneyContainer, { top: 160, }]} onPress={() => setDiamondsModalVisible(true)}>
-                <View style={styles.tokenTextView}>
-                    <Text style={styles.tokenText}>{groups[groupID]?.userDiamonds}</Text>
-                </View>
-                <Image
-                    source={require('../../../assets/images/diamond.png')}
-                    style={styles.diamondIcon}
-                />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.RaceButtonContainer} onPress={() => setStepsModalVisible(true)}>
-                <Text style={styles.buttonText}>See Race</Text>
-            </TouchableOpacity>
-            {groups[groupID]?.gameType === 'weekly' && (
-                <TouchableOpacity style={styles.PropBetContainer} onPress={() => setPropBetModalVisible(true)}>
-                    <Text style={styles.buttonText}>Daily Prop Bet</Text>
-                </TouchableOpacity>
-            )}
-            <View style={styles.playerContainer}>
-                <Text style={styles.secondHeader}>Players:</Text>
-                {currentGroupUsersArray ? (
-                    <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.userRow}>
-                        {currentGroupUsersArray.map((user, index) => (
-                            <TouchableOpacity
-                                key={user.id}
-                                style={styles.userContainer}
-                                onPress={() => createMemberButtonHandle(user.id)}
-                            >
-                                <View style={styles.imageContainer}>
-                                    <Image source={{ uri: user.pfp }} style={styles.profileImage} />
-                                    {/* Conditionally render the placement images for the first three users */}
-                                    {index === 0 && (
-                                        <Image
-                                            source={require('../../../assets/images/first_place.png')}
-                                            style={styles.placementImage}
-                                        />
-                                    )}
-                                    {index === 1 && (
-                                        <Image
-                                            source={require('../../../assets/images/second_place.png')}
-                                            style={styles.placementImage}
-                                        />
-                                    )}
-                                    {index === 2 && (
-                                        <Image
-                                            source={require('../../../assets/images/third_place.png')}
-                                            style={styles.placementImage}
-                                        />
-                                    )}
-                                </View>
-                                <Text style={styles.username}>{user.name}</Text>
-                                <View style={styles.betsContainer}>
-                                    <Text style={styles.username}>{user.tokens}</Text>
-                                    <Image
-                                        source={require('../../../assets/images/gold_coin.png')}
-                                        style={styles.coinIcon}
-                                    />
-                                </View>
+                    {/* Live Duel Section */}
+                    <View>
+                        <Text style={styles.sectionTitle}>Live Duel</Text>
+                        <View style={styles.duelRow}>
+                            <TouchableOpacity onPress={handleRightArrowPress}>
+                                <Text style={styles.duelIterate}>{"<"}</Text>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                ) : (
-                    <Text>No users found.</Text>
-                )}
-            </View>
-            <View style={styles.betContainer}>
-                <FlatList
-                    data={currentBets}
-                    keyExtractor={(item) => item.duelID}
-                    renderItem={renderBetItem}
-                />
-            </View>
 
+                            <TouchableOpacity 
+                                onPress={handleDuelPress}
+                                activeOpacity={1}
+                                style={styles.duelCardTouchable}
+                            >
+                                <LinearGradient
+                                    colors={['#51ba51', '#18c4a6']}
+                                    style={styles.duelCard}
+                                >
+                                    {/* player 1 */}
+                                    <View style={styles.playerInfo}>
+                                        <Image 
+                                            source={{ uri: currentBets[currentBetIndex]?.player1Pfp }}
+                                            style={styles.playerImage}
+                                        />
+                                        <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player1}</Text>
+                                        <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
+                                        <Text style={styles.playerTokens}>$ {currentBets[currentBetIndex]?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
+                                        {isDuelExpanded && (
+                                            <>
+                                                <View style={styles.betsListLeft}>
+                                                    <Text style={styles.betsText}>Bets:</Text>
+                                                    {currentBets[currentBetIndex]?.player1Bets.length !== 0 && (
+                                                        <View>
+                                                            {currentBets[currentBetIndex]?.player1Bets.map((bet, index) => (
+                                                                <Text key={index} style={{ textAlign: 'left', color: '#fff', }}> {bet.user}: {bet.wager}</Text>
+                                                            ))}
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <View style={styles.betsListLeft}>
+                                                    <Text style={styles.betsText}>Powerups:</Text>
+                                                    {getBetPlayerInfo().player1Powerups.length !== 0 && (
+                                                        getBetPlayerInfo().player1Powerups.map(([type, targetID, userID], index) => (
+                                                            <Text key={index} style={{ textAlign: 'left', color: '#fff', }}>{`${type}`}</Text>
+                                                        ))
+                                                    )}
+                                                </View>
+                                            </>
+                                        )}
+                                    </View>
+                                    <View style={styles.duelInfo}>
+                                        <View style={styles.liveContainer}>
+                                            <Text style={styles.liveTag}><Text style={{ color: 'green', }}>•</Text> LIVE</Text>
+                                        </View>
+                                        <CircularIcon value={getBetPlayerInfo().player2Ratio} size={65} strokeWidth={10} />
+                                        <Text></Text>
+                                    </View>
+                                    <View style={styles.playerInfo}>
+                                        <Image 
+                                            source={{ uri: currentBets[currentBetIndex]?.player2Pfp }}
+                                            style={styles.playerImage}
+                                        />
+                                        <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player2}</Text>
+                                        <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
+                                        <Text style={styles.playerTokens}>$ {currentBets[currentBetIndex]?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
+                                        {isDuelExpanded && (
+                                            <>
+                                                <View style={styles.betsListRight}>
+                                                    {/* Player2's Steps */}
+                                                    <Text style={styles.betsText}>Bets:</Text>
+                                                    {currentBets[currentBetIndex]?.player2Bets.length !== 0 && (
+                                                        <View>
+                                                            {currentBets[currentBetIndex]?.player2Bets.map((bet, index) => (
+                                                                <Text key={index} style={{ textAlign: 'right', color: '#fff', }}> {bet.user}: {bet.wager}</Text>
+                                                            ))}
+                                                        </View>
+                                                    )}
+                                                </View>
+                                                <View style={styles.betsListRight}>
+                                                    <Text style={styles.betsText}>Powerups:</Text>
+                                                    {getBetPlayerInfo().player2Powerups.length !== 0 && (
+                                                        getBetPlayerInfo().player2Powerups.map(([type, targetID, userID], index) => (
+                                                            <Text key={index} style={{ textAlign: 'right', color: '#fff', }}>{`${type}`}</Text>
+                                                        ))
+                                                    )}
+                                                </View>
+                                            </>
+                                        )}
+                                    </View>
+                                </LinearGradient>
+                            </TouchableOpacity>
 
-            {/* Modal */}
+                            <TouchableOpacity onPress={handleLeftArrowPress}>
+                                <Text style={styles.duelIterate}>{">"}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.betAmount}>
+                            <Text style={styles.betText}>$ {currentBets[currentBetIndex]?.player1Bets?.find(bet => bet.user === (currentGroupUsersArray?.find(usr => usr.id === userID)?.name || ""))?.wager || 0}</Text>
+                        </View>
+                    </View>
+
+                    {/* Leaderboard Section */}
+                    <View style={styles.leaderboardContainer}>
+                        <Text style={styles.sectionTitle}>Leaderboards</Text>
+                        <View style={styles.tabContainer}>
+                            {selectedTab === 'Tokens' ? (
+                                <>
+                                    <LinearGradient
+                                        colors={['#51ba51', '#18c4a6']}
+                                        style={styles.tab}
+                                    >
+                                    <Text style={styles.tabText}>Tokens</Text>
+                                </LinearGradient>
+                                    <TouchableOpacity 
+                                        style={styles.tab}
+                                        onPress={() => setSelectedTab('Steps')}
+                                    >
+                                        <Text style={styles.tabText}>Steps</Text>
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <TouchableOpacity 
+                                        style={styles.tab}
+                                        onPress={() => setSelectedTab('Tokens')}
+                                    >
+                                        <Text style={styles.tabText}>Tokens</Text>
+                                    </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#51ba51', '#18c4a6']}
+                                        style={styles.tab}
+                                    >
+                                        <Text style={styles.tabText}>Steps</Text>
+                                    </LinearGradient>
+                                </>
+                            )}
+                        </View>
+                        <View style={styles.leaderboard}>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                <View style={styles.grayLine} />
+                                {selectedTab === 'Tokens' ? (
+                                    <>
+                                        {currentGroupUsersArray.map((user, index) => (
+                                            <View key={user.id} style={styles.leaderboardRow}>
+                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
+                                                    <Image
+                                                        source={{ uri: user.pfp }}
+                                                        style={styles.leaderboardImage}
+                                                    />
+                                                    {index === 0 && (
+                                                        <Image
+                                                            source={require('../../../assets/images/first_place.png')}
+                                                            style={styles.placementImage}
+                                                        />
+                                                    )}
+                                                    {index === 1 && (
+                                                        <Image
+                                                            source={require('../../../assets/images/second_place.png')}
+                                                            style={styles.placementImage}
+                                                        />
+                                                    )}
+                                                    {index === 2 && (
+                                                        <Image
+                                                            source={require('../../../assets/images/third_place.png')}
+                                                            style={styles.placementImage}
+                                                        />
+                                                    )}
+                                                </TouchableOpacity>
+                                                <View style={{
+                                                    flex: 1,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <LinearGradient
+                                                        colors={['#51ba51', '#18c4a6']}
+                                                        style={{
+                                                            width: `${((user.tokens || 0) / Math.max(...currentGroupUsersArray.map(user => user.tokens || 0))) * 80}%`,
+                                                            height: 30,
+                                                            backgroundColor: '#4C7BF4',
+                                                            borderTopRightRadius: 5,
+                                                            borderBottomRightRadius: 5,
+                                                        }}
+                                                    />
+                                                    <Text style={styles.leaderboardSteps}>
+                                                        {user.tokens}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <>
+                                        {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
+                                            <View key={user.id} style={styles.leaderboardRow}>
+                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
+                                                    <Image
+                                                        source={{ uri: user.pfp }}
+                                                        style={styles.leaderboardImage}
+                                                    />
+                                                </TouchableOpacity>
+                                                <View style={{
+                                                    flex: 1,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center'
+                                                }}>
+                                                    <LinearGradient
+                                                        colors={['#51ba51', '#18c4a6']}
+                                                        style={{
+                                                            width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
+                                                            height: 30,
+                                                            backgroundColor: '#4C7BF4',
+                                                            borderTopRightRadius: 5,
+                                                            borderBottomRightRadius: 5,
+                                                        }}
+                                                    />
+                                                    <Text style={styles.leaderboardSteps}>
+                                                        {user.steps}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </>
+                                )}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </View>
+            </LinearGradient>
+            
+            {/* Bet History Modal */}
             <Modal
                 transparent={true}
-                visible={isStepsModalVisible}
+                visible={isBetHistoryModalVisible}
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setStepsModalVisible(false)}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setBetHistoryModalVisible(false)}>
                             <Text style={styles.closeButtonText}>X</Text>
                         </TouchableOpacity>
 
-                        {/* StorePageas the modal content */}
-                        <StepsModal
-                            groupUsersArray={currentGroupUsersArray}
+                        {/* BetRecapPage as the modal content */}
+                        <BetHistoryPage navigation={navigation} />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Store Modal */}
+            <Modal
+                transparent={true}
+                visible={isStoreModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setStoreModalVisible(false)}>
+                            <Text style={styles.closeButtonText}>X</Text>
+                        </TouchableOpacity>
+
+                        {/* StorePage as the modal content */}
+                        <StorePage
+                            navigation={navigation}
+                            userDiamonds={groups[groupID]?.userDiamonds}
+                            gameType = {groups[groupID]?.gameType}
+                            currentGroupUsersArray={currentGroupUsersArray}
+                            setStoreModalVisible={setStoreModalVisible}
                         />
                     </View>
                 </View>
             </Modal>
+
+            {/* Prop Bet Modal */}
             <Modal
                 transparent={true}
                 visible={isPropBetModalVisible}
-                // animationType="slide"
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.moneyModalContainer}>
@@ -917,46 +1051,8 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
-            <Modal
-                transparent={true}
-                visible={isBetHistoryModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setBetHistoryModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
 
-                        {/* BetRecapPage as the modal content */}
-                        <BetHistoryPage navigation={navigation} />
-                    </View>
-                </View>
-            </Modal>
-            <Modal
-                transparent={true}
-                visible={isStoreModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setStoreModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
-
-                        {/* StorePageas the modal content */}
-                        <StorePage
-                            navigation={navigation}
-                            userDiamonds={groups[groupID]?.userDiamonds}
-                            gameType = {groups[groupID]?.gameType}
-                            currentGroupUsersArray={currentGroupUsersArray}
-                            setStoreModalVisible={setStoreModalVisible}
-                        />
-                    </View>
-                </View>
-            </Modal>
+            {/* Info Modals */}
             <Modal
                 transparent={true}
                 visible={isTokensModalVisible}
@@ -1002,10 +1098,16 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </>
     );
 };
 
+
+type CircularIconProps = {
+    value: number; // Value from 0 to 1, where 1 is 100%
+    size?: number; // Diameter of the circle
+    strokeWidth?: number; // Width of the border
+};
 const CircularIcon: React.FC<CircularIconProps> = ({ value, size = 100, strokeWidth = 10 }) => {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
@@ -1050,10 +1152,6 @@ const CircularIcon: React.FC<CircularIconProps> = ({ value, size = 100, strokeWi
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "white",
-    },
     circleContainer: {
         justifyContent: 'center',
         alignItems: 'center',
@@ -1107,97 +1205,9 @@ const styles = StyleSheet.create({
         elevation: 5,
         zIndex: 10,
     },
-    buttonText: {
-        fontFamily: "Lexend",
-        textAlign: 'center',
-        color: 'blue',
-    },
-    daysLeft: {
-        color: 'red',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        textAlign: 'center',
-    },
-    moneyContainer: {
-        position: 'absolute',
-        right: 10,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    tokenTextView: {
-        backgroundColor: "#f0f0f0",
-        borderRadius: 5,
-        padding: 4,
-        paddingRight: 20,
-    },
     tokenText: {
         fontFamily: "Lexend",
         fontSize: 15
-    },
-    secondHeader: {
-        fontFamily: "Lexend",
-        fontSize: 18,
-        paddingLeft: 20,
-        paddingBottom: 10,
-    },
-    RaceButtonContainer: {
-        position: 'absolute',
-        top: '30%',
-        alignSelf: 'center',
-    },
-    PropBetContainer: {
-        position: 'absolute',
-        top: '30%',
-        right: 10,
-    },
-    playerContainer: {
-        position: 'absolute',
-        top: '37%',
-        height: '26%',
-        width: '95%',
-        paddingVertical: 10,
-        backgroundColor: "#f0f0f0",
-        borderRadius: 30,
-        justifyContent: "center",
-        alignSelf: "center",
-    },
-    betContainer: {
-        position: 'absolute',
-        top: '63%',
-        height: '35%',
-        width: '95%',
-        marginTop: 10,
-        backgroundColor: "#f0f0f0",
-        borderRadius: 30,
-        justifyContent: "center",
-        alignSelf: "center",
-    },
-    titleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-    },
-    groupTitleView: {
-        backgroundColor: "#eaeaea",
-        borderRadius: 5,
-        padding: 8,
-        paddingLeft: 33,
-    },
-    groupTitle: {
-        fontSize: 25,
-        fontFamily: 'Lexend-Bold',
-    },
-    userRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    userContainer: {
-        marginRight: 20,
-        alignItems: 'center',
     },
     profileImage: {
         width: 60,
@@ -1205,24 +1215,6 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         borderWidth: 1,
         borderColor: "#D3D3D3",
-    },
-    imageContainer: {
-        position: 'relative',
-        width: 60,
-        height: 60,
-    },
-    placementImage: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 15, // Adjust width based on your image size
-        height: 15, // Adjust height based on your image size
-    },
-    username: {
-        marginTop: 5,
-        fontSize: 14,
-        textAlign: 'center',
-        fontFamily: 'Lexend',
     },
     flatList: {
         padding: 15,
@@ -1251,19 +1243,11 @@ const styles = StyleSheet.create({
     },
     betsListLeft: {
         marginTop: 10,
-        paddingRight: 20,
     },
     betsListRight: {
         marginTop: 10,
-        paddingLeft: 20,
     },
     // MODAL
-    button: {
-        marginTop: 20,
-        paddingBottom: 20,
-        width: '100%',
-        alignSelf: 'center',
-    },
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',
@@ -1296,31 +1280,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: 'black',
     },
-    groupImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: -20,
-        zIndex: 10,
-    },
-    groupTitleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '30%',
-        alignSelf: 'center',
-        marginTop: 30,
-    },
-    groupImageWrapper: {
-        width: 120, // Match the size of the profileImage
-        height: 120, // Match the size of the profileImage
-        borderRadius: 60, // Half of the width/height
-        overflow: 'visible',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#ccc', // Default gray background
-        position: 'relative', // Enable absolute positioning for the plus icon
-    },
     moneyIcons: {
         width: 35,
         height: 35,
@@ -1337,10 +1296,6 @@ const styles = StyleSheet.create({
     coinIcon: {
         width: 30,
         height: 30,
-    },
-    tokenContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     centeredColumn: {
         alignItems: 'center',
@@ -1359,7 +1314,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
     },
     betsText: {
-        //marginRight: 5, // Optional: Add some space between the number and the coin
+        color: '#fff',
         textAlign: 'center',
         fontFamily: 'Lexend-Bold'
 
@@ -1370,6 +1325,216 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend-Bold',
         paddingHorizontal: 10,
 
+    },
+
+    // NEW STUFF
+    container: {
+        flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+    },
+    groupInfo: {
+        flexDirection: 'row',
+        paddingHorizontal: 20,
+        alignItems: 'center',
+    },
+    groupImage: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        borderWidth: 2,
+        borderColor: '#7fd881',
+    },
+    groupNameContainer: {
+        marginLeft: 20,
+        justifyContent: 'center',
+    },
+    groupName: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    timeLeft: {
+        color: '#7fd881',
+        fontSize: 14,
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: '#1b2c1c',
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        padding: 10,
+        margin: 20,
+    },
+    statItem: {
+        alignItems: 'center',
+        backgroundColor: '#0f160e',
+        borderRadius: 30,
+        padding: 10,
+        width: '30%',
+    },
+    statValue: {
+        color: '#fff',
+        fontSize: 18,
+    },
+    duelContainer: {
+        paddingHorizontal: 20,
+    },
+    sectionTitle: {
+        color: '#fff',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        paddingHorizontal: 20,
+    },
+    duelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    duelIterate: {
+        color: '#fff',
+        paddingHorizontal: 10,
+    },
+    duelCardTouchable: {
+        flex: 1,
+        flexDirection: 'row',
+    },
+    duelCard: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: '#4CAF50',
+        borderRadius: 20,
+        padding: 20,
+    },
+    playerInfo: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+    },
+    playerImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    playerName: {
+        color: '#fff',
+        fontSize: 16,
+        marginVertical: 5,
+        fontWeight: 'bold',
+    },
+    playerSteps: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    playerTokens: {
+        color: '#fff',
+        fontSize: 14,
+    },
+    duelInfo: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+    },
+    liveContainer: {
+        position: 'absolute',
+        top: -5,
+        padding: 5,
+        backgroundColor: '#fff',
+        borderRadius: 20,
+    },
+    liveTag: {
+        color: '#000',
+        fontSize: 12,
+        fontWeight: 'bold',
+        alignSelf: 'center',
+        justifyContent: 'center',
+    },
+    versus: {
+        color: '#fff',
+        fontSize: 32,
+        fontWeight: 'bold',
+        alignSelf: 'center',
+    },
+    betAmount: {
+        position: 'absolute',
+        bottom: -20,
+        alignSelf: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
+    },
+    betText: {
+        color: '#000',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    leaderboardContainer: {
+        flex: 1,
+        padding: 20,
+        marginTop: 10,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#1b2c1c',
+        borderRadius: 15,
+        marginBottom: 10,
+    },
+    tab: {
+        flex: 1,
+        padding: 10,
+        alignItems: 'center',
+        borderRadius: 15,
+    },
+    tabText: {
+        color: '#fff',
+        fontSize: 16,
+    },
+    leaderboard: {
+        flex: 1,
+        backgroundColor: '#1b2c1c',
+        borderRadius: 20,
+        padding: 15,
+    },
+    grayLine: { 
+        position: 'absolute',
+        left: 40,
+        width: 1.5,
+        height: '95%',
+        backgroundColor: '#fff',
+        zIndex: 1,
+    },
+    leaderboardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    leaderboardImage: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        marginRight: 10,
+        borderWidth: 1.5,
+        borderColor: '#fff',
+    },
+    placementImage: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 15, // Adjust width based on your image size
+        height: 15, // Adjust height based on your image size
+    },
+    leaderboardSteps: {
+        color: '#fff',
+        fontSize: 14,
+        marginLeft: 10,
     },
 });
 
