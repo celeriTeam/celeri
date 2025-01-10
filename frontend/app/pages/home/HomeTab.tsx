@@ -339,10 +339,10 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
                 <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
             </TouchableOpacity> */}
 
-            
-            <TouchableOpacity onPress={() => { navigation.navigate('NewBetSummaryPage', { groupID: 'l4mB0DqPpM6jGpj6OPwq' }) }}>
+            {/* testing new bet summary page ui */}
+            {/* <TouchableOpacity onPress={() => { navigation.navigate('NewBetSummaryPage', { groupID: 'l4mB0DqPpM6jGpj6OPwq' }) }}>
                 <Text style={[styles.buttonText, {color: 'blue'}]}>New Bet Summary Page</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             </View>
         );
     }
