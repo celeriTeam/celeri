@@ -218,16 +218,35 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
           // send notif for each token
           for (const token of userTokens) {
             console.log("checkpoint six");
-            const message = {
-              token: token,
-              notification: {
-                title: `${username} believes in you`,
-                body: `They just placed a bet on you for ${wager} tokens!`,
+            const messages = [
+              {
+                token: token,
+                notification: {
+                  title: `${username} believes in you!`,
+                  body: `They just placed a bet on you for ${wager} tokens!`,
+                },
               },
-            };
+              {
+                token: token,
+                notification: {
+                  title: `${username} is your biggest fan!`,
+                  body: `They just bet ${wager} tokens on you!`,
+                },
+              },
+              {
+                token: token,
+                notification: {
+                  title: `Don't let ${username} down.`,
+                  body: `They wagered ${wager} tokens because they know you'll win!`,
+                },
+              },
+            ];
+
+            // Select a random message
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
             try {
-              const response = await admin.messaging().send(message);
+              const response = await admin.messaging().send(randomMessage);
               console.log("Notification sent successfully:", response);
             } catch (error) {
               console.error("Error sending notification:", error);
@@ -260,16 +279,36 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
           // send notif for each token
           for (const token of userTokens) {
             console.log("checkpoint six-two");
-            const message = {
-              token: token,
-              notification: {
-                title: `Prove ${username} wrong.`,
-                body: `They just bet against you for ${wager} tokens!`,
+
+            const messages = [
+              {
+                token: token,
+                notification: {
+                  title: `Prove ${username} wrong.`,
+                  body: `They just bet against you for ${wager} tokens!`,
+                },
               },
-            };
+              {
+                token: token,
+                notification: {
+                  title: `${username} thinks you're a couch potato.`,
+                  body: `They just bet ${wager} against you!`,
+                },
+              },
+              {
+                token: token,
+                notification: {
+                  title: `${username} has got to be wrong, right?`,
+                  body: `They wagered ${wager} tokens against you because they're sure you'll lose.`,
+                },
+              },
+            ];
+
+            // Select a random message
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
 
             try {
-              const response = await admin.messaging().send(message);
+              const response = await admin.messaging().send(randomMessage);
               console.log("Notification sent successfully:", response);
             } catch (error) {
               console.error("Error sending notification:", error);
@@ -1107,7 +1146,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
         console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
-        if (data.cycleCount > data.totalCycles) {
+        if (cycleCount > data.totalCycles) {
           // end the game
           groupBatch.update(groupDocRef, {
             isGameActive: false,
