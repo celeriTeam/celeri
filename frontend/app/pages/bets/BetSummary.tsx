@@ -1622,7 +1622,7 @@ const styles = StyleSheet.create({
     },
     tabContainer: {
         flexDirection: 'row',
-        backgroundColor: '#1b2c1c',
+        backgroundColor: '#65656580',
         borderRadius: 15,
         marginBottom: 10,
     },
@@ -1639,7 +1639,7 @@ const styles = StyleSheet.create({
     },
     leaderboard: {
         flex: 1,
-        backgroundColor: '#1b2c1c',
+        backgroundColor: '#65656580',
         borderRadius: 20,
         padding: 15,
     },

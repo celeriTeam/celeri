@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as Font from 'expo-font';
+import { Image } from 'expo-image';
 import ProfileTab from './profile/PersonalProfile';
 import TestScreen from './Test';
 import BugReportsPage from './BugReports';
@@ -16,6 +17,7 @@ import messaging from '@react-native-firebase/messaging';
 import { getMessaging, getToken} from '@react-native-firebase/messaging';
 import firestore from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
+import { Ionicons } from '@expo/vector-icons';
 
 
 
@@ -157,7 +159,53 @@ const AppPage: React.FC = () => {
     }
     return (
         <UserProvider>
-            <Tab.Navigator>
+            <Tab.Navigator
+                screenOptions={({ route }) => ({
+                    tabBarStyle: {
+                        backgroundColor: '#1b2c1c',
+                        borderTopWidth: 0,
+                        paddingBottom: 5,
+                        paddingTop: 5,
+                        height: 60
+                    },
+                    tabBarShowLabel: false,
+                    tabBarActiveTintColor: '#51ba51',
+                    tabBarInactiveTintColor: '#858585',
+                    tabBarLabelStyle: {
+                        fontSize: 12,
+                        fontFamily: 'Lexend'
+                    },
+                    tabBarIcon: ({ focused, color, size }) => {
+                        let iconSource, width, height;
+                        
+                        if (route.name === 'Home') {
+                            iconSource = require('../../assets/icons/home.png');
+                            width = 22;
+                            height = 24;
+                        } else if (route.name === 'Profile') {
+                            iconSource = require('../../assets/icons/profile.png');
+                            width = 20;
+                            height = 23;
+                        } else if (route.name === 'Bug Reports') {
+                            iconSource = require('../../assets/icons/bugReports.png');
+                            width = 29;
+                            height = 29;
+                        }
+            
+                        return (
+                            <Image 
+                                source={iconSource}
+                                style={{
+                                    width: width,
+                                    height: height,
+                                    tintColor: color,
+                                    opacity: focused ? 1 : 0.7
+                                }}
+                            />
+                        );
+                    }
+                })}
+            >
                 <Tab.Screen name="Home" component={HomePage} options={{ headerShown: false }} />
                 <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} />
                 {/* <Tab.Screen name="Test" component={TestScreen} options={{ headerShown: true }}/> */}
