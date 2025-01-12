@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { NativeEventEmitter, NativeModules } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { setStepsFirebase } from '../users'; 
@@ -57,6 +57,7 @@ const useHealthData = () => {
     };
 
     const getWeeklyAverageOfSteps = async (): Promise<number> => {
+        console.log("getWeeklyAverageOfSteps -- start");
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 8); // 8 days ago to avoid including today
         const yesterday = new Date();
@@ -135,23 +136,26 @@ const useHealthData = () => {
         return totalSteps; // Return the total steps
     };
 
-    const fetchHealthData = () => {
-        if (!hasPermissions) return;
+    const fetchHealthData =  useCallback(async ()  => {
+        //if (!hasPermissions) return;
+        console.log("fetchhealthData -- start");
         getDailySteps();
         getWeeklySteps();
         getWeeklyAverageOfSteps();
-    };
-
-    if(hasPermissions){
-        console.log("hasPermissions -- fetchHealthData");
-        fetchHealthData();
-    }
+    }, []);
 
     useEffect(() => {
         if (hasPermissions) {
-            fetchHealthData(); // Fetch data initially
+            console.log("hasPermissions -- fetchHealthData");
+            fetchHealthData();
         }
     }, [hasPermissions]);
+    
+
+    // if(hasPermissions){
+    //     console.log("hasPermissions -- fetchHealthData");
+    //     fetchHealthData();
+    // }
     
     useEffect(() => {
         console.log("inside useHealthData, useEFfect");
@@ -261,7 +265,7 @@ const useHealthData = () => {
     
 
 
-    return { steps, weeklySteps, averageSteps, flights, distance };
+    return { steps, weeklySteps, averageSteps, flights, distance, fetchHealthData };
 };
 
 export default useHealthData;

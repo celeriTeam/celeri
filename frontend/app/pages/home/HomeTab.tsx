@@ -42,7 +42,7 @@ type GroupData = {
 };
 
 const HomeTab: React.FC<Props> = ({ navigation }) => {
-    const { steps, averageSteps, weeklySteps, distance, flights } = useHealthData();
+    const { steps, averageSteps, weeklySteps, distance, flights, fetchHealthData } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
     console.log("printing steps!!!");
@@ -118,12 +118,16 @@ const HomeTab: React.FC<Props> = ({ navigation }) => {
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);
 
+                fetchHealthData();
+
                 // Toggle the needsUpdate value, triggering UI rebuild
-                setNeedsUpdate((prevNeedsUpdate) => {
-                    const newNeedsUpdate = !prevNeedsUpdate;
-                    console.log("needsUpdate toggled to: ", newNeedsUpdate);
-                    return newNeedsUpdate;
-                });
+                // setNeedsUpdate((prevNeedsUpdate) => {
+                //     const newNeedsUpdate = !prevNeedsUpdate;
+                //     console.log("needsUpdate toggled to: ", newNeedsUpdate);
+                //     return newNeedsUpdate;
+                // });
+
+                
                 //getStepsSinceMidnight();
             }, 300000); // 5 minutes in milliseconds
         

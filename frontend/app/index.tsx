@@ -81,12 +81,14 @@ const App: React.FC = () => {
     else {
         return (
             <NavigationContainer independent={true}>
-                <Stack.Navigator 
+               <Stack.Navigator
                     initialRouteName={initialRoute}
-                    screenOptions={{ headerShown: false }}
+                    screenOptions={{
+                        headerShown: false, // Apply to all screens
+                    }}
                 >
-                    <Stack.Screen name="AppPage" component={AppPage} options={{ headerShown: false }} />
-                    <Stack.Screen name="Register" component={RegisterPage} options={{ headerShown: false }} />
+                    <Stack.Screen name="AppPage" component={AppPage}/>
+                    <Stack.Screen name="Register" component={RegisterPage} />
                     <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
                     <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
                     <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} options={{ headerShown: false }} />
