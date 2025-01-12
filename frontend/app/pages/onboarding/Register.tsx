@@ -13,29 +13,6 @@ type Props = {
     route: RegisterPageRouteProp;
 };
 
-
-// const RegisterPage: React.FC<Props> = ({ navigation }) => {
-//     const insets = useSafeAreaInsets()
-
-//     return (
-        
-//         <View style={[
-//             styles.container, {
-//                 paddingTop: insets.top, 
-//                 paddingBottom: insets.bottom,
-//             }
-//         ]}>
-//             <Text style={styles.text}>FLEX</Text>
-//             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SignUp')}>
-//                 <Text style={styles.buttonText}>Register</Text>
-//             </TouchableOpacity>
-//             <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
-//                 <Text style={styles.buttonText}>Login</Text>
-//             </TouchableOpacity>
-//         </View>
-//     );
-// };
-
 const STATUS_BAR_HEIGHT = Platform.OS === "ios" ? 20 : StatusBar.currentHeight;
 const HEADER_HEIGHT = Platform.OS === "ios" ? 44 : 56;
 
@@ -47,7 +24,7 @@ const RegisterPage: React.FC<Props> = ({ navigation }) => {
                 barStyle="dark-content"
                 translucent={true}
             />
-            <SafeAreaView style={styles.container}>
+            <View style={styles.container}>
                 <Text style={styles.text}>FLEXBETS</Text>
                 <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('SignUp')}>
                     <Text style={styles.buttonText}>Register</Text>
@@ -55,7 +32,7 @@ const RegisterPage: React.FC<Props> = ({ navigation }) => {
                 <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Login')}>
                     <Text style={styles.buttonText}>Login</Text>
                 </TouchableOpacity>
-            </SafeAreaView>
+            </View>
         </View>
     );
 };
