@@ -589,6 +589,12 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Wait for all batches to be committed
           await Promise.all(allBatches);
 
+          // Delete weeklySteps from the group document
+          await groupDocRef.update({
+              weeklySteps: FieldValue.delete()
+          });
+          console.log("updateWinners -- Deleted weeklySteps");
+
           // Now do the race distirbution
           console.log("updateWinners -- race distribution starting now");
 
