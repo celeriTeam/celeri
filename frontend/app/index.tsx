@@ -1,50 +1,30 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import RegisterPage from './pages/onboarding/Register';
-import SignUpPage from './pages/onboarding/SignUp';
-import LoginPage from './pages/onboarding/Login';
-import VerificationPage from './pages/onboarding/PhoneVerification';
-import BetsPage from './pages/bets/Bets';
-import { RootStackParamList } from './types';
-import InvitePage from './pages/groups/InviteGroup';
-import AppPage from './pages/App';
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
-import ForgotPasswordPage from './pages/onboarding/ForgotPassword';
-import messaging from '@react-native-firebase/messaging';
-
-
-const Stack = createStackNavigator<RootStackParamList>();
-
-// messaging().onMessage(async (remoteMessage) => {
-//     console.log('Notification received in foreground:', remoteMessage);
-// });
-  
-// messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-//     console.log('Notification received in background:', remoteMessage);
-// });
+import { useRouter } from 'expo-router';
 
 const App: React.FC = () => {
-  
-    const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+    const [initialRoute, setInitialRoute] = useState<"/(authenticated)/home" | "/onboarding" | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const auth = getAuth();
+    const router = useRouter(); // Move useRouter out of useEffect
 
-    console.log('In Index Page');
-    
     useEffect(() => {
         const loadFonts = async () => {
-            console.log('Loading fonts...'); // Add this line to check if the function is running
-            await Font.loadAsync({
-                'Lexend': require('../assets/fonts/Lexend-Regular.ttf'), // Adjust path as necessary
-                'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
-            });
-            console.log('Fonts loaded successfully.'); // Add this line to confirm successful font loading
-            setFontsLoaded(true);
+            try {
+                console.log('Loading fonts...');
+                await Font.loadAsync({
+                    'Lexend': require('../assets/fonts/Lexend-Regular.ttf'),
+                    'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
+                });
+                console.log('Fonts loaded successfully.');
+                setFontsLoaded(true);
+            } catch (error) {
+                console.error('Error loading fonts:', error);
+            }
         };
 
         loadFonts();
@@ -52,23 +32,21 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-            try {
-                if (user) {
-                    setInitialRoute('AppPage');
-                } else {
-                    setInitialRoute('Register');
-                }
-            } catch (error) {
-                console.error('Auth state change error:', error);
-                setInitialRoute('Register'); // Fallback to Register on error
-            } finally {
-                setIsLoading(false);
-            }
+            setInitialRoute(user ? '/(authenticated)/home' : '/onboarding');
+            setIsLoading(false);
         });
-  
-      return () => unsubscribe();
+
+        return () => unsubscribe();
     }, [auth]);
-  
+
+    useEffect(() => {
+        // Navigate to the initial route once ready
+        if (!isLoading && fontsLoaded && initialRoute) {
+            router.replace(initialRoute);
+
+        }
+    }, [isLoading, fontsLoaded, initialRoute, router]);
+
     if (isLoading || !fontsLoaded || initialRoute === null) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -77,26 +55,8 @@ const App: React.FC = () => {
             </View>
         );
     }
-    
-    else {
-        return (
-            <NavigationContainer independent={true}>
-               <Stack.Navigator
-                    initialRouteName={initialRoute}
-                    screenOptions={{
-                        headerShown: false, // Apply to all screens
-                    }}
-                >
-                    <Stack.Screen name="AppPage" component={AppPage}/>
-                    <Stack.Screen name="Register" component={RegisterPage} />
-                    <Stack.Screen name="SignUp" component={SignUpPage} options={{ headerShown: false }} />
-                    <Stack.Screen name="Login" component={LoginPage} options={{ headerShown: false }} />
-                    <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} options={{ headerShown: false }} />
-                    <Stack.Screen name="Verification" component={VerificationPage} options={{ headerShown: false }} />
-                </Stack.Navigator>
-            </NavigationContainer>
-        );
-    }
+
+    return null; // No rendering needed as navigation is handled
 };
 
 export default App;
