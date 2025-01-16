@@ -214,7 +214,7 @@ const HomeTab: React.FC = () => {
                 });
             } else {
                 router.push({
-                    pathname: '/(authenticated)/home/bets/NewBetSummary',
+                    pathname: '/(authenticated)/home/bets/BetSummary',
                     params: { groupIDTemp },
                 });
             }
