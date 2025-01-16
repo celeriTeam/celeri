@@ -133,55 +133,53 @@ const AuthenticatedLayout: React.FC = () => {
 
     return (
         <UserProvider>
-            <Tabs screenOptions={{ headerShown: false }}>
-                <Tabs.Screen
-                    name="home"
-                    options={{
-                        title: 'Home',
-                        tabBarIcon: ({ focused }) => (
+            <Tabs
+                screenOptions={({ route }) => ({
+                    headerShown: false,
+                    tabBarStyle: {
+                        backgroundColor: '#1b2c1c',
+                        borderTopWidth: 0,
+                        paddingBottom: 50,
+                        paddingTop: 0,
+                        height: 110,
+                    },
+                    tabBarShowLabel: false,
+                    tabBarActiveTintColor: '#51ba51',
+                    tabBarInactiveTintColor: '#ffffff',
+                    tabBarIcon: ({ focused, color }) => {
+                        let iconSource, width, height;
+
+                        if (route.name === 'home') {
+                            iconSource = require('../../assets/icons/home.png');
+                            width = focused ? 24 : 22;
+                            height = focused ? 26 : 24;
+                        } else if (route.name === 'profile') {
+                            iconSource = require('../../assets/icons/profile.png');
+                            width = focused ? 22 : 20;
+                            height = focused ? 25 : 23;
+                        } else if (route.name === 'bugReports/index') {
+                            iconSource = require('../../assets/icons/bugReports.png');
+                            width = focused ? 31 : 29;
+                            height = focused ? 31 : 29;
+                        }
+
+                        return (
                             <Image
-                                source={require('../../assets/icons/home.png')}
+                                source={iconSource}
                                 style={{
-                                    width: focused ? 24 : 22, // Adjust size when focused
-                                    height: focused ? 26 : 24,
-                                    tintColor: focused ? '#007AFF' : '#8E8E93', // Custom colors
+                                    width,
+                                    height,
+                                    tintColor: color,
+                                    opacity: focused ? 1 : 0.7,
                                 }}
                             />
-                        ),
-                    }}
-                />
-                <Tabs.Screen
-                    name="profile"
-                    options={{
-                        title: 'Profile',
-                        tabBarIcon: ({ focused }) => (
-                            <Image
-                                source={require('../../assets/icons/profile.png')}
-                                style={{
-                                    width: focused ? 22 : 20,
-                                    height: focused ? 25 : 23,
-                                    tintColor: focused ? '#007AFF' : '#8E8E93',
-                                }}
-                            />
-                        ),
-                    }}
-                />
-                <Tabs.Screen
-                    name="bugReports/index"
-                    options={{
-                        title: 'Bug Reports',
-                        tabBarIcon: ({ focused }) => (
-                            <Image
-                                source={require('../../assets/icons/bugReports.png')}
-                                style={{
-                                    width: focused ? 31 : 29,
-                                    height: focused ? 31 : 29,
-                                    tintColor: focused ? '#007AFF' : '#8E8E93',
-                                }}
-                            />
-                        ),
-                    }}
-                />
+                        );
+                    },
+                })}
+            >
+                <Tabs.Screen name="home" options={{ title: 'Home', headerShown: false }} />
+                <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: false }} />
+                <Tabs.Screen name="bugReports/index" options={{ title: 'Bug Reports', headerShown: false }} />
             </Tabs>
         </UserProvider>
     );
