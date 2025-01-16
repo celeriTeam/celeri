@@ -95,7 +95,7 @@ const HeadToHeadPage: React.FC = () => {
                 router.replace('/(authenticated)/home'); // Navigate to HomeTab
                 setTimeout(() => {
                     router.push({
-                        pathname: '/(authenticated)/home/bets/NewBetSummary',
+                        pathname: '/(authenticated)/home/bets/BetSummary',
                         params: { groupIDTemp: groupID },
                     });
                 }, 0); // Ensures the route updates in order
@@ -163,7 +163,7 @@ const HeadToHeadPage: React.FC = () => {
                 router.replace('/(authenticated)/home'); // Navigate to HomeTab
                 setTimeout(() => {
                     router.push({
-                        pathname: '/(authenticated)/home/bets/NewBetSummary',
+                        pathname: '/(authenticated)/home/bets/BetSummary',
                         params: { groupIDTemp: groupID },
                     });
                 }, 0); // Ensures the route updates in order
@@ -268,7 +268,7 @@ const HeadToHeadPage: React.FC = () => {
         router.replace('/(authenticated)/home'); // Navigate to HomeTab
         setTimeout(() => {
             router.push({
-                pathname: '/(authenticated)/home/bets/NewBetSummary',
+                pathname: '/(authenticated)/home/bets/BetSummary',
                 params: { groupIDTemp: groupID },
             });
         }, 0); // Ensures the route updates in order
