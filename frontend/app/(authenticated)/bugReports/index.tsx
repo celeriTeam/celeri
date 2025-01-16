@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getUserName } from '@backend/src/users';
@@ -16,15 +17,26 @@ const BugReportsPage: React.FC = () => {
     const [issue, setIssue] = useState<string>('');
     const router = useRouter();
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!subject.trim() || !issue.trim()) {
             Alert.alert('Error', 'Both fields are required.');
             return;
         }
-        // Handle form submission here
-        setSubject('');
-        setIssue('');
-        Alert.alert('Success', `Thank you for your feedback, ${username}!`);
+        const functions = getFunctions();
+        const sendEmail = httpsCallable(functions, 'sendEmail');
+        try {
+            await sendEmail({
+                to: 'lukaschin000@gmail.com',
+                subject: subject,
+                text: `From: ${username}\n\n${issue}`,
+            });
+            
+            setSubject('');
+            setIssue('');
+            Alert.alert('Success', `Thank you for your feedback, ${username}!`);
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
     return (
