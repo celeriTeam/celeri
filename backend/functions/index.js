@@ -24,6 +24,30 @@ initializeApp();
 // const messaging = getMessaging();
 const firestore = getFirestore();
 
+// Initialize SendGrid for email sending
+const functions = require("firebase-functions");
+const sgMail = require("@sendgrid/mail");
+const API_KEY = functions.config().sendgrid.key;
+sgMail.setApiKey(API_KEY);
+
+// Create email sending function
+exports.sendEmail = functions.https.onCall(async (data, context) => {
+  const msg = {
+    to: data.to,
+    from: "lukaschin000@gmail.com", // Must be verified in SendGrid
+    subject: data.subject,
+    text: data.text,
+  };
+
+  try {
+    await sgMail.send(msg);
+    return {success: true};
+  } catch (error) {
+    console.error("Email error:", error);
+    throw new functions.https.HttpsError("internal", "Error sending email");
+  }
+});
+
 // function for sending daily notifs to all users
 exports.sendNotif = onSchedule("every day 05:00", async (event) => {
   // get the groups
@@ -591,7 +615,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           // Delete weeklySteps from the group document
           await groupDocRef.update({
-              weeklySteps: FieldValue.delete()
+            weeklySteps: FieldValue.delete(),
           });
           console.log("updateWinners -- Deleted weeklySteps");
 
