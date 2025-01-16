@@ -47,6 +47,7 @@ const BetSummaryPage: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState('Tokens');
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
     const router = useRouter();
+    const maxNameLength = 16;
 
     useEffect(() => {
         let cleanup: () => void;
@@ -179,15 +180,15 @@ const BetSummaryPage: React.FC = () => {
                     if(gameType == "weekly"){
                         console.log("weeksLeft -- ", timeLeft);
                         if(timeLeft == 1){
-                            setGameTimeLeft(`${timeLeft} week left in the game!`)
+                            setGameTimeLeft(`${timeLeft} week`)
                         } else {
-                            setGameTimeLeft(`${timeLeft} weeks left in the game!`)
+                            setGameTimeLeft(`${timeLeft} weeks`)
                         }
                     } else {
                         if(timeLeft == 1){
-                            setGameTimeLeft(`${timeLeft} day left!`)
+                            setGameTimeLeft(`${timeLeft} day`)
                         } else {
-                            setGameTimeLeft(`${timeLeft} days left!`)
+                            setGameTimeLeft(`${timeLeft} days`)
                         }
                     }
 
@@ -196,11 +197,13 @@ const BetSummaryPage: React.FC = () => {
                         const today = new Date();
                         const currentDay = today.getDay();
                         if (currentDay === resetDay) {
-                            setBetTimeLeft("7 days left to bet!");
+                            setBetTimeLeft("7 days");
                         } else if (currentDay > resetDay) {
-                            setBetTimeLeft(`${7 - (currentDay - resetDay)} days left to bet!`);
+                            const daysLeft = 7 - (currentDay - resetDay);
+                            setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                         } else {
-                            setBetTimeLeft(`${resetDay - currentDay} days left to bet!`);
+                            const daysLeft = resetDay - currentDay;
+                            setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                         }
                     }
 
@@ -658,11 +661,6 @@ const BetSummaryPage: React.FC = () => {
                                     style={styles.storeIcon}
                                 />
                             </TouchableOpacity>
-                            {groups[groupID]?.gameType === 'weekly' && (
-                                <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
-                                    <Text style={styles.propBetButton}>Prop Bet</Text>
-                                </TouchableOpacity>
-                            )}
                         </View>
                     </View>
                     <View style={styles.groupInfo}>
@@ -682,29 +680,55 @@ const BetSummaryPage: React.FC = () => {
                                 style={styles.groupImage}
                             />
                         </TouchableOpacity>
-                    <View style={styles.groupNameContainer}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                router.push({
-                                    pathname: '/(authenticated)/home/bets/EditGroup',
-                                    params: { groupID: groupID },
-                                });
-                            }}
-                        >
-                                
-                            <Text style={styles.groupName}>{groups[groupID]?.groupName || 'Group Name'}</Text>
-                                
-                                
-                        </TouchableOpacity>
-                        <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                            <Image 
-                                source={require('../../../../assets/icons/timeLeft.png')}
-                                style={styles.timeLeftIcon}
-                            />
-                            <View style={{  flexDirection: 'column', marginLeft: 5, }}>
-                                <Text style={styles.timeLeft}>{gameTimeLeft}</Text>
+                        <View style={styles.groupNameContainer}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ position: 'relative' }}>
+                                    <Text style={styles.groupName}>
+                                        {(groups[groupID]?.groupName || 'Group Name').slice(0, maxNameLength)}
+                                    </Text>
+                                    {(groups[groupID]?.groupName?.length || 0) > maxNameLength && (
+                                        <LinearGradient
+                                            colors={['transparent', '#000']}  // Match your background color
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 0 }}
+                                            style={{
+                                                position: 'absolute',
+                                                right: 0,
+                                                top: 0,
+                                                height: '100%',
+                                                width: 40
+                                            }}
+                                        />
+                                    )}
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        router.push({
+                                            pathname: '/(authenticated)/home/bets/EditGroup',
+                                            params: { groupID: groupID },
+                                        });
+                                    }}
+                                    activeOpacity={0.8}
+                                >
+                                    <Image 
+                                        source={require('../../../../assets/icons/edit.png')}
+                                        style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: -10, }]}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                                <Image 
+                                    source={require('../../../../assets/icons/timeLeft.png')}
+                                    style={styles.timeLeftIcon}
+                                />
+                                <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
+                                <Text style={styles.timeLeftText}> left in game</Text>
                                 {groups[groupID]?.gameType === 'weekly' && (
-                                    <Text style={styles.timeLeft}>{betTimeLeft}</Text>
+                                    <>
+                                        <Text style={styles.timeLeftText}> | </Text>
+                                        <Text style={styles.timeLeft}>{betTimeLeft}</Text>
+                                        <Text style={styles.timeLeftText}> until next bet</Text>
+                                    </>
                                 )}
                             </View>
                         </View>
@@ -712,6 +736,14 @@ const BetSummaryPage: React.FC = () => {
                 </View>
 
                     {/* Stats Container */}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingTop: 15, }}>
+                        <Text style={styles.sectionTitle}>Your Total Stats</Text>
+                        {groups[groupID]?.gameType === 'weekly' && (
+                            <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
+                                <Text style={styles.propBetButton}>Today's Prop Bet</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
                     <View style={styles.statsContainer}>
                         <TouchableOpacity style={styles.statItem} onPress={() => setTokensModalVisible(true)} activeOpacity={0.8}>
                             <Image
@@ -738,13 +770,10 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Live Duel Section */}
                     <View>
-                        <Text style={[styles.sectionTitle, { paddingHorizontal: 25, }]}>Live Duel</Text>
+                        <Text style={[styles.sectionTitle, { paddingHorizontal: 25, paddingTop: 10, }]}>This Week's Live Duels</Text>
                         <View style={styles.duelRow}>
-                            <TouchableOpacity onPress={handleRightArrowPress}>
-                                <Text style={styles.duelIterate}>{"<"}</Text>
-                            </TouchableOpacity>
 
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={handleDuelPress}
                                 activeOpacity={1}
                                 style={styles.duelCardTouchable}
@@ -753,6 +782,14 @@ const BetSummaryPage: React.FC = () => {
                                     colors={['#74ff6db3', '#2fffe3b3']}
                                     style={styles.duelCard}
                                 >
+                                    
+                                    <TouchableOpacity onPress={handleRightArrowPress}>
+                                        <Image
+                                            source={require('../../../../assets/icons/leftArrow.png')}
+                                            style={styles.leftArrowIcon}
+                                        />
+                                    </TouchableOpacity>
+
                                     {/* player 1 */}
                                     <View style={styles.playerInfo}>
                                         <Image 
@@ -798,8 +835,8 @@ const BetSummaryPage: React.FC = () => {
                                         <View style={styles.liveContainer}>
                                             <Text style={styles.liveTag}><Text style={{ color: 'green', }}>•</Text> LIVE</Text>
                                         </View>
-                                        <CircularIcon value={getBetPlayerInfo().player2Ratio} size={65} strokeWidth={10} />
-                                        <Text></Text>
+                                        <Text style={styles.versus}>VS</Text>
+                                        <Text style={styles.youBetText}>You've bet:</Text>
                                     </View>
                                     <View style={styles.playerInfo}>
                                         <Image 
@@ -842,11 +879,15 @@ const BetSummaryPage: React.FC = () => {
                                             </>
                                         )}
                                     </View>
-                                </LinearGradient>
-                            </TouchableOpacity>
 
-                            <TouchableOpacity onPress={handleLeftArrowPress}>
-                                <Text style={styles.duelIterate}>{">"}</Text>
+                                    <TouchableOpacity onPress={handleLeftArrowPress}>
+                                        <Image
+                                            source={require('../../../../assets/icons/rightArrow.png')}
+                                            style={styles.rightArrowIcon}
+                                        />
+                                    </TouchableOpacity>
+                                    
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
                         <View style={styles.betAmount}>
@@ -865,7 +906,7 @@ const BetSummaryPage: React.FC = () => {
                             {selectedTab === 'Tokens' ? (
                                 <>
                                     <LinearGradient
-                                        colors={['#74ff6db3', '#2fffe3b3']}
+                                        colors={['#5BE35C', '#14B582']}
                                         style={styles.tab}
                                     >
                                     <Text style={styles.tabText}>Tokens</Text>
@@ -873,6 +914,7 @@ const BetSummaryPage: React.FC = () => {
                                     <TouchableOpacity 
                                         style={styles.tab}
                                         onPress={() => setSelectedTab('Steps')}
+                                        activeOpacity={1}
                                     >
                                         <Text style={styles.tabText}>Steps</Text>
                                     </TouchableOpacity>
@@ -882,11 +924,12 @@ const BetSummaryPage: React.FC = () => {
                                     <TouchableOpacity 
                                         style={styles.tab}
                                         onPress={() => setSelectedTab('Tokens')}
+                                        activeOpacity={1}
                                     >
                                         <Text style={styles.tabText}>Tokens</Text>
                                     </TouchableOpacity>
                                     <LinearGradient
-                                        colors={['#74ff6db3', '#2fffe3b3']}
+                                        colors={['#5BE35C', '#14B582']}
                                         style={styles.tab}
                                     >
                                         <Text style={styles.tabText}>Steps</Text>
@@ -896,62 +939,104 @@ const BetSummaryPage: React.FC = () => {
                         </View>
                         <View style={styles.leaderboard}>
                             <ScrollView showsVerticalScrollIndicator={false}>
-                                <View style={styles.grayLine} />
                                 {selectedTab === 'Tokens' ? (
                                     <>
-                                        {currentGroupUsersArray.map((user, index) => (
-                                            <View key={user.id} style={styles.leaderboardRow}>
-                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
+                                        <View style={styles.leaderboardTop}>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
+                                                <Image
+                                                    source={currentGroupUsersArray[1]?.pfp ? 
+                                                        { uri: currentGroupUsersArray[1]?.pfp } : 
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={{ width: 37, height: 37, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
+                                                />
+                                                <View style={styles.leaderboardTopCircle} >
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>2</Text>
+                                                </View>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[1]?.name}</Text>
+                                                <View style={styles.leaderboardTopTokens}>
                                                     <Image
-                                                        source={user.pfp ? 
-                                                            { uri: user.pfp } : 
+                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
+                                                <View style={{
+                                                    shadowColor: '#51ba51',
+                                                    shadowOffset: { width: 0, height: 0 },
+                                                    shadowOpacity: 0.7,
+                                                    shadowRadius: 7,
+                                                    elevation: 10,
+                                                }}>
+                                                    <Image
+                                                        source={currentGroupUsersArray[0]?.pfp ? 
+                                                            { uri: currentGroupUsersArray[0]?.pfp } : 
                                                             require('@components/blank-profile-picture.png')
                                                         }
-                                                        style={styles.leaderboardImage}
+                                                        style={{ width: 51, height: 51, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
                                                     />
-                                                    {index === 0 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/first_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
-                                                    {index === 1 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/second_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
-                                                    {index === 2 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/third_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
-                                                </TouchableOpacity>
-                                                <View style={{
-                                                    flex: 1,
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <LinearGradient
-                                                        colors={['#74ff6db3', '#2fffe3b3']}
-                                                        style={{
-                                                            width: `${((user.tokens || 0) / Math.max(...currentGroupUsersArray.map(user => user.tokens || 0))) * 80}%`,
-                                                            height: 30,
-                                                            backgroundColor: '#4C7BF4',
-                                                            borderTopRightRadius: 5,
-                                                            borderBottomRightRadius: 5,
-                                                        }}
-                                                    />
-                                                    <Text style={styles.leaderboardSteps}>
-                                                        {user.tokens}
-                                                    </Text>
                                                 </View>
-                                            </View>
+                                                <View style={styles.leaderboardTopCircle} >
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>1</Text>
+                                                </View>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
+                                                <View style={styles.leaderboardTopTokens}>
+                                                    <Image
+                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
+                                                <Image
+                                                    source={currentGroupUsersArray[2]?.pfp ? 
+                                                        { uri: currentGroupUsersArray[2]?.pfp } : 
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={{ width: 37, height: 37, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
+                                                />
+                                                <View style={styles.leaderboardTopCircle} >
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>3</Text>
+                                                </View>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[2]?.name}</Text>
+                                                <View style={styles.leaderboardTopTokens}>
+                                                    <Image
+                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </View>
+                                        {currentGroupUsersArray.slice(3).map((user, index) => (
+                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                                                <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
+                                                    <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index+4}</Text>
+                                                        <Image
+                                                            source={user.pfp ? 
+                                                                { uri: user.pfp } : 
+                                                                require('@components/blank-profile-picture.png')
+                                                            }
+                                                            style={[styles.leaderboardImage, { marginRight: 10 }]}
+                                                        />
+                                                    <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
+                                                    <View style={styles.leaderboardTokensNumTokens}>
+                                                        <Image
+                                                            source={require('../../../../assets/icons/tokensWhite.png')}
+                                                            style={styles.tokensWhiteIcon}
+                                                        />
+                                                        <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
                                         ))}
                                     </>
                                 ) : (
                                     <>
+                                        <View style={styles.grayLine} />
                                         {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                             <View key={user.id} style={styles.leaderboardRow}>
                                                 <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
@@ -962,36 +1047,17 @@ const BetSummaryPage: React.FC = () => {
                                                         }
                                                         style={styles.leaderboardImage}
                                                     />
-                                                    {index === 0 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/first_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
-                                                    {index === 1 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/second_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
-                                                    {index === 2 && (
-                                                        <Image
-                                                            source={require('../../../../assets/images/third_place.png')}
-                                                            style={styles.placementImage}
-                                                        />
-                                                    )}
                                                 </TouchableOpacity>
                                                 <View style={{
                                                     flex: 1,
                                                     flexDirection: 'row',
                                                     alignItems: 'center'
                                                 }}>
-                                                    <LinearGradient
-                                                        colors={['#51ba51', '#18c4a6']}
+                                                    <View
                                                         style={{
+                                                            backgroundColor: user.id === userID ? '#fff' : '#4bff6c99',
                                                             width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
                                                             height: 30,
-                                                            backgroundColor: '#4C7BF4',
                                                             borderTopRightRadius: 5,
                                                             borderBottomRightRadius: 5,
                                                         }}
@@ -1007,9 +1073,11 @@ const BetSummaryPage: React.FC = () => {
                             </ScrollView>
                         </View>
                     </View>
-                </View>
+                {/* </View> */}
             </LinearGradient>
             
+            {/* ************************  MODALS  ********************** */}
+
             {/* Bet History Modal */}
             <Modal
                 transparent={true}
@@ -1420,6 +1488,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
+        marginBottom: 5,
     },
     rightIcons: {
         flexDirection: 'row',
@@ -1431,17 +1500,17 @@ const styles = StyleSheet.create({
         height: 19,
     },
     historyIcon: {
-        width: 24,
-        height: 24,
+        width: 27,
+        height: 27,
     },
     storeIcon: {
-        width: 18.29,
-        height: 18.29,
+        width: 21,
+        height: 21,
     },
     propBetButton: {
         fontFamily: 'Lexend',
-        fontSize: 16,
-        color: '#fff',
+        fontSize: 11,
+        color: '#74FF6D',
     },
     groupInfo: {
         flexDirection: 'row',
@@ -1463,15 +1532,25 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontFamily: 'Lexend',
         fontSize: 28,
+        marginRight: 5,
     },
-    timeLeftIcon: {
+    editIcon: {
         width: 16,
         height: 16,
+    },
+    timeLeftIcon: {
+        width: 13,
+        height: 13,
     },
     timeLeft: {
         color: '#74FF6D',
         fontFamily: 'Lexend',
-        fontSize: 14,
+        fontSize: 11,
+    },
+    timeLeftText: {
+        fontFamily: 'Lexend',
+        fontSize: 11,
+        color: '#fff',
     },
     statsContainer: {
         flexDirection: 'row',
@@ -1480,7 +1559,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         borderRadius: 20,
         padding: 10,
-        margin: 20,
+        marginHorizontal: 20,
+        marginBottom: 5,
     },
     statItem: {
         flexDirection: 'row',
@@ -1513,13 +1593,14 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         color: '#fff',
-        fontSize: 18,
+        fontSize: 16,
         fontFamily: 'Lexend',
         marginBottom: 10,
     },
     duelRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 20,
     },
     duelIterate: {
         color: '#BEFFBB',
@@ -1533,9 +1614,19 @@ const styles = StyleSheet.create({
     duelCard: {
         flex: 1,
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'center',
         borderRadius: 15,
         padding: 20,
+        paddingVertical: 30,
+    },
+    leftArrowIcon: {
+        width: 15,
+        height: 15,
+    },
+    rightArrowIcon: {
+        width: 15,
+        height: 15,
     },
     betMoreInfoTitle:  {
         color: '#BEFFBB',
@@ -1551,7 +1642,8 @@ const styles = StyleSheet.create({
     playerInfo: {
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1,
+        width: '38%',
+        // flex: 1,
     },
     playerImage: {
         width: 50,
@@ -1562,8 +1654,8 @@ const styles = StyleSheet.create({
     },
     playerName: {
         color: '#fff',
-        fontSize: 18,
-        fontFamily: 'Lexend',
+        fontSize: 14,
+        fontFamily: 'Lexend-Bold',
         marginVertical: 5,
     },
     playerSteps: {
@@ -1582,27 +1674,34 @@ const styles = StyleSheet.create({
     duelInfo: {
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1,
+        paddingVertical: 10,
+        width: '20%',
     },
     liveContainer: {
         position: 'absolute',
-        top: -5,
+        top: -30,
         padding: 5,
         backgroundColor: '#fff',
         borderRadius: 20,
+        marginTop: 5,
     },
     liveTag: {
         color: '#000',
         fontSize: 12,
         fontWeight: 'bold',
-        alignSelf: 'center',
-        justifyContent: 'center',
+        textAlign: 'center',
     },
     versus: {
         color: '#fff',
-        fontSize: 32,
-        fontWeight: 'bold',
-        alignSelf: 'center',
+        fontFamily: 'Lexend-Bold',
+        fontSize: 28,
+    },
+    youBetText: {
+        position: 'absolute',
+        bottom: -30,
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: 11,
     },
     betAmount: {
         position: 'absolute',
@@ -1660,10 +1759,58 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         zIndex: 1,
     },
+    leaderboardTop: {
+        flexDirection: 'row', 
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        marginBottom: 15,
+    },
+    leaderboardTopStyles: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 20,
+    },
+    leaderboardTopCircle: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: -7,
+        marginBottom: 5,
+        width: 17,
+        height: 17,
+        borderRadius: 9,
+        backgroundColor: '#74FF6D',
+    },
+    leaderboardTopTokens: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    leaderboardTokensRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 5,
+        padding: 10,
+        borderRadius: 10,
+    },
     leaderboardRow: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 10,
+    },
+    leaderboardTokensText: {
+        fontFamily: 'Lexend',
+        fontSize: 11,
+    },
+    leaderboardTokensNumberText: {
+        fontFamily: 'Lexend',
+        fontSize: 11,
+        marginHorizontal: 10,
+    },
+    leaderboardTokensNumTokens: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // align to right
+        position: 'absolute',
+        right: 15,
     },
     leaderboardImage: {
         width: 30,
