@@ -2,24 +2,17 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal, PanResponder, Animated } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import BetRecapPage from './Recap';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 
-type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type headToHeadPageRouteProp = RouteProp<RootStackParamList, 'HeadToHeadPage'>;
-
-type Props = {
-    navigation: headToHeadPageNavigationProp;
-};
-
-const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
+const HeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
-    const route = useRoute<headToHeadPageRouteProp>();
-    const { groupID } = route.params;
+    const route = useRouter();
+    const { groupIDTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [matchups, setMatchups] = useState<{ duelID: string, player1: string, player2: string }[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number>(0);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
@@ -40,6 +33,8 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 100, 250, 500];
   
+    const router = useRouter();
+
     const closeModal = async () => {
       setModalVisible(false);
       await addToFinishedRecap(groupID, userID);
@@ -97,13 +92,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             console.log('this is dailyduel length: ', Object.keys(dailyDuel).length);
             if (Object.keys(dailyDuel).length === 0 || groups[groupID]?.userTokens === 0) {
                 await addToFinishedBetting(groupID, userID);
-                navigation.reset({
-                    index: 1,
-                    routes: [
-                        { name: 'HomeTab' }, // the first route in the stack
-                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
-                    ],
-                });
+                router.replace('/(authenticated)/home'); // Navigate to HomeTab
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/(authenticated)/home/bets/NewBetSummary',
+                        params: { groupIDTemp: groupID },
+                    });
+                }, 0); // Ensures the route updates in order
             }
             const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                 return Object.values(duels);
@@ -134,10 +129,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         const interval = setInterval(() => {
             const date = new Date();
             if (date.getHours() === 0 && date.getMinutes() === 0) {
-                navigation.reset({
-                    index: 0,  // Index of the screen to be focused on
-                    routes: [{ name: 'AppPage' }],  // Define only the desired route
-                });
+                router.replace('/(authenticated)/home')
             }
         }, 60000);
         return () => clearInterval(interval);
@@ -168,13 +160,13 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
             await setTodaysBetTokens(userID, groupID, submittedBet);
             if (currentUserTokens - totalBetTokens - submittedBet <= 0) {
                 await addToFinishedBetting(groupID, userID);
-                navigation.reset({
-                    index: 1,
-                    routes: [
-                        { name: 'HomeTab' }, // the first route in the stack
-                        { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
-                    ],
-                });
+                router.replace('/(authenticated)/home'); // Navigate to HomeTab
+                setTimeout(() => {
+                    router.push({
+                        pathname: '/(authenticated)/home/bets/NewBetSummary',
+                        params: { groupIDTemp: groupID },
+                    });
+                }, 0); // Ensures the route updates in order
             }
             
             setTotalBetTokens(totalBetTokens + submittedBet);
@@ -193,13 +185,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     }
 
     const handleInfoButton = () => {
-        navigation.reset({
-            index: 1,
-            routes: [
-                { name: 'HomeTab' }, // the first route in the stack
-                { name: 'HeadToHeadTutorialPage', params: { groupID: groupID } } // the top route in the stack
-            ],
-        });
+
+        router.replace('/(authenticated)/home'); // Navigate to HomeTab
+        setTimeout(() => {
+            router.push({
+                pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+                params: { groupIDTemp: groupID },
+            });
+        }, 0); // Ensures the route updates in order
     };
 
     const InfoModal = () => (
@@ -271,13 +264,14 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
         setTotalBetTokens(totalBetTokens + submittedBet);
 
         // navigation.navigate('BetSummaryPage', { groupID: groupID });
-        navigation.reset({
-            index: 1,
-            routes: [
-                { name: 'HomeTab' }, // the first route in the stack
-                { name: 'BetSummaryPage', params: { groupID: groupID } } // the top route in the stack
-            ],
-        });
+
+        router.replace('/(authenticated)/home'); // Navigate to HomeTab
+        setTimeout(() => {
+            router.push({
+                pathname: '/(authenticated)/home/bets/NewBetSummary',
+                params: { groupIDTemp: groupID },
+            });
+        }, 0); // Ensures the route updates in order
     };
 
     if (isLoading) {
@@ -289,10 +283,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
     }
 
     if (!groups[groupID]?.isGameActive) {
-        navigation.reset({
-            index: 0,  // Index of the screen to be focused on
-            routes: [{ name: 'AppPage' }],  // Define only the desired route
-        });
+        router.replace('/(authenticated)/home')
     }
 
     return (
@@ -438,7 +429,7 @@ const HeadToHeadPage: React.FC<Props> = ({ navigation }) => {
                     </TouchableOpacity>
 
                     {/* BetRecapPage as the modal content */}
-                    <BetRecapPage navigation={navigation} />
+                    <BetRecapPage/>
                 </View>
                 </View>
             </Modal>

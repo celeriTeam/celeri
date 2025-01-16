@@ -5,19 +5,12 @@ import {
     KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
 import { app, auth, db } from "@firebaseConfig";
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { CTAButton } from "@components/CTAButton";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
-import { RootStackParamList } from '../types';
-import { Permission, PERMISSIONS, request } from 'react-native-permissions';
 import { useRouter } from 'expo-router';
 //import db from "@react-native-firebase/firestore";
 

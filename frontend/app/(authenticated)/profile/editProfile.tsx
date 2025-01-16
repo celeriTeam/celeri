@@ -3,23 +3,17 @@ import { View, Text, StyleSheet, Alert, Button, TouchableOpacity, TextInput } fr
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../types';
 import { editProfilePic, editUsername } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
+import { useRouter } from 'expo-router';
 
-type EditProfilePageNavigationProp = StackNavigationProp<RootStackParamList, 'EditProfile'>;
-
-type Props = {
-    navigation: EditProfilePageNavigationProp;
-};
-
-const EditProfilePage: React.FC<Props> = ({ navigation }) => {
+const EditProfilePage: React.FC = () => {
     const { userID, profileImageUrl, username } = useUser();
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [currentUsername, setcurrentUsername] = useState(username);
     const [currentProfilePic, setcurrentProfilePic] = useState(profileImageUrl);
     const inputRef = useRef<TextInput>(null);
+    const router = useRouter();
 
     const handleEditPress = () => {
         setIsEditingUsername(true);
@@ -74,7 +68,7 @@ const EditProfilePage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
                 <Image
                     source={require('@components/back-icon.png')}
                     style={styles.backImage}

@@ -4,22 +4,14 @@ import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-type betRecapPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type betRecapPageRouteProp = RouteProp<RootStackParamList, 'BetRecapPage'>;
-
-
-type Props = {
-    navigation: betRecapPageNavigationProp;
-};
-
-const BetRecapPage: React.FC<Props> = ({ navigation }) => {
+const BetRecapPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
-    const route = useRoute<betRecapPageRouteProp>();
-    const { groupID } = route.params;
+    const { groupIDTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
 
     const yesterdaysBets = groups[groupID]?.yesterdaysDuels;

@@ -5,27 +5,21 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { addGroupImage, editGroupName } from '@backend/src/groups';
 import { useUser } from '../../../UserProvider';
-import { RouteProp, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+;
 
-type EditGroupPageNavigationProp = StackNavigationProp<RootStackParamList, 'EditGroupPage'>;
-type EditGroupPageRouteProp = RouteProp<RootStackParamList, 'EditGroupPage'>;
-
-type Props = {
-    navigation: EditGroupPageNavigationProp;
-};
-
-const EditGroupPage: React.FC<Props> = ({ navigation }) => {
+const EditGroupPage: React.FC = () => {
     const { userID, groups } = useUser();
-    const route = useRoute<EditGroupPageRouteProp>();
-    const { groupID } = route.params;
+    const { groupIDTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [isEditingGroupName, setIsEditingGroupName] = useState(false);
     const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
     const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
     const inputRef = useRef<TextInput>(null);
+    const router = useRouter();
 
     const handleEditPress = () => {
         setIsEditingGroupName(true);
@@ -85,7 +79,7 @@ const EditGroupPage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
                 <Image
                     source={require('@components/back-icon.png')}
                     style={styles.backImage}

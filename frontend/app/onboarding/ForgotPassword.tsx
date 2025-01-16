@@ -7,28 +7,16 @@ import { RouteProp } from '@react-navigation/native';
 import { app, auth, db } from "@firebaseConfig";
 import { doc, setDoc } from 'firebase/firestore';
 import { CTAButton } from "@components/CTAButton";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
 import { FirebaseError } from 'firebase/app';
-import { RootStackParamList } from '../types';
+import { useRouter } from 'expo-router';
 
-
-type ForgotPasswordPageNavigationProp = StackNavigationProp<RootStackParamList, 'ForgotPassword'>;
-type ForgotPasswordPageRouteProp = RouteProp<RootStackParamList, 'ForgotPassword'>;
-
-type Props = {
-    navigation: ForgotPasswordPageNavigationProp;
-    route: ForgotPasswordPageRouteProp;
-};
-
-
-const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
+const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState<string | undefined>();
     const [password, setPassword] = useState<string | undefined>();
+    const router = useRouter(); 
 
     const auth = getAuth(app);
-    const nav = useNavigation<NativeStackNavigationProp<any>>();
-
+    
     const resetPassword = async () => {
         if (email && password) {
             try {
@@ -38,10 +26,7 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
                     return;
                 }
                 Alert.alert('Success', 'Password updated successfully');
-                navigation.reset({
-                    index: 0,  // Index of the screen to be focused on
-                    routes: [{ name: 'AppPage' }],  // Define only the desired route
-                });
+                router.replace('/(authenticated)');
             } catch (error) {
                 const errorCode = (error as AuthError).code;
                 const errorMessage = (error as AuthError).message;
@@ -86,7 +71,7 @@ const ForgotPasswordPage: React.FC<Props> = ({ navigation }) => {
                         <Text style={styles.button_text}>Set Password</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={nav.goBack}
+                        onPress={router.back}
                         style={[styles.button_container2]}
                     >
                         <Text style={styles.button_text2}>Go Back</Text>

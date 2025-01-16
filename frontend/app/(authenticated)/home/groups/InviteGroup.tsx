@@ -8,9 +8,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../../UserProvider';
@@ -185,7 +182,7 @@ const InvitePage: React.FC = () => {
         // navigation.navigate('GroupDetails', { groupID: groupID });
 
         router.replace('/(authenticated)/home');
-        
+
         router.push({
             pathname: '/(authenticated)/home/bets/HeadToHead',
             params: { groupID: groupID },

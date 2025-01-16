@@ -200,21 +200,22 @@ const HomeTab: React.FC = () => {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
             const isFirstDay = groups[groupID]?.isFirstDay;
             const isFinishedTutorial = groups[groupID]?.isFinishedTutorial;
+            const groupIDTemp = groupID;
             if (!isFinishedTutorial) {
                 router.push({
                     pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                    params: { groupID: groupID },
+                    params: { groupIDTemp },
                 });
             }
             else if (!isFinishedBetting) {
                 router.push({
                     pathname: '/(authenticated)/home/bets/HeadToHead',
-                    params: { groupID: groupID },
+                    params: { groupIDTemp },
                 });
             } else {
                 router.push({
                     pathname: '/(authenticated)/home/bets/NewBetSummary',
-                    params: { groupID: groupID },
+                    params: { groupIDTemp },
                 });
             }
         } else {

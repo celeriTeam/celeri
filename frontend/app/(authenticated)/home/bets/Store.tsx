@@ -1,33 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Timestamp } from "firebase/firestore";
-import { getMoreDuelsSummary, getGainsSummary } from '@/backend/src/bets';
-
 import { View, Text, Modal, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import { buyPowerup } from '../../../../backend/src/store';
-import Svg, { Circle, G } from 'react-native-svg';
 
 
-type betHistoryPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type betHistoryPageRouteProp = RouteProp<RootStackParamList, 'StorePage'>;
 
 type Props = {
-    navigation: betHistoryPageNavigationProp;
+    groupID: string;
     userDiamonds: number;
     gameType: string;
     currentGroupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined }[];
     setStoreModalVisible: (visible: boolean) => void;
 };
 
-const StorePage: React.FC<Props> = ({ navigation, userDiamonds, gameType, currentGroupUsersArray, setStoreModalVisible }) => {
+const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGroupUsersArray, setStoreModalVisible }) => {
     const { userID, groups, loading } = useUser();
-    const route = useRoute<betHistoryPageRouteProp>();
-    const { groupID } = route.params;
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [isBuying, setIsBuying] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);

@@ -1,24 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { StackNavigationProp, createStackNavigator } from '@react-navigation/stack';
-import { RootStackParamList } from '../../types';
 import { useUser } from '../../UserProvider';
 import { createNudge } from '@/backend/src/notifs';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-type profilePageNavigationProp = StackNavigationProp<RootStackParamList, 'ProfilePage'>;
-type profilePageRouteProp = RouteProp<RootStackParamList, 'ProfilePage'>;
 
-type Props = {
-    navigation: profilePageNavigationProp;
-}
-
-const ProfilePage: React.FC<Props> = ({ navigation }) => {
+const ProfilePage: React.FC = () => {
     const { username, groups, loading } = useUser();
-    const route = useRoute<profilePageRouteProp>();
-    const { selectedUserID, groupID } = route.params;
+    const { selectedUserIDTemp, groupIDTemp } = useLocalSearchParams();
+
+    // Convert parameters to strings
+    const selectedUserID = selectedUserIDTemp ? String(selectedUserIDTemp) : '';
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
 
     console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
@@ -27,6 +22,8 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
     const currentSteps = groups[groupID]?.users[selectedUserID]?.steps || 0;
     const [nudgeMessage, setNudgeMessage] = useState<string>('');
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+
+    const router = useRouter();
 
     // Function to handle sending the nudge notification
     const handleSendNudge = async () => {
@@ -68,7 +65,7 @@ const ProfilePage: React.FC<Props> = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                 <Image
                     source={require('@components/back-icon.png')}
                     style={styles.backImage}

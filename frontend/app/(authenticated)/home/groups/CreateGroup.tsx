@@ -6,7 +6,6 @@ import {
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useRoute } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../../types';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app, auth, db } from "@firebaseConfig";
 import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';

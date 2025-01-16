@@ -6,23 +6,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, To
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 
-type betHistoryPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type betHistoryPageRouteProp = RouteProp<RootStackParamList, 'BetHistoryPage'>;
 
-
-type Props = {
-    navigation: betHistoryPageNavigationProp;
-};
-
-const BetHistoryPage: React.FC<Props> = ({ navigation }) => {
+const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
     const { userID, groups, loading } = useUser();
-    const route = useRoute<betHistoryPageRouteProp>();
-    const { groupID } = route.params;
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [activeTab, setActiveTab] = useState<'bets' | 'gains'>('gains'); // Default to 'gains'
     const [betHistory, setBetHistory] = useState<any[]>([]); // Holds all fetched duels

@@ -3,9 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, Fl
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { Image } from 'expo-image';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './Store';
@@ -18,20 +15,14 @@ import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 import { ClientRequest } from 'http';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const db = getFirestore(app);
 
-type headToHeadPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadPage'>;
-type betSummaryPageRouteProp = RouteProp<RootStackParamList, 'BetSummaryPage'>;
-
-type Props = {
-    navigation: headToHeadPageNavigationProp;
-};
-
-const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
+const BetSummaryPage: React.FC = () => {
     const { userID, loading } = useUser();
-    const route = useRoute<betSummaryPageRouteProp>();
-    const { groupID } = route.params;
+    const { groupIDTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const { steps, weeklySteps, averageSteps, distance, flights } = useHealthData();
     const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
@@ -55,6 +46,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
     const [selectedTab, setSelectedTab] = useState('Tokens');
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         let cleanup: () => void;
@@ -354,7 +346,10 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
     };
 
     const createMemberButtonHandle = (id: string) => {
-        navigation.navigate('ProfilePage', { selectedUserID: id ?? '', groupID: groupID });
+        router.push({
+            pathname: '/(authenticated)/profile/publicProfile',
+            params: { selectedUserID: id ?? '', groupID: groupID },
+        });
     };
 
     const handleDuelPress = () => {
@@ -376,10 +371,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
         const interval = setInterval(() => {
             const date = new Date();
             if (date.getHours() === 0 && date.getMinutes() === 0) {
-                navigation.reset({
-                    index: 0,  // Index of the screen to be focused on
-                    routes: [{ name: 'AppPage' }],  // Define only the desired route
-                });
+                router.replace('/(authenticated)/home')
             }
         }, 60000);
         return () => clearInterval(interval);
@@ -647,7 +639,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                 <View style={styles.container}>
                     {/* Header Section */}
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()}>
+                        <TouchableOpacity onPress={() => router.back}>
                             <Image
                                 source={require('../../../../assets/icons/back.png')}
                                 style={styles.backIcon}
@@ -674,7 +666,14 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         </View>
                     </View>
                     <View style={styles.groupInfo}>
-                        <TouchableOpacity onPress={() => navigation.navigate('EditGroupPage', { groupID: groupID })} activeOpacity={0.8}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                router.push({
+                                    pathname: '/(authenticated)/home/bets/EditGroup',
+                                    params: { groupID: groupID },
+                                });
+                            }}
+                        >
                             <Image 
                                 source={groups[groupID]?.groupImageUrl ? 
                                     { uri: groups[groupID]?.groupImageUrl } : 
@@ -683,24 +682,34 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                                 style={styles.groupImage}
                             />
                         </TouchableOpacity>
-                        <View style={styles.groupNameContainer}>
-                            <TouchableOpacity onPress={() => navigation.navigate('EditGroupPage', { groupID: groupID })} activeOpacity={0.8}>
-                                <Text style={styles.groupName}>{groups[groupID]?.groupName || 'Group Name'}</Text>
-                            </TouchableOpacity>
-                            <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                                <Image 
-                                    source={require('../../../../assets/icons/timeLeft.png')}
-                                    style={styles.timeLeftIcon}
-                                />
-                                <View style={{  flexDirection: 'column', marginLeft: 5, }}>
-                                    <Text style={styles.timeLeft}>{gameTimeLeft}</Text>
-                                    {groups[groupID]?.gameType === 'weekly' && (
-                                        <Text style={styles.timeLeft}>{betTimeLeft}</Text>
-                                    )}
-                                </View>
+                    <View style={styles.groupNameContainer}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                router.push({
+                                    pathname: '/(authenticated)/home/bets/EditGroup',
+                                    params: { groupID: groupID },
+                                });
+                            }}
+                        >
+                                
+                            <Text style={styles.groupName}>{groups[groupID]?.groupName || 'Group Name'}</Text>
+                                
+                                
+                        </TouchableOpacity>
+                        <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                            <Image 
+                                source={require('../../../../assets/icons/timeLeft.png')}
+                                style={styles.timeLeftIcon}
+                            />
+                            <View style={{  flexDirection: 'column', marginLeft: 5, }}>
+                                <Text style={styles.timeLeft}>{gameTimeLeft}</Text>
+                                {groups[groupID]?.gameType === 'weekly' && (
+                                    <Text style={styles.timeLeft}>{betTimeLeft}</Text>
+                                )}
                             </View>
                         </View>
                     </View>
+                </View>
 
                     {/* Stats Container */}
                     <View style={styles.statsContainer}>
@@ -1015,7 +1024,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
                         </TouchableOpacity>
 
                         {/* BetRecapPage as the modal content */}
-                        <BetHistoryPage navigation={navigation} />
+                        <BetHistoryPage groupID={groupID}/>
                     </View>
                 </View>
             </Modal>
@@ -1035,7 +1044,7 @@ const BetSummaryPage: React.FC<Props> = ({ navigation }) => {
 
                         {/* StorePage as the modal content */}
                         <StorePage
-                            navigation={navigation}
+                            groupID={groupID}
                             userDiamonds={groups[groupID]?.userDiamonds}
                             gameType = {groups[groupID]?.gameType}
                             currentGroupUsersArray={currentGroupUsersArray}

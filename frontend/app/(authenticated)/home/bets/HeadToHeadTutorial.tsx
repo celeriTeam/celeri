@@ -2,21 +2,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../../types';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-type headToHeadTutorialPageNavigationProp = StackNavigationProp<RootStackParamList, 'HeadToHeadTutorialPage'>;
-type headToHeadTutorialPageRouteProp = RouteProp<RootStackParamList, 'HeadToHeadTutorialPage'>;
-
-type Props = {
-	navigation: headToHeadTutorialPageNavigationProp;
-};
-
-const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
+const HeadToHeadTutorialPage: React.FC = () => {
 	const { userID, groups, loading } = useUser();
-	const route = useRoute<headToHeadTutorialPageRouteProp>();
-	const { groupID } = route.params;
+	const route = useRouter();
+	const { groupIDTemp } = useLocalSearchParams();
+	const groupID = groupIDTemp ? String(groupIDTemp) : '';
 	const [selectedPlayer, setSelectedPlayer] = useState<boolean>(false);
 	const [betAmount, setBetAmount] = useState('');
 	const [tutorialStep, setTutorialStep] = useState(1);
@@ -24,18 +18,20 @@ const HeadToHeadTutorialPage: React.FC<Props> = ({ navigation }) => {
 	const [showTutorial, setShowTutorial] = useState(true);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
 	const increments = [25, 100, 250, 500];
+	const router = useRouter();
 
 	const handleSubmit = async () => {
 		try {
 			addToFinishedTutorial(groupID, userID);
+
+			router.replace('/(authenticated)/home'); // Navigate to HomeTab
+			setTimeout(() => {
+				router.push({
+					pathname: '/(authenticated)/home/bets/HeadToHead',
+					params: { groupIDTemp: groupID },
+				});
+			}, 0); // Ensures the route updates in order
 			// navigate to HeadToHead
-			navigation.reset({
-				index: 1,
-				routes: [
-					{ name: 'HomeTab' }, // the first route in the stack
-					{ name: 'HeadToHeadPage', params: { groupID: groupID } } // the top route in the stack
-				],
-			});
 		} catch (error) {
             console.error("Error going to headToHeadPage: ", error);
         }
