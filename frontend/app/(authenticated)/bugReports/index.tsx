@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useRoute } from '@react-navigation/native';
-import { RootStackParamList } from '../../types';
 import { getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
+import { useRouter } from 'expo-router';
 
-type Props = {
-    navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;
-};
+// type Props = {
+//     navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;
+// };
 
-const BugReportsPage: React.FC<Props> = () => {
+const BugReportsPage: React.FC = () => {
     const { userID, username } = useUser();
     const [subject, setSubject] = useState<string>('');
     const [issue, setIssue] = useState<string>('');
+    const router = useRouter();
 
     const handleSubmit = () => {
         if (!subject.trim() || !issue.trim()) {
