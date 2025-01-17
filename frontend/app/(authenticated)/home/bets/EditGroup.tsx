@@ -9,6 +9,7 @@ import { addGroupImage, editGroupName } from '@backend/src/groups';
 import { useUser } from '../../../UserProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 ;
 
 const EditGroupPage: React.FC = () => {
@@ -78,76 +79,84 @@ const EditGroupPage: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
-                <Image
-                    source={require('@components/back-icon.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-            {currentGroupPic != '' ? (
-                <Image
-                source={{ uri: currentGroupPic }}
-                style={styles.profileImage}
-                />
-            ) : (
-                <Image
-                source={require('@components/blank-profile-picture.png')}
-                style={styles.profileImage}
-                />
-            )}
-            <TouchableOpacity onPress={pickImage}>
-                <Text style={styles.buttonText}>Edit profile pic</Text>
-            </TouchableOpacity>
-            {isEditingGroupName ? (
-                <>
-                    <View style={styles.row}>
-                        <TextInput
-                            ref={inputRef}
-                            style={styles.nameInput}
-                            value={currentGroupName}
-                            onChangeText={setCurrentGroupName}
-                        />
-                        <TouchableOpacity onPress={handleCheckPress}>
-                            <Image
-                                source={require('@components/checkmark-icon.png')}
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
+                    <Image
+                        source={require('@components/back-icon.png')}
+                        style={styles.backImage}
+                    />
+                </TouchableOpacity>
+                {currentGroupPic != '' ? (
+                    <Image
+                    source={{ uri: currentGroupPic }}
+                    style={styles.profileImage}
+                    />
+                ) : (
+                    <Image
+                    source={require('@components/blank-profile-picture.png')}
+                    style={styles.profileImage}
+                    />
+                )}
+                <TouchableOpacity onPress={pickImage}>
+                    <Text style={styles.buttonText}>Edit profile pic</Text>
+                </TouchableOpacity>
+                {isEditingGroupName ? (
+                    <>
+                        <View style={styles.row}>
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.nameInput}
+                                value={currentGroupName}
+                                onChangeText={setCurrentGroupName}
+                            />
+                            <TouchableOpacity onPress={handleCheckPress}>
+                                <Image
+                                    source={require('@components/checkmark-icon.png')}
+                                    style={styles.editImage}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.row}>
+                            <Text style={styles.name}>{currentGroupName}</Text>
+                            <TouchableOpacity onPress={handleEditPress}>
+                                <Image
+                                source={require('@components/edit-icon.jpg')}
                                 style={styles.editImage}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </>
-            ) : (
-                <>
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
+                <View style={styles.centeredGroupCode}>
+                    <Text style={styles.groupCodeInvite}>Invite more people!</Text>
                     <View style={styles.row}>
-                        <Text style={styles.name}>{currentGroupName}</Text>
-                        <TouchableOpacity onPress={handleEditPress}>
-                            <Image
-                            source={require('@components/edit-icon.jpg')}
-                            style={styles.editImage}
-                            />
+                        <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
+                        <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
+                            <MaterialIcons name="content-copy" size={24} color="black" />
                         </TouchableOpacity>
                     </View>
-                </>
-            )}
-            <View style={styles.centeredGroupCode}>
-                <Text style={styles.groupCodeInvite}>Invite more people!</Text>
-                <View style={styles.row}>
-                    <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
-                    <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
-                        <MaterialIcons name="content-copy" size={24} color="black" />
-                    </TouchableOpacity>
                 </View>
             </View>
-        </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+        backgroundColor: '#fff',
+    },
+    container: {
+        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
+        marginTop: 50,
+        height: '100%',
     },
     backButton: {
         position: 'absolute',

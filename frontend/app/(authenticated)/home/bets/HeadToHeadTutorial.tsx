@@ -169,7 +169,7 @@ const HeadToHeadTutorialPage: React.FC = () => {
 						width: '60%',
 						position: 'absolute',
 						// Position near tokens display
-						top: 50,
+						top: 110,
 						left: 20
 					};
 				case 4:
@@ -377,6 +377,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		position: 'relative',
 		backgroundColor: '#F5F5F5',
+		marginTop: 50,
 	},
     dismissOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     },
 	tokens: {
 		position: 'absolute',
-		top: 10,
+		top: 70,
 		right: 20,
 		backgroundColor: '#FFD700',
 		paddingHorizontal: 10,
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
 	},
 	betTokens: {
 		position: 'absolute',
-		top: 40,
+		top: 100,
 		right: 20,
 		backgroundColor: '#FFD700',
 		paddingHorizontal: 10,

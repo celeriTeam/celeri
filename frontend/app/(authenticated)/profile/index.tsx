@@ -6,6 +6,7 @@ import { useUser } from '../../UserProvider';
 import messaging from '@react-native-firebase/messaging';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const PersonalProfilePage: React.FC = () => {
     const { userID, profileImageUrl, username, steps, groupNames, loading } = useUser();
@@ -68,53 +69,55 @@ const PersonalProfilePage: React.FC = () => {
     }
 
     return (
-        <View style={styles.container}>
-            {profileImageUrl ? (
-                <Image
-                source={{ uri: profileImageUrl }}
-                style={styles.profileImage}
-                />
-            ) : (
-                <Image
-                source={require('@components/blank-profile-picture.png')}
-                style={styles.profileImage}
-                />
-            )}
-            {username ? (
-                <Text style={styles.name}>{username}</Text>
-            ) : (
-                <Text style={styles.name}>Loading...</Text>
-            )
-            }
-
-            <Text style={styles.groupsLabel}>Steps: </Text>
-            {steps != undefined ? (
-                <Text style={styles.text}>{steps}</Text>
-            ) : (
-                <Text style={styles.text}>Loading...</Text>
-            )
-            }
-            
-            <Text style={styles.groupsLabel}>Groups:</Text>
-            <ScrollView style={styles.scrollContainer}>
-                {groupNames === undefined || groupNames.length === 0 ? (
-                    <Text style={styles.text}>No groups found</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                {profileImageUrl ? (
+                    <Image
+                    source={{ uri: profileImageUrl }}
+                    style={styles.profileImage}
+                    />
                 ) : (
-                    groupNames.map((groupName) => (
-                        <Text key={groupName} style={styles.text}>{groupName}</Text>
-                    ))
+                    <Image
+                    source={require('@components/blank-profile-picture.png')}
+                    style={styles.profileImage}
+                    />
                 )}
-            </ScrollView>
+                {username ? (
+                    <Text style={styles.name}>{username}</Text>
+                ) : (
+                    <Text style={styles.name}>Loading...</Text>
+                )
+                }
 
-            <View style={styles.logoutButtonContainer}>
-            <TouchableOpacity onPress={handleEditProfile}>
-                <Text style={[styles.buttonText, {color: 'blue'}]}>Edit Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout}>
-                <Text style={[styles.buttonText, {color: 'red'}]}>Log Out</Text>
-            </TouchableOpacity>
+                <Text style={styles.groupsLabel}>Steps: </Text>
+                {steps != undefined ? (
+                    <Text style={styles.text}>{steps}</Text>
+                ) : (
+                    <Text style={styles.text}>Loading...</Text>
+                )
+                }
+                
+                <Text style={styles.groupsLabel}>Groups:</Text>
+                <ScrollView style={styles.scrollContainer}>
+                    {groupNames === undefined || groupNames.length === 0 ? (
+                        <Text style={styles.text}>No groups found</Text>
+                    ) : (
+                        groupNames.map((groupName) => (
+                            <Text key={groupName} style={styles.text}>{groupName}</Text>
+                        ))
+                    )}
+                </ScrollView>
+
+                <View style={styles.logoutButtonContainer}>
+                <TouchableOpacity onPress={handleEditProfile}>
+                    <Text style={[styles.buttonText, {color: 'blue'}]}>Edit Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleLogout}>
+                    <Text style={[styles.buttonText, {color: 'red'}]}>Log Out</Text>
+                </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </SafeAreaView>
     );
 
 }
@@ -132,11 +135,17 @@ const PersonalProfilePage: React.FC = () => {
 // };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+        backgroundColor: '#fff',
+    },
+    container: {
+        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
+        marginTop: 50,
+        height: '100%',
     },
     profileImage: {
         marginTop: 40,

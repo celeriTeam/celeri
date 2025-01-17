@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, TouchableOpacity, Keyboard, Image } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Pressable, TouchableOpacity, Keyboard, Image, SafeAreaView } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { getGroupFromCode, addUserToGroup, getGroupIsGameActive } from '@backend/src/groups';
@@ -75,44 +75,51 @@ const JoinGroupPage: React.FC= () => {
     }
     
     return (
-        <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-                <View style={styles.titleContainer}>
-                    <Text style={styles.titleText}>Join Group</Text>
-                </View>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Image
-                        source={require('@components/back-icon.png')}
-                        style={styles.backImage}
+        <SafeAreaView style={styles.safeArea}>
+            <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
+                <View style={styles.container}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.titleText}>Join Group</Text>
+                    </View>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@components/back-icon.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.label}>Enter group code:</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={groupCode}
+                        onChangeText={setGroupCode}
+                        id="groupCode"
+                        placeholder="Group Code"
                     />
-                </TouchableOpacity>
-                <Text style={styles.label}>Enter group code:</Text>
-                <TextInput
-                    style={styles.input}
-                    value={groupCode}
-                    onChangeText={setGroupCode}
-                    id="groupCode"
-                    placeholder="Group Code"
-                />
-                <TouchableOpacity 
-                    onPress={ToGroupFromJoin}
-                    style={[styles.buttonContainer]}
-                >
-                    <Text style={styles.button_text}>Submit</Text>
-                </TouchableOpacity>
-                {currrentGroupInUserResponse !== undefined && (
-                    <Text style={styles.errorText}>{currrentGroupInUserResponse}</Text>
-                )}
-            </View>
-        </Pressable>
+                    <TouchableOpacity 
+                        onPress={ToGroupFromJoin}
+                        style={[styles.buttonContainer]}
+                    >
+                        <Text style={styles.button_text}>Submit</Text>
+                    </TouchableOpacity>
+                    {currrentGroupInUserResponse !== undefined && (
+                        <Text style={styles.errorText}>{currrentGroupInUserResponse}</Text>
+                    )}
+                </View>
+            </Pressable>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+    },
+    container: {
+        // flex: 1,
         justifyContent: 'flex-start',
         backgroundColor: "white",
+        marginTop: 50,
+        height: '100%',
     },
     contentView: {
         flex: 1,

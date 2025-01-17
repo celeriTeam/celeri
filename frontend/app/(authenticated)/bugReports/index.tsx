@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity, SafeAreaView } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -40,50 +40,57 @@ const BugReportsPage: React.FC = () => {
     };
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-                <View style={styles.titleContainer}>
-                    <Text style={styles.titleText}>Bug Reports</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.container}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.titleText}>Bug Reports</Text>
+                    </View>
+                    <Text style={styles.text}>We want to hear your feedback. If you have any questions, comments, or issues with our app,
+                        please feel free to let us know here!
+                    </Text>
+
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Subject"
+                        value={subject}
+                        onChangeText={setSubject}
+                        placeholderTextColor="#888"
+                    />
+                    
+                    <TextInput
+                        style={styles.textArea}
+                        placeholder="Describe the issue..."
+                        value={issue}
+                        onChangeText={setIssue}
+                        placeholderTextColor="#888"
+                        multiline={true}
+                        numberOfLines={8}
+                    />
+
+                    <TouchableOpacity 
+                        onPress={handleSubmit}
+                        style={[styles.button_container]}
+                    >
+                        <Text style={styles.button_text}>Submit Form</Text>
+                    </TouchableOpacity>
                 </View>
-                <Text style={styles.text}>We want to hear your feedback. If you have any questions, comments, or issues with our app,
-                    please feel free to let us know here!
-                </Text>
-
-                <TextInput
-                    style={styles.input}
-                    placeholder="Subject"
-                    value={subject}
-                    onChangeText={setSubject}
-                    placeholderTextColor="#888"
-                />
-                
-                <TextInput
-                    style={styles.textArea}
-                    placeholder="Describe the issue..."
-                    value={issue}
-                    onChangeText={setIssue}
-                    placeholderTextColor="#888"
-                    multiline={true}
-                    numberOfLines={8}
-                />
-
-                <TouchableOpacity 
-                    onPress={handleSubmit}
-                    style={[styles.button_container]}
-                >
-                    <Text style={styles.button_text}>Submit Form</Text>
-                </TouchableOpacity>
-            </View>
-        </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+        backgroundColor: '#fff', 
+    },
+    container: {
         backgroundColor: '#fff', 
         justifyContent: 'flex-start',
         alignItems: 'center',
+        marginTop: 50,
+        height: '100%',
     },
     text: {
         fontSize: 18,

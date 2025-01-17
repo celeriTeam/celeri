@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, SafeAreaView } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -17,6 +17,7 @@ import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 import { ClientRequest } from 'http';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './LiveDuel';
+import { group } from 'console';
 
 const db = getFirestore(app);
 
@@ -352,8 +353,8 @@ const BetSummaryPage: React.FC = () => {
 
     const createMemberButtonHandle = (id: string) => {
         router.push({
-            pathname: '/(authenticated)/profile/publicProfile',
-            params: { selectedUserID: id ?? '', groupID: groupID },
+            pathname: '/(authenticated)/home/bets/publicProfile',
+            params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID },
         });
     };
 
@@ -633,7 +634,7 @@ const BetSummaryPage: React.FC = () => {
     };
 
     return (
-        <>
+        <SafeAreaView style={styles.safeView}>
             <LinearGradient
                 colors={['#000000', '#024405']}
                 style={{
@@ -707,7 +708,7 @@ const BetSummaryPage: React.FC = () => {
                                     onPress={() => {
                                         router.push({
                                             pathname: '/(authenticated)/home/bets/EditGroup',
-                                            params: { groupID: groupID },
+                                            params: { groupIDTemp: groupID },
                                         });
                                     }}
                                     activeOpacity={0.8}
@@ -735,7 +736,6 @@ const BetSummaryPage: React.FC = () => {
                             </View>
                         </View>
                     </View>
-                </View>
 
                     {/* Stats Container */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingTop: 15, }}>
@@ -1075,7 +1075,7 @@ const BetSummaryPage: React.FC = () => {
                             </ScrollView>
                         </View>
                     </View>
-                {/* </View> */}
+                </View>
             </LinearGradient>
             
             {/* ************************  MODALS  ********************** */}
@@ -1280,7 +1280,7 @@ const BetSummaryPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-        </>
+        </SafeAreaView>
     );
 };
 
@@ -1520,8 +1520,12 @@ const styles = StyleSheet.create({
     },
 
     // NEW STUFF
+    safeView: {
+        flex: 1,
+    },
     container: {
         flex: 1,
+        marginTop: 50,
     },
     header: {
         flexDirection: 'row',

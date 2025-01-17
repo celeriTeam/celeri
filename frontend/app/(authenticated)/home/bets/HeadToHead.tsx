@@ -185,14 +185,10 @@ const HeadToHeadPage: React.FC = () => {
     }
 
     const handleInfoButton = () => {
-
-        router.replace('/(authenticated)/home'); // Navigate to HomeTab
-        setTimeout(() => {
-            router.push({
-                pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                params: { groupIDTemp: groupID },
-            });
-        }, 0); // Ensures the route updates in order
+        router.replace({
+            pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+            params: { groupIDTemp: groupID },
+        });
     };
 
     const InfoModal = () => (
@@ -443,6 +439,7 @@ const styles = StyleSheet.create({
         flex: 1,
         position: 'relative',
         backgroundColor: '#F5F5F5',
+        marginTop: 50,
     },
     dismissOverlay: {
         ...StyleSheet.absoluteFillObject,
@@ -450,13 +447,13 @@ const styles = StyleSheet.create({
     },
     infoButton: {
         position: 'absolute',
-        top: 20,
+        top: 70,
         left: 20,
         zIndex: 1000,
     },
     tokens: {
         position: 'absolute',
-        top: 10,
+        top: 70,
         right: 20,
         backgroundColor: '#FFD700',
         paddingHorizontal: 10,
@@ -467,7 +464,7 @@ const styles = StyleSheet.create({
     },
     betTokens: {
         position: 'absolute',
-        top: 40,
+        top: 100,
         right: 20,
         backgroundColor: '#FFD700',
         paddingHorizontal: 10,
