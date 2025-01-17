@@ -27,8 +27,8 @@ const BugReportsPage: React.FC = () => {
         try {
             await sendEmail({
                 to: ['lukaschin000@gmail.com', 'acn64@georgetown.edu'],
-                subject: subject,
-                text: `From: ${username}\n\n${issue}`,
+                subject: `Betting App Bug: ${subject}`,
+                text: `From: ${username}\n\nIssue: ${issue}`,
             });
             
             setSubject('');
