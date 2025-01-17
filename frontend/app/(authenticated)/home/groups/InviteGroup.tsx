@@ -22,15 +22,10 @@ const InvitePage: React.FC = () => {
     const { leaderID, groupID, fromCreate } = useLocalSearchParams();
     const router = useRouter();
 
-    // Convert `fromCreate` back to a boolean if needed
+    // Convert `fromCreate` back to a boolean
     const isFromCreate = fromCreate === 'true';
-
     const resolvedLeaderID = Array.isArray(leaderID) ? leaderID[0] : leaderID;
-
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;
-
-    
-
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setModalVisible] = useState(false);
@@ -268,226 +263,232 @@ const InvitePage: React.FC = () => {
     }
 
     return (
-        <View style={styles.contentView}>
-            <View style={styles.container}>
-                {fromCreate ? (
-                    <Text style={styles.groupNameCreated}>
-                        <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
-                    </Text>
-                ) : (
-                    <View>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.contentView}>
+                <View style={styles.container}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Image
+                            source={require('@components/back-icon.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                    {!isFromCreate ? (
+                        <Text style={styles.groupNameCreated}>
+                            <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
+                        </Text>
+                    ) : (
+                        <View>
+                            <View style={styles.titleContainer}>
+                                <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
+                            </View>
                         </View>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                    )}
+                    <View style={styles.groupImageContainer}>
+                        {groups[resolvedGroupID]?.groupImageUrl ? (
+                            <Image source={{ uri: groups[resolvedGroupID]?.groupImageUrl }} style={styles.groupImage} />
+                        ) : (
                             <Image
-                                source={require('@components/back-icon.png')}
-                                style={styles.backImage}
+                                source={require('@components/blank-profile-picture.png')}
+                                style={styles.groupImage}
                             />
+                        )}
+                    </View>
+                    <TouchableOpacity onPress={pickImage}>
+                        <Text style={styles.buttonText}>Edit group pic</Text>
+                    </TouchableOpacity>
+                    {currentGroupUsersArray.length >= userStartRequirement ? (
+                        <Text style={[styles.text, { textAlign: 'center' }]}>
+                            If your group is ready, click the button below to start a new game.
+                        </Text>
+                    ) : (
+                        <Text style={[styles.text, { textAlign: 'center' }]}>
+                            You need three members to start a game. Share the group code below to invite others to join!
+                        </Text>
+                    )}
+
+                    <Text style={[styles.text, { fontWeight: "bold", marginBottom: 10 }]}>
+                        Group Members ({groups[resolvedGroupID]?.userList.length}):
+                    </Text>
+                    <ScrollView
+                        style={styles.scrollContainer}
+                    >
+                        {currentGroupUsersArray ? (
+                            currentGroupUsersArray.map((user) => (
+                                <View key={user.id} style={styles.row}>
+                                    <Image
+                                        source={{ uri: user.pfp }}
+                                        style={styles.profileImage}
+                                    />
+                                    <Text key={user.id} style={styles.username}>{user.name}</Text>
+                                </View>
+                            ))
+                        ) : (
+                            <Text>No users found.</Text>
+                        )}
+                    </ScrollView>
+
+                    <View style={styles.centeredGroupCode}>
+                        <Text style={styles.groupCode}>{groups[resolvedGroupID]?.groupCode}</Text>
+                        <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
+                            <MaterialIcons name="content-copy" size={24} color="black" />
                         </TouchableOpacity>
                     </View>
-                )}
-                <View style={styles.groupImageContainer}>
-                    {groups[resolvedGroupID]?.groupImageUrl ? (
-                        <Image source={{ uri: groups[resolvedGroupID]?.groupImageUrl }} style={styles.groupImage} />
-                    ) : (
-                        <Image
-                            source={require('@components/blank-profile-picture.png')}
-                            style={styles.groupImage}
-                        />
+                    {currentGroupUsersArray.length >= userStartRequirement && (
+                        groups[resolvedGroupID]?.groupCreator === userID ? (
+                            <TouchableOpacity
+                                onPress={() => {setModalVisible(true);}}
+                                style={styles.startButton}
+                            >
+                                <Text style={styles.startButtonText}>Start</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={handleStartReminderPress}
+                                style={styles.startButton}
+                            >
+                                <Text style={styles.startButtonText}>Remind creator to start</Text>
+                            </TouchableOpacity>
+                        )
+                    )}
+                    {groups[resolvedGroupID]?.groupCreator === userID && (
+                        <TouchableOpacity onPress={() => {setDeleteModalVisible('delete');}} style={styles.cancelButton}>
+                            <Text style={styles.cancelButtonText}>Delete Group</Text>
+                        </TouchableOpacity>
+                    )}
+                    {groups[resolvedGroupID]?.groupCreator !== userID && (
+                        <TouchableOpacity onPress={() => {setDeleteModalVisible('leave');}} style={styles.cancelButton}>
+                            <Text style={styles.cancelButtonText}>Leave Group</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
-                <TouchableOpacity onPress={pickImage}>
-                    <Text style={styles.buttonText}>Edit group pic</Text>
-                </TouchableOpacity>
-                {currentGroupUsersArray.length >= userStartRequirement ? (
-                    <Text style={[styles.text, { textAlign: 'center' }]}>
-                        If your group is ready, click the button below to start a new game.
-                    </Text>
-                ) : (
-                    <Text style={[styles.text, { textAlign: 'center' }]}>
-                        You need three members to start a game. Share the group code below to invite others to join!
-                    </Text>
-                )}
-
-                <Text style={[styles.text, { fontWeight: "bold", marginBottom: 10 }]}>
-                    Group Members ({groups[resolvedGroupID]?.userList.length}):
-                </Text>
-                <ScrollView
-                    style={styles.scrollContainer}
+                {/* Settings Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isModalVisible}
+                    animationType="slide"
+                    onRequestClose={() => {setModalVisible(false);}}
                 >
-                    {currentGroupUsersArray ? (
-                        currentGroupUsersArray.map((user) => (
-                            <View key={user.id} style={styles.row}>
-                                <Image
-                                    source={{ uri: user.pfp }}
-                                    style={styles.profileImage}
-                                />
-                                <Text key={user.id} style={styles.username}>{user.name}</Text>
-                            </View>
-                        ))
-                    ) : (
-                        <Text>No users found.</Text>
+                    {/* Overlay to dismiss the keyboard */}
+                    {keyboardVisible && (
+                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                            <View style={styles.dismissOverlay} />
+                        </TouchableWithoutFeedback>
                     )}
-                </ScrollView>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            {/* Input fields */}
+                            <Text style={styles.modalTitle}>Game Settings</Text>
 
-                <View style={styles.centeredGroupCode}>
-                    <Text style={styles.groupCode}>{groups[resolvedGroupID]?.groupCode}</Text>
-                    <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
-                        <MaterialIcons name="content-copy" size={24} color="black" />
-                    </TouchableOpacity>
-                </View>
-                {currentGroupUsersArray.length >= userStartRequirement && (
-                    groups[resolvedGroupID]?.groupCreator === userID ? (
-                        <TouchableOpacity
-                            onPress={() => {setModalVisible(true);}}
-                            style={styles.startButton}
-                        >
-                            <Text style={styles.startButtonText}>Start</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity
-                            onPress={handleStartReminderPress}
-                            style={styles.startButton}
-                        >
-                            <Text style={styles.startButtonText}>Remind creator to start</Text>
-                        </TouchableOpacity>
-                    )
-                )}
-                {groups[resolvedGroupID]?.groupCreator === userID && (
-                    <TouchableOpacity onPress={() => {setDeleteModalVisible('delete');}} style={styles.cancelButton}>
-                        <Text style={styles.cancelButtonText}>Delete Group</Text>
-                    </TouchableOpacity>
-                )}
-                {groups[resolvedGroupID]?.groupCreator !== userID && (
-                    <TouchableOpacity onPress={() => {setDeleteModalVisible('leave');}} style={styles.cancelButton}>
-                        <Text style={styles.cancelButtonText}>Leave Group</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
-            {/* Settings Modal */}
-            <Modal
-                transparent={true}
-                visible={isModalVisible}
-                animationType="slide"
-                onRequestClose={() => {setModalVisible(false);}}
-            >
-                {/* Overlay to dismiss the keyboard */}
-                {keyboardVisible && (
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View style={styles.dismissOverlay} />
-                    </TouchableWithoutFeedback>
-                )}
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Input fields */}
-                        <Text style={styles.modalTitle}>Game Settings</Text>
+                            <Text style={styles.settingText}>Amount of Cycles (Rounds):</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="5"
+                                value={cycles}
+                                onChangeText={setCycles}
+                                keyboardType="numeric"
+                                placeholderTextColor="#888"
+                            />
 
-                        <Text style={styles.settingText}>Amount of Cycles (Rounds):</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="5"
-                            value={cycles}
-                            onChangeText={setCycles}
-                            keyboardType="numeric"
-                            placeholderTextColor="#888"
-                        />
+                            {/* <Text>Amount of Tokens You Get Each Day:</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="100"
+                                value={dailyTokens}
+                                onChangeText={setDailyTokens}
+                                keyboardType="numeric"
+                                placeholderTextColor="#888"
+                            /> */}
 
-                        {/* <Text>Amount of Tokens You Get Each Day:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="100"
-                            value={dailyTokens}
-                            onChangeText={setDailyTokens}
-                            keyboardType="numeric"
-                            placeholderTextColor="#888"
-                        /> */}
+                            <Text style={styles.settingText}>Starting Tokens (Minimum 1000):</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="1000"
+                                value={startingTokens}
+                                onChangeText={setStartingTokens}
+                                keyboardType="numeric"
+                                placeholderTextColor="#888"
+                            />
 
-                        <Text style={styles.settingText}>Starting Tokens (Minimum 1000):</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="1000"
-                            value={startingTokens}
-                            onChangeText={setStartingTokens}
-                            keyboardType="numeric"
-                            placeholderTextColor="#888"
-                        />
+                            {/* <Text>Default Bet on Yourself:</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="100"
+                                value={defaultBetOnSelf}
+                                onChangeText={setDefaultBetOnSelf}
+                                keyboardType="numeric"
+                                placeholderTextColor="#888"
+                            /> */}
 
-                        {/* <Text>Default Bet on Yourself:</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="100"
-                            value={defaultBetOnSelf}
-                            onChangeText={setDefaultBetOnSelf}
-                            keyboardType="numeric"
-                            placeholderTextColor="#888"
-                        /> */}
-
-                        <Text style={styles.settingText}>Game Type:</Text>
-                        <DropDownPicker
-                            open={gameTypeOpen}
-                            value={gameType}
-                            items={gameTypeItems}
-                            setOpen={setGameTypeOpen}
-                            setValue={setGameType}
-                            setItems={() => {}}
-                            containerStyle={[styles.dropdownContainer, {zIndex: 100}]}
-                            dropDownContainerStyle={styles.dropdownStyle}
-                            textStyle={styles.settingText}
-                            style={{ borderColor: '#ccc', minHeight: 40, }}
-                        /> 
-
-                        <Text style={styles.settingText}>Reset Day:</Text>
+                            <Text style={styles.settingText}>Game Type:</Text>
                             <DropDownPicker
-                                open={resetDayOpen}
-                                value={resetDay}
-                                items={resetDayItems}
-                                setOpen={setResetDayOpen}
-                                setValue={setResetDay}
+                                open={gameTypeOpen}
+                                value={gameType}
+                                items={gameTypeItems}
+                                setOpen={setGameTypeOpen}
+                                setValue={setGameType}
                                 setItems={() => {}}
-                                containerStyle={[styles.dropdownContainer, {zIndex: 99}]}
+                                containerStyle={[styles.dropdownContainer, {zIndex: 100}]}
                                 dropDownContainerStyle={styles.dropdownStyle}
                                 textStyle={styles.settingText}
                                 style={{ borderColor: '#ccc', minHeight: 40, }}
                             /> 
 
-                        {/* Buttons */}
-                        <TouchableOpacity 
-                            onPress={isFormValid ? handleStartPress : undefined} 
-                            style={[styles.confirmButton, { backgroundColor: isFormValid ? '#28a745' : '#d3d3d3' }]}
-                            disabled={!isFormValid}
-                        >
-                            <Text style={styles.confirmButtonText}>Confirm & Start</Text>
-                        </TouchableOpacity>
+                            <Text style={styles.settingText}>Reset Day:</Text>
+                                <DropDownPicker
+                                    open={resetDayOpen}
+                                    value={resetDay}
+                                    items={resetDayItems}
+                                    setOpen={setResetDayOpen}
+                                    setValue={setResetDay}
+                                    setItems={() => {}}
+                                    containerStyle={[styles.dropdownContainer, {zIndex: 99}]}
+                                    dropDownContainerStyle={styles.dropdownStyle}
+                                    textStyle={styles.settingText}
+                                    style={{ borderColor: '#ccc', minHeight: 40, }}
+                                /> 
 
-                        <TouchableOpacity onPress={() => {setModalVisible(false);}} style={styles.cancelButton}>
-                            <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </TouchableOpacity>
+                            {/* Buttons */}
+                            <TouchableOpacity 
+                                onPress={isFormValid ? handleStartPress : undefined} 
+                                style={[styles.confirmButton, { backgroundColor: isFormValid ? '#28a745' : '#d3d3d3' }]}
+                                disabled={!isFormValid}
+                            >
+                                <Text style={styles.confirmButtonText}>Confirm & Start</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => {setModalVisible(false);}} style={styles.cancelButton}>
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            </Modal>
-            <Modal
-                transparent={true}
-                visible={isDeleteModalVisible !== ''}
-                onRequestClose={() => {setDeleteModalVisible('');}}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 10 }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
-                        <TouchableOpacity style={styles.button}>
-                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setDeleteModalVisible('')}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
+                </Modal>
+                <Modal
+                    transparent={true}
+                    visible={isDeleteModalVisible !== ''}
+                    onRequestClose={() => {setDeleteModalVisible('');}}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 10 }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
+                            <TouchableOpacity style={styles.button}>
+                                <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setDeleteModalVisible('')}>
+                                <Text style={styles.closeButtonText}>X</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            </Modal>
-        </View>
+                </Modal>
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#fff',
+    },
     dropdownContainer: {
         marginVertical: 10,
         width: '100%',
@@ -502,8 +503,10 @@ const styles = StyleSheet.create({
         backgroundColor: 'white'
     },
     container: {
-        flex: 1,
+        // flex: 1,
         justifyContent: 'center',
+        marginTop: 20,
+        height: '100%',
     },
     groupImageContainer: {
         alignItems: 'center',
@@ -524,8 +527,6 @@ const styles = StyleSheet.create({
         color: 'blue',
     },
     backButton: {
-        position: 'absolute',
-        top: 22,
         left: 20,
         justifyContent: 'center',
         alignItems: 'center',
@@ -557,9 +558,8 @@ const styles = StyleSheet.create({
         height: 40,
     },
     groupNameCreated: {
-        marginTop: 40,
+        // marginTop: -30,
         fontSize: 20,
-        marginBottom: 40,
         fontFamily: "Lexend",
         textAlign: "center",
         alignSelf: "center",
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginHorizontal: 10,
         paddingTop: 10,
-        maxHeight: '30%',
+        maxHeight: '20%',
         flexGrow: 0,
     },
     groupNameStandalone: {
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: "200",
         fontFamily: 'Lexend-Bold',
-        paddingTop: 20,
+        marginTop: -30,
     },
     text: {
         fontSize: 18,
@@ -618,14 +618,12 @@ const styles = StyleSheet.create({
     },
     centeredGroupCode: {
         flexDirection: 'row',
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 10,
     },
     groupCode: {
         fontSize: 45,
-        // color: '#0F1108',
-        // backgroundColor: '#D3D3D3',
         color: '#0F1108',
         backgroundColor: '#1E90FF',
         fontWeight: 'bold',
@@ -638,11 +636,11 @@ const styles = StyleSheet.create({
     startButton: {
         borderRadius: 30,
         flexDirection: "row",
-        paddingVertical: 13, // Reduce padding to make it smaller
+        padding: 18,
         justifyContent: "center",
         backgroundColor: '#1976d2',
         alignSelf: "center",
-        width: 150,
+        // width: 150,
     },
     startButtonText: {
         textAlign: "center",

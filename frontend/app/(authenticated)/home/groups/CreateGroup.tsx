@@ -77,60 +77,65 @@ const CreateGroupPage: React.FC = () => {
     };
 
     return (
-        <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
-                <View style={styles.titleContainer}>
-                    <Text style={styles.titleText}>Create Group</Text>
-                </View>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Image
-                        source={require('@components/back-icon.png')}
-                        style={styles.backImage}
-                    />
-                </TouchableOpacity>
+        <SafeAreaView style={styles.safeArea}>
+            <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
+                <View style={styles.container}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.titleText}>Create Group</Text>
+                    </View>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@components/back-icon.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
 
-                <View style={styles.groupImageContainer}>
-                    <TouchableOpacity onPress={pickImage} style={styles.groupImageWrapper}>
-                        {groupImage ? (
-                            <Image source={{ uri: groupImage }} style={styles.groupImage} />
-                        ) : (
-                            <Image
-                                source={require('@components/blank-profile-picture.png')}
-                                style={styles.groupImage}
-                            />
+                    <View style={styles.groupImageContainer}>
+                        <TouchableOpacity onPress={pickImage} style={styles.groupImageWrapper}>
+                            {groupImage ? (
+                                <Image source={{ uri: groupImage }} style={styles.groupImage} />
+                            ) : (
+                                <Image
+                                    source={require('@components/blank-profile-picture.png')}
+                                    style={styles.groupImage}
+                                />
+                            )}
+                            <View style={styles.plusIconContainer}>
+                                <Text style={styles.plusIconText}>+</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                
+                    <View style={styles.mainContent}>
+                        <TextInput
+                            style={styles.loginTextField}
+                            placeholder="Group Name"
+                            value={groupName}
+                            onChangeText={setGroupName}
+                            placeholderTextColor="#999797"
+                        />
+                        <TouchableOpacity 
+                        onPress={createGroupFnc}
+                        style={[styles.buttonContainer]}
+                        >
+                            <Text style={styles.button_text}>Submit</Text>
+                        </TouchableOpacity>
+                        {errorMessage && ( // Display error message if present
+                            <Text style={styles.errorText}>{errorMessage}</Text>
                         )}
-                        <View style={styles.plusIconContainer}>
-                            <Text style={styles.plusIconText}>+</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-            
-                <View style={styles.mainContent}>
-                    <TextInput
-                        style={styles.loginTextField}
-                        placeholder="Group Name"
-                        value={groupName}
-                        onChangeText={setGroupName}
-                        placeholderTextColor="#999797"
-                    />
-                    <TouchableOpacity 
-                    onPress={createGroupFnc}
-                    style={[styles.buttonContainer]}
-                    >
-                        <Text style={styles.button_text}>Submit</Text>
-                    </TouchableOpacity>
-                    {errorMessage && ( // Display error message if present
-                        <Text style={styles.errorText}>{errorMessage}</Text>
-                    )}
-                </View>
+                    </View>
 
-        
-            </View>
-        </Pressable>
+            
+                </View>
+            </Pressable>
+        </SafeAreaView>
     )
 };
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
     input: {
         height: 50,
         borderColor: 'gray',
@@ -139,8 +144,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     container: {
-        flex: 1,
+        // flex: 1,
         justifyContent: 'center',
+        marginTop: 50,
+        height: '100%',
     },
     // row: {
     //     flexDirection: 'row',

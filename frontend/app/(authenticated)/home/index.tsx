@@ -18,6 +18,7 @@ import { getUserGroups, getUserName, setStepsFirebase } from '@backend/src/users
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -239,121 +240,133 @@ const HomeTab: React.FC = () => {
 
     if (groups === null || groups === undefined) {
         return (
-            <View style={styles.container}>
-                <Text>Failed to fetch user groups</Text>
-            </View>
+            <SafeAreaView style={styles.safeView}>
+                <View style={styles.container}>
+                    <Text>Failed to fetch user groups</Text>
+                </View>
+            </SafeAreaView>
         );
     } else if (Object.keys(groups).length === 0) {
         return (
-            <View style={[styles.container, { justifyContent: 'center' }]}>
-                <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
-                    <Text style={styles.buttonText}>Create Group</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
-                    <Text style={styles.buttonText}>Join Existing Group</Text>
-                </TouchableOpacity>
-            </View>
+            <SafeAreaView style={styles.safeView}>
+                <View style={[styles.container, { justifyContent: 'center' }]}>
+                    <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Create Group</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Join Existing Group</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
         );
     } else {
         return (
-            <View style={styles.container}>
-                <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Groups</Text>
-                    </View>
-                <Text style={styles.subTitle}>Your Groups:</Text>
-                <ScrollView style={styles.scrollContainer}>
-                    {Object.entries(groups).map(([groupID, group]) => (
-                        <TouchableOpacity
-                            key={groupID}
-                            style={styles.groupButton}
-                            onPress={() => goToGroup(group.groupName)}
-                        >
-                            {group.groupImageUrl ? (
-                                <Image
-                                    source={{ uri: group.groupImageUrl }}
-                                    style={styles.groupImage}
-                                />
-                            ) : (
-                                <Image 
-                                    source={require('@components/blank-profile-picture.png')}
-                                    style={styles.groupImage}
-                                />
-                            )}
-                            <View style={styles.groupInfo}>
-                                <Text style={styles.groupName}>{group.groupName}</Text>
-                                <Text style={styles.groupDetails}>
-                                    {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+            <SafeAreaView style={styles.safeView}>
+                <View style={styles.container}>
+                    <View style={styles.titleContainer}>
+                            <Text style={styles.titleText}>Groups</Text>
+                        </View>
+                    <Text style={styles.subTitle}>Your Groups:</Text>
+                    <ScrollView style={styles.scrollContainer}>
+                        {Object.entries(groups).map(([groupID, group]) => (
+                            <TouchableOpacity
+                                key={groupID}
+                                style={styles.groupButton}
+                                onPress={() => goToGroup(group.groupName)}
+                            >
+                                {group.groupImageUrl ? (
+                                    <Image
+                                        source={{ uri: group.groupImageUrl }}
+                                        style={styles.groupImage}
+                                    />
+                                ) : (
+                                    <Image 
+                                        source={require('@components/blank-profile-picture.png')}
+                                        style={styles.groupImage}
+                                    />
+                                )}
+                                <View style={styles.groupInfo}>
+                                    <Text style={styles.groupName}>{group.groupName}</Text>
+                                    <Text style={styles.groupDetails}>
+                                        {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
 
-            {/* Floating Action Button */}
-            <TouchableOpacity style={styles.fab} onPress={toggleModal}>
-                <Text style={styles.fabText}>+</Text>
-            </TouchableOpacity>
+                    {/* Floating Action Button */}
+                    <TouchableOpacity style={styles.fab} onPress={toggleModal}>
+                        <Text style={styles.fabText}>+</Text>
+                    </TouchableOpacity>
 
-            {/* Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={isModalVisible}
-                onRequestClose={toggleModal}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={toggleModal} // Closes the modal when clicked outside the content
-                >
-                    <BlurView intensity={50} style={styles.blurView}>
+                    {/* Modal */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={isModalVisible}
+                        onRequestClose={toggleModal}
+                    >
                         <TouchableOpacity
+                            style={styles.modalOverlay}
                             activeOpacity={1}
-                            style={styles.modalContentWrapper}
-                            onPress={() => {}} // Prevent closing when clicking inside the modal content
+                            onPress={toggleModal} // Closes the modal when clicked outside the content
                         >
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Group Options</Text>
-                                <TouchableOpacity style={styles.button} onPress={() => {
-                                    toggleModal();
-                                    joinGroupButtonHandle();
-                                }}
+                            <BlurView intensity={50} style={styles.blurView}>
+                                <TouchableOpacity
+                                    activeOpacity={1}
+                                    style={styles.modalContentWrapper}
+                                    onPress={() => {}} // Prevent closing when clicking inside the modal content
                                 >
-                                    <Text style={styles.buttonText}>Join Group</Text>
+                                    <View style={styles.modalContent}>
+                                        <Text style={styles.modalTitle}>Group Options</Text>
+                                        <TouchableOpacity style={styles.button} onPress={() => {
+                                            toggleModal();
+                                            joinGroupButtonHandle();
+                                        }}
+                                        >
+                                            <Text style={styles.buttonText}>Join Group</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.button} onPress={() => {
+                                            toggleModal();
+                                            createGroupButtonHandle();
+                                        }}
+                                        >
+                                            <Text style={styles.buttonText}>Create Group</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.button} onPress={() => {
-                                    toggleModal();
-                                    createGroupButtonHandle();
-                                }}
-                                >
-                                    <Text style={styles.buttonText}>Create Group</Text>
-                                </TouchableOpacity>
-                            </View>
+                            </BlurView>
                         </TouchableOpacity>
-                    </BlurView>
-                </TouchableOpacity>
-            </Modal>
-            
-            {/* testing headtohead tutorial */}
-            {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'ounAwWnZv7rFMOAWVSCy' }) }}>
-                <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
-            </TouchableOpacity> */}
+                    </Modal>
+                    
+                    {/* testing headtohead tutorial */}
+                    {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'ounAwWnZv7rFMOAWVSCy' }) }}>
+                        <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
+                    </TouchableOpacity> */}
 
-            {/* testing new bet summary page ui */}
-            {/* <TouchableOpacity onPress={() => { navigation.navigate('NewBetSummaryPage', { groupID: 'l4mB0DqPpM6jGpj6OPwq' }) }}>
-                <Text style={[styles.buttonText, {color: 'blue'}]}>New Bet Summary Page</Text>
-            </TouchableOpacity> */}
-            </View>
+                    {/* testing new bet summary page ui */}
+                    {/* <TouchableOpacity onPress={() => { navigation.navigate('NewBetSummaryPage', { groupID: 'l4mB0DqPpM6jGpj6OPwq' }) }}>
+                        <Text style={[styles.buttonText, {color: 'blue'}]}>New Bet Summary Page</Text>
+                    </TouchableOpacity> */}
+                </View>
+            </SafeAreaView>
         );
     }
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeView: {
         flex: 1,
+        backgroundColor: '#fff',
+    },
+    container: {
+        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
-        backgroundColor: '#fff', 
+        backgroundColor: '#fff',
+        marginTop: 50,
+        height: '100%',
     },
     username: {
         fontWeight: 'bold',

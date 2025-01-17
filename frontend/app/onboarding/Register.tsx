@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
     contentView: {
         flex: 1,
         backgroundColor: "white",
+        marginTop: 50,
     },
     titleContainer: {
         flex: 1.2,

@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { editProfilePic, editUsername } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const EditProfilePage: React.FC = () => {
     const { userID, profileImageUrl, username } = useUser();
@@ -67,68 +68,76 @@ const EditProfilePage: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
-                <Image
-                    source={require('@components/back-icon.png')}
-                    style={styles.backImage}
-                />
-            </TouchableOpacity>
-            {currentProfilePic != '' ? (
-                <Image
-                source={{ uri: currentProfilePic }}
-                style={styles.profileImage}
-                />
-            ) : (
-                <Image
-                source={require('@components/blank-profile-picture.png')}
-                style={styles.profileImage}
-                />
-            )}
-            <TouchableOpacity onPress={pickImage}>
-                <Text style={styles.buttonText}>Edit profile pic</Text>
-            </TouchableOpacity>
-            {isEditingUsername ? (
-                <>
-                    <View style={styles.row}>
-                        <TextInput
-                            ref={inputRef}
-                            style={styles.nameInput}
-                            value={currentUsername}
-                            onChangeText={setcurrentUsername}
-                        />
-                        <TouchableOpacity onPress={handleCheckPress}>
-                            <Image
-                                source={require('@components/checkmark-icon.png')}
+        <SafeAreaView style={styles.safeArea}>
+            <View style={styles.container}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
+                    <Image
+                        source={require('@components/back-icon.png')}
+                        style={styles.backImage}
+                    />
+                </TouchableOpacity>
+                {currentProfilePic != '' ? (
+                    <Image
+                    source={{ uri: currentProfilePic }}
+                    style={styles.profileImage}
+                    />
+                ) : (
+                    <Image
+                    source={require('@components/blank-profile-picture.png')}
+                    style={styles.profileImage}
+                    />
+                )}
+                <TouchableOpacity onPress={pickImage}>
+                    <Text style={styles.buttonText}>Edit profile pic</Text>
+                </TouchableOpacity>
+                {isEditingUsername ? (
+                    <>
+                        <View style={styles.row}>
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.nameInput}
+                                value={currentUsername}
+                                onChangeText={setcurrentUsername}
+                            />
+                            <TouchableOpacity onPress={handleCheckPress}>
+                                <Image
+                                    source={require('@components/checkmark-icon.png')}
+                                    style={styles.editImage}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                ) : (
+                    <>
+                        <View style={styles.row}>
+                            <Text style={styles.name}>{currentUsername}</Text>
+                            <TouchableOpacity onPress={handleEditPress}>
+                                <Image
+                                source={require('@components/edit-icon.jpg')}
                                 style={styles.editImage}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </>
-            ) : (
-                <>
-                    <View style={styles.row}>
-                        <Text style={styles.name}>{currentUsername}</Text>
-                        <TouchableOpacity onPress={handleEditPress}>
-                            <Image
-                            source={require('@components/edit-icon.jpg')}
-                            style={styles.editImage}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                </>
-            )}
-            
-        </View>
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
+                
+            </View>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
+        backgroundColor: '#fff',
+    },
+    container: {
+        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
+        marginTop: 50,
+        height: '100%',
     },
     backButton: {
         position: 'absolute',
