@@ -16,6 +16,7 @@ import useHealthData from '@/backend/src/hooks/useHealthData';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 import { ClientRequest } from 'http';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import LiveDuelPage from './LiveDuel';
 
 const db = getFirestore(app);
 
@@ -28,6 +29,7 @@ const BetSummaryPage: React.FC = () => {
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
+    const [isLiveDuelModalVisible, setLiveDuelModalVisible] = useState(false);
     const [isTokensModalVisible, setTokensModalVisible] = useState(false);
     const [isTokensUsedModalVisible, setTokensUsedModalVisible] = useState(false);
     const [isDiamondsModalVisible, setDiamondsModalVisible] = useState(false);
@@ -774,7 +776,7 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.duelRow}>
 
                             <TouchableOpacity
-                                onPress={handleDuelPress}
+                                onPress={() => setLiveDuelModalVisible(true)}
                                 activeOpacity={1}
                                 style={styles.duelCardTouchable}
                             >
@@ -1097,6 +1099,30 @@ const BetSummaryPage: React.FC = () => {
                 </View>
             </Modal>
 
+            {/* Live Duel Modal */}
+            <Modal
+                transparent={true}
+                visible={isLiveDuelModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.liveDuelModalContainer}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)}>
+                            <Text style={styles.closeButtonText2}>X</Text>
+                        </TouchableOpacity>
+                        {/* LiveDuelPage as the modal content */}
+                        <LiveDuelPage
+                            betPlayerInfo={getBetPlayerInfo()} 
+                            bet={currentBets[currentBetIndex]}
+                            currentGroupUsersArray={currentGroupUsersArray}
+                            userID={userID}
+                        />
+                    </View>
+                </View>
+            
+            </Modal>
+
             {/* Store Modal */}
             <Modal
                 transparent={true}
@@ -1415,6 +1441,15 @@ const styles = StyleSheet.create({
         padding: 20,
         position: 'relative',
     },
+    liveDuelModalContainer: {
+        width: '90%',
+        height: '80%',
+        backgroundColor: 'black',
+        position: 'relative',
+        borderWidth: 1, // Thin border
+        borderColor: '#4A4A4A', // Dark grey border
+        borderRadius: 15,
+    },
     moneyModalContainer: {
         width: '80%',
         backgroundColor: 'white',
@@ -1432,6 +1467,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: 'black',
+    },
+    closeButtonText2: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: 'white',
     },
     moneyIcons: {
         width: 35,
