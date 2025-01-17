@@ -222,7 +222,11 @@ const BetSummaryPage: React.FC = () => {
 
                     // So it opens up immediately if you haven't made a prop bet yet
                     if (!isFinishedPropBet && gameType === 'weekly') {
-                        setPropBetModalVisible(true);
+                        // Add a small delay to ensure other states are properly set
+                        const timer = setTimeout(() => {
+                            setPropBetModalVisible(true);
+                        }, 100);
+                        return () => clearTimeout(timer);
                     }
 
                     // Set up a listener for today's duels
@@ -1221,6 +1225,11 @@ const BetSummaryPage: React.FC = () => {
                                                     addToFinishedPropBet(groupID, userID);
                                                     addPropBet(groupID, userID, player.id, player.averageSteps, selectedPropBet === 'over' ? 'over' : 'under');
                                                     setFinishedPropBet(true);
+                                                    setPropBetModalVisible(false);
+                                                    const timer = setTimeout(() => {
+                                                        setPropBetModalVisible(true);
+                                                    }, 100);
+                                                    return () => clearTimeout(timer);
                                                 }}
                                             >
                                                 Submit
