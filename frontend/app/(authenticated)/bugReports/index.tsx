@@ -26,7 +26,7 @@ const BugReportsPage: React.FC = () => {
         const sendEmail = httpsCallable(functions, 'sendEmail');
         try {
             await sendEmail({
-                to: 'lukaschin000@gmail.com',
+                to: ['lukaschin000@gmail.com', 'acn64@georgetown.edu'],
                 subject: subject,
                 text: `From: ${username}\n\n${issue}`,
             });
