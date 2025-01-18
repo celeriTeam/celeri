@@ -362,10 +362,6 @@ const BetSummaryPage: React.FC = () => {
         });
     };
 
-    const handleDuelPress = () => {
-        setIsDuelExpanded(!isDuelExpanded);
-    };
-
     const handleRightArrowPress = () => {
         setIsDuelExpanded(false);
         if (currentBetIndex > 0) setCurrentBetIndex(currentBetIndex - 1);
@@ -406,7 +402,8 @@ const BetSummaryPage: React.FC = () => {
         const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
 
         // Filter powerups for player1 and player2
-        const player1Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
+        const player1Powerups = powerups
+        .filter(([type, targetID, targetUserName, userID, duelID]) => {
             console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
             return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player1;
         });
@@ -421,28 +418,29 @@ const BetSummaryPage: React.FC = () => {
         let player2AddedSteps = 0;
 
         // Create modified versions of the powerups for display
-        const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, userID, duelID]) => {
-            if (type === "secondWind") {
-                player1AddedSteps += 200;
-                return ["Second Wind \n(+200 steps)", targetID, userID, duelID];
-            }
-            else if (type === "brickWall") {
-                player1AddedSteps -= 200;
-                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
-            }
-            return [type, targetID, userID, duelID];
+         // Transform and modify powerups
+        const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, targetUserName, userID, duelID]) => {
+            if (type === "secondWind") player1AddedSteps += 200;
+            if (type === "brickWall") player1AddedSteps -= 200;
+            return {
+                powerupType: type,
+                targetUserID: targetID,
+                targetUserName,
+                powerupUserID: userID,
+                duelID,
+            };
         });
 
-        const modifiedPlayer2Powerups = player2Powerups.map(([type, targetID, userID, duelID]) => {
-            if (type === "secondWind") {
-                player2AddedSteps += 200;
-                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
-            }
-            else if (type === "brickWall") {
-                player2AddedSteps -= 200;
-                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
-            }
-            return [type, targetID, userID, duelID];
+        const modifiedPlayer2Powerups = player2Powerups.map(([type, targetID, targetUserName, userID, duelID]) => {
+            if (type === "secondWind") player2AddedSteps += 200;
+            if (type === "brickWall") player2AddedSteps -= 200;
+            return {
+                powerupType: type === "secondWind" ? "Second Wind (+200 steps)" : type === "brickWall" ? "Brick Wall (-200 steps)" : type,
+                targetUserID: targetID,
+                targetUserName,
+                powerupUserID: userID,
+                duelID,
+            };
         });
 
         // Updated step counts
@@ -450,191 +448,6 @@ const BetSummaryPage: React.FC = () => {
         const player2TotalSteps = currentBets[currentBetIndex]?.player2Steps + player2AddedSteps;
 
         return {player1Steps: player1TotalSteps, player2Steps: player2TotalSteps, player2Ratio: player2Ratio, player1Powerups: modifiedPlayer1Powerups, player2Powerups: modifiedPlayer2Powerups};
-    };
-
-    const renderBetItem = ({ item }: { item: { duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number } }) => {
-
-        const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
-
-        const totalPlayer1Bets = item.player1Bets.reduce((sum, bet) => sum + bet.wager, 0);
-        const totalPlayer2Bets = item.player2Bets.reduce((sum, bet) => sum + bet.wager, 0);
-
-        // Calculate the sum of all bets
-        const totalBets = totalPlayer1Bets + totalPlayer2Bets;
-
-        // Calculate the ratios for the circular value
-        const player1Ratio = totalBets === 0 ? 0.5 : totalPlayer1Bets / totalBets;
-        const player2Ratio = totalBets === 0 ? 0.5 : totalPlayer2Bets / totalBets;
-
-        // Filter powerups for player1 and player2
-        const player1Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
-            console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player1}`);
-            return duelID === item.duelID && targetUserName === item.player1;
-        });
-
-        const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
-            console.log(`Checking: ${duelID} === ${item.duelID} && ${targetUserName} === ${item.player2}`);
-            return duelID === item.duelID && targetUserName === item.player2;
-        });
-
-        // Calculate added steps for secondWind powerups
-        let player1AddedSteps = 0;
-        let player2AddedSteps = 0;
-
-        // Create modified versions of the powerups for display
-        const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, userID, duelID]) => {
-            if (type === "secondWind") {
-                player1AddedSteps += 200;
-                return ["Second Wind \n(+200 steps)", targetID, userID, duelID];
-            }
-            else if (type === "brickWall") {
-                player1AddedSteps -= 200;
-                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
-            }
-            return [type, targetID, userID, duelID];
-        });
-
-        const modifiedPlayer2Powerups = player2Powerups.map(([type, targetID, userID, duelID]) => {
-            if (type === "secondWind") {
-                player2AddedSteps += 200;
-                return ["secondWind \n(+200 steps)", targetID, userID, duelID];
-            }
-            else if (type === "brickWall") {
-                player2AddedSteps -= 200;
-                return ["Brick Wall \n(-200 steps)", targetID, userID, duelID];
-            }
-            return [type, targetID, userID, duelID];
-        });
-
-        // Updated step counts
-        const player1TotalSteps = item.player1Steps + player1AddedSteps;
-        const player2TotalSteps = item.player2Steps + player2AddedSteps;
-
-        // change secondWind name to be more descriptive 
-
-        console.log("renderBetItem: ", "player1Powerups: ", modifiedPlayer1Powerups);
-        console.log("renderBetItem: ", "player2Powerups: ", modifiedPlayer2Powerups);
-        return (
-            <View style={styles.flatList}>
-                <TouchableOpacity onPress={() => toggleItemExpansion(item.duelID)}>
-                    {/* Players and Pictures */}
-                    <View style={styles.row}>
-                        {/* Column 1 - Player 1 */}
-                        <View style={styles.centeredColumn}>
-                            <Text style={styles.player1text}>{item.player1}</Text>
-                            <Image source={{ uri: item.player1Pfp }} style={styles.profileImage} />
-                            <Text style={styles.stepTitle}>{player1TotalSteps} Steps</Text>
-                        </View>
-
-                        {/* Column 2 - Circular Icon */}
-                        <View style={styles.centeredColumn}>
-                            <CircularIcon value={player2Ratio} size={65} strokeWidth={10} />
-                            <Text></Text>
-                        </View>
-
-                        {/* Column 3 - Player 2 */}
-                        <View style={styles.centeredColumn}>
-                            <Text style={styles.player2text}>{item.player2}</Text>
-                            <Image source={{ uri: item.player2Pfp }} style={styles.profileImage} />
-                            <Text style={styles.stepTitle}>{player2TotalSteps} Steps</Text>
-                        </View>
-                    </View>
-
-
-                    <View style={styles.rowBets}>
-                        {/* Player 1 Bets and Coin */}
-                        <View style={styles.betsContainer}>
-                            <Text style={styles.betsText}>{totalPlayer1Bets}</Text>
-                            <Image
-                                source={require('../../../../assets/images/gold_coin.png')}
-                                style={styles.coinIcon}
-                            />
-                        </View>
-                        <Text style={styles.betsColonText}> : </Text>
-                        {/* Player 2 Bets and Coin */}
-                        <View style={styles.betsContainer}>
-                            <Text style={styles.betsText}>{totalPlayer2Bets}</Text>
-                            <Image
-                                source={require('../../../../assets/images/gold_coin.png')}
-                                style={styles.coinIcon}
-                            />
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {isExpanded && (
-                    <>
-                        <View style={styles.row}>
-                            {/* Player1's Bets */}
-                            <View style={styles.betsList}>
-                                <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
-                                {item.player1Bets.length === 0 ? (
-                                    <View>
-                                        <Text>(No bets placed)</Text>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        {item.player1Bets.map((bet, index) => (
-                                            <Text key={index} style={{ textAlign: 'left' }}> {bet.user}: {bet.wager}</Text>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-
-                            {/* Player2's Bets */}
-                            <View style={styles.betsList}>
-                                {/* Player2's Steps */}
-                                <Text style={[styles.stepTitle, styles.betsText]}>Bets:</Text>
-                                {item.player2Bets.length === 0 ? (
-                                    <View>
-                                        <Text>(No bets placed)</Text>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        {item.player2Bets.map((bet, index) => (
-                                            <Text key={index} style={{ textAlign: 'right' }}> {bet.user}: {bet.wager}</Text>
-                                        ))}
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-                        {/*where the powerups go*/}
-                        <View style={styles.row}>
-                            {/* Player1's Powerups */}
-                            <View style={styles.betsList}>
-                                <Text style={[styles.stepTitle, styles.betsText]}>Powerups:</Text>
-                                {modifiedPlayer1Powerups.length === 0 ? (
-                                    <Text>(No powerups used)</Text>
-                                ) : (
-                                    modifiedPlayer1Powerups.map(([type, targetID, userID], index) => (
-                                        <Text key={index} style={{ textAlign: 'left' }}>{`${type}`}</Text>
-                                    ))
-                                )}
-                            </View>
-
-                            {/* Player2's Powerups */}
-                            <View style={styles.betsList}>
-                                <Text style={[styles.stepTitle, styles.betsText]}>Powerups:</Text>
-                                {modifiedPlayer2Powerups.length === 0 ? (
-                                    <Text>(No powerups used)</Text>
-                                ) : (
-                                    modifiedPlayer2Powerups.map(([type, targetID, userID], index) => (
-                                        <Text key={index} style={{ textAlign: 'right' }}>{`${type}`}</Text>
-                                    ))
-                                )}
-                            </View>
-                        </View>
-                    </>
-                )}
-            </View>
-        );
-    };
-
-    const toggleItemExpansion = (duelID: string) => {
-        setExpandedItems((prevExpandedItems) => ({
-            ...prevExpandedItems,
-            [duelID]: !prevExpandedItems[duelID], // toggle the current duelID
-        }));
     };
 
     return (
@@ -814,28 +627,6 @@ const BetSummaryPage: React.FC = () => {
                                             />
                                             <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
                                         </View>
-                                        {isDuelExpanded && (
-                                            <>
-                                                <View style={styles.betsList}>
-                                                    <Text style={styles.betMoreInfoTitle}>Bets:</Text>
-                                                    {currentBets[currentBetIndex]?.player1Bets.length !== 0 && (
-                                                        <View>
-                                                            {currentBets[currentBetIndex]?.player1Bets.map((bet, index) => (
-                                                                <Text key={index} style={[styles.betMoreInfo, { textAlign: 'left', }]}> {bet.user}: {bet.wager}</Text>
-                                                            ))}
-                                                        </View>
-                                                    )}
-                                                </View>
-                                                <View style={styles.betsList}>
-                                                    <Text style={styles.betMoreInfoTitle}>Powerups:</Text>
-                                                    {getBetPlayerInfo().player1Powerups.length !== 0 && (
-                                                        getBetPlayerInfo().player1Powerups.map(([type, targetID, userID], index) => (
-                                                            <Text key={index} style={[styles.betMoreInfo, { textAlign: 'left', }]}>{`${type}`}</Text>
-                                                        ))
-                                                    )}
-                                                </View>
-                                            </>
-                                        )}
                                     </View>
                                     <View style={styles.duelInfo}>
                                         <View style={styles.liveContainer}>
@@ -861,29 +652,6 @@ const BetSummaryPage: React.FC = () => {
                                             />
                                             <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
                                         </View>
-                                        {isDuelExpanded && (
-                                            <>
-                                                <View style={styles.betsList}>
-                                                    {/* Player2's Steps */}
-                                                    <Text style={styles.betMoreInfoTitle}>Bets:</Text>
-                                                    {currentBets[currentBetIndex]?.player2Bets.length !== 0 && (
-                                                        <View>
-                                                            {currentBets[currentBetIndex]?.player2Bets.map((bet, index) => (
-                                                                <Text key={index} style={[styles.betMoreInfo, { textAlign: 'right', }]}> {bet.user}: {bet.wager}</Text>
-                                                            ))}
-                                                        </View>
-                                                    )}
-                                                </View>
-                                                <View style={styles.betsList}>
-                                                    <Text style={styles.betMoreInfoTitle}>Powerups:</Text>
-                                                    {getBetPlayerInfo().player2Powerups.length !== 0 && (
-                                                        getBetPlayerInfo().player2Powerups.map(([type, targetID, userID], index) => (
-                                                            <Text key={index} style={[styles.betMoreInfo, { textAlign: 'right', }]}>{`${type}`}</Text>
-                                                        ))
-                                                    )}
-                                                </View>
-                                            </>
-                                        )}
                                     </View>
 
                                     <TouchableOpacity onPress={handleLeftArrowPress}>
@@ -899,9 +667,19 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.betAmount}>
                             <Image
                                 source={require('../../../../assets/icons/tokensBlack.png')}
-                                style={styles.tokensBlackIcon}
+                                style={[styles.tokensBlackIcon, { marginRight: 5 }]}
                             />
-                            <Text style={styles.betText}> {currentBets[currentBetIndex]?.player1Bets?.find(bet => bet.user === (currentGroupUsersArray?.find(usr => usr.id === userID)?.name || ""))?.wager || 0}</Text>
+                                <Text style={styles.betText}>
+                                    {(() => {
+                                        const userName = currentGroupUsersArray?.find(usr => usr.id === userID)?.name || "";
+                                        const combinedBets = [
+                                            ...(currentBets[currentBetIndex]?.player1Bets || []),
+                                            ...(currentBets[currentBetIndex]?.player2Bets || []),
+                                        ];
+                                        const userBet = combinedBets.find(bet => bet.user === userName);
+                                        return userBet?.wager || 0;
+                                    })()}
+                                </Text>
                         </View>
                     </View>
 

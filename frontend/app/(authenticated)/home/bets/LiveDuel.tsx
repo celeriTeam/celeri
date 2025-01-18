@@ -1,20 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollView } from 'react-native';
 
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { useUser } from '../../../UserProvider';
-import Svg, { Circle, G } from 'react-native-svg';
 //import { getBetPlayerInfo } from './BetSummary';
+
+//from fetchPowerups, 
+//powerupsArray.push([powerupType, targetUserID, targetUserName, userID, duelID]);
 
 type BetPlayerInfo = {
     player1Steps: number, 
     player2Steps: number, 
     player2Ratio: number, 
-    player1Powerups: string[][], 
-    player2Powerups: string[][];
+    player1Powerups: {
+        powerupType: string;
+        targetUserID: string;
+        targetUserName: string;
+        powerupUserID: string;
+        duelID: string;
+    }[];
+    player2Powerups: {
+        powerupType: string;
+        targetUserID: string;
+        targetUserName: string;
+        powerupUserID: string;
+        duelID: string;
+    }[];
 }
 
 type Bet = {
@@ -41,7 +52,138 @@ type GroupUser = {
 type GroupUsersArray = GroupUser[];
 
 
-const LiveDuelPage: React.FC< { betPlayerInfo: BetPlayerInfo , bet: Bet, currentGroupUsersArray: GroupUsersArray, userID: string} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID }) => {
+const LiveDuelPage: React.FC< { 
+    betPlayerInfo: BetPlayerInfo , 
+    bet: Bet, currentGroupUsersArray: 
+    GroupUsersArray, userID: string;
+} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID }) => {
+
+    const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
+    const yourName = yourUser?.name;
+
+    const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string) => {
+        return bets.map((bet, index) => {
+            //find the user where the user id is the same as the one in the bet map; this user is a GroupUser type
+            const user = currentGroupUsersArray.find((user) => user.name === bet.user);
+            return  (
+                <View 
+                    key={index} 
+                    style={yourName === bet.user ? styles.rowContainerYou : styles.rowContainer}
+                >
+                    {/* Profile picture of the person making the bet */}
+                    <Image
+                        source={
+                            user?.pfp
+                                ? { uri: user.pfp }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profilePicture}
+                    />
+                    {/* Name and bet details */}
+                    <View style={styles.betDetails}>
+                        <Text style={styles.personName}>
+                            {yourName === bet.user ? 'You' : user?.name || 'Unknown'}
+                        </Text>
+                    </View>
+
+                    <Image
+                        source={require('../../../../assets/icons/tokensWhite.png')}
+                        style={styles.tokensWhiteIcon}
+                    />
+                    <Text style={[styles.personName, { paddingLeft: 5 }]}>{bet.wager}</Text>
+
+                    <Text style={[styles.personName, { paddingHorizontal: 10 }]}>for</Text>
+
+                    {/* Profile picture of the person they bet on */}
+                    <Image
+                        source={
+                            playerPfp
+                                ? { uri: playerPfp }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profilePicture}
+                    />
+
+                </View>
+
+                
+            )
+        })
+    }
+
+    // Powerup images mapping
+    const powerupImages: Record<string, any> = {
+        speedBoots: require('../../../../assets/images/speed_boot.png'),
+        secondWind: require('../../../../assets/images/wind.png'),
+        legCramp: require('../../../../assets/images/leg_cramp.png'),
+        brickWall: require('../../../../assets/images/brick_wall.png'),
+    };
+
+    const renderPowerups = (powerups: {
+        powerupType: string, 
+        targetUserID: string, 
+        targetUserName: string,
+        powerupUserID: string,
+        duelID: string,
+     }[], playerPfp: string) => {
+        return powerups.map((powerup, index) => {
+
+            //find the user where the user id is the same as the one in the bet map; this user is a GroupUser type
+            const user = currentGroupUsersArray.find((user) => user.id === powerup.powerupUserID);
+            console.log(powerup.powerupType, "powerupType");
+
+            let change = "";
+            if(powerup.powerupType == "secondWind"){
+                change = "+200";
+            } else if(powerup.powerupType == "brickWall"){
+                change = "-200";
+            }
+
+            return  (
+                <View 
+                    key={index} 
+                    style={yourUser?.id === powerup.powerupUserID ? styles.rowContainerYou : styles.rowContainer}
+                >
+                    {/* Profile picture of the person using the powerup */}
+                    <Image
+                        source={
+                            user?.pfp
+                                ? { uri: user.pfp }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profilePicture}
+                    />
+
+                    {/* Name and powerup details */}
+                    <View style={styles.betDetails}>
+                        <Text style={styles.personName}>
+                            {yourUser?.id === powerup.powerupUserID ? 'You' : user?.name || 'Unknown'}
+                        </Text>
+                    </View>
+
+                    <Text style={[styles.personName, { paddingRight: 5 }]}>{change}</Text>
+
+                    <Image
+                        source={powerupImages[powerup.powerupType]} // Map powerupType to the corresponding image
+                        style={styles.powerupImage}
+                    />
+
+                    <Text style={[styles.personName, { paddingHorizontal: 10 }]}>for</Text>
+
+                    {/* Profile picture of the person they bought the powerup for */}
+                    <Image
+                        source={
+                            playerPfp
+                                ? { uri: playerPfp }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profilePicture}
+                    />
+                </View>
+            )
+
+        })
+     }
 
     return (
         <View style={styles.container}>
@@ -96,38 +238,21 @@ const LiveDuelPage: React.FC< { betPlayerInfo: BetPlayerInfo , bet: Bet, current
             <View style={styles.dataContainer}>
                 <Text style={[styles.sectionTitle,]}>Bets Placed</Text>
                 <View style={styles.overlayContainer}>
-                    <View style={styles.rowContainer}>
-                        {/* Profile picture of the person making the bet */}
-                        <Image 
-                            source={require('@components/blank-profile-picture.png')} 
-                            style={styles.profilePicture} 
-                        />
-
-                        {/* Name and bet details */}
-                        <View style={styles.betDetails}>
-                            <Text style={styles.personName}>John Doe</Text>
-                        </View>
-
-                        <Image
-                            source={require('../../../../assets/icons/tokensWhite.png')}
-                            style={styles.tokensWhiteIcon}
-                        />
-                         <Text style={[styles.personName, { paddingLeft: 5 }]}>50</Text>
-
-                        <Text style={[styles.personName, { paddingHorizontal: 10 }]}>for</Text>
-
-                        {/* Profile picture of the person they bet on */}
-                        <Image 
-                            source={require('@components/blank-profile-picture.png')} 
-                            style={styles.profilePicture} 
-                        />
-                    </View>
+                    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
+                        {renderBets(bet.player1Bets, bet.player1, bet.player1Pfp)}
+                        {renderBets(bet.player2Bets, bet.player2, bet.player2Pfp)}
+                    </ScrollView>
                 </View>
 
             </View>
             <View style={styles.dataContainer}>
                 <Text style={[styles.sectionTitle,]}>Powerups Used</Text>
-                <View style={styles.overlayContainer} />
+                <View style={styles.overlayContainer}>
+                    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
+                        {renderPowerups(betPlayerInfo.player1Powerups, bet.player1Pfp)}
+                        {renderPowerups(betPlayerInfo.player2Powerups, bet.player2Pfp)}
+                    </ScrollView>
+                </View>
             </View>
         </View>
     );
@@ -145,6 +270,7 @@ const styles = StyleSheet.create({
     dataContainer: {
         paddingHorizontal: 15,
         paddingBottom: 10,
+        flex: 1,
     },
     duelCard: {
         alignSelf: 'flex-start', // Ensures the card is positioned at the top
@@ -161,8 +287,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(91, 227, 92, 0.2)', // Green with 20% opacity
         borderRadius: 15, // Corner radius
         alignItems: 'center',
+        paddingTop: 5,
     },
     rowContainer: {
+        width: '95%', // 95% of the overlayContainer width
+        height: 46, // Fixed height
+        backgroundColor: 'rgba(0, 0, 0, 0.6)', // Row color with 60% opacity
+        borderRadius: 10, // Rounded corners
+        flexDirection: 'row', // Row layout
+        alignItems: 'center', // Center items vertically
+        paddingHorizontal: 10, // Padding for inner content
+        marginBottom: 5
+        
+    },
+    rowContainerYou: {
         width: '95%', // 95% of the overlayContainer width
         height: 46, // Fixed height
         backgroundColor: 'rgba(75, 255, 108, 0.6)', // Row color with 60% opacity
@@ -170,6 +308,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row', // Row layout
         alignItems: 'center', // Center items vertically
         paddingHorizontal: 10, // Padding for inner content
+        marginBottom: 5,
+    },
+    scrollContainer: {
+        flex: 1, // Allow ScrollView to take available space
+        width: '100%',
+    },
+    scrollContentContainer: {
+        flexGrow: 1, // Allows content to stretch vertically
+        alignItems: 'center', // Centers rows horizontally
     },
     playerInfo: {
         alignItems: 'center',
@@ -223,6 +370,10 @@ const styles = StyleSheet.create({
     tokensWhiteIcon: {
         width: 12,
         height: 12,
+    },
+    powerupImage: {
+        width: 18,
+        height: 15,
     },
     playerTokens: {
         color: '#BEFFBB',

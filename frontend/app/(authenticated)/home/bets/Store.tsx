@@ -24,7 +24,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
 
 
     const speedBoots = require('../../../../assets/images/speed_boot.png');
-    const secondWind = require('../../../../assets/images/wind.jpg');
+    const secondWind = require('../../../../assets/images/wind_store.jpg');
     const legCramp = require('../../../../assets/images/leg_cramp.png');
     const brickWall = require('../../../../assets/images/brick_wall.png');
     const [items] = useState([
@@ -40,18 +40,18 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
             price: '1',
             description: '-200 steps from a head to head!',
         },
-        { id: '3', 
-            image: legCramp, 
-            title: 'Leg Cramp',
-            price: '2',
-            description: 'For the next hour, the person you use this on will have their steps halved. Stops at 12:00 AM.',
-        },
-        { id: '4', 
-            image: speedBoots, 
-            title: 'Fancy Feet',
-            price: '4',
-            description: 'For the next hour, the person you use this on will have 2X steps. Stops at 12:00 AM.'
-        },
+        // { id: '3', 
+        //     image: legCramp, 
+        //     title: 'Leg Cramp',
+        //     price: '2',
+        //     description: 'For the next hour, the person you use this on will have their steps halved. Stops at 12:00 AM.',
+        // },
+        // { id: '4', 
+        //     image: speedBoots, 
+        //     title: 'Fancy Feet',
+        //     price: '4',
+        //     description: 'For the next hour, the person you use this on will have 2X steps. Stops at 12:00 AM.'
+        // },
     ]);
 
     const toggleExpand = (id: string) => {
