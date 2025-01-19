@@ -70,7 +70,7 @@ const EditProfilePage: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back}>
+                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                     <Image
                         source={require('@components/back-icon.png')}
                         style={styles.backImage}

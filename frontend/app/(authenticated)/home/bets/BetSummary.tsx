@@ -462,7 +462,7 @@ const BetSummaryPage: React.FC = () => {
                 <View style={styles.container}>
                     {/* Header Section */}
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => router.back}>
+                        <TouchableOpacity onPress={() => router.back()}>
                             <Image
                                 source={require('../../../../assets/icons/back.png')}
                                 style={styles.backIcon}
@@ -488,7 +488,7 @@ const BetSummaryPage: React.FC = () => {
                             onPress={() => {
                                 router.push({
                                     pathname: '/(authenticated)/home/bets/EditGroup',
-                                    params: { groupID: groupID },
+                                    params: { groupIDTemp: groupID },
                                 });
                             }}
                         >
@@ -899,10 +899,20 @@ const BetSummaryPage: React.FC = () => {
                             bet={currentBets[currentBetIndex]}
                             currentGroupUsersArray={currentGroupUsersArray}
                             userID={userID}
+                            groupID={groupID}
+                            onNavigate={(destination, params) => {
+                                setLiveDuelModalVisible(false);
+                                // Add small delay to ensure modal is closed before navigation
+                                setTimeout(() => {
+                                    router.push({
+                                        pathname: destination,
+                                        params: params,
+                                    });
+                                }, 100);
+                            }}
                         />
                     </View>
                 </View>
-            
             </Modal>
 
             {/* Store Modal */}

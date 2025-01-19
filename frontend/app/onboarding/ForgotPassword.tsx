@@ -71,7 +71,7 @@ const ForgotPasswordPage: React.FC = () => {
                         <Text style={styles.button_text}>Set Password</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={router.back}
+                        onPress={() => router.back()}
                         style={[styles.button_container2]}
                     >
                         <Text style={styles.button_text2}>Go Back</Text>

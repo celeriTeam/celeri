@@ -3,6 +3,7 @@ import { ScrollView } from 'react-native';
 
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 //import { getBetPlayerInfo } from './BetSummary';
 
 //from fetchPowerups, 
@@ -51,17 +52,33 @@ type GroupUser = {
 
 type GroupUsersArray = GroupUser[];
 
+type Params = {
+    selectedUserIDTemp: string;
+    groupIDTemp: string;
+};
 
 const LiveDuelPage: React.FC< { 
-    betPlayerInfo: BetPlayerInfo , 
-    bet: Bet, currentGroupUsersArray: 
-    GroupUsersArray, userID: string;
-} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID }) => {
+    betPlayerInfo: BetPlayerInfo,
+    bet: Bet,
+    currentGroupUsersArray: GroupUsersArray,
+    userID: string,
+    groupID: string,
+    onNavigate: (path: string, params: Params) => void;
+} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate }) => {
 
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
     const yourName = yourUser?.name;
 
+    const createMemberButtonHandle = (id: string, inBet: boolean) => {
+        const userID = inBet ? currentGroupUsersArray.find((user) => user.name === id)?.id : id;
+        console.log('id: ', userID);
+        onNavigate('/(authenticated)/home/bets/publicProfile', { selectedUserIDTemp: userID ?? '', groupIDTemp: groupID });
+    };
+
     const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string) => {
+        if (bets.length === 0) {
+            return null;
+        }
         return bets.map((bet, index) => {
             //find the user where the user id is the same as the one in the bet map; this user is a GroupUser type
             const user = currentGroupUsersArray.find((user) => user.name === bet.user);
@@ -71,14 +88,16 @@ const LiveDuelPage: React.FC< {
                     style={yourName === bet.user ? styles.rowContainerYou : styles.rowContainer}
                 >
                     {/* Profile picture of the person making the bet */}
-                    <Image
-                        source={
-                            user?.pfp
-                                ? { uri: user.pfp }
-                                : require('@components/blank-profile-picture.png')
-                        }
-                        style={styles.profilePicture}
-                    />
+                    <TouchableOpacity onPress={() => createMemberButtonHandle(user?.id || '', false)} activeOpacity={0.8}>
+                        <Image
+                            source={
+                                user?.pfp
+                                    ? { uri: user.pfp }
+                                    : require('@components/blank-profile-picture.png')
+                            }
+                            style={styles.profilePicture}
+                        />
+                    </TouchableOpacity>
                     {/* Name and bet details */}
                     <View style={styles.betDetails}>
                         <Text style={styles.personName}>
@@ -119,13 +138,21 @@ const LiveDuelPage: React.FC< {
         brickWall: require('../../../../assets/images/brick_wall.png'),
     };
 
-    const renderPowerups = (powerups: {
-        powerupType: string, 
-        targetUserID: string, 
-        targetUserName: string,
-        powerupUserID: string,
-        duelID: string,
-     }[], playerPfp: string) => {
+    const renderPowerups = (
+        powerups: {
+            powerupType: string, 
+            targetUserID: string, 
+            targetUserName: string,
+            powerupUserID: string,
+            duelID: string,
+        }[],
+        playerPfp: string
+    ) => {
+        
+        if (powerups.length === 0) {
+            return null;
+        }
+
         return powerups.map((powerup, index) => {
 
             //find the user where the user id is the same as the one in the bet map; this user is a GroupUser type
@@ -145,14 +172,16 @@ const LiveDuelPage: React.FC< {
                     style={yourUser?.id === powerup.powerupUserID ? styles.rowContainerYou : styles.rowContainer}
                 >
                     {/* Profile picture of the person using the powerup */}
-                    <Image
-                        source={
-                            user?.pfp
-                                ? { uri: user.pfp }
-                                : require('@components/blank-profile-picture.png')
-                        }
-                        style={styles.profilePicture}
-                    />
+                    <TouchableOpacity onPress={() => createMemberButtonHandle(user?.id || '', false)} activeOpacity={0.8}>
+                        <Image
+                            source={
+                                user?.pfp
+                                    ? { uri: user.pfp }
+                                    : require('@components/blank-profile-picture.png')
+                            }
+                            style={styles.profilePicture}
+                        />
+                    </TouchableOpacity>
 
                     {/* Name and powerup details */}
                     <View style={styles.betDetails}>
@@ -191,13 +220,15 @@ const LiveDuelPage: React.FC< {
 
                 {/* player 1 */}
                 <View style={styles.playerInfo}>
-                    <Image 
-                        source={bet?.player1Pfp ? 
-                            { uri: bet?.player1Pfp } : 
-                            require('@components/blank-profile-picture.png')
-                        }
-                        style={styles.playerImage}
-                    />
+                    <TouchableOpacity onPress={() => createMemberButtonHandle(bet?.player1, true)} activeOpacity={0.8}>
+                        <Image 
+                            source={bet?.player1Pfp ? 
+                                { uri: bet?.player1Pfp } : 
+                                require('@components/blank-profile-picture.png')
+                            }
+                            style={styles.playerImage}
+                        />
+                    </TouchableOpacity>
                     <Text style={styles.playerName}>{bet?.player1}</Text>
                     <Text style={styles.playerSteps}>{betPlayerInfo.player1Steps} steps</Text>
                     <View style={{  flexDirection: 'row', alignItems: 'center', }}>
@@ -216,13 +247,15 @@ const LiveDuelPage: React.FC< {
 
                 </View>
                 <View style={styles.playerInfo}>
-                    <Image 
-                        source={bet?.player2Pfp ? 
-                            { uri: bet?.player2Pfp } : 
-                            require('@components/blank-profile-picture.png')
-                        }
-                        style={styles.playerImage}
-                    />
+                    <TouchableOpacity onPress={() => createMemberButtonHandle(bet?.player2, true)} activeOpacity={0.8}>
+                        <Image 
+                            source={bet?.player2Pfp ? 
+                                { uri: bet?.player2Pfp } : 
+                                require('@components/blank-profile-picture.png')
+                            }
+                            style={styles.playerImage}
+                        />
+                    </TouchableOpacity>
                     <Text style={styles.playerName}>{bet?.player2}</Text>
                     <Text style={styles.playerSteps}>{betPlayerInfo.player2Steps} steps</Text>
                     <View style={{  flexDirection: 'row', alignItems: 'center', }}>
@@ -239,6 +272,7 @@ const LiveDuelPage: React.FC< {
                 <Text style={[styles.sectionTitle,]}>Bets Placed</Text>
                 <View style={styles.overlayContainer}>
                     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
+                        {bet.player1Bets.length === 0 && bet.player2Bets.length === 0 ? <Text style={styles.betText}>No bets placed yet</Text> : null}
                         {renderBets(bet.player1Bets, bet.player1, bet.player1Pfp)}
                         {renderBets(bet.player2Bets, bet.player2, bet.player2Pfp)}
                     </ScrollView>
@@ -249,6 +283,7 @@ const LiveDuelPage: React.FC< {
                 <Text style={[styles.sectionTitle,]}>Powerups Used</Text>
                 <View style={styles.overlayContainer}>
                     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
+                        {betPlayerInfo.player1Powerups.length === 0 && betPlayerInfo.player2Powerups.length === 0 ? <Text style={styles.betText}>No powerups used yet</Text> : null}
                         {renderPowerups(betPlayerInfo.player1Powerups, bet.player1Pfp)}
                         {renderPowerups(betPlayerInfo.player2Powerups, bet.player2Pfp)}
                     </ScrollView>
@@ -329,6 +364,8 @@ const styles = StyleSheet.create({
         height: 30,
         borderRadius: 15, // Makes it circular
         marginRight: 10, // Space between profile picture and text
+        borderWidth: 1,
+        borderColor: '#fff',
     },
     betDetails: {
         flex: 1, // Fills remaining space between the profile pictures
@@ -416,9 +453,13 @@ const styles = StyleSheet.create({
         height: 14.3,
     },
     betText: {
-        color: '#000',
+        color: '#ffffff80',
+        fontStyle: 'italic',
         fontSize: 15,
         fontFamily: 'Lexend',
+        // center:
+        textAlign: 'center',
+        padding: 10,
     },
     sectionTitle: {
         color: '#fff',
