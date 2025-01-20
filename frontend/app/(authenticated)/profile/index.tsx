@@ -5,10 +5,14 @@ import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useUser } from '../../UserProvider';
 import messaging from '@react-native-firebase/messaging';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
+import useHealthData from '@/backend/src/hooks/useHealthData';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LineChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
 
 const PersonalProfilePage: React.FC = () => {
+    const { weeklySteps, averageSteps, distance, flights } = useHealthData();
     const { userID, profileImageUrl, username, steps, groupNames, loading } = useUser();
     const router = useRouter();
 
@@ -59,6 +63,59 @@ const PersonalProfilePage: React.FC = () => {
         router.push("/(authenticated)/profile/editProfile")
     };
 
+    const StepsChart = ({ weeklySteps }: { weeklySteps: number[] }) => {
+        const screenWidth = Dimensions.get('window').width;
+
+        const getLast7DaysLabels = () => {
+            const today = new Date();
+            const labels = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+            }
+            
+            return labels;
+        };
+    
+        const data = {
+            labels: getLast7DaysLabels(),
+            datasets: [{
+                data: weeklySteps
+            }]
+        };
+    
+        return (
+            <LineChart
+                data={data}
+                width={screenWidth - 40} // Account for padding
+                height={220}
+                chartConfig={{
+                    backgroundColor: '#1b2c1c',
+                    backgroundGradientFrom: '#1b2c1c',
+                    backgroundGradientTo: '#1b2c1c',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    style: {
+                        borderRadius: 16
+                    },
+                    propsForDots: {
+                        r: "6",
+                        strokeWidth: "2",
+                        stroke: "#51ba51"
+                    }
+                }}
+                bezier // Makes the line curved
+                style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                }}
+            />
+        );
+    };
+
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -71,31 +128,20 @@ const PersonalProfilePage: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                {profileImageUrl ? (
+                <View style={styles.row}>
                     <Image
-                    source={{ uri: profileImageUrl }}
+                    source={profileImageUrl ? { uri: profileImageUrl } : require('@components/blank-profile-picture.png')}
                     style={styles.profileImage}
                     />
-                ) : (
-                    <Image
-                    source={require('@components/blank-profile-picture.png')}
-                    style={styles.profileImage}
-                    />
-                )}
-                {username ? (
-                    <Text style={styles.name}>{username}</Text>
-                ) : (
-                    <Text style={styles.name}>Loading...</Text>
-                )
-                }
+                    <Text style={styles.name}>{username ? username : 'Loading...'}</Text>
+                </View>
 
                 <Text style={styles.groupsLabel}>Steps: </Text>
-                {steps != undefined ? (
-                    <Text style={styles.text}>{steps}</Text>
+                {averageSteps.length !== 0 ? (
+                    StepsChart({ weeklySteps: averageSteps })
                 ) : (
                     <Text style={styles.text}>Loading...</Text>
-                )
-                }
+                )}
                 
                 <Text style={styles.groupsLabel}>Groups:</Text>
                 <ScrollView style={styles.scrollContainer}>
@@ -120,19 +166,7 @@ const PersonalProfilePage: React.FC = () => {
         </SafeAreaView>
     );
 
-}
-
-
-// const ProfileStack = createStackNavigator();
-
-// const ProfileTab: React.FC = () => {
-//     return (
-//         <ProfileStack.Navigator>
-//             <ProfileStack.Screen name="ProfilePage" component={PersonalProfilePage} options={{ headerShown: false }} />
-//             <ProfileStack.Screen name="EditProfile" component={EditProfilePage} options={{ headerShown: false }} />
-//         </ProfileStack.Navigator>
-//     );
-// };
+};
 
 const styles = StyleSheet.create({
     safeArea: {
@@ -147,17 +181,21 @@ const styles = StyleSheet.create({
         marginTop: 50,
         height: '100%',
     },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        margin: 30,
+        gap: 10,
+    },
     profileImage: {
-        marginTop: 40,
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        marginBottom: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
     },
     name: {
         fontFamily: "Lexend-Bold",
         fontSize: 34,
-        marginBottom: 40,
     },
     groupsLabel: {
         fontFamily: "Lexend-Bold",

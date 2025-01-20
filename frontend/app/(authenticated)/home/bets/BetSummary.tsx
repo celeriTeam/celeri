@@ -37,13 +37,13 @@ const BetSummaryPage: React.FC = () => {
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number[] | undefined }[]>([]);
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [betTimeLeft, setBetTimeLeft] = useState("");
-    const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageSteps: number; }[]>([]);
+    const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
     const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
-    const [currentPropBet, setCurrentPropBet] = useState<{ betOnUserID: string; averageSteps: number; overUnder: string; } | undefined>(undefined);
+    const [currentPropBet, setCurrentPropBet] = useState<{ betOnUserID: string; averageStepCount: number; overUnder: string; } | undefined>(undefined);
     const [currentBetIndex, setCurrentBetIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
@@ -139,7 +139,7 @@ const BetSummaryPage: React.FC = () => {
 
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
-                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number | undefined }[] = [];
+                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number[] | undefined }[] = [];
                     if (userList) {
                         await Promise.all(userList.map(async (selectedUserID) => {
                             const [profilePic, username, steps, weeklySteps, averageSteps, tokens] = await Promise.all([
@@ -218,7 +218,10 @@ const BetSummaryPage: React.FC = () => {
                     }
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
-                    setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageSteps: propBetPlayerInfo?.averageSteps ?? 0}]);
+
+                    const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
+                    const averageStepCount = sum / averageSteps.length;
+                    setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0}]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
                     if (!isFinishedPropBet && gameType === 'weekly') {
@@ -900,13 +903,13 @@ const BetSummaryPage: React.FC = () => {
                             currentGroupUsersArray={currentGroupUsersArray}
                             userID={userID}
                             groupID={groupID}
-                            onNavigate={(destination, params) => {
+                            onNavigate={() => {
                                 setLiveDuelModalVisible(false);
                                 // Add small delay to ensure modal is closed before navigation
                                 setTimeout(() => {
                                     router.push({
-                                        pathname: destination,
-                                        params: params,
+                                        pathname: '/(authenticated)/home/bets/publicProfile',
+                                        params: { selectedUserIDTemp: userID ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === userID)?.averageSteps ?? [] },
                                     });
                                 }, 100);
                             }}
@@ -965,7 +968,7 @@ const BetSummaryPage: React.FC = () => {
                                         <View style={{ backgroundColor: currentPropBet?.overUnder === 'over' ? "#90EE90" : "#ff817e", padding: 10, borderRadius: 10, alignSelf: 'center', marginTop: 10 }}>
                                             <Text style={{ fontFamily: "Lexend", fontSize: 20 }}>
                                                 <Text style={{ fontFamily: "Lexend-bold", textAlign: 'center' }}>{currentPropBet?.overUnder === 'over' ? 'Over' : 'Under'} </Text>
-                                                {currentPropBet?.averageSteps}
+                                                {currentPropBet?.averageStepCount}
                                             </Text>
                                         </View>
                                     </View>
@@ -989,7 +992,7 @@ const BetSummaryPage: React.FC = () => {
                                                 }}
                                                 onPress={() => setSelectedPropBet('over')}
                                             >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {(player.averageSteps < 100) ? 100 : player.averageSteps}</Text>
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 style={{ 
@@ -1000,7 +1003,7 @@ const BetSummaryPage: React.FC = () => {
                                                 }}
                                                 onPress={() => setSelectedPropBet('under')}
                                             >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {(player.averageSteps < 100) ? 100 : player.averageSteps}</Text>
+                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
                                             </TouchableOpacity>
                                         </View>
                                         <TouchableOpacity
@@ -1011,7 +1014,7 @@ const BetSummaryPage: React.FC = () => {
                                                 style={{ fontFamily: "Lexend-bold" }} 
                                                 onPress={() => {
                                                     addToFinishedPropBet(groupID, userID);
-                                                    addPropBet(groupID, userID, player.id, player.averageSteps, selectedPropBet === 'over' ? 'over' : 'under');
+                                                    addPropBet(groupID, userID, player.id, player.averageStepCount, selectedPropBet === 'over' ? 'over' : 'under');
                                                     setFinishedPropBet(true);
                                                     setPropBetModalVisible(false);
                                                     const timer = setTimeout(() => {

@@ -30,7 +30,9 @@ const HomeTab: React.FC = () => {
     console.log("printing steps!!!");
     console.log(steps);
     console.log("printing average steps!!!");
-    console.log(averageSteps);
+    const sum = averageSteps.reduce((a: number, b: number) => a + b, 0);
+    const averageStepsCount = sum / averageSteps.length;
+    console.log(averageStepsCount);
     const [userID, setUserID] = useState<string>('');
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
@@ -80,7 +82,7 @@ const HomeTab: React.FC = () => {
 
     useEffect(() => {
         console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
-        if (!hasInitialized && steps > 0 && averageSteps > 0) {
+        if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
             //setStepsSinceMidnight(steps);
@@ -89,7 +91,7 @@ const HomeTab: React.FC = () => {
         } else if(hasInitialized){
             // Updates backend every time the listener runs, since listener cannot wait 
             // for useHealthData, but this function can
-            console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageSteps);
+            console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
             setStepsFirebase(userID, steps, averageSteps);
         }
     }, [steps, averageSteps, hasInitialized, userID]);

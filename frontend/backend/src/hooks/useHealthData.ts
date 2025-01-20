@@ -28,7 +28,7 @@ const permissions: HealthKitPermissions = {
 const useHealthData = () => {
     console.log("useHealthData is running");
     const [steps, setSteps] = useState(0);
-    const [averageSteps, setAverageSteps] = useState(0);
+    const [averageSteps, setAverageSteps] = useState<number[]>([]);
     const [weeklySteps, setWeeklySteps] = useState(0);
     const [flights, setFlights] = useState(0);
     const [distance, setDistance] = useState(0);
@@ -56,14 +56,14 @@ const useHealthData = () => {
         });
     };
 
-    const getWeeklyAverageOfSteps = async (): Promise<number> => {
+    const getWeeklyAverageOfSteps = async (): Promise<number[]> => {
         console.log("getWeeklyAverageOfSteps -- start");
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 8); // 8 days ago to avoid including today
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
     
-        let totalSteps = 0;
+        let averageSteps = [];
         const currentDate = new Date(startDate);
     
         while (currentDate < yesterday) {
@@ -82,7 +82,7 @@ const useHealthData = () => {
                     });
                 });
     
-                totalSteps += result;
+                averageSteps.push(result);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
             }
@@ -90,7 +90,7 @@ const useHealthData = () => {
             currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
         }
     
-        const averageSteps = Math.round(totalSteps / 7);
+        // const averageSteps = Math.round(totalSteps / 7);
         setAverageSteps(averageSteps); // Update state
         return averageSteps; // Return the calculated value
     };

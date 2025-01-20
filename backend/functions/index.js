@@ -897,6 +897,8 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
         const betOnUserID = bet.betOnUserID;
         const userID = bet.userID;
         const averageSteps = bet.averageSteps;
+        const sum = averageSteps.reduce((a, b) => a + b, 0);
+        const averageStepCount = sum / averageSteps.length;
         const overUnder = bet.overUnder;
         if (betOnUserID) {
           const userDoc = await firestore.collection("users").doc(userID).get();
@@ -905,9 +907,9 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
             const steps = userData.steps;
 
             let win = false;
-            if (overUnder === "under" && averageSteps >= steps) {
+            if (overUnder === "under" && averageStepCount >= steps) {
               win = true;
-            } else if (overUnder === "over" && averageSteps < steps) {
+            } else if (overUnder === "over" && averageStepCount < steps) {
               win = true;
             }
 
