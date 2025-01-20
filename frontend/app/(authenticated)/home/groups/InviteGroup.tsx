@@ -272,7 +272,7 @@ const InvitePage: React.FC = () => {
                             style={styles.backImage}
                         />
                     </TouchableOpacity>
-                    {!isFromCreate ? (
+                    {isFromCreate ? (
                         <Text style={styles.groupNameCreated}>
                             <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
                         </Text>
