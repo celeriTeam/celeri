@@ -47,7 +47,7 @@ type GroupUser = {
     pfp: string | undefined;
     tokens: number | undefined;
     steps: number | undefined;
-    averageSteps: number | undefined;
+    averageSteps: number[] | undefined;
 };
 
 type GroupUsersArray = GroupUser[];
@@ -63,7 +63,7 @@ const LiveDuelPage: React.FC< {
     currentGroupUsersArray: GroupUsersArray,
     userID: string,
     groupID: string,
-    onNavigate: (path: string, params: Params) => void;
+    onNavigate: () => void;
 } > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate }) => {
 
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
@@ -72,7 +72,7 @@ const LiveDuelPage: React.FC< {
     const createMemberButtonHandle = (id: string, inBet: boolean) => {
         const userID = inBet ? currentGroupUsersArray.find((user) => user.name === id)?.id : id;
         console.log('id: ', userID);
-        onNavigate('/(authenticated)/home/bets/publicProfile', { selectedUserIDTemp: userID ?? '', groupIDTemp: groupID });
+        onNavigate();
     };
 
     const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string) => {

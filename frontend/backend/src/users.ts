@@ -235,7 +235,7 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 /*********************************************** HEALTH DATA FUNCTIONS ********************************************/
 
 // SET Steps and average steps
-export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number) => {
+export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number[]) => {
     try {
         const userDocRef = doc(db, 'users', userID);
         console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
@@ -289,25 +289,19 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 
 
 // GET Average Steps
-export const getAverageSteps = async (id: string): Promise<number> => {
+export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
-            console.log("getAverageSteps - response:", userDoc.data()?.averageSteps);
-            return userDoc.data()?.averageSteps;
+            const averageSteps = userDoc.data()?.averageSteps;
+            console.log("getAverageSteps - response:", averageSteps);
+            return averageSteps;
         } else {
             console.error("getAverageSteps - error: No such document!");
-            return 0;
+            return [];
         }
     } catch (error) {
         console.error("getAverageSteps - Error fetching user document:", error);
-        return 0;
+        return [];
     }
 }
-
-// GET average steps; for the over under 
-// export const getAverageSteps = async (id: string): Promise<number> => {
-//     try {
-//         const userDoc = await getDoc(doc(db, "users", id));
-//     }
-// }

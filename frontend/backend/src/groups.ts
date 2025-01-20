@@ -375,7 +375,7 @@ export const getGameType = async (groupID: string): Promise<string | undefined> 
 }
 
 // GET prop bet info
-export const getPropBet = async (groupID: string, userID: string): Promise<{ betOnUserID: string, averageSteps: number, overUnder: string } | undefined> => {
+export const getPropBet = async (groupID: string, userID: string): Promise<{ betOnUserID: string, averageStepCount: number, overUnder: string } | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.propBets){
@@ -384,7 +384,7 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
                 if (propBet.userID === userID) {
                     const currentBet = {
                         betOnUserID: propBet.betOnUserID,
-                        averageSteps: propBet.averageSteps,
+                        averageStepCount: propBet.averageStepCount,
                         overUnder: propBet.overUnder,
                     };
                     console.log("getPropBet - response: ", currentBet);
@@ -487,8 +487,8 @@ export const editGroupName = async(groupID: string, groupNameInput: string) => {
     }
 }
 
-export const addPropBet = async (groupID: string, userID: string, betOnUserID: string, averageSteps: number, overUnder: string) => {
-    // add to groups[groupID].propBets where propBets = {betOnUserID, userID, averageSteps, overUnder}
+export const addPropBet = async (groupID: string, userID: string, betOnUserID: string, averageStepCount: number, overUnder: string) => {
+    // add to groups[groupID].propBets where propBets = {betOnUserID, userID, averageStepCount, overUnder}
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -496,7 +496,7 @@ export const addPropBet = async (groupID: string, userID: string, betOnUserID: s
             const propBetData = {
                 betOnUserID: betOnUserID,
                 userID: userID,
-                averageSteps: averageSteps,
+                averageStepCount: averageStepCount,
                 overUnder: overUnder,
             };
             await updateDoc(groupDocRef, {

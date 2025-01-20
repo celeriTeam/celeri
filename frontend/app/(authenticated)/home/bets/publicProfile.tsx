@@ -6,15 +6,23 @@ import { createNudge } from '@/backend/src/notifs';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { LineChart } from 'react-native-chart-kit';
+import { Dimensions } from 'react-native';
 
 const ProfilePage: React.FC = () => {
     const { username, groups, loading } = useUser();
-    const { selectedUserIDTemp, groupIDTemp } = useLocalSearchParams();
+    const { selectedUserIDTemp, groupIDTemp, averageStepsTemp } = useLocalSearchParams();
 
     // Convert parameters to strings
     const selectedUserID = selectedUserIDTemp ? String(selectedUserIDTemp) : '';
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
+    const averageSteps = Array.isArray(averageStepsTemp)
+        ? averageStepsTemp.map(Number)
+        : typeof averageStepsTemp === 'string' 
+            ? averageStepsTemp.split(',').map(Number)
+            : [];
+            
+    console.log('weeklySteps: ', averageStepsTemp);
 
     console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
@@ -55,6 +63,60 @@ const ProfilePage: React.FC = () => {
         setNudgeMessage('');
     };
 
+    const StepsChart = ({ weeklySteps }: { weeklySteps: number[] }) => {
+        const screenWidth = Dimensions.get('window').width;
+        console.log('weeklySteps: ', weeklySteps);
+
+        const getLast7DaysLabels = () => {
+            const today = new Date();
+            const labels = [];
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+            }
+            
+            return labels;
+        };
+    
+        const data = {
+            labels: getLast7DaysLabels(),
+            datasets: [{
+                data: weeklySteps
+            }]
+        };
+    
+        return (
+            <LineChart
+                data={data}
+                width={screenWidth - 40} // Account for padding
+                height={220}
+                chartConfig={{
+                    backgroundColor: '#1b2c1c',
+                    backgroundGradientFrom: '#1b2c1c',
+                    backgroundGradientTo: '#1b2c1c',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    style: {
+                        borderRadius: 16
+                    },
+                    propsForDots: {
+                        r: "6",
+                        strokeWidth: "2",
+                        stroke: "#51ba51"
+                    }
+                }}
+                bezier // Makes the line curved
+                style={{
+                    marginVertical: 8,
+                    borderRadius: 16
+                }}
+            />
+        );
+    };
+
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -73,31 +135,21 @@ const ProfilePage: React.FC = () => {
                         style={styles.backImage}
                     />
                 </TouchableOpacity>
-                {currentProfilePic ? (
+
+                <View style={styles.row}>
                     <Image
-                    source={{ uri: currentProfilePic }}
+                    source={currentProfilePic ? { uri: currentProfilePic } : require('@components/blank-profile-picture.png')}
                     style={styles.profileImage}
                     />
-                ) : (
-                    <Image
-                    source={require('@components/blank-profile-picture.png')}
-                    style={styles.profileImage}
-                    />
-                )}
-                {currentUserName ? (
-                    <Text style={styles.name}>{currentUserName}</Text>
-                ) : (
-                    <Text style={styles.name}>Loading...</Text>
-                )
-                }
+                    <Text style={styles.name}>{currentUserName ? currentUserName : 'Loading...'}</Text>
+                </View>
 
                 <Text style={styles.groupsLabel}>Steps: </Text>
-                {currentSteps != undefined ? (
-                    <Text style={styles.text}>{currentSteps}</Text>
+                {averageSteps.length !== 0 ? (
+                    StepsChart({ weeklySteps: averageSteps })
                 ) : (
                     <Text style={styles.text}>Loading...</Text>
-                )
-                }
+                )}
 
                 <Text style={styles.groupsLabel}>Tokens: </Text>
                 {currentUserTokens != undefined ? (
@@ -167,12 +219,17 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
     },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        margin: 30,
+        gap: 10,
+    },
     profileImage: {
-        marginTop: 40,
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        marginBottom: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
     },
     name: {
         fontFamily: "Lexend-Bold",
