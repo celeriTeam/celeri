@@ -25,16 +25,20 @@ initializeApp();
 const firestore = getFirestore();
 
 // Initialize SendGrid for email sending
-const functions = require("firebase-functions");
+const {onCall} = require("firebase-functions/v2/https");
 const sgMail = require("@sendgrid/mail");
-const API_KEY = functions.config().sendgrid.key;
+
+// Define config parameter
+const API_KEY = process.env.SENDGRID_API_KEY;
 sgMail.setApiKey(API_KEY);
 
 // Create email sending function
-exports.sendEmail = functions.https.onCall(async (data, context) => {
+exports.sendEmail = onCall(async (request) => {
+  const {data} = request;
+
   const msg = {
     to: data.to,
-    from: "lukaschin000@gmail.com", // Must be verified in SendGrid
+    from: "lukaschin000@gmail.com",
     subject: data.subject,
     text: data.text,
   };
@@ -44,7 +48,7 @@ exports.sendEmail = functions.https.onCall(async (data, context) => {
     return {success: true};
   } catch (error) {
     console.error("Email error:", error);
-    throw new functions.https.HttpsError("internal", "Error sending email");
+    throw new Error("Error sending email");
   }
 });
 
@@ -613,11 +617,13 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Wait for all batches to be committed
           await Promise.all(allBatches);
 
-          // Delete weeklySteps from the group document
-          await groupDocRef.update({
+          const resetBatch = firestore.batch();
+
+          // remove weeklySteps
+          resetBatch.update(groupDocRef, {
             weeklySteps: FieldValue.delete(),
           });
-          console.log("updateWinners -- Deleted weeklySteps");
+          console.log("weeklySteps deleted successfully.");
 
           // Now do the race distirbution
           console.log("updateWinners -- race distribution starting now");
@@ -640,7 +646,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
             if (userID !== maxUser) {
               const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
               totalDecrease += decrease; // Accumulate total decrease
-              await groupDocRef.update({
+              resetBatch.update(groupDocRef, {
                 [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
               });
             }
@@ -648,7 +654,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           // Add the total decrease to the maxUser's tokens
           if (users.has(maxUser)) {
-            await groupDocRef.update({
+            resetBatch.update(groupDocRef, {
               [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
             });
           }
@@ -657,15 +663,11 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
 
           // After recording all winners, reset steps for all users
-          const resetBatch = firestore.batch();
           userSnapshots.forEach((doc) => {
             resetBatch.update(userRef.doc(doc.id), {steps: 0});
           });
           await resetBatch.commit();
-          // remove weeklySteps
-          await groupDocRef.update({
-            weeklySteps: FieldValue.delete(),
-          });
+
           console.log("Batch update completed successfully.");
         } else {
           return;
@@ -1120,7 +1122,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
             players.forEach((playerID) => {
               const currentUserData = data.users[playerID];
               usersUpdate[`users.${playerID}.placedBet`] = false;
-              usersUpdate[`users.${playerID}.tokens`] = currentUserData.tokens;
+              usersUpdate[`users.${playerID}.tokens`] = currentUserData ? currentUserData.tokens : 0;
               usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; // usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
             });
             groupBatch.update(groupDocRef, usersUpdate);
@@ -1275,7 +1277,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           players.forEach((playerID) => {
             const currentUserData = data.users[playerID];
             usersUpdate[`users.${playerID}.placedBet`] = false;
-            usersUpdate[`users.${playerID}.tokens`] = currentUserData.tokens;
+            usersUpdate[`users.${playerID}.tokens`] = currentUserData ? currentUserData.tokens : 0;
             usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; // usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
           });
           groupBatch.update(groupDocRef, usersUpdate);
