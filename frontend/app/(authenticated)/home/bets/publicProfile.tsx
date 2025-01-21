@@ -146,7 +146,11 @@ const ProfilePage: React.FC = () => {
 
                 <Text style={styles.groupsLabel}>Steps: </Text>
                 {averageSteps.length !== 0 ? (
-                    StepsChart({ weeklySteps: averageSteps })
+                    averageSteps.length === 1 && averageSteps[0] === 0 ? (
+                        <Text style={styles.text}>0</Text>
+                    ) : (
+                        StepsChart({ weeklySteps: averageSteps })
+                    )
                 ) : (
                     <Text style={styles.text}>Loading...</Text>
                 )}
