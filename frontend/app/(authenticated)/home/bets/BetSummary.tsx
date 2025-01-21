@@ -113,6 +113,7 @@ const BetSummaryPage: React.FC = () => {
         const currentGroups: { [groupID: string]: any } = {};
         const groupsRef = collection(db, "groups");
         const groupDocRef = doc(groupsRef, groupID);
+        console.log('fetching group data..');
 
         // Unsubscribe firebase listener functions
         const unsubscribeFunctions: (() => void)[] = [];
@@ -220,7 +221,7 @@ const BetSummaryPage: React.FC = () => {
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
 
                     const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
-                    const averageStepCount = sum / averageSteps.length;
+                    const averageStepCount = sum / averageSteps.length || 0;
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0}]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
@@ -233,6 +234,7 @@ const BetSummaryPage: React.FC = () => {
                     }
 
                     // Set up a listener for today's duels
+                    console.log('starting duel listener..');
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const startDate = new Date(today);
@@ -358,10 +360,10 @@ const BetSummaryPage: React.FC = () => {
         };
     };
 
-    const createMemberButtonHandle = (id: string) => {
+    const createMemberButtonHandle = (id: string, averageSteps: number[] | undefined) => {
         router.push({
             pathname: '/(authenticated)/home/bets/publicProfile',
-            params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID },
+            params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: averageSteps ?? [] },
         });
     };
 
@@ -729,7 +731,7 @@ const BetSummaryPage: React.FC = () => {
                                 {selectedTab === 'Tokens' ? (
                                     <>
                                         <View style={styles.leaderboardTop}>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id, currentGroupUsersArray[1]?.averageSteps)} activeOpacity={0.8}>
                                                 <Image
                                                     source={currentGroupUsersArray[1]?.pfp ? 
                                                         { uri: currentGroupUsersArray[1]?.pfp } : 
@@ -749,7 +751,7 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id, currentGroupUsersArray[0]?.averageSteps)} activeOpacity={0.8}>
                                                 <View style={{
                                                     shadowColor: '#51ba51',
                                                     shadowOffset: { width: 0, height: 0 },
@@ -777,7 +779,7 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id, currentGroupUsersArray[2]?.averageSteps)} activeOpacity={0.8}>
                                                 <Image
                                                     source={currentGroupUsersArray[2]?.pfp ? 
                                                         { uri: currentGroupUsersArray[2]?.pfp } : 
@@ -799,7 +801,7 @@ const BetSummaryPage: React.FC = () => {
                                             </TouchableOpacity>
                                         </View>
                                         {currentGroupUsersArray.slice(3).map((user, index) => (
-                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps)} activeOpacity={0.8}>
                                                 <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
                                                     <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index+4}</Text>
                                                         <Image
@@ -826,7 +828,7 @@ const BetSummaryPage: React.FC = () => {
                                         <View style={styles.grayLine} />
                                         {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                             <View key={user.id} style={styles.leaderboardRow}>
-                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
+                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps)}>
                                                     <Image
                                                         source={user.pfp ? 
                                                             { uri: user.pfp } : 

@@ -241,10 +241,10 @@ export const setStepsFirebase = async(userID: string, steps: number, averageStep
         console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
         await updateDoc(userDocRef, {
             steps: steps,
-            averageSteps: averageSteps,
+            averageStepsTemp: averageSteps,
         });
         const userDoc = await getDoc(userDocRef);
-        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps);
+        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageStepsTemp);
     } catch (error) {
         console.error('setSteps - Error updating username', error);
         return null;
@@ -292,8 +292,8 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
-            const averageSteps = userDoc.data()?.averageSteps;
+        if (userDoc.exists() && userDoc.data()?.averageStepsTemp !== undefined) {
+            const averageSteps = userDoc.data()?.averageStepsTemp;
             console.log("getAverageSteps - response:", averageSteps);
             return averageSteps;
         } else {
