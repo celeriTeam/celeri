@@ -617,12 +617,14 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Wait for all batches to be committed
           await Promise.all(allBatches);
 
-          const resetBatch = firestore.batch();
+          let resetBatch = firestore.batch();
 
           // remove weeklySteps
           resetBatch.update(groupDocRef, {
             weeklySteps: FieldValue.delete(),
           });
+          await resetBatch.commit();
+          resetBatch = firestore.batch();
           console.log("weeklySteps deleted successfully.");
 
           // Now do the race distirbution
@@ -639,9 +641,18 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           }
 
           let totalDecrease = 0; // Track total token decrease
+          // To reset operations count per batch:
+          let operationCount = 1;
+          const MAX_OPERATIONS = 500;
 
           // Iterate over each user to calculate decreases and updates
-          for (const [userID, userData] in users) {
+          for (const [userID, userData] of users.entries()) {
+            if (operationCount >= MAX_OPERATIONS) {
+              await resetBatch.commit();
+              resetBatch = firestore.batch();
+              operationCount = 0;
+            }
+
             // If not the maxUser, calculate and decrease tokens
             if (userID !== maxUser) {
               const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
@@ -649,6 +660,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
               resetBatch.update(groupDocRef, {
                 [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
               });
+              operationCount++;
             }
           }
 
@@ -657,6 +669,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
             resetBatch.update(groupDocRef, {
               [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
             });
+            operationCount++;
           }
 
           console.log("updateWinners -- Successfully updated tokens for all users after race.");
@@ -818,6 +831,23 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
         // After recording all winners, reset steps for all users
         const resetBatch = firestore.batch();
+        userSnapshots.forEach((doc) => {
+          const userData = doc.data();
+          let updatedSteps;
+
+          if (userData.averageStepsTemp && Array.isArray(userData.averageStepsTemp)) {
+            // Remove first number and add 0 to the end
+            updatedSteps = [...userData.averageStepsTemp.slice(1), 0];
+          } else {
+            // Initialize with seven zeros
+            updatedSteps = [0, 0, 0, 0, 0, 0, 0];
+          }
+
+          resetBatch.update(userRef.doc(doc.id), {
+            steps: 0,
+            averageStepsTemp: updatedSteps,
+          });
+        });
         userSnapshots.forEach((doc) => {
           resetBatch.update(userRef.doc(doc.id), {steps: 0});
         });
