@@ -915,13 +915,13 @@ const BetSummaryPage: React.FC = () => {
                             currentGroupUsersArray={currentGroupUsersArray}
                             userID={userID}
                             groupID={groupID}
-                            onNavigate={() => {
+                            onNavigate={(id) => {
                                 setLiveDuelModalVisible(false);
                                 // Add small delay to ensure modal is closed before navigation
                                 setTimeout(() => {
                                     router.push({
                                         pathname: '/(authenticated)/home/bets/publicProfile',
-                                        params: { selectedUserIDTemp: userID ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === userID)?.averageSteps ?? [] },
+                                        params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [] },
                                     });
                                 }, 100);
                             }}

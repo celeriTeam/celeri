@@ -63,7 +63,7 @@ const LiveDuelPage: React.FC< {
     currentGroupUsersArray: GroupUsersArray,
     userID: string,
     groupID: string,
-    onNavigate: () => void;
+    onNavigate: (id: string) => void;
 } > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate }) => {
 
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
@@ -72,7 +72,7 @@ const LiveDuelPage: React.FC< {
     const createMemberButtonHandle = (id: string, inBet: boolean) => {
         const userID = inBet ? currentGroupUsersArray.find((user) => user.name === id)?.id : id;
         console.log('id: ', userID);
-        onNavigate();
+        onNavigate(userID ?? '');
     };
 
     const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string, borderColor: string) => {

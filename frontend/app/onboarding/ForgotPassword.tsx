@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError, updatePassword } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError, updatePassword, sendPasswordResetEmail } from "firebase/auth";
 import firebase from '@react-native-firebase/app';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
@@ -12,25 +12,45 @@ import { useRouter } from 'expo-router';
 
 const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState<string | undefined>();
-    const [password, setPassword] = useState<string | undefined>();
     const router = useRouter(); 
 
     const auth = getAuth(app);
     
     const resetPassword = async () => {
-        if (email && password) {
+        if (email) {
             try {
                 console.log("Trying to update user password...");
-                if (email) {
-                    Alert.alert('Error', 'Currently not supported');
-                    return;
-                }
-                Alert.alert('Success', 'Password updated successfully');
-                router.replace('/(authenticated)');
+                
+                await sendPasswordResetEmail(auth, email);
+                Alert.alert(
+                    'Success', 
+                    'Password reset email sent. Please check your inbox.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => router.replace('/(authenticated)')
+                        }
+                    ]
+                );
             } catch (error) {
                 const errorCode = (error as AuthError).code;
-                const errorMessage = (error as AuthError).message;
+                let errorMessage = 'An error occurred while resetting password';
+                
+                switch (errorCode) {
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email address';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMessage = 'No user found with this email address';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMessage = 'Too many attempts. Please try again later';
+                        break;
+                    default:
+                        console.error("Error resetting password: ", errorCode);
+                }
                 console.error("Error updating user password: ", errorCode, errorMessage);
+                Alert.alert('Error', errorMessage);
             }
         } else {
             Alert.alert('Error', 'Please fill in all fields');
@@ -52,14 +72,6 @@ const ForgotPasswordPage: React.FC = () => {
                             onChangeText={setEmail}
                             inputMode="email"
                             autoCapitalize="none"
-                            placeholderTextColor="#999797"
-                        />
-                        <TextInput
-                            style={styles.loginTextField}
-                            placeholder="New Password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
                             placeholderTextColor="#999797"
                         />
                     </View>

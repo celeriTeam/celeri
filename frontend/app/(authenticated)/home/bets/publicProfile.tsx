@@ -22,7 +22,7 @@ const ProfilePage: React.FC = () => {
             ? averageStepsTemp.split(',').map(Number)
             : [];
             
-    console.log('weeklySteps: ', averageStepsTemp);
+    console.log('weeklySteps: ', averageSteps);
 
     console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
@@ -31,6 +31,7 @@ const ProfilePage: React.FC = () => {
     const currentSteps = groups[groupID]?.users[selectedUserID]?.steps || 0;
     const [nudgeMessage, setNudgeMessage] = useState<string>('');
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
 
     const router = useRouter();
 
@@ -112,6 +113,30 @@ const ProfilePage: React.FC = () => {
                 style={{
                     marginVertical: 8,
                     borderRadius: 16
+                }}
+                decorator={() => {
+                    return tooltipPos.visible ? (
+                        <View style={{
+                            position: 'absolute',
+                            left: tooltipPos.x - 20,
+                            top: tooltipPos.y - 25,
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            padding: 5,
+                            borderRadius: 5
+                        }}>
+                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff' }}>
+                                {tooltipPos.value}
+                            </Text>
+                        </View>
+                    ) : null;
+                }}
+                onDataPointClick={({x, y, value}) => {
+                    setTooltipPos({
+                        x: x,
+                        y: y,
+                        value: value,
+                        visible: true
+                    });
                 }}
             />
         );
