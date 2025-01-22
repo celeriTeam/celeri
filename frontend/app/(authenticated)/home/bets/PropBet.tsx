@@ -74,14 +74,14 @@ const PropBetPage: React.FC< {
                             <View style={styles.overUnderButtons}
                             >
                                 <TouchableOpacity
-                                    style={[styles.overUnderButtonTouchable, { transform: [{ scale: selectedPropBet === 'over' ? 1.2 : 1 }] }]}
+                                    style={selectedPropBet === 'over' ? styles.overUnderButtonTouched : styles.overUnderButtonTouchable}
                                     onPress={() => setSelectedPropBet('over')}
                                     activeOpacity={0.8}
                                 >
                                     <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Over</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.overUnderButtonTouchable, { transform: [{ scale: selectedPropBet === 'under' ? 1.2 : 1 }] }]}
+                                    style={selectedPropBet === 'under' ? styles.overUnderButtonTouched : styles.overUnderButtonTouchable}
                                     onPress={() => setSelectedPropBet('under')}
                                     activeOpacity={0.8}
                                 >
@@ -89,7 +89,7 @@ const PropBetPage: React.FC< {
                                 </TouchableOpacity>
                             </View>
                             <TouchableOpacity
-                                style={[styles.submitButton, { backgroundColor: selectedPropBet === null ? "#656565" : "#74FF6D", }]}
+                                style={[styles.submitButton, { backgroundColor: selectedPropBet === null ? "#656565" : "#fff", }]}
                                 onPress={() => {
                                     addToFinishedPropBet(groupID, userID);
                                     addPropBet(groupID, userID, player.id, (player.averageStepCount < 100) ? 100 : player.averageStepCount, selectedPropBet === 'over' ? 'over' : 'under');
@@ -185,6 +185,13 @@ const styles = StyleSheet.create({
         borderRadius: 25, 
         borderColor: '#fff',
         borderWidth: 1,
+    },
+    overUnderButtonTouched: {
+        padding: 10, 
+        borderRadius: 25, 
+        // borderColor: '#fff',
+        // borderWidth: 1,
+        backgroundColor: '#4BFF6C96',
     },
     submitButton: {
         padding: 10, 
