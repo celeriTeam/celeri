@@ -14,9 +14,12 @@ import { Dimensions } from 'react-native';
 const PersonalProfilePage: React.FC = () => {
     const { weeklySteps, averageSteps, distance, flights } = useHealthData();
     const { userID, profileImageUrl, username, steps, groupNames, loading } = useUser();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
     const router = useRouter();
 
     const handleLogout = async () => {
+        setIsLoggingOut(true);
         const authInstance = getAuth();
         try {
             const token = await messaging().getToken()
@@ -82,7 +85,7 @@ const PersonalProfilePage: React.FC = () => {
         const data = {
             labels: getLast7DaysLabels(),
             datasets: [{
-                data: weeklySteps
+                data: [...weeklySteps, steps]
             }]
         };
     
@@ -111,6 +114,30 @@ const PersonalProfilePage: React.FC = () => {
                 style={{
                     marginVertical: 8,
                     borderRadius: 16
+                }}
+                decorator={() => {
+                    return tooltipPos.visible ? (
+                        <View style={{
+                            position: 'absolute',
+                            left: tooltipPos.x - 20,
+                            top: tooltipPos.y - 25,
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            padding: 5,
+                            borderRadius: 5
+                        }}>
+                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff' }}>
+                                {tooltipPos.value}
+                            </Text>
+                        </View>
+                    ) : null;
+                }}
+                onDataPointClick={({x, y, value}) => {
+                    setTooltipPos({
+                        x: x,
+                        y: y,
+                        value: value,
+                        visible: true
+                    });
                 }}
             />
         );
@@ -158,7 +185,7 @@ const PersonalProfilePage: React.FC = () => {
                 <TouchableOpacity onPress={handleEditProfile}>
                     <Text style={[styles.buttonText, {color: 'blue'}]}>Edit Profile</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleLogout}>
+                <TouchableOpacity onPress={handleLogout} disabled={isLoggingOut}>
                     <Text style={[styles.buttonText, {color: 'red'}]}>Log Out</Text>
                 </TouchableOpacity>
                 </View>

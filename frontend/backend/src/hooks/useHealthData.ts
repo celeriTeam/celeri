@@ -58,15 +58,18 @@ const useHealthData = () => {
 
     const getWeeklyAverageOfSteps = async (): Promise<number[]> => {
         console.log("getWeeklyAverageOfSteps -- start");
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 8); // 8 days ago to avoid including today
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(23, 59, 59, 999); // End of yesterday
+    
+        const sevenDaysAgo = new Date(yesterday);
+        sevenDaysAgo.setDate(yesterday.getDate() - 6); // Go back 6 more days from yesterday
+        sevenDaysAgo.setHours(0, 0, 0, 0); // Start of that day
     
         let averageSteps = [];
-        const currentDate = new Date(startDate);
+        const currentDate = new Date(sevenDaysAgo);
     
-        while (currentDate < yesterday) {
+        while (currentDate <= yesterday) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
             };
@@ -85,9 +88,10 @@ const useHealthData = () => {
                 averageSteps.push(result);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
+                averageSteps.push(0); // Push 0 for days with errors
             }
     
-            currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+            currentDate.setDate(currentDate.getDate() + 1); // Move to next day
         }
     
         // const averageSteps = Math.round(totalSteps / 7);
