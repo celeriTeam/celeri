@@ -75,7 +75,7 @@ const LiveDuelPage: React.FC< {
         onNavigate();
     };
 
-    const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string) => {
+    const renderBets = (bets: {user: string; wager: number}[], onPlayer: string, playerPfp: string, borderColor: string) => {
         if (bets.length === 0) {
             return null;
         }
@@ -120,7 +120,7 @@ const LiveDuelPage: React.FC< {
                                 ? { uri: playerPfp }
                                 : require('@components/blank-profile-picture.png')
                         }
-                        style={styles.profilePicture}
+                        style={[styles.profilePicture, { borderColor: borderColor, }]}
                     />
 
                 </View>
@@ -146,7 +146,8 @@ const LiveDuelPage: React.FC< {
             powerupUserID: string,
             duelID: string,
         }[],
-        playerPfp: string
+        playerPfp: string,
+        borderColor: string
     ) => {
         
         if (powerups.length === 0) {
@@ -206,7 +207,7 @@ const LiveDuelPage: React.FC< {
                                 ? { uri: playerPfp }
                                 : require('@components/blank-profile-picture.png')
                         }
-                        style={styles.profilePicture}
+                        style={[styles.profilePicture, { borderColor: borderColor, }]}
                     />
                 </View>
             )
@@ -226,7 +227,7 @@ const LiveDuelPage: React.FC< {
                                 { uri: bet?.player1Pfp } : 
                                 require('@components/blank-profile-picture.png')
                             }
-                            style={styles.playerImage}
+                            style={[styles.playerImage, { borderColor: '#FF6060', }]}
                         />
                     </TouchableOpacity>
                     <Text style={styles.playerName}>{bet?.player1}</Text>
@@ -253,7 +254,7 @@ const LiveDuelPage: React.FC< {
                                 { uri: bet?.player2Pfp } : 
                                 require('@components/blank-profile-picture.png')
                             }
-                            style={styles.playerImage}
+                            style={[styles.playerImage, { borderColor: '#7464FF', }]}
                         />
                     </TouchableOpacity>
                     <Text style={styles.playerName}>{bet?.player2}</Text>
@@ -273,8 +274,8 @@ const LiveDuelPage: React.FC< {
                 <View style={styles.overlayContainer}>
                     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
                         {bet.player1Bets.length === 0 && bet.player2Bets.length === 0 ? <Text style={styles.betText}>No bets placed yet</Text> : null}
-                        {renderBets(bet.player1Bets, bet.player1, bet.player1Pfp)}
-                        {renderBets(bet.player2Bets, bet.player2, bet.player2Pfp)}
+                        {renderBets(bet.player1Bets, bet.player1, bet.player1Pfp, '#FF6060')}
+                        {renderBets(bet.player2Bets, bet.player2, bet.player2Pfp, '#7464FF')}
                     </ScrollView>
                 </View>
 
@@ -284,8 +285,8 @@ const LiveDuelPage: React.FC< {
                 <View style={styles.overlayContainer}>
                     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContentContainer}>
                         {betPlayerInfo.player1Powerups.length === 0 && betPlayerInfo.player2Powerups.length === 0 ? <Text style={styles.betText}>No powerups used yet</Text> : null}
-                        {renderPowerups(betPlayerInfo.player1Powerups, bet.player1Pfp)}
-                        {renderPowerups(betPlayerInfo.player2Powerups, bet.player2Pfp)}
+                        {renderPowerups(betPlayerInfo.player1Powerups, bet.player1Pfp, '#FF6060')}
+                        {renderPowerups(betPlayerInfo.player2Powerups, bet.player2Pfp, '#7464FF')}
                     </ScrollView>
                 </View>
             </View>
@@ -391,7 +392,6 @@ const styles = StyleSheet.create({
         height: 50,
         borderRadius: 25,
         borderWidth: 2,
-        borderColor: '#74FF6D',
     },
     playerName: {
         color: '#fff',
