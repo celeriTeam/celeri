@@ -926,9 +926,9 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
       propBetsArray.map(async (bet) => {
         const betOnUserID = bet.betOnUserID;
         const userID = bet.userID;
-        const averageSteps = bet.averageSteps;
-        const sum = averageSteps.reduce((a, b) => a + b, 0);
-        const averageStepCount = sum / averageSteps.length;
+        const averageStepCount = (bet.averageStepCount !== undefined && bet.averageStepCount !== null) ?
+          bet.averageStepCount :
+          bet.averageSteps;
         const overUnder = bet.overUnder;
         if (betOnUserID) {
           const userDoc = await firestore.collection("users").doc(userID).get();

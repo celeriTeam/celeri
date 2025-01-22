@@ -19,6 +19,7 @@ import { ClientRequest } from 'http';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './LiveDuel';
 import { group } from 'console';
+import PropBetPage from './PropBet';
 
 const db = getFirestore(app);
 
@@ -608,7 +609,7 @@ const BetSummaryPage: React.FC = () => {
                                     style={styles.duelCard}
                                 >
                                     
-                                    <TouchableOpacity onPress={handleRightArrowPress}>
+                                    <TouchableOpacity style={[styles.duelNavigation, { left: 0, }]} onPress={handleRightArrowPress}>
                                         <Image
                                             source={require('../../../../assets/icons/leftArrow.png')}
                                             style={styles.leftArrowIcon}
@@ -622,7 +623,7 @@ const BetSummaryPage: React.FC = () => {
                                                 { uri: currentBets[currentBetIndex]?.player1Pfp } : 
                                                 require('@components/blank-profile-picture.png')
                                             }
-                                            style={styles.playerImage}
+                                            style={[styles.playerImage, { borderColor: '#FF6060', }]}
                                         />
                                         <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player1}</Text>
                                         <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
@@ -647,7 +648,7 @@ const BetSummaryPage: React.FC = () => {
                                                 { uri: currentBets[currentBetIndex]?.player2Pfp } : 
                                                 require('@components/blank-profile-picture.png')
                                             }
-                                            style={styles.playerImage}
+                                            style={[styles.playerImage, { borderColor: '#7464FF', }]}
                                         />
                                         <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player2}</Text>
                                         <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
@@ -660,7 +661,7 @@ const BetSummaryPage: React.FC = () => {
                                         </View>
                                     </View>
 
-                                    <TouchableOpacity onPress={handleLeftArrowPress}>
+                                    <TouchableOpacity style={[styles.duelNavigation, { right: 0, }]} onPress={handleLeftArrowPress}>
                                         <Image
                                             source={require('../../../../assets/icons/rightArrow.png')}
                                             style={styles.rightArrowIcon}
@@ -896,13 +897,16 @@ const BetSummaryPage: React.FC = () => {
             <Modal
                 transparent={true}
                 visible={isLiveDuelModalVisible}
-                animationType="slide"
+                animationType="fade"
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.liveDuelModalContainer}>
                         {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)}>
-                            <Text style={styles.closeButtonText2}>X</Text>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} activeOpacity={1}>
+                            <Image
+                                source={require('../../../../assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
                         </TouchableOpacity>
                         {/* LiveDuelPage as the modal content */}
                         <LiveDuelPage
@@ -957,87 +961,27 @@ const BetSummaryPage: React.FC = () => {
                 visible={isPropBetModalVisible}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.moneyModalContainer}>
+                    <View style={[styles.moneyModalContainer, { height: '41%', }]}>
                         {/* Close button */}
                         {finishedPropBet && (
                             <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
-                                <Text style={styles.closeButtonText}>X</Text>
+                                <Image
+                                    source={require('../../../../assets/icons/x.png')}
+                                    style={styles.closeButtonIcon}
+                                />
                             </TouchableOpacity>
                         )}
-                        <Text style={[styles.tokenText, { textAlign: 'center', marginBottom: 15 }]}>How many steps will the following player walk today? If you win the prop bet, you'll get +1 diamond. </Text>
-                        {propBetPlayer.map(player => (
-                            <View>
-                                <Text key={player.id} style={{ fontFamily: "Lexend-bold", fontSize: 20, textAlign: 'center' }}>
-                                    {player.name}
-                                </Text>
-                                {finishedPropBet ? (
-                                    <View>
-                                        <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 20  }}>You have entered:</Text>
-                                        <View style={{ backgroundColor: currentPropBet?.overUnder === 'over' ? "#90EE90" : "#ff817e", padding: 10, borderRadius: 10, alignSelf: 'center', marginTop: 10 }}>
-                                            <Text style={{ fontFamily: "Lexend", fontSize: 20 }}>
-                                                <Text style={{ fontFamily: "Lexend-bold", textAlign: 'center' }}>{currentPropBet?.overUnder === 'over' ? 'Over' : 'Under'} </Text>
-                                                {currentPropBet?.averageStepCount}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                ) : (
-                                    <View>
-                                        <View style={{
-                                                marginTop: 20, 
-                                                flexDirection: 'row',
-                                                justifyContent: 'center',
-                                                width: '70%',
-                                                alignSelf: 'center',
-                                                gap: 20,
-                                            }}
-                                        >
-                                            <TouchableOpacity
-                                                style={{
-                                                    backgroundColor: selectedPropBet === 'over' ? "#50C850" : "#90EE90",
-                                                    padding: 10, 
-                                                    borderRadius: 10, 
-                                                    transform: [{ scale: selectedPropBet === 'over' ? 1.1 : 1 }] 
-                                                }}
-                                                onPress={() => setSelectedPropBet('over')}
-                                            >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Over</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={{ 
-                                                    backgroundColor: selectedPropBet === 'under' ? "#ff4d4d" : "#ff817e", 
-                                                    padding: 10, 
-                                                    borderRadius: 10, 
-                                                    transform: [{ scale: selectedPropBet === 'under' ? 1.1 : 1 }] 
-                                                }}
-                                                onPress={() => setSelectedPropBet('under')}
-                                            >
-                                                <Text style={{ fontFamily: "Lexend", fontSize: 20 }}><Text style={{ fontFamily: "Lexend-bold" }}>Under</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        <TouchableOpacity
-                                            style={{ backgroundColor: selectedPropBet === null ? "#9abddc" : "#1E90FF", padding: 10, borderRadius: 10, marginTop: 30, alignSelf: 'center' }}
-                                            disabled={selectedPropBet === null}
-                                        >
-                                            <Text 
-                                                style={{ fontFamily: "Lexend-bold" }} 
-                                                onPress={() => {
-                                                    addToFinishedPropBet(groupID, userID);
-                                                    addPropBet(groupID, userID, player.id, player.averageStepCount, selectedPropBet === 'over' ? 'over' : 'under');
-                                                    setFinishedPropBet(true);
-                                                    setPropBetModalVisible(false);
-                                                    const timer = setTimeout(() => {
-                                                        setPropBetModalVisible(true);
-                                                    }, 100);
-                                                    return () => clearTimeout(timer);
-                                                }}
-                                            >
-                                                Submit
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            </View>
-                        ))}
+                        
+                        <PropBetPage
+                            groupID={groupID}
+                            userID={userID}
+                            propBetPlayer={propBetPlayer}
+                            finishedPropBet={finishedPropBet}
+                            currentPropBet={currentPropBet}
+                            overUnder={setSelectedPropBet}
+                            setFinishedPropBet={setFinishedPropBet}
+                            setPropBetModalVisible={setPropBetModalVisible}
+                        />
                     </View>
                 </View>
             </Modal>
@@ -1259,11 +1203,13 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     moneyModalContainer: {
-        width: '80%',
-        backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
+        width: '90%',
+        // height: '80%',
+        backgroundColor: 'black',
         position: 'relative',
+        borderWidth: 1, // Thin border
+        borderColor: '#4A4A4A', // Dark grey border
+        borderRadius: 15,
     },
     closeButton: {
         position: 'absolute',
@@ -1275,6 +1221,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: 'black',
+    },
+    closeButtonIcon: {
+        width: 20,
+        height: 20,
     },
     closeButtonText2: {
         fontSize: 18,
@@ -1472,6 +1422,15 @@ const styles = StyleSheet.create({
         padding: 20,
         paddingVertical: 30,
     },
+    duelNavigation: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        width: '15%', // Adjust this value to control the width of the clickable area
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1
+    },
     leftArrowIcon: {
         width: 15,
         height: 15,
@@ -1502,7 +1461,6 @@ const styles = StyleSheet.create({
         height: 50,
         borderRadius: 25,
         borderWidth: 2,
-        borderColor: '#fff',
     },
     playerName: {
         color: '#fff',
