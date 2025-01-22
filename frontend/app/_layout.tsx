@@ -6,8 +6,7 @@ export default function RootLayout() {
     return (
         <FullScreenWrapper>
             <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(authenticated)" />
-                <Stack.Screen name="onboarding" />
+                <Stack.Screen name="index" />
             </Stack>
         </FullScreenWrapper>
     );

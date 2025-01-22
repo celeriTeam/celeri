@@ -7,6 +7,7 @@ import { useUser } from '../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
+import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
 import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay } from '@/backend/src/groups';
@@ -881,7 +882,12 @@ const BetSummaryPage: React.FC = () => {
                         </TouchableOpacity>
 
                         {/* BetRecapPage as the modal content */}
-                        <BetHistoryPage groupID={groupID}/>
+                        {groups[groupID]?.gameType === "weekly" ? (
+                            <WeeklyBetHistoryPage groupID={groupID} />
+                        ) : (
+                            <BetHistoryPage groupID={groupID} gameType={groups[groupID]?.gameType} />
+                        )}
+
                     </View>
                 </View>
             </Modal>

@@ -92,6 +92,171 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
     }
 }
 
+// GET yesterdays duels
+export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            let groupCycleCount = groupDoc.data()?.cycleCount;
+            let groupCycleWeek = groupDoc.data()?.cycleWeek;
+            let resetDay = groupDoc.data().resetDay; 
+            const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
+
+            if (groupCycleWeek === 1 && groupCycleCount === 1) {
+                console.log('getLastWeekDuelsSummary - error: No duels found for last week');
+                return undefined;
+            } else if (groupCycleWeek === 1) {
+                console.log('getLastWeekDuelSummary - groupCycleWeek === 1');
+                console.log(groupCycleCount);
+                console.log(groupCycleWeek);
+                groupCycleCount -= 1;
+                groupCycleWeek = numberOfPlayers-1;
+                console.log(groupCycleCount);
+                console.log(groupCycleWeek);
+            } else {
+                groupCycleWeek -= 1;
+            }
+
+            console.log('Last week\'s cycleCount: ', groupCycleCount);
+            console.log('Last week\'s cycleDay: ', groupCycleWeek);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset to start of the day
+
+            // Calculate the most recent reset day
+            let mostRecentReset = new Date(today);
+            mostRecentReset.setDate(today.getDate() - ((today.getDay() - resetDay + 7) % 7));
+
+            // Calculate the reset day 7 days prior
+            const previousReset = new Date(mostRecentReset);
+            previousReset.setDate(mostRecentReset.getDate() - 7);
+
+            // Convert to timestamps or use as needed
+            const startDay = Timestamp.fromDate(previousReset);
+            const endDay = Timestamp.fromDate(mostRecentReset);
+
+            console.log('Start Day:', startDay.toDate());
+            console.log('End Day:', endDay.toDate());
+
+            console.log('getYesterdayDuelsSummary - Checkpoint Zero');
+            
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where('cycleWeek', '==', groupCycleWeek),
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getYesterdaysDuelsSummary - error: No duels found for today');
+                return undefined;
+            }
+            console.log('getYesterdayDuelsSummary - Checkpoint One');
+            
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, createdAt: Timestamp, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                duels[doc.id] = {
+                    duelID: doc.id,
+                    player1: duelData.player1,
+                    player2: duelData.player2,
+                    bets: duelData.bets || {
+                        userID: '',
+                        wager: 0,
+                        betOnUserID: ''
+                    },
+                    winner: duelData.winner,
+                    playerOneSteps: duelData.playerOneSteps,
+                    playerTwoSteps: duelData.playerTwoSteps,
+                    createdAt: duelData.createdAt,
+                };
+            });
+            console.log('getYesterdayDuelsSummary - Checkpoint Two');
+            //console.log("getYesterdaysDuelsSummary - response: ", duels);
+            return duels;
+        } else{
+            console.error("getYesterdaysDuelsSummary - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getYesterdaysDuelsSummary - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET more weekly duels
+export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: number): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if(groupDoc.exists()){
+        
+
+            // find the parameters of the given day
+
+             // Start of the day 7 days ago
+             let endOfWeek = new Date();
+             endOfWeek.setHours(0, 0, 0, 0);
+             endOfWeek.setDate(endOfWeek.getDate() - (weeksAgo * 7));
+ 
+             // Start of the day 14 days ago
+             let startOfWeek = new Date();
+             startOfWeek.setHours(0, 0, 0, 0);
+             startOfWeek.setDate(startOfWeek.getDate() - ((weeksAgo + 1) * 7));
+
+            // Convert to Firestore Timestamps
+            const weekStart = Timestamp.fromDate(startOfWeek);
+            const weekEnd = Timestamp.fromDate(endOfWeek);
+
+        // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', weekStart),
+                where('createdAt', '<', weekEnd));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getMoreDuelsSummary - error: No duels found for today');
+                return undefined;
+            }
+            console.log('getMoreDuelsSummary - Checkpoint One');
+                
+            const duels: { [key: string]: { duelID: string, player1: string, player2: string, createdAt: Timestamp, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number } } = {};
+            querySnapshot.forEach(doc => {
+                const duelData = doc.data();
+                duels[doc.id] = {
+                    duelID: doc.id,
+                    player1: duelData.player1,
+                    player2: duelData.player2,
+                    bets: duelData.bets || {
+                        userID: '',
+                        wager: 0,
+                        betOnUserID: ''
+                    },
+                    winner: duelData.winner,
+                    playerOneSteps: duelData.playerOneSteps,
+                    playerTwoSteps: duelData.playerTwoSteps,
+                    createdAt: duelData.createdAt,
+                };
+            });
+            console.log('getMoreDuelsSummary - Checkpoint Two');
+            console.log("getMoresDuelsSummary - response: ", duels);
+            return duels;
+        } else{
+            console.error("getMoreDuelsSummary - error: No such document!");
+            return undefined;
+        }
+
+
+    } catch (error) {
+        console.error("getMoreDuelsSummary - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
 // GET more duels
 export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
@@ -161,6 +326,114 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
     }
 }
 
+// GET weekly gains
+// GET gains
+export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, groups: Record<string, any>): Promise<{ gains: Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number }>} | undefined> => {
+    try {
+        
+
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        console.log('getGainsSummary - Checkpoint one');
+        if(groupDoc.exists()){
+            const groupData = groupDoc.data();
+            const resetDay = groupDoc.data().resetDay; 
+            // Extract user IDs from the users map
+            const players = Object.keys(groupData.users || {});
+
+            // Initialize gains map with user IDs as keys and 0 as default values
+            const gains = players.reduce((acc, userID) => {
+                const username =  groups[groupID]?.users[userID]?.username;
+                const profilePic =  groups[groupID]?.users[userID]?.profilePic;
+                acc[userID] = {
+                  gain: 0,
+                  username: username || '',
+                  profilePic: profilePic || '',
+                  weeksAgo: weeksAgo,
+                };
+                return acc;
+              }, {} as Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number }>);
+        
+            console.log("getGainsSummary", gains);
+
+            // find the parameters of the given week
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset to start of the day
+            console.log(weeksAgo, "weeksAgo!!");
+
+            // Calculate the most recent reset day
+            let desiredReset = new Date(today);
+            desiredReset.setDate(
+                today.getDate() - ((today.getDay() - resetDay + 7) % 7) - ((weeksAgo-1) * 7)
+            );
+
+            // Calculate the reset day 7 days prior
+            const previousReset = new Date(desiredReset);
+            previousReset.setDate(desiredReset.getDate() - 7);
+
+            // Convert to timestamps or use as needed
+            const startDay = Timestamp.fromDate(previousReset);
+            const endDay = Timestamp.fromDate(desiredReset);
+
+            console.log('Start Day:', startDay.toDate());
+            console.log('End Day:', endDay.toDate());
+
+
+            // Get snapshot of duels for today
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getGainsSummary - error: No duels found for this past week');
+                return undefined;
+            }
+
+            console.log('getGainsSummary - Checkpoint Two');
+            // Process each duel and update gains
+            querySnapshot.forEach((doc) => {
+                const duelData = doc.data();
+                const duel: Duel = {
+                    winner: duelData.winner,
+                    bets: duelData.bets || []
+                };
+
+                duel.bets.forEach((bet) => {
+                    const userID = bet.userID;
+                    const earnings = calculateEarnings(userID, duel);
+          
+                    // Ensure userID exists in gains; initialize if missing
+                    if (!gains[userID]) {
+                      const userInfo = groupData.users[userID] || {};
+                      gains[userID] = {
+                        gain: 0,
+                        username: userInfo.username || '',
+                        profilePic: userInfo.profilePic || '',
+                        weeksAgo: 0,
+                      };
+                    }
+          
+                    // Update the gain for the user
+                    gains[userID].gain += earnings;
+                  });
+            });
+            console.log('getGainsSummary - Checkpoint Three', gains);
+            return { gains };
+
+        } else{
+            console.error("getGainsSummary - error: No such document!");
+            return undefined;
+        }
+
+    } catch (error) {
+        console.error("getGainsSummary - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
 // GET gains
 export const getGainsSummary = async (groupID: string, daysAgo: number, groups: Record<string, any>): Promise<{ gains: Record<string, { gain: number; username: string; profilePic: string; daysAgo: number }>} | undefined> => {
     try {
@@ -173,6 +446,9 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
             const groupData = groupDoc.data();
             // Extract user IDs from the users map
             const players = Object.keys(groupData.users || {});
+
+            // Find out if weekly or daily
+            const gameType = groupData.gameType || "daily";
 
             // Initialize gains map with user IDs as keys and 0 as default values
             const gains = players.reduce((acc, userID) => {

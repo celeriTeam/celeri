@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
-import { getMoreDuelsSummary, getGainsSummary } from '@/backend/src/bets';
+import { getMoreDuelsSummary, getGainsSummary, getWeeklyGainsSummary } from '@/backend/src/bets';
 
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 
 
-const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
+const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ groupID, gameType }) => {
     const { userID, groups, loading } = useUser();
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [activeTab, setActiveTab] = useState<'bets' | 'gains'>('gains'); // Default to 'gains'
@@ -18,6 +17,7 @@ const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
     const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
     const [daysAgo, setDaysAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [gainsDaysAgo, setGainsDaysAgo] = useState(1); // Initial daysAgo for yesterday's duels - gains
+    const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
 
     interface Bet {
         userID: string;
@@ -58,7 +58,14 @@ const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
     // Function to fetch gains based on gainsDaysAgo
     const loadMoreGains = async () => {
         console.log("Loading more gains");
-        const moreGains = await getGainsSummary(groupID, gainsDaysAgo, groups);
+        let moreGains;
+        if(gameType == "weekly"){
+            moreGains = await getWeeklyGainsSummary(groupID, gainsWeeksAgo * 7, groups);
+            // multipled by 7 to get days 
+        }
+        else {
+            moreGains = await getGainsSummary(groupID, gainsDaysAgo, groups);
+        }
         console.log('loadMoreGains: moreGains', moreGains)
         console.log('loadMoreGains: moreGains.gains', moreGains?.gains)
         if (moreGains) {
@@ -66,7 +73,7 @@ const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
             const newGains = Object.entries(moreGains.gains).map(([userID, gainData]) => ({
                 userID,
                 ...gainData,
-                dayIdentifier: gainsDaysAgo, // Unique identifier for each day
+                dayIdentifier: gameType == "weekly" ? gainsWeeksAgo : gainsDaysAgo, // Unique identifier for each day
             }));
             console.log('loadMoreGains: newGains', newGains)
             setGainHistory((prevGainHistory) => {
@@ -74,7 +81,12 @@ const BetHistoryPage: React.FC< {groupID: string }> = ({ groupID }) => {
                 console.log("Updated gainHistory after set:", updatedGainHistory);
                 return updatedGainHistory;
             });
-            setGainsDaysAgo((prevGainsDaysAgo) => prevGainsDaysAgo + 1); // Increment daysAgo for the next load
+
+            if(gameType == "weekly"){
+                setGainsWeeksAgo((prevGainsWeeksAgo) => prevGainsWeeksAgo + 1);
+            } else {
+                setGainsDaysAgo((prevGainsDaysAgo) => prevGainsDaysAgo + 1); // Increment daysAgo for the next load
+            }
         }
     };
 
