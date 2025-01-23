@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
-import { getProfilePic, getUserName, getSteps, getUserGroups } from '@/backend/src/users';
+import { getProfilePic, getUserName, getSteps, getUserGroups, getName } from '@/backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary } from '@/backend/src/bets';
 
@@ -137,18 +137,20 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const users: { [userID: string]: any } = {};
                         if (userList) {
                             await Promise.all(userList.map(async (selectedUserID) => {
-                                const [profilePic, username, steps, tokens] = await Promise.all([
+                                const [profilePic, username, steps, tokens, name] = await Promise.all([
                                     getProfilePic(selectedUserID),
                                     getUserName(selectedUserID),
                                     getSteps(selectedUserID),
-                                    getUserTokens(selectedUserID, groupID)
+                                    getUserTokens(selectedUserID, groupID),
+                                    getName(selectedUserID)
                                 ]);
                         
                                 users[selectedUserID] = {
                                     profilePic,
                                     username,
                                     steps,
-                                    tokens
+                                    tokens,
+                                    name
                                 };
                             }));
                         }

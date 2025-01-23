@@ -10,17 +10,23 @@ import { useUser } from '../../../UserProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-;
+import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 
-const EditGroupPage: React.FC = () => {
+type userProp = {
+    id: string;
+    name: string;
+    username: string;
+};
+
+const EditGroupPage: React.FC< {
+    groupID: string,
+    setEditGroupModalVisible: (visible: boolean) => void;
+} > = ({ groupID, setEditGroupModalVisible }) => {
     const { userID, groups } = useUser();
-    const { groupIDTemp } = useLocalSearchParams();
-    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [isEditingGroupName, setIsEditingGroupName] = useState(false);
     const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
     const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
     const inputRef = useRef<TextInput>(null);
-    const router = useRouter();
 
     const handleEditPress = () => {
         setIsEditingGroupName(true);
@@ -81,26 +87,25 @@ const EditGroupPage: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                    <Image
-                        source={require('@components/back-icon.png')}
-                        style={styles.backImage}
-                    />
-                </TouchableOpacity>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => setEditGroupModalVisible(false)}>
+                        <Text style={styles.headerText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleCheckPress} style={styles.saveButton}>
+                        <Text style={styles.headerText}>Save</Text>
+                    </TouchableOpacity>
+                </View>
                 {currentGroupPic != '' ? (
                     <Image
                     source={{ uri: currentGroupPic }}
-                    style={styles.profileImage}
+                    style={styles.groupImage}
                     />
                 ) : (
                     <Image
                     source={require('@components/blank-profile-picture.png')}
-                    style={styles.profileImage}
+                    style={styles.groupImage}
                     />
                 )}
-                <TouchableOpacity onPress={pickImage}>
-                    <Text style={styles.buttonText}>Edit profile pic</Text>
-                </TouchableOpacity>
                 {isEditingGroupName ? (
                     <>
                         <View style={styles.row}>
@@ -131,15 +136,42 @@ const EditGroupPage: React.FC = () => {
                         </View>
                     </>
                 )}
-                <View style={styles.centeredGroupCode}>
-                    <Text style={styles.groupCodeInvite}>Invite more people!</Text>
+                <TouchableOpacity onPress={pickImage}>
+                    <Text style={styles.buttonText}>Edit Group Photo</Text>
+                </TouchableOpacity>
+                <Text style={styles.title}>Invite Code</Text>
+                <View style={styles.groupCodeContainer}>
                     <View style={styles.row}>
                         <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
-                        <TouchableOpacity onPress={copyToClipboard} style={styles.clipboardIcon}>
-                            <MaterialIcons name="content-copy" size={24} color="black" />
+                        <TouchableOpacity onPress={copyToClipboard}>
+                            <Image
+                                source={require('../../../../assets/icons/clipboard.png')}
+                                style={styles.clipboardIcon}
+                            />
                         </TouchableOpacity>
                     </View>
                 </View>
+                <Text style={styles.title}>{groups[groupID]?.userList.length} Members</Text>
+                <GestureHandlerRootView style={{ flex: 1, width: '95%', }}>
+                    <ScrollView style={styles.membersContainer}>
+                        {groups[groupID]?.userList.map((id: string) => (
+                            <View key={id} style={styles.memberItem}>
+                                <View style={styles.row}>
+                                    <Image
+                                        source={
+                                            groups[groupID]?.users[id]?.profilePic ? 
+                                            { uri: groups[groupID]?.users[id]?.profilePic }
+                                            : require('@components/blank-profile-picture.png')
+                                        }
+                                        style={styles.profilePic}
+                                    />
+                                    <Text style={styles.memberName}>{groups[groupID]?.users[id]?.name}</Text>
+                                </View>
+                                <Text style={styles.memberUserName}>@{groups[groupID]?.users[id]?.username}</Text>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </GestureHandlerRootView>
             </View>
         </SafeAreaView>
     );
@@ -148,46 +180,56 @@ const EditGroupPage: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#000',
     },
     container: {
         // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
-        marginTop: 50,
         height: '100%',
     },
-    backButton: {
-        position: 'absolute',
-        top: 16,
-        left: 16,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '90%',
     },
-    backImage: {
-        width: 40,
-        height: 40,
+    headerText: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#fff',
+    },
+    saveButton: {
+        borderColor: '#fff',
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 5,
+        paddingHorizontal: 20
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    profileImage: {
+    groupImage: {
         marginTop: 40,
-        width: 120,
-        height: 120,
+        width: 110,
+        height: 110,
         borderRadius: 60,
         marginBottom: 20,
     },
     buttonText: {
         marginBottom: 40,
         fontFamily: "Lexend",
+        fontSize: 13,
         textAlign: 'center',
-        color: 'blue',
+        color: '#74FF6D',
     },
     name: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 34,
+        fontFamily: "Lexend",
+        fontSize: 25,
         marginRight: 20,
+        color: '#fff',
     },
     editImage: {
         width: 20,
@@ -196,7 +238,7 @@ const styles = StyleSheet.create({
     },
     nameInput: {
         fontFamily: "Lexend-Bold",
-        fontSize: 34,
+        fontSize: 25,
         marginRight: 20,
         borderBottomWidth: 3,
         borderColor: '#6b6b6b',
@@ -205,26 +247,64 @@ const styles = StyleSheet.create({
     },
     groupCodeInvite: {
         fontFamily: "Lexend",
-        fontSize: 20,
-        marginBottom: 20,
+        fontSize: 15,
+        color: '#fff',
     },
-    centeredGroupCode: {
-        flex: 1,
-        justifyContent: 'center',
+    title: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#fff',
+        alignSelf: 'flex-start',
+        padding: 10,
+    },
+    groupCodeContainer: {
         alignItems: 'center',
+        width: '95%',
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#4BFF6C96',
     },
     groupCode: {
-        fontSize: 45,
-        // color: '#0F1108',
-        // backgroundColor: '#D3D3D3',
-        color: '#0F1108',
-        backgroundColor: '#1E90FF',
-        fontWeight: 'bold',
-        padding: 15,
-        borderRadius: 5,
+        fontFamily: "Lexend",
+        fontSize: 20,
+        color: '#fff',
     },
     clipboardIcon: {
+        width: 20,
+        height: 20,
+    },
+    membersContainer: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#5BE35C32',
+    },
+    memberItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 10,
+        paddingHorizontal: 20,
+        backgroundColor: '#00000080',
+        marginVertical: 3,
+        borderRadius: 10,
+    },
+    profilePic: {
+        width: 26,
+        height: 26,
+        borderRadius: 20,
+        borderColor: '#fff',
+        borderWidth: 1,
+    },
+    memberName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#fff',
         marginLeft: 10,
+    },
+    memberUserName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#74FF6D',
     },
 });
 

@@ -20,6 +20,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './LiveDuel';
 import { group } from 'console';
 import PropBetPage from './PropBet';
+import EditGroupPage from './EditGroup';
 
 const db = getFirestore(app);
 
@@ -28,11 +29,11 @@ const BetSummaryPage: React.FC = () => {
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const { steps, weeklySteps, averageSteps, distance, flights } = useHealthData();
-    const [isStepsModalVisible, setStepsModalVisible] = useState(false);
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [isLiveDuelModalVisible, setLiveDuelModalVisible] = useState(false);
+    const [isEditGroupModalVisible, setEditGroupModalVisible] = useState(false);
     const [isTokensModalVisible, setTokensModalVisible] = useState(false);
     const [isTokensUsedModalVisible, setTokensUsedModalVisible] = useState(false);
     const [isDiamondsModalVisible, setDiamondsModalVisible] = useState(false);
@@ -491,14 +492,7 @@ const BetSummaryPage: React.FC = () => {
                         </View>
                     </View>
                     <View style={styles.groupInfo}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                router.push({
-                                    pathname: '/(authenticated)/home/bets/EditGroup',
-                                    params: { groupIDTemp: groupID },
-                                });
-                            }}
-                        >
+                        <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
                             <Image 
                                 source={groups[groupID]?.groupImageUrl ? 
                                     { uri: groups[groupID]?.groupImageUrl } : 
@@ -528,15 +522,7 @@ const BetSummaryPage: React.FC = () => {
                                         />
                                     )}
                                 </View>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        router.push({
-                                            pathname: '/(authenticated)/home/bets/EditGroup',
-                                            params: { groupIDTemp: groupID },
-                                        });
-                                    }}
-                                    activeOpacity={0.8}
-                                >
+                                <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
                                     <Image 
                                         source={require('../../../../assets/icons/edit.png')}
                                         style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: -10, }]}
@@ -981,6 +967,22 @@ const BetSummaryPage: React.FC = () => {
                             overUnder={setSelectedPropBet}
                             setFinishedPropBet={setFinishedPropBet}
                             setPropBetModalVisible={setPropBetModalVisible}
+                        />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Group Modal */}
+            <Modal
+                transparent={true}
+                visible={isEditGroupModalVisible}
+                animationType="slide"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.moneyModalContainer, { height: '80%', }]}>                        
+                        <EditGroupPage
+                            groupID={groupID}
+                            setEditGroupModalVisible={setEditGroupModalVisible}
                         />
                     </View>
                 </View>
