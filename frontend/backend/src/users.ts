@@ -48,6 +48,22 @@ export const getUserName = async (id: string): Promise<string> => {
     }
 }
 
+// GET name
+export const getName = async (id: string): Promise<string> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.name) {
+            return userDoc.data()?.name;
+        } else {
+            console.error(`getName - error: No such document for user ${id}!`);
+            return '';
+        }
+    } catch (error) {
+        console.error("getName - Error fetching user document:", error);
+        return '';
+    }
+}
+
 // GET User Email
 export const getUserEmail = async (id: string): Promise<string | undefined> => {
     try {
