@@ -1045,7 +1045,6 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
             cycleDuels = createCycle(players);
             groupBatch.update(groupDocRef, {
               currentPlayersInGame: playerCount,
-              finishedTutorial: admin.firestore.FieldValue.delete(),
             });
             console.log("checkpoint three");
           } else {
@@ -1199,7 +1198,6 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
           cycleDuels = createCycle(players);
           groupBatch.update(groupDocRef, {
             currentPlayersInGame: playerCount,
-            finishedTutorial: admin.firestore.FieldValue.delete(),
           });
           console.log("checkpoint three");
         } else {
