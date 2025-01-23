@@ -27,23 +27,24 @@ const EditGroupPage: React.FC< {
     const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
     const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
     const inputRef = useRef<TextInput>(null);
-
-    const handleEditPress = () => {
-        setIsEditingGroupName(true);
-    };
-
-    const handleCheckPress = () => {
-        //set username endpoint
+    
+    const handleSave = () => {
+        // Check username update
         if (currentGroupName !== groups[groupID]?.groupName){
             editGroupName(groupID, currentGroupName);
         }
-        setIsEditingGroupName(false);
-    };
+
+        // Check image update
+        if (currentGroupPic !== groups[groupID]?.groupImageUrl){
+            addGroupImage(groupID, currentGroupPic);
+        }
+        setEditGroupModalVisible(false);
+    }
     
-        const copyToClipboard = () => {
-            Clipboard.setString(groups[groupID]?.groupCode || '');
-            Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
-        };
+    const copyToClipboard = () => {
+        Clipboard.setString(groups[groupID]?.groupCode || '');
+        Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
+    };
 
     useEffect(() => {
         if (isEditingGroupName && inputRef.current) {
@@ -78,8 +79,6 @@ const EditGroupPage: React.FC< {
             );
 
             setCurrentGroupPic(manipulatedImage.uri);
-            // set profile pic endpoint
-            addGroupImage(groupID, manipulatedImage.uri);
             }
         }
     };
@@ -88,10 +87,10 @@ const EditGroupPage: React.FC< {
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => setEditGroupModalVisible(false)}>
+                    <TouchableOpacity onPress={() => setEditGroupModalVisible(false)} activeOpacity={1}>
                         <Text style={styles.headerText}>Cancel</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleCheckPress} style={styles.saveButton}>
+                    <TouchableOpacity onPress={handleSave} style={styles.saveButton} activeOpacity={1}>
                         <Text style={styles.headerText}>Save</Text>
                     </TouchableOpacity>
                 </View>
@@ -115,10 +114,10 @@ const EditGroupPage: React.FC< {
                                 value={currentGroupName}
                                 onChangeText={setCurrentGroupName}
                             />
-                            <TouchableOpacity onPress={handleCheckPress}>
+                            <TouchableOpacity onPress={() => setIsEditingGroupName(false)}>
                                 <Image
                                     source={require('@components/checkmark-icon.png')}
-                                    style={styles.editImage}
+                                    style={styles.checkmarkImage}
                                 />
                             </TouchableOpacity>
                         </View>
@@ -127,9 +126,9 @@ const EditGroupPage: React.FC< {
                     <>
                         <View style={styles.row}>
                             <Text style={styles.name}>{currentGroupName}</Text>
-                            <TouchableOpacity onPress={handleEditPress}>
+                            <TouchableOpacity onPress={() => setIsEditingGroupName(true)}>
                                 <Image
-                                source={require('@components/edit-icon.jpg')}
+                                source={require('@assets/icons/edit.png')}
                                 style={styles.editImage}
                                 />
                             </TouchableOpacity>
@@ -145,7 +144,7 @@ const EditGroupPage: React.FC< {
                         <Text style={styles.groupCode}>{groups[groupID]?.groupCode}</Text>
                         <TouchableOpacity onPress={copyToClipboard}>
                             <Image
-                                source={require('../../../../assets/icons/clipboard.png')}
+                                source={require('@assets/icons/clipboard.png')}
                                 style={styles.clipboardIcon}
                             />
                         </TouchableOpacity>
@@ -180,7 +179,6 @@ const EditGroupPage: React.FC< {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#000',
     },
     container: {
         // flex: 1,
@@ -228,17 +226,23 @@ const styles = StyleSheet.create({
     name: {
         fontFamily: "Lexend",
         fontSize: 25,
-        marginRight: 20,
         color: '#fff',
+        marginRight: 3,
+        marginBottom: 5,
     },
     editImage: {
-        width: 20,
-        height: 20,
+        width: 15,
+        height: 15,
+    },
+    checkmarkImage: {
+        width: 18,
+        height: 18,
+        backgroundColor: '#fff',
         borderRadius: 50,
     },
     nameInput: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 25,
+        fontFamily: "Lexend",
+        fontSize: 23,
         marginRight: 20,
         borderBottomWidth: 3,
         borderColor: '#6b6b6b',

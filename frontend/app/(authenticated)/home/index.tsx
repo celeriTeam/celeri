@@ -270,6 +270,12 @@ const HomeTab: React.FC = () => {
                         </View>
                     <Text style={styles.subTitle}>Your Groups:</Text>
                     <ScrollView style={styles.scrollContainer}>
+                    
+                        {/* testing headtohead tutorial */}
+                        {/* <TouchableOpacity onPress={() => { router.push({ pathname: '/(authenticated)/home/bets/HeadToHeadTutorial', params: { groupIDTemp: 'h8MNidtUi653BlZbR6nU' }, }) }}>
+                            <Text style={[styles.buttonText, {color: 'blue'}]}>Head To Head Tutorial</Text>
+                        </TouchableOpacity> */}
+
                         {Object.entries(groups).map(([groupID, group]) => (
                             <TouchableOpacity
                                 key={groupID}
@@ -341,16 +347,6 @@ const HomeTab: React.FC = () => {
                             </BlurView>
                         </TouchableOpacity>
                     </Modal>
-                    
-                    {/* testing headtohead tutorial */}
-                    {/* <TouchableOpacity onPress={() => { navigation.navigate('HeadToHeadTutorialPage', { groupID: 'ounAwWnZv7rFMOAWVSCy' }) }}>
-                        <Text style={[styles.buttonText, {color: 'blue'}]}>Tutorial</Text>
-                    </TouchableOpacity> */}
-
-                    {/* testing new bet summary page ui */}
-                    {/* <TouchableOpacity onPress={() => { navigation.navigate('NewBetSummaryPage', { groupID: 'l4mB0DqPpM6jGpj6OPwq' }) }}>
-                        <Text style={[styles.buttonText, {color: 'blue'}]}>New Bet Summary Page</Text>
-                    </TouchableOpacity> */}
                 </View>
             </SafeAreaView>
         );

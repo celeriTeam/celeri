@@ -307,7 +307,7 @@ const InvitePage: React.FC = () => {
                     )}
 
                     <Text style={[styles.text, { fontWeight: "bold", marginBottom: 10 }]}>
-                        {groups[resolvedGroupID]?.userList.length} Member{groups[resolvedGroupID]?.userList.length === 1 ? '' : 's'}
+                        Group Members ({groups[resolvedGroupID]?.userList.length}):
                     </Text>
                     <ScrollView
                         style={styles.scrollContainer}

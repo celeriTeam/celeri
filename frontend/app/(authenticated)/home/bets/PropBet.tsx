@@ -39,7 +39,7 @@ const PropBetPage: React.FC< {
             {finishedPropBet ? (
                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20, }}>
                     <Image
-                        source={require('../../../../assets/icons/checkmark.png')}
+                        source={require('@assets/icons/checkmark.png')}
                         style={{ width: 29, height: 29 }}
                     />
                     <Text style={styles.title}>Submitted</Text>
@@ -50,7 +50,7 @@ const PropBetPage: React.FC< {
                     <Text style={styles.text}>How many steps will the following player{'\n'} walk today? If you win the prop bet,{'\n'} you'll earn 
                         <Text style={{ color: '#74FF6D' }}> +1 </Text>
                         <Image
-                            source={require('../../../../assets/icons/diamonds.png')}
+                            source={require('@assets/icons/diamonds.png')}
                             style={{ width: 14, height: 11 }}
                         />
                     </Text>

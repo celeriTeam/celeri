@@ -1,10 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+
+type ModalStyle = {
+    width: string | number;
+    position?: 'absolute' | 'relative';
+    top?: string | number;
+    left?: number;
+    bottom?: number;
+};
 
 const HeadToHeadTutorialPage: React.FC = () => {
 	const { userID, groups, loading } = useUser();
@@ -154,7 +162,7 @@ const HeadToHeadTutorialPage: React.FC = () => {
 			}
 		};
 
-		const getModalStyle = () => {
+		const getModalStyle = (): ModalStyle => {
 			switch (tutorialStep) {
 				case 1:
 					return {
@@ -215,24 +223,24 @@ const HeadToHeadTutorialPage: React.FC = () => {
 				{/* Tutorial content */}
 				<View style={[
 					styles.tutorialContent,
-					getModalStyle()
+					getModalStyle() as StyleProp<ViewStyle>
 				]}>
 					<Text style={styles.tutorialText}>{getTutorialMessage()}</Text>
 					{isWeekly && tutorialStep === 10 && (
 						<Image
-							source={require('../../../../assets/images/steps_race.jpg')}
+							source={require('@assets/images/steps_race.jpg')}
 							style={styles.raceImage}
 						/>
 					)}
 					{isWeekly && tutorialStep === 11 && (
 						<Image
-							source={require('../../../../assets/images/prop_bet.jpg')}
+							source={require('@assets/images/prop_bet.jpg')}
 							style={styles.propBetImage}
 						/>
 					)}
 					{((!isWeekly && tutorialStep === 10) || (isWeekly && tutorialStep === 12)) && (
 						<Image
-							source={require('../../../../assets/images/store_tutorial.jpg')}
+							source={require('@assets/images/store_tutorial.jpg')}
 							style={styles.storeImage}
 						/>
 					)}

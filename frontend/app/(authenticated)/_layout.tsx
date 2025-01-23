@@ -150,15 +150,15 @@ const AuthenticatedLayout: React.FC = () => {
                         let iconSource, width, height;
 
                         if (route.name === 'home') {
-                            iconSource = require('../../assets/icons/home.png');
+                            iconSource = require('@assets/icons/home.png');
                             width = focused ? 24 : 22;
                             height = focused ? 26 : 24;
                         } else if (route.name === 'profile') {
-                            iconSource = require('../../assets/icons/profile.png');
+                            iconSource = require('@assets/icons/profile.png');
                             width = focused ? 22 : 20;
                             height = focused ? 25 : 23;
                         } else if (route.name === 'bugReports/index') {
-                            iconSource = require('../../assets/icons/bugReports.png');
+                            iconSource = require('@assets/icons/bugReports.png');
                             width = focused ? 31 : 29;
                             height = focused ? 31 : 29;
                         }

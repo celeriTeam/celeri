@@ -23,10 +23,10 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
 
-    const speedBoots = require('../../../../assets/images/speed_boot.png');
-    const secondWind = require('../../../../assets/images/wind_store.jpg');
-    const legCramp = require('../../../../assets/images/leg_cramp.png');
-    const brickWall = require('../../../../assets/images/brick_wall.png');
+    const speedBoots = require('@assets/images/speed_boot.png');
+    const secondWind = require('@assets/images/wind_store.jpg');
+    const legCramp = require('@assets/images/leg_cramp.png');
+    const brickWall = require('@assets/images/brick_wall.png');
     const [items] = useState([
         { id: '1', 
             image: secondWind, 
@@ -112,7 +112,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
                 <View style={styles.priceContainer}>
                     <Text style={styles.price}>{item.price}</Text>
                     <Image 
-                        source={require('../../../../assets/images/diamond.png')} 
+                        source={require('@assets/images/diamond.png')} 
                         style={styles.diamondImage} 
                     />
                 </View>
@@ -180,7 +180,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
                 <View style={styles.diamonds}>
                     <Text style={styles.tokenText}>{userDiamonds}</Text>
                     <Image
-                        source={require('../../../../assets/images/diamond.png')}
+                        source={require('@assets/images/diamond.png')}
                         style={styles.diamondIcon}
                     />
                 </View>
