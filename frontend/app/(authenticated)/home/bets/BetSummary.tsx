@@ -224,7 +224,8 @@ const BetSummaryPage: React.FC = () => {
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
 
                     const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
-                    const averageStepCount = sum / averageSteps.length || 0;
+                    const stepsLength = (propBetPlayerInfo?.averageSteps ?? []).length;
+                    const averageStepCount: number = sum == 0 ? 0 : Number((sum / stepsLength).toFixed(0));
                     setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0}]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
@@ -472,20 +473,20 @@ const BetSummaryPage: React.FC = () => {
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()}>
                             <Image
-                                source={require('../../../../assets/icons/back.png')}
+                                source={require('@assets/icons/back.png')}
                                 style={styles.backIcon}
                             />
                         </TouchableOpacity>
                         <View style={styles.rightIcons}>
                             <TouchableOpacity onPress={() => setBetHistoryModalVisible(true)}>
                                 <Image
-                                    source={require('../../../../assets/icons/history.png')}
+                                    source={require('@assets/icons/history.png')}
                                     style={styles.historyIcon}
                                 />
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => setStoreModalVisible(true)}>
                                 <Image
-                                    source={require('../../../../assets/icons/store.png')}
+                                    source={require('@assets/icons/store.png')}
                                     style={styles.storeIcon}
                                 />
                             </TouchableOpacity>
@@ -524,14 +525,14 @@ const BetSummaryPage: React.FC = () => {
                                 </View>
                                 <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
                                     <Image 
-                                        source={require('../../../../assets/icons/edit.png')}
+                                        source={require('@assets/icons/edit.png')}
                                         style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: -10, }]}
                                     />
                                 </TouchableOpacity>
                             </View>
                             <View style={{  flexDirection: 'row', alignItems: 'center', }}>
                                 <Image 
-                                    source={require('../../../../assets/icons/timeLeft.png')}
+                                    source={require('@assets/icons/timeLeft.png')}
                                     style={styles.timeLeftIcon}
                                 />
                                 <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
@@ -559,21 +560,21 @@ const BetSummaryPage: React.FC = () => {
                     <View style={styles.statsContainer}>
                         <TouchableOpacity style={styles.statItem} onPress={() => setTokensModalVisible(true)} activeOpacity={0.8}>
                             <Image
-                                source={require('../../../../assets/icons/tokens.png')}
+                                source={require('@assets/icons/tokens.png')}
                                 style={styles.tokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userTokens}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.statItem} onPress={() => setTokensUsedModalVisible(true)} activeOpacity={0.8}>
                             <Image
-                                source={require('../../../../assets/icons/betTokens.png')}
+                                source={require('@assets/icons/betTokens.png')}
                                 style={styles.betTokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.todaysBetTokens}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.statItem} onPress={() => setDiamondsModalVisible(true)} activeOpacity={0.8}>
                             <Image
-                                source={require('../../../../assets/icons/diamonds.png')}
+                                source={require('@assets/icons/diamonds.png')}
                                 style={styles.diamondsIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
@@ -597,7 +598,7 @@ const BetSummaryPage: React.FC = () => {
                                     
                                     <TouchableOpacity style={[styles.duelNavigation, { left: 0, }]} onPress={handleRightArrowPress}>
                                         <Image
-                                            source={require('../../../../assets/icons/leftArrow.png')}
+                                            source={require('@assets/icons/leftArrow.png')}
                                             style={styles.leftArrowIcon}
                                         />
                                     </TouchableOpacity>
@@ -615,7 +616,7 @@ const BetSummaryPage: React.FC = () => {
                                         <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
                                         <View style={{  flexDirection: 'row', alignItems: 'center', }}>
                                             <Image
-                                                source={require('../../../../assets/icons/tokensWhite.png')}
+                                                source={require('@assets/icons/tokensWhite.png')}
                                                 style={styles.tokensWhiteIcon}
                                             />
                                             <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
@@ -640,7 +641,7 @@ const BetSummaryPage: React.FC = () => {
                                         <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
                                         <View style={{  flexDirection: 'row', alignItems: 'center', }}>
                                             <Image
-                                                source={require('../../../../assets/icons/tokensWhite.png')}
+                                                source={require('@assets/icons/tokensWhite.png')}
                                                 style={styles.tokensWhiteIcon}
                                             />
                                             <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
@@ -649,7 +650,7 @@ const BetSummaryPage: React.FC = () => {
 
                                     <TouchableOpacity style={[styles.duelNavigation, { right: 0, }]} onPress={handleLeftArrowPress}>
                                         <Image
-                                            source={require('../../../../assets/icons/rightArrow.png')}
+                                            source={require('@assets/icons/rightArrow.png')}
                                             style={styles.rightArrowIcon}
                                         />
                                     </TouchableOpacity>
@@ -659,7 +660,7 @@ const BetSummaryPage: React.FC = () => {
                         </View>
                         <View style={styles.betAmount}>
                             <Image
-                                source={require('../../../../assets/icons/tokensBlack.png')}
+                                source={require('@assets/icons/tokensBlack.png')}
                                 style={[styles.tokensBlackIcon, { marginRight: 5 }]}
                             />
                                 <Text style={styles.betText}>
@@ -733,7 +734,7 @@ const BetSummaryPage: React.FC = () => {
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[1]?.name}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
                                                     <Image
-                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        source={require('@assets/icons/tokensWhite.png')}
                                                         style={styles.tokensWhiteIcon}
                                                     />
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
@@ -761,7 +762,7 @@ const BetSummaryPage: React.FC = () => {
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
                                                     <Image
-                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        source={require('@assets/icons/tokensWhite.png')}
                                                         style={styles.tokensWhiteIcon}
                                                     />
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
@@ -781,7 +782,7 @@ const BetSummaryPage: React.FC = () => {
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[2]?.name}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
                                                     <Image
-                                                        source={require('../../../../assets/icons/tokensWhite.png')}
+                                                        source={require('@assets/icons/tokensWhite.png')}
                                                         style={styles.tokensWhiteIcon}
                                                     />
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
@@ -802,7 +803,7 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
                                                     <View style={styles.leaderboardTokensNumTokens}>
                                                         <Image
-                                                            source={require('../../../../assets/icons/tokensWhite.png')}
+                                                            source={require('@assets/icons/tokensWhite.png')}
                                                             style={styles.tokensWhiteIcon}
                                                         />
                                                         <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
@@ -890,7 +891,7 @@ const BetSummaryPage: React.FC = () => {
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} activeOpacity={1}>
                             <Image
-                                source={require('../../../../assets/icons/x.png')}
+                                source={require('@assets/icons/x.png')}
                                 style={styles.closeButtonIcon}
                             />
                         </TouchableOpacity>
@@ -952,7 +953,7 @@ const BetSummaryPage: React.FC = () => {
                         {finishedPropBet && (
                             <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
                                 <Image
-                                    source={require('../../../../assets/icons/x.png')}
+                                    source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
                                 />
                             </TouchableOpacity>
@@ -979,7 +980,7 @@ const BetSummaryPage: React.FC = () => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.moneyModalContainer, { height: '80%', }]}>                        
+                    <View style={styles.editGroupModalContainer}>                        
                         <EditGroupPage
                             groupID={groupID}
                             setEditGroupModalVisible={setEditGroupModalVisible}
@@ -1212,6 +1213,18 @@ const styles = StyleSheet.create({
         borderWidth: 1, // Thin border
         borderColor: '#4A4A4A', // Dark grey border
         borderRadius: 15,
+    },
+    editGroupModalContainer: {
+        height: '80%',
+        width: Dimensions.get('window').width + 2,
+        position: 'absolute',
+        bottom: 0,
+        backgroundColor: '#000',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderWidth: 1,
+        borderBottomWidth: 0, // No border on the bottom
+        borderColor: '#fff',
     },
     closeButton: {
         position: 'absolute',

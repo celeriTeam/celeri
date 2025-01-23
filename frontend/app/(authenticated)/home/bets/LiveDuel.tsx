@@ -106,7 +106,7 @@ const LiveDuelPage: React.FC< {
                     </View>
 
                     <Image
-                        source={require('../../../../assets/icons/tokensWhite.png')}
+                        source={require('@assets/icons/tokensWhite.png')}
                         style={styles.tokensWhiteIcon}
                     />
                     <Text style={[styles.personName, { paddingLeft: 5 }]}>{bet.wager}</Text>
@@ -132,10 +132,10 @@ const LiveDuelPage: React.FC< {
 
     // Powerup images mapping
     const powerupImages: Record<string, any> = {
-        speedBoots: require('../../../../assets/images/speed_boot.png'),
-        secondWind: require('../../../../assets/images/wind.png'),
-        legCramp: require('../../../../assets/images/leg_cramp.png'),
-        brickWall: require('../../../../assets/images/brick_wall.png'),
+        speedBoots: require('@assets/images/speed_boot.png'),
+        secondWind: require('@assets/images/wind.png'),
+        legCramp: require('@assets/images/leg_cramp.png'),
+        brickWall: require('@assets/images/brick_wall.png'),
     };
 
     const renderPowerups = (
@@ -234,7 +234,7 @@ const LiveDuelPage: React.FC< {
                     <Text style={styles.playerSteps}>{betPlayerInfo.player1Steps} steps</Text>
                     <View style={{  flexDirection: 'row', alignItems: 'center', }}>
                         <Image
-                            source={require('../../../../assets/icons/tokensWhite.png')}
+                            source={require('@assets/icons/tokensWhite.png')}
                             style={styles.tokensWhiteIcon}
                         />
                         <Text style={styles.playerTokens}> {bet?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
@@ -261,7 +261,7 @@ const LiveDuelPage: React.FC< {
                     <Text style={styles.playerSteps}>{betPlayerInfo.player2Steps} steps</Text>
                     <View style={{  flexDirection: 'row', alignItems: 'center', }}>
                         <Image
-                            source={require('../../../../assets/icons/tokensWhite.png')}
+                            source={require('@assets/icons/tokensWhite.png')}
                             style={styles.tokensWhiteIcon}
                         />
                         <Text style={styles.playerTokens}> {bet?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>

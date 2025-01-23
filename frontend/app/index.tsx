@@ -17,8 +17,8 @@ const App: React.FC = () => {
             try {
                 console.log('Loading fonts...');
                 await Font.loadAsync({
-                    'Lexend': require('../assets/fonts/Lexend-Regular.ttf'),
-                    'Lexend-Bold': require('../assets/fonts/Lexend-Bold.ttf'),
+                    'Lexend': require('@assets/fonts/Lexend-Regular.ttf'),
+                    'Lexend-Bold': require('@assets/fonts/Lexend-Bold.ttf'),
                 });
                 console.log('Fonts loaded successfully.');
                 setFontsLoaded(true);
