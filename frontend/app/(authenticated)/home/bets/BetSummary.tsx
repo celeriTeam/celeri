@@ -993,15 +993,22 @@ const BetSummaryPage: React.FC = () => {
             <Modal
                 transparent={true}
                 visible={isTokensModalVisible}
-                // animationType="slide"
+                //animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.moneyModalContainer}>
+                    <View style={[styles.moneyModalContainer, { height: '25%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
+                                <Image
+                                    source={require('@assets/icons/x.png')}
+                                    style={styles.closeButtonIcon}
+                                />
                         </TouchableOpacity>
-                            <Text style={styles.tokenText}>Here are your tokens earned from winning bets. The person with the most tokens wins!</Text>
+                        <View style={styles.infoModalContainer}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={styles.tokenText}>Here are your total tokens. You can earn more by winning your bets or the weekly race!{"\n\n"}The person with the most tokens at the end of your game wins!</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -1011,12 +1018,19 @@ const BetSummaryPage: React.FC = () => {
                 // animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.moneyModalContainer}>
+                    <View style={[styles.moneyModalContainer, { height: '13%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
+                            <Image
+                                source={require('@assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
                         </TouchableOpacity>
-                            <Text style={styles.tokenText}>Here are the tokens you bet.</Text>
+                        <View style={styles.infoModalContainer}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={styles.tokenText}>Here are the tokens you've bet this week.</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -1026,12 +1040,19 @@ const BetSummaryPage: React.FC = () => {
                 // animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.moneyModalContainer}>
+                    <View style={[styles.moneyModalContainer, { height: '20%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
+                            <Image
+                                source={require('@assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
                         </TouchableOpacity>
-                            <Text style={styles.tokenText}>Here are your diamonds. Diamonds are won when you win your head-to-head. Use them in the power-ups store.</Text>
+                        <View style={styles.infoModalContainer}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -1144,7 +1165,8 @@ const styles = StyleSheet.create({
     },
     tokenText: {
         fontFamily: "Lexend",
-        fontSize: 15
+        fontSize: 15,
+        color: "white"
     },
     profileImage: {
         width: 60,
@@ -1299,6 +1321,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         marginTop: 50,
+    },
+    infoModalContainer: {
+        padding: 30,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     header: {
         flexDirection: 'row',

@@ -844,7 +844,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           }
 
           resetBatch.update(userRef.doc(doc.id), {
-            //steps: 0,
+            // steps: 0,
             averageStepsTemp: updatedSteps,
           });
         });
