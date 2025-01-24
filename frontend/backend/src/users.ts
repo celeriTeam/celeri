@@ -288,6 +288,15 @@ export const getSteps = async (id: string): Promise<number> => {
 export const getWeeklySteps = async (groupID: string, userID: string): Promise<number> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
+        const userDoc = await getDoc(doc(db, "user", groupID));
+
+        const groupData = groupDoc.data();
+        const userData = userDoc.data();
+
+        // get the reset day, might not need this 
+        const resetDay = groupData?.resetDay;
+        const weeklyStepsTemp = groupData?.averageStepsTemp;
+
         // weeklySteps is a map with weeklySteps[userID] = steps
         const weeklySteps = groupDoc.data()?.weeklySteps;
         if (weeklySteps !== undefined && weeklySteps[userID] !== undefined) {
