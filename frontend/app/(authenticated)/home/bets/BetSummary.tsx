@@ -40,7 +40,7 @@ const BetSummaryPage: React.FC = () => {
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number[] | undefined }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, todaysSteps: number | undefined, averageSteps: number[] | undefined }[]>([]);
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [betTimeLeft, setBetTimeLeft] = useState("");
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
@@ -143,7 +143,7 @@ const BetSummaryPage: React.FC = () => {
 
                     const userList = await getUsersInGroup(groupID); // userIDs
                     const users: { [userID: string]: any } = {};
-                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, averageSteps: number[] | undefined }[] = [];
+                    let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; steps: number | undefined, todaysSteps: number | undefined, averageSteps: number[] | undefined }[] = [];
                     if (userList) {
                         await Promise.all(userList.map(async (selectedUserID) => {
                             const [profilePic, username, steps, weeklySteps, averageSteps, tokens] = await Promise.all([
@@ -163,7 +163,7 @@ const BetSummaryPage: React.FC = () => {
                                 newSteps,
                                 tokens
                             };
-                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: newSteps, averageSteps: averageSteps });
+                            groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic, tokens: tokens, steps: newSteps, todaysSteps: steps, averageSteps: averageSteps });
                         }));
                         // Sort users by tokens in descending order
                         groupUsersArray.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));
@@ -364,10 +364,10 @@ const BetSummaryPage: React.FC = () => {
         };
     };
 
-    const createMemberButtonHandle = (id: string, averageSteps: number[] | undefined) => {
+    const createMemberButtonHandle = (id: string, averageSteps: number[] | undefined, steps : number | undefined) => {
         router.push({
             pathname: '/(authenticated)/home/bets/publicProfile',
-            params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: averageSteps ?? [] },
+            params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: averageSteps ?? [], stepsTemp: steps ?? 0 },
         });
     };
 
@@ -720,7 +720,7 @@ const BetSummaryPage: React.FC = () => {
                                 {selectedTab === 'Tokens' ? (
                                     <>
                                         <View style={styles.leaderboardTop}>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id, currentGroupUsersArray[1]?.averageSteps)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id, currentGroupUsersArray[1]?.averageSteps, currentGroupUsersArray[1]?.todaysSteps)} activeOpacity={0.8}>
                                                 <Image
                                                     source={currentGroupUsersArray[1]?.pfp ? 
                                                         { uri: currentGroupUsersArray[1]?.pfp } : 
@@ -740,7 +740,7 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id, currentGroupUsersArray[0]?.averageSteps)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id, currentGroupUsersArray[0]?.averageSteps, currentGroupUsersArray[0]?.todaysSteps)} activeOpacity={0.8}>
                                                 <View style={{
                                                     shadowColor: '#51ba51',
                                                     shadowOffset: { width: 0, height: 0 },
@@ -768,7 +768,7 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id, currentGroupUsersArray[2]?.averageSteps)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id, currentGroupUsersArray[2]?.averageSteps, currentGroupUsersArray[2]?.todaysSteps)} activeOpacity={0.8}>
                                                 <Image
                                                     source={currentGroupUsersArray[2]?.pfp ? 
                                                         { uri: currentGroupUsersArray[2]?.pfp } : 
@@ -790,7 +790,7 @@ const BetSummaryPage: React.FC = () => {
                                             </TouchableOpacity>
                                         </View>
                                         {currentGroupUsersArray.slice(3).map((user, index) => (
-                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps)} activeOpacity={0.8}>
+                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps, user.todaysSteps)} activeOpacity={0.8}>
                                                 <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
                                                     <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index+4}</Text>
                                                         <Image
@@ -817,7 +817,7 @@ const BetSummaryPage: React.FC = () => {
                                         <View style={styles.grayLine} />
                                         {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                             <View key={user.id} style={styles.leaderboardRow}>
-                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps)}>
+                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id, user.averageSteps, user.todaysSteps)}>
                                                     <Image
                                                         source={user.pfp ? 
                                                             { uri: user.pfp } : 
@@ -908,7 +908,7 @@ const BetSummaryPage: React.FC = () => {
                                 setTimeout(() => {
                                     router.push({
                                         pathname: '/(authenticated)/home/bets/publicProfile',
-                                        params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [] },
+                                        params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [], stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0, },
                                     });
                                 }, 100);
                             }}
@@ -980,10 +980,20 @@ const BetSummaryPage: React.FC = () => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.editGroupModalContainer}>                        
+                    <View style={styles.editGroupModalContainer}>
                         <EditGroupPage
                             groupID={groupID}
                             setEditGroupModalVisible={setEditGroupModalVisible}
+                            onNavigate={(id) => {
+                                setEditGroupModalVisible(false);
+                                // Add small delay to ensure modal is closed before navigation
+                                setTimeout(() => {
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/publicProfile',
+                                        params: { selectedUserIDTemp: id ?? '', groupIDTemp: groupID, averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [], stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0, },
+                                    });
+                                }, 100);
+                            }}
                         />
                     </View>
                 </View>

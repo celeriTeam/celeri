@@ -11,7 +11,7 @@ import { Dimensions } from 'react-native';
 
 const ProfilePage: React.FC = () => {
     const { username, groups, loading } = useUser();
-    const { selectedUserIDTemp, groupIDTemp, averageStepsTemp } = useLocalSearchParams();
+    const { selectedUserIDTemp, groupIDTemp, averageStepsTemp, stepsTemp } = useLocalSearchParams();
 
     // Convert parameters to strings
     const selectedUserID = selectedUserIDTemp ? String(selectedUserIDTemp) : '';
@@ -21,6 +21,7 @@ const ProfilePage: React.FC = () => {
         : typeof averageStepsTemp === 'string' 
             ? averageStepsTemp.split(',').map(Number)
             : [];
+    const steps = stepsTemp ? Number(stepsTemp) : 0;
             
     console.log('weeklySteps: ', averageSteps);
 
@@ -84,7 +85,7 @@ const ProfilePage: React.FC = () => {
         const data = {
             labels: getLast7DaysLabels(),
             datasets: [{
-                data: weeklySteps
+                data: [...weeklySteps, steps]
             }]
         };
     
@@ -253,6 +254,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'flex-start',
         margin: 30,
+        marginBottom: 20,
         gap: 10,
     },
     profileImage: {
@@ -263,12 +265,11 @@ const styles = StyleSheet.create({
     name: {
         fontFamily: "Lexend-Bold",
         fontSize: 34,
-        marginBottom: 40,
     },
     groupsLabel: {
         fontFamily: "Lexend-Bold",
-        fontSize: 24,
-        marginBottom: 10,
+        fontSize: 22,
+        marginVertical: 10,
     },
     text: {
         fontFamily: "Lexend",
