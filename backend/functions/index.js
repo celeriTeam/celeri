@@ -449,25 +449,29 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       console.log("gameType: ", data.gameType);
       if (gameType && gameType == "weekly") {
         // propogate weeklySteps, should be a map
-        const weeklySteps = data.weeklySteps || {};
+        const weeklySteps = {};
         const users = data.users;
 
         // Get all users in the group and their current steps
-
         Object.keys(users).forEach((userID) => {
           const currentSteps = userSteps[userID] || 0;
-          // If user exists in weeklySteps, add today's steps
-          // If not, initialize with today's steps
-          weeklySteps[userID] = (weeklySteps[userID] || 0) + currentSteps;
+
+          // Calculate users weekly steps
+          const todayIndex = new Date().getDay();
+          const resetDay = data.resetDay || 0;
+          let weeklyStepsData = users[userID].averageSteps ? users[userID].averageSteps : users[userID].averageStepsTemp;
+
+          if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
+            weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
+          }
+          const daysPast = (todayIndex - resetDay) % 7;
+          const daysPastIndex = daysPast != 0 ? daysPast : 7;
+          const userWeeklySteps = weeklyStepsData.slice(-daysPastIndex).reduce((sum, steps) => sum + steps, 0);
+          weeklySteps[userID] = userWeeklySteps + currentSteps;
         });
 
         console.log("weeklySteps: ", weeklySteps);
         console.log("users: ", users);
-
-        // Update the group document with new weeklySteps
-        await groupDocRef.update({
-          weeklySteps: weeklySteps,
-        });
 
         const currentDay = new Date().getDay();
         const resetDay = data.resetDay;
@@ -620,9 +624,9 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           let resetBatch = firestore.batch();
 
           // remove weeklySteps
-          resetBatch.update(groupDocRef, {
-            weeklySteps: FieldValue.delete(),
-          });
+          // resetBatch.update(groupDocRef, {
+          //   weeklySteps: FieldValue.delete(),
+          // });
           await resetBatch.commit();
           resetBatch = firestore.batch();
           console.log("weeklySteps deleted successfully.");
@@ -677,6 +681,21 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           // After recording all winners, reset steps for all users
           userSnapshots.forEach((doc) => {
+            const userData = doc.data();
+            let updatedSteps;
+
+            if (userData.averageSteps && Array.isArray(userData.averageSteps)) {
+              // Remove first number and add 0 to the end
+              updatedSteps = [...userData.averageSteps.slice(1), userData.steps];
+            } else {
+              // Initialize with seven zeros
+              updatedSteps = [0, 0, 0, 0, 0, 0, 0];
+            }
+
+            resetBatch.update(userRef.doc(doc.id), {
+              // steps: 0,
+              averageSteps: updatedSteps,
+            });
             resetBatch.update(userRef.doc(doc.id), {steps: 0});
           });
           await resetBatch.commit();
@@ -831,23 +850,6 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
         // After recording all winners, reset steps for all users
         const resetBatch = firestore.batch();
-        userSnapshots.forEach((doc) => {
-          const userData = doc.data();
-          let updatedSteps;
-
-          if (userData.averageStepsTemp && Array.isArray(userData.averageStepsTemp)) {
-            // Remove first number and add 0 to the end
-            updatedSteps = [...userData.averageStepsTemp.slice(1), 0];
-          } else {
-            // Initialize with seven zeros
-            updatedSteps = [0, 0, 0, 0, 0, 0, 0];
-          }
-
-          resetBatch.update(userRef.doc(doc.id), {
-            // steps: 0,
-            averageStepsTemp: updatedSteps,
-          });
-        });
         userSnapshots.forEach((doc) => {
           resetBatch.update(userRef.doc(doc.id), {steps: 0});
         });

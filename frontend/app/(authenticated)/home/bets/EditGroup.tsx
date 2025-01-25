@@ -21,7 +21,8 @@ type userProp = {
 const EditGroupPage: React.FC< {
     groupID: string,
     setEditGroupModalVisible: (visible: boolean) => void;
-} > = ({ groupID, setEditGroupModalVisible }) => {
+    onNavigate: (id: string) => void;
+} > = ({ groupID, setEditGroupModalVisible, onNavigate }) => {
     const { userID, groups } = useUser();
     const [isEditingGroupName, setIsEditingGroupName] = useState(false);
     const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
@@ -154,20 +155,22 @@ const EditGroupPage: React.FC< {
                 <GestureHandlerRootView style={{ flex: 1, width: '95%', }}>
                     <ScrollView style={styles.membersContainer}>
                         {groups[groupID]?.userList.map((id: string) => (
-                            <View key={id} style={styles.memberItem}>
-                                <View style={styles.row}>
-                                    <Image
-                                        source={
-                                            groups[groupID]?.users[id]?.profilePic ? 
-                                            { uri: groups[groupID]?.users[id]?.profilePic }
-                                            : require('@components/blank-profile-picture.png')
-                                        }
-                                        style={styles.profilePic}
-                                    />
-                                    <Text style={styles.memberName}>{groups[groupID]?.users[id]?.name}</Text>
-                                </View>
-                                <Text style={styles.memberUserName}>@{groups[groupID]?.users[id]?.username}</Text>
-                            </View>
+                            // <View >
+                                <TouchableOpacity onPress={() => onNavigate(id)} activeOpacity={1} key={id} style={styles.memberItem}>
+                                    <View style={styles.row}>
+                                        <Image
+                                            source={
+                                                groups[groupID]?.users[id]?.profilePic ? 
+                                                { uri: groups[groupID]?.users[id]?.profilePic }
+                                                : require('@components/blank-profile-picture.png')
+                                            }
+                                            style={styles.profilePic}
+                                        />
+                                        <Text style={styles.memberName}>{groups[groupID]?.users[id]?.name}</Text>
+                                    </View>
+                                    <Text style={styles.memberUserName}>@{groups[groupID]?.users[id]?.username}</Text>
+                                </TouchableOpacity>
+                            // </View>
                         ))}
                     </ScrollView>
                 </GestureHandlerRootView>

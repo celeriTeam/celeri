@@ -213,6 +213,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'flex-start',
         margin: 30,
+        marginBottom: 20,
         gap: 10,
     },
     profileImage: {
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     groupsLabel: {
         fontFamily: "Lexend-Bold",
         fontSize: 22,
-        marginBottom: 10,
+        marginVertical: 10,
     },
     scrollContainer: {
         maxHeight: 150, // Adjust based on your needs

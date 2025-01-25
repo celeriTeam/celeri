@@ -257,10 +257,10 @@ export const setStepsFirebase = async(userID: string, steps: number, averageStep
         console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
         await updateDoc(userDocRef, {
             steps: steps,
-            averageStepsTemp: averageSteps,
+            averageSteps: averageSteps,
         });
         const userDoc = await getDoc(userDocRef);
-        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageStepsTemp);
+        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps);
     } catch (error) {
         console.error('setSteps - Error updating username', error);
         return null;
@@ -295,41 +295,23 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
         const userData = userDoc.data();
 
         const todayIndex = new Date().getDay(); // Get the current day index (0-6)
-
-        // get the reset day, might not need this 
         const resetDay = groupData?.resetDay || 0;
-        const weeklyStepsTemp = userData?.averageStepsTemp;
+        const weeklyStepsTemp = userData?.averageSteps ?? userData?.averageStepsTemp; // temp logic for averagesteps revamp (1/25/2024)
 
-        // Calculate how many days to include (from resetDay to yesterday)
-        const daysSinceReset = (todayIndex - resetDay + 7) % 7; // Days since resetDay (handles wrapping)
-        const stepsSinceReset = [];
-
-        // Traverse from yesterday (index 6) backwards, including days since resetDay
-        for (let i = 0; i < daysSinceReset; i++) {
-            const reverseIndex = 6 - i; // Start at yesterday (6) and move backwards
-            stepsSinceReset.push(weeklyStepsTemp[reverseIndex] || 0); // Push steps (default to 0 if undefined)
-            console.log("the steps being pushed: ", weeklyStepsTemp[reverseIndex]);
+        if (weeklyStepsTemp === undefined || weeklyStepsTemp.length !== 7) {
+            console.error("getWeeklySteps - error: Invalid averageSteps data");
+            return 0;
         }
 
-        // Sum the steps of all days since resetDay
-        const totalStepsSinceReset = stepsSinceReset.reduce((acc, steps) => acc + steps, 0);
+        // Calculate how many days to include (from resetDay to yesterday)        
+        const daysPast = (todayIndex - resetDay) % 7;
+        const totalStepsSinceReset = weeklyStepsTemp.slice(-daysPast).reduce((sum: number, steps: number) => sum + steps, 0);
 
-        //const currentDaySteps = await getSteps(userID) || 0;
-        const totalWeeklySteps = totalStepsSinceReset;
+        const currentDaySteps = await getSteps(userID) || 0;
+        const totalWeeklySteps = totalStepsSinceReset + currentDaySteps;
         console.log("totalWeeklySteps: ", totalWeeklySteps);
 
         return totalWeeklySteps;
-
-
-        // REPLACED --  weeklySteps is a map with weeklySteps[userID] = steps
-        // const weeklySteps = groupDoc.data()?.weeklySteps;
-        // if (weeklySteps !== undefined && weeklySteps[userID] !== undefined) {
-        //     console.log("getWeeklySteps - response:", weeklySteps[userID]);
-        //     return weeklySteps[userID];
-        // } else {
-        //     console.error("getWeeklySteps - error: No such document!");
-        //     return 0;
-        // }
     } catch (error) {
         console.error("getWeeklySteps - Error fetching group document:", error);
         return 0;
@@ -342,7 +324,7 @@ export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.averageStepsTemp !== undefined) {
-            const averageSteps = userDoc.data()?.averageStepsTemp;
+            const averageSteps = userDoc.data()?.averageSteps ?? userDoc.data()?.averageStepsTemp;
             console.log("getAverageSteps - response:", averageSteps);
             return averageSteps;
         } else {
