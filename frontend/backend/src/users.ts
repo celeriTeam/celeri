@@ -286,26 +286,50 @@ export const getSteps = async (id: string): Promise<number> => {
 
 // GET weekly steps
 export const getWeeklySteps = async (groupID: string, userID: string): Promise<number> => {
+    console.log("getWeeklySteps -- running");
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
-        const userDoc = await getDoc(doc(db, "user", groupID));
+        const userDoc = await getDoc(doc(db, "users", userID));
 
         const groupData = groupDoc.data();
         const userData = userDoc.data();
 
-        // get the reset day, might not need this 
-        const resetDay = groupData?.resetDay;
-        const weeklyStepsTemp = groupData?.averageStepsTemp;
+        const todayIndex = new Date().getDay(); // Get the current day index (0-6)
 
-        // weeklySteps is a map with weeklySteps[userID] = steps
-        const weeklySteps = groupDoc.data()?.weeklySteps;
-        if (weeklySteps !== undefined && weeklySteps[userID] !== undefined) {
-            console.log("getWeeklySteps - response:", weeklySteps[userID]);
-            return weeklySteps[userID];
-        } else {
-            console.error("getWeeklySteps - error: No such document!");
-            return 0;
+        // get the reset day, might not need this 
+        const resetDay = groupData?.resetDay || 0;
+        const weeklyStepsTemp = userData?.averageStepsTemp;
+
+        // Calculate how many days to include (from resetDay to yesterday)
+        const daysSinceReset = (todayIndex - resetDay + 7) % 7; // Days since resetDay (handles wrapping)
+        const stepsSinceReset = [];
+
+        // Traverse from yesterday (index 6) backwards, including days since resetDay
+        for (let i = 0; i < daysSinceReset; i++) {
+            const reverseIndex = 6 - i; // Start at yesterday (6) and move backwards
+            stepsSinceReset.push(weeklyStepsTemp[reverseIndex] || 0); // Push steps (default to 0 if undefined)
+            console.log("the steps being pushed: ", weeklyStepsTemp[reverseIndex]);
         }
+
+        // Sum the steps of all days since resetDay
+        const totalStepsSinceReset = stepsSinceReset.reduce((acc, steps) => acc + steps, 0);
+
+        //const currentDaySteps = await getSteps(userID) || 0;
+        const totalWeeklySteps = totalStepsSinceReset;
+        console.log("totalWeeklySteps: ", totalWeeklySteps);
+
+        return totalWeeklySteps;
+
+
+        // REPLACED --  weeklySteps is a map with weeklySteps[userID] = steps
+        // const weeklySteps = groupDoc.data()?.weeklySteps;
+        // if (weeklySteps !== undefined && weeklySteps[userID] !== undefined) {
+        //     console.log("getWeeklySteps - response:", weeklySteps[userID]);
+        //     return weeklySteps[userID];
+        // } else {
+        //     console.error("getWeeklySteps - error: No such document!");
+        //     return 0;
+        // }
     } catch (error) {
         console.error("getWeeklySteps - Error fetching group document:", error);
         return 0;
