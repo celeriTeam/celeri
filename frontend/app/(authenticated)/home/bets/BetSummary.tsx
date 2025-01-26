@@ -88,14 +88,6 @@ const BetSummaryPage: React.FC = () => {
         }
     };
 
-    const gameTypeSteps = (gameType: string, dailySteps: number, weeklySteps: number) => {
-        if (gameType === "weekly") {
-            return Math.round(dailySteps + weeklySteps);
-        } else {
-            return Math.round(dailySteps);
-        }
-    };
-
     const setPropBetPlayerLogic = (userList: string[], cycle: number, cycleCount: number) => {
         // Find current user's index
         const currentUserIndex = userList.indexOf(userID);
@@ -155,7 +147,7 @@ const BetSummaryPage: React.FC = () => {
                                 getUserTokens(selectedUserID, groupID)
                             ]);
                             
-                            const newSteps = gameTypeSteps(gameType || "daily", steps, weeklySteps);
+                            const newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
 
                             users[selectedUserID] = {
                                 profilePic,
