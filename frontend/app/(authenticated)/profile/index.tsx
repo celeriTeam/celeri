@@ -69,11 +69,11 @@ const PersonalProfilePage: React.FC = () => {
     const StepsChart = ({ weeklySteps }: { weeklySteps: number[] }) => {
         const screenWidth = Dimensions.get('window').width;
 
-        const getLast7DaysLabels = () => {
+        const getLast8DaysLabels = () => {
             const today = new Date();
             const labels = [];
             
-            for (let i = 6; i >= 0; i--) {
+            for (let i = 7; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
                 labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
@@ -83,7 +83,7 @@ const PersonalProfilePage: React.FC = () => {
         };
     
         const data = {
-            labels: getLast7DaysLabels(),
+            labels: getLast8DaysLabels(),
             datasets: [{
                 data: [...weeklySteps, steps]
             }]

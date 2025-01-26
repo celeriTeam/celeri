@@ -464,9 +464,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
             weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
           }
-          const daysPast = (todayIndex - resetDay) % 7;
-          const daysPastIndex = daysPast != 0 ? daysPast : 7;
-          const userWeeklySteps = weeklyStepsData.slice(-daysPastIndex).reduce((sum, steps) => sum + steps, 0);
+          const daysPast = ((todayIndex - resetDay) % 7) + 1;
+          const userWeeklySteps = daysPast != 0 ? weeklyStepsData.slice(-daysPast).reduce((sum, steps) => sum + steps, 0) : 0;
           weeklySteps[userID] = userWeeklySteps + currentSteps;
         });
 

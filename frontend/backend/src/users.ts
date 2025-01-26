@@ -305,7 +305,8 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 
         // Calculate how many days to include (from resetDay to yesterday)        
         const daysPast = (todayIndex - resetDay) % 7;
-        const totalStepsSinceReset = weeklyStepsTemp.slice(-daysPast).reduce((sum: number, steps: number) => sum + steps, 0);
+        console.log('today index: ', todayIndex, ' resetDay: ', resetDay, ' daysPast: ', daysPast);
+        const totalStepsSinceReset = daysPast != 0 ? weeklyStepsTemp.slice(-daysPast).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
 
         const currentDaySteps = await getSteps(userID) || 0;
         const totalWeeklySteps = totalStepsSinceReset + currentDaySteps;
