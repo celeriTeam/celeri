@@ -324,7 +324,7 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.averageStepsTemp !== undefined) {
+        if (userDoc.exists() && (userDoc.data()?.averageStepsTemp !== undefined || userDoc.data()?.averageStepsTemp !== undefined)) {
             const averageSteps = userDoc.data()?.averageSteps ?? userDoc.data()?.averageStepsTemp;
             console.log("getAverageSteps - response:", averageSteps);
             return averageSteps;
