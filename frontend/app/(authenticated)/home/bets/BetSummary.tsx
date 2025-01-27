@@ -93,7 +93,8 @@ const BetSummaryPage: React.FC = () => {
         const currentUserIndex = userList.indexOf(userID);
         
         // Calculate initial chosen index with wraparound
-        let chosenIndex = (currentUserIndex + cycle + cycleCount) % userList.length;
+        const today = new Date().getDay();
+        let chosenIndex = (currentUserIndex + cycle + cycleCount + today) % userList.length;
         
         // If chosen player is current user, increment index
         if (userList[chosenIndex] === userID) {
