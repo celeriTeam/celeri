@@ -1240,7 +1240,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
     },
     editGroupModalContainer: {
-        height: '80%',
+        height: '88%',
         width: Dimensions.get('window').width + 2,
         position: 'absolute',
         bottom: 0,
