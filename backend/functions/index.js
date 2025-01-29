@@ -541,24 +541,24 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                   console.log("totalWagersOnWinner: " + totalWagersOnWinner);
 
                   if (duelData.bets != null) {
-                  // iterate through it again now that you have total wagers
+                    // iterate through it again now that you have total wagers
                     for (let i = 0; i < duelData.bets.length; i++) {
                       let amountWon = 0.0;
                       let percentage = 0.0;
                       let diamonds = 0;
                       if (duelData.bets[i].betOnUserID == winner) {
-                        // if they are the winner and there were no bets on them, they get 100%
+                      // if they are the winner and there were no bets on them, they get 100%
                         if (duelData.bets[i].userID === winner && totalWagersOnWinner == 0) {
                           percentage = 1.0;
                           amountWon = Math.floor(totalWagers);
                           diamonds = 1;
                         } else if (duelData.bets[i].userID === winner) {
-                          // if they are the winner, then they automatically get 50%
+                        // if they are the winner, then they automatically get 50%
                           percentage = 0.5;
                           amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
                           diamonds = 1;
                         } else {
-                          // divided by two because the winner will get 50%
+                        // divided by two because the winner will get 50%
                           percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
                           amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
                         }
@@ -579,7 +579,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                       } else if (winner == "draw") {
                         groupDocRef.update({
                           [`users.${duelData.bets[i].userID}.placedBet`]: false,
-                          // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
+                        // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
                         }).then(() => {
                           console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
                         }).catch((error) => {
@@ -589,7 +589,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                         groupDocRef.update({
                           [`users.${duelData.bets[i].userID}.placedBet`]: false,
                           [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
-                          // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
+                        // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
                         }).then(() => {
                           console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
                         }).catch((error) => {
@@ -610,7 +610,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                   });
                 } catch (error) {
                   console.error(`Error fetching player steps for duel 
-                      ${duelDoc.id}:`, error);
+                    ${duelDoc.id}:`, error);
                 }
               }
               // Add the batch to the array to commit later
@@ -622,10 +622,6 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           let resetBatch = firestore.batch();
 
-          // remove weeklySteps
-          // resetBatch.update(groupDocRef, {
-          //   weeklySteps: FieldValue.delete(),
-          // });
           await resetBatch.commit();
           resetBatch = firestore.batch();
           console.log("weeklySteps deleted successfully.");
@@ -647,6 +643,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // To reset operations count per batch:
           let operationCount = 1;
           const MAX_OPERATIONS = 500;
+          const gains = {};
 
           // Iterate over each user to calculate decreases and updates
           for (const [userID, userData] of users.entries()) {
@@ -664,6 +661,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                 [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
               });
               operationCount++;
+              gains[userID] = -decrease;
             }
           }
 
@@ -673,7 +671,20 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
               [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
             });
             operationCount++;
+            gains[maxUser] = totalDecrease;
           }
+
+          // Make a race document for recordkeeping
+          const racesCollectionRef = groupDocRef.collection("races"); // Access the subcollection
+
+          // Add a new document
+          await racesCollectionRef.add({
+            createdAt: FieldValue.serverTimestamp(), // Firestore's server timestamp for consistency
+            winner: maxUser,
+            steps: weeklySteps,
+            gains: gains,
+
+          });
 
           console.log("updateWinners -- Successfully updated tokens for all users after race.");
 

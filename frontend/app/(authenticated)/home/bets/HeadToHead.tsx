@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import BetRecapPage from './Recap';
+import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 
@@ -425,7 +426,13 @@ const HeadToHeadPage: React.FC = () => {
                     </TouchableOpacity>
 
                     {/* BetRecapPage as the modal content */}
-                    <BetRecapPage/>
+                    {
+                        groups?.[groupID]?.gameType === "weekly" ? (
+                            <WeeklyBetRecapPage />
+                        ) : (
+                            <BetRecapPage />
+                        )
+                    }
                 </View>
                 </View>
             </Modal>
