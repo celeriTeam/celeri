@@ -29,6 +29,11 @@ const EditGroupPage: React.FC< {
     const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
     const inputRef = useRef<TextInput>(null);
     
+    const date = new Date(groups[groupID]?.createdAt.seconds * 1000);
+    const month = date.getMonth() + 1;
+    const monthName = date.toLocaleString('default', { month: 'long' });
+    const year = date.getFullYear();
+    
     const handleSave = () => {
         // Check username update
         if (currentGroupName !== groups[groupID]?.groupName){
@@ -101,7 +106,7 @@ const EditGroupPage: React.FC< {
                         style={styles.closeButtonIcon}
                     />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={pickImage} activeOpacity={1}>
+                <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
                     <Image
                         source={currentGroupPic != '' ? { uri: currentGroupPic } : require('@components/blank-profile-picture.png')}
                         style={styles.groupImage}
@@ -113,14 +118,12 @@ const EditGroupPage: React.FC< {
                         />
                     </View>
                 </TouchableOpacity>
-                <View style={styles.row}>
-                    <TouchableOpacity onPress={() => setIsEditingGroupName(true)} activeOpacity={0.8}>
-                        <Text style={styles.name}>{currentGroupName}</Text>
-                    </TouchableOpacity>
-                </View>
-                <TouchableOpacity onPress={pickImage}>
-                    <Text style={styles.buttonText}>Edit Group Photo</Text>
+                <TouchableOpacity onPress={() => setIsEditingGroupName(true)} activeOpacity={0.8}>
+                    <Text style={styles.name}>{currentGroupName}</Text>
                 </TouchableOpacity>
+                <View style={{ padding: 5, }}>
+                    <Text style={styles.joinedDate}>Joined {monthName} {year}</Text>
+                </View>
                 <Text style={styles.title}>Invite Code</Text>
                 <View style={styles.groupCodeContainer}>
                     <View style={styles.row}>
@@ -160,16 +163,10 @@ const EditGroupPage: React.FC< {
             <Modal
                 transparent={true}
                 visible={isEditingGroupName}
+                animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.moneyModalContainer, { height: '20%',}]}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setIsEditingGroupName(false)}>
-                            <Image
-                                source={require('@assets/icons/x.png')}
-                                style={styles.closeButtonIcon}
-                            />
-                        </TouchableOpacity>
+                    <View style={styles.moneyModalContainer}>
                         <TextInput
                             ref={inputRef}
                             style={styles.nameInput}
@@ -181,7 +178,7 @@ const EditGroupPage: React.FC< {
                                 <Text style={styles.headerText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleEditGroupName} style={styles.saveButton} activeOpacity={1}>
-                                <Text style={styles.headerText}>Save</Text>
+                                <Text style={styles.saveText}>Save</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -205,16 +202,22 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '90%',
+        justifyContent: 'center',
+        gap: 40,
+        marginBottom: 20,
     },
     headerText: {
         fontFamily: "Lexend",
         fontSize: 15,
         color: '#fff',
     },
+    saveText: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#74FF6D',
+    },
     saveButton: {
-        borderColor: '#fff',
+        borderColor: '#74FF6D',
         borderWidth: 1,
         borderRadius: 25,
         padding: 5,
@@ -254,8 +257,11 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 25,
         color: '#fff',
-        marginRight: 3,
-        marginBottom: 5,
+    },
+    joinedDate: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#74FF6D',
     },
     whiteCircle: {
         position: 'absolute',
@@ -280,12 +286,14 @@ const styles = StyleSheet.create({
     },
     nameInput: {
         fontFamily: "Lexend",
-        fontSize: 23,
-        marginRight: 20,
-        borderBottomWidth: 3,
-        borderColor: '#6b6b6b',
-        backgroundColor: '#d9d9d9', // Light gray input area
-        padding: 5,
+        fontSize: 20,
+        color: '#fff',
+        borderWidth: 1,
+        borderColor: '#656565',
+        backgroundColor: '#000', // Light gray input area
+        padding: 13,
+        margin: 15,
+        borderRadius: 16,
     },
     groupCodeInvite: {
         fontFamily: "Lexend",
@@ -367,13 +375,14 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     moneyModalContainer: {
-        width: '90%',
+        width: '93%',
         // height: '80%',
         backgroundColor: 'black',
-        position: 'relative',
+        position: 'absolute',
+        top: '33%',
         borderWidth: 1, // Thin border
         borderColor: '#4A4A4A', // Dark grey border
-        borderRadius: 15,
+        borderRadius: 20,
     },
     infoModalContainer: {
         padding: 30,
