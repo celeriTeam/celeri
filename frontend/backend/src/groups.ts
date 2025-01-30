@@ -100,6 +100,22 @@ export const getGroupCode = async (groupID: string): Promise<string | undefined>
          return undefined;
     }
 }
+// GET Group createdAt
+export const getGroupCreatedAt = async (groupID: string): Promise<string | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.createdAt){
+            console.log("getGroupCreatedAt - response: ", groupDoc.data()?.createdAt);
+            return groupDoc.data()?.createdAt;
+        } else{
+            console.error("getGroupCreatedAt - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupCreatedAt - Error fetching user document: ", error);
+         return undefined;
+    }
+}
 
 // GET Group isGameActive
 export const getGroupIsGameActive = async (groupID: string): Promise<boolean | undefined> => {
