@@ -204,6 +204,21 @@ export const editUsername = async(userID: string, usernameInput: string) => {
     }
 }
 
+// EDIT name
+export const editName = async(userID: string, nameInput: string) => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            name: nameInput,
+        });
+        const userDoc = await getDoc(userDocRef);
+        console.log('editName - response: ', userDoc.data()?.name);
+    } catch (error) {
+        console.error('editName - Error updating name', error);
+        return null;
+    }
+}
+
 // EDIT password
 export const editPassword = async(userID: string, newPassword: string) => {
     try {

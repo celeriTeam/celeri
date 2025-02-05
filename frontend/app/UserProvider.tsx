@@ -3,7 +3,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName } from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -13,6 +13,7 @@ export interface UserContextType {
     userID: string;
     profileImageUrl: string;
     username: string;
+    name: string;
     steps: number;
     groupNames: string[];
     getGroupID: { [groupName: string]: any };
@@ -24,6 +25,7 @@ const UserContext = createContext<UserContextType>({
     userID: '',
     profileImageUrl: '',
     username: '',
+    name: '',
     steps: 0,
     groupNames: [],
     getGroupID: {},
@@ -37,6 +39,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [userID, setUserID] = useState<string>('');
     const [profileImageUrl, setProfileImageUrl] = useState<string>('');
     const [username, setUsername] = useState<string>('');
+    const [name, setName] = useState<string>('');
     const [steps, setSteps] = useState<number>(0);
     const [groupNames, setGroupNames] = useState<any[]>([]);
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
@@ -78,6 +81,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setProfileImageUrl(currentProfilePicUrl || '');
                 const currentUsername = await getUserName(uid);
                 setUsername(currentUsername || '');
+                const name = await getName(uid);
+                setName(name || '');
                 const currentUserSteps = await getSteps(uid);
                 setSteps(currentUserSteps || 0);
 
@@ -138,11 +143,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const users: { [userID: string]: any } = {};
                         if (userList) {
                             await Promise.all(userList.map(async (selectedUserID) => {
-                                const [profilePic, username, steps, tokens, name] = await Promise.all([
+                                const [profilePic, username, steps, tokens, betOnTokens, diamonds, name] = await Promise.all([
                                     getProfilePic(selectedUserID),
                                     getUserName(selectedUserID),
                                     getSteps(selectedUserID),
                                     getUserTokens(selectedUserID, groupID),
+                                    getTodaysBetTokens(selectedUserID, groupID),
+                                    getUserDiamonds(selectedUserID, groupID),
                                     getName(selectedUserID)
                                 ]);
                         
@@ -151,6 +158,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                     username,
                                     steps,
                                     tokens,
+                                    betOnTokens,
+                                    diamonds,
                                     name
                                 };
                             }));
@@ -198,13 +207,14 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const clearUserData = () => {
         setProfileImageUrl('');
         setUsername('');
+        setName('');
         setSteps(0);
         setGroupNames([]);
         setGroups({});
     };
 
     return (
-        <UserContext.Provider value={{ userID, profileImageUrl, username, steps, groupNames, getGroupID, groups, loading }}>
+        <UserContext.Provider value={{ userID, profileImageUrl, username, name, steps, groupNames, getGroupID, groups, loading }}>
             {children}
         </UserContext.Provider>
     );

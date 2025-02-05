@@ -24,6 +24,7 @@ const EditGroupPage: React.FC< {
     onNavigate: (id: string) => void;
 } > = ({ groupID, setEditGroupModalVisible, onNavigate }) => {
     const { userID, groups } = useUser();
+    const [editGroupModal, setEditGroupModal] = useState(false);
     const [isEditingGroupName, setIsEditingGroupName] = useState(false);
     const [currentGroupName, setCurrentGroupName] = useState(groups[groupID]?.groupName);
     const [currentGroupPic, setCurrentGroupPic] = useState(groups[groupID]?.groupImageUrl);
@@ -33,6 +34,12 @@ const EditGroupPage: React.FC< {
     const month = date.getMonth() + 1;
     const monthName = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
+
+    const handleClose = () => {
+        setCurrentGroupName(groups[groupID]?.groupName);
+        setCurrentGroupPic(groups[groupID]?.groupImageUrl);
+        setEditGroupModal(false);
+    }
     
     const handleSave = () => {
         // Check username update
@@ -44,26 +51,19 @@ const EditGroupPage: React.FC< {
         if (currentGroupPic !== groups[groupID]?.groupImageUrl){
             addGroupImage(groupID, currentGroupPic);
         }
-        setEditGroupModalVisible(false);
+        setEditGroupModal(false);
     }
     
     const copyToClipboard = () => {
         Clipboard.setString(groups[groupID]?.groupCode || '');
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
     };
-
+    
     useEffect(() => {
-        if (isEditingGroupName && inputRef.current) {
+        if (editGroupModal && inputRef.current) {
             inputRef.current.focus();
         }
-    }, [isEditingGroupName]);
-
-    const handleEditGroupName = async () => {
-        if (currentGroupName !== groups[groupID]?.groupName){
-            editGroupName(groupID, currentGroupName);
-        }
-        setIsEditingGroupName(false);
-    };
+    }, [editGroupModal]);
 
     const pickImage = async () => {
         // Request permission to access the media library
@@ -92,7 +92,6 @@ const EditGroupPage: React.FC< {
                 );
 
                 setCurrentGroupPic(manipulatedImage.uri);
-                addGroupImage(groupID, manipulatedImage.uri);
             }
         }
     };
@@ -100,25 +99,30 @@ const EditGroupPage: React.FC< {
     return (
         <SafeAreaView style={styles.safeArea}>
             <View style={styles.container}>
-                <TouchableOpacity style={styles.closeButton} onPress={() => setEditGroupModalVisible(false)}>
-                    <Image
-                        source={require('@assets/icons/x.png')}
-                        style={styles.closeButtonIcon}
-                    />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => setEditGroupModal(true)} style={styles.editButton} activeOpacity={0.8}>
+                        <Text style={styles.buttonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditGroupModalVisible(false)}>
+                        <Image
+                            source={require('@assets/icons/x.png')}
+                            style={styles.closeButtonIcon}
+                        />
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => setEditGroupModal(true)} activeOpacity={0.8}>
                     <Image
                         source={currentGroupPic != '' ? { uri: currentGroupPic } : require('@components/blank-profile-picture.png')}
                         style={styles.groupImage}
                     />
-                    <View style={styles.whiteCircle}>
+                    {/* <View style={styles.whiteCircle}>
                         <Image
                             source={require('@assets/icons/editBlack.png')}
                             style={styles.editImage}
                         />
-                    </View>
+                    </View> */}
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setIsEditingGroupName(true)} activeOpacity={0.8}>
+                <TouchableOpacity onPress={() => setEditGroupModal(true)} activeOpacity={0.8}>
                     <Text style={styles.name}>{currentGroupName}</Text>
                 </TouchableOpacity>
                 <View style={{ padding: 5, }}>
@@ -162,25 +166,31 @@ const EditGroupPage: React.FC< {
             </View>
             <Modal
                 transparent={true}
-                visible={isEditingGroupName}
-                animationType="slide"
+                visible={editGroupModal}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.moneyModalContainer}>
+                    <View style={styles.modalContainer}>
+                        <View style={[styles.header, { paddingVertical: 20, paddingHorizontal: 20, }]}>
+                            <TouchableOpacity onPress={handleClose} activeOpacity={1}>
+                                <Text style={styles.headerText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSave} style={styles.saveButton} activeOpacity={1}>
+                                <Text style={styles.saveText}>Save</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
+                            <Image
+                                source={currentGroupPic != '' ? { uri: currentGroupPic } : require('@components/blank-profile-picture.png')}
+                                style={styles.groupImage}
+                            />
+                            <Text style={styles.editImageText}>Change or Upload Profile Photo</Text>
+                        </TouchableOpacity>
                         <TextInput
                             ref={inputRef}
                             style={styles.nameInput}
                             value={currentGroupName}
                             onChangeText={setCurrentGroupName}
                         />
-                        <View style={styles.header}>
-                            <TouchableOpacity onPress={() => {setCurrentGroupName(groups[groupID]?.groupName); setIsEditingGroupName(false);}} activeOpacity={1}>
-                                <Text style={styles.headerText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleEditGroupName} style={styles.saveButton} activeOpacity={1}>
-                                <Text style={styles.saveText}>Save</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 </View>
             </Modal>
@@ -202,9 +212,10 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: 40,
-        marginBottom: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        padding: 10,
+        paddingVertical: 5,
     },
     headerText: {
         fontFamily: "Lexend",
@@ -216,18 +227,22 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#74FF6D',
     },
+    imageContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    editImageText: {
+        fontFamily: "Lexend",
+        fontSize: 13,
+        color: '#74FF6D',
+        marginBottom: 30,
+    },
     saveButton: {
         borderColor: '#74FF6D',
         borderWidth: 1,
         borderRadius: 25,
         padding: 5,
         paddingHorizontal: 20
-    },
-    closeButton: {
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        zIndex: 1,
     },
     closeButtonIcon: {
         width: 20,
@@ -238,20 +253,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     groupImage: {
-        marginTop: 40,
+        marginVertical: 10,
         width: 110,
         height: 110,
         borderRadius: 60,
-        marginBottom: 20,
         borderColor: '#74FF6D',
         borderWidth: 2,
     },
+    editButton: {
+        borderColor: '#fff',
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 5,
+        paddingHorizontal: 20
+    },
     buttonText: {
-        marginBottom: 40,
         fontFamily: "Lexend",
         fontSize: 13,
         textAlign: 'center',
-        color: '#74FF6D',
+        color: '#fff',
     },
     name: {
         fontFamily: "Lexend",
@@ -286,14 +306,16 @@ const styles = StyleSheet.create({
     },
     nameInput: {
         fontFamily: "Lexend",
-        fontSize: 20,
+        fontSize: 17,
         color: '#fff',
         borderWidth: 1,
         borderColor: '#656565',
         backgroundColor: '#000', // Light gray input area
         padding: 13,
-        margin: 15,
+        marginHorizontal: 17,
+        marginVertical: 5,
         borderRadius: 16,
+        marginBottom: 30,
     },
     groupCodeInvite: {
         fontFamily: "Lexend",
@@ -367,33 +389,13 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
     },
     modalContainer: {
-        width: '90%',
-        height: '90%',
-        backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
-        position: 'relative',
-    },
-    moneyModalContainer: {
         width: '93%',
-        // height: '80%',
         backgroundColor: 'black',
         position: 'absolute',
-        top: '33%',
+        top: '21%',
         borderWidth: 1, // Thin border
         borderColor: '#4A4A4A', // Dark grey border
         borderRadius: 20,
-    },
-    infoModalContainer: {
-        padding: 30,
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    tokenText: {
-        fontFamily: "Lexend",
-        fontSize: 15,
-        color: "white"
     },
 });
 

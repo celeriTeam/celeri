@@ -1,21 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useUser } from '../../UserProvider';
 import messaging from '@react-native-firebase/messaging';
-import { getActiveUserGroupIDs } from '@/backend/src/users';
+import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const PersonalProfilePage: React.FC = () => {
     const { weeklySteps, averageSteps, distance, flights } = useHealthData();
-    const { userID, profileImageUrl, username, steps, groupNames, loading } = useUser();
+    const { userID, profileImageUrl, username, name, steps, groupNames, loading } = useUser();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [editProfileModal, setEditProfileModal] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
+    const inputRef = useRef<TextInput>(null);
+    const [currentName, setCurrentName] = useState(name);
+    const [currentUsername, setCurrentUsername] = useState(username);
+    const [currentPic, setCurrentPic] = useState(profileImageUrl);
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -62,8 +70,61 @@ const PersonalProfilePage: React.FC = () => {
         }
     };
 
-    const handleEditProfile = () => {
-        router.push("/(authenticated)/profile/editProfile")
+    useEffect(() => {
+        if (editProfileModal && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [editProfileModal]);
+
+    const handleCloseEdit = () => {
+        setEditProfileModal(false);
+        setCurrentName(name);
+        setCurrentUsername(username);
+        setCurrentPic(profileImageUrl);
+    }
+
+    const handleEdit = async () => {
+        if (currentName !== name){
+            editName(userID, currentName);
+        }
+        if (currentUsername !== username){
+            editUsername(userID, currentUsername);
+        }
+        if (currentPic !== profileImageUrl){
+            editProfilePic(userID, currentPic);
+        }
+        setEditProfileModal(false);
+    };
+
+    const pickImage = async () => {
+        // Request permission to access the media library
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+        if (permissionResult.granted === false) {
+            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+            return;
+        }
+    
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const selectedAsset = result.assets[0];
+            if (selectedAsset.uri) {
+            // Compress and resize the image
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                selectedAsset.uri,
+                [{ resize: { width: 800 } }], // Resize to 800px width
+                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+            );
+
+            setCurrentPic(manipulatedImage.uri);
+            }
+        }
     };
 
     const StepsChart = ({ weeklySteps }: { weeklySteps: number[] }) => {
@@ -92,28 +153,42 @@ const PersonalProfilePage: React.FC = () => {
         return (
             <LineChart
                 data={data}
-                width={screenWidth - 40} // Account for padding
-                height={220}
+                width={screenWidth - 40}
+                height={240}
+                yAxisInterval={1}
+                fromZero={true}
+                withVerticalLabels={true}
                 chartConfig={{
-                    backgroundColor: '#1b2c1c',
-                    backgroundGradientFrom: '#1b2c1c',
-                    backgroundGradientTo: '#1b2c1c',
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientFrom: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientTo: 'rgba(2, 68, 5, 1)',
                     decimalPlaces: 0,
                     color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    propsForBackgroundLines: {
+                        strokeWidth: 1,
+                        stroke: "rgba(0, 255, 0, 0.3)",
+                        strokeDasharray: [] // Solid lines
+                    },
                     style: {
                         borderRadius: 16
                     },
                     propsForDots: {
                         r: "6",
                         strokeWidth: "2",
-                        stroke: "#51ba51"
-                    }
+                        stroke: "#00FF00"
+                    },
+                    propsForLabels: {
+                        fontFamily: 'Lexend',
+                        fontSize: 11,
+                    },
                 }}
-                bezier // Makes the line curved
                 style={{
                     marginVertical: 8,
-                    borderRadius: 16
+                    borderRadius: 16,
+                    paddingTop: 20,
+                    paddingBottom: 5,
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
                 }}
                 decorator={() => {
                     return tooltipPos.visible ? (
@@ -153,43 +228,89 @@ const PersonalProfilePage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <View style={styles.row}>
-                    <Image
-                    source={profileImageUrl ? { uri: profileImageUrl } : require('@components/blank-profile-picture.png')}
-                    style={styles.profileImage}
-                    />
-                    <Text style={styles.name}>{username ? username : 'Loading...'}</Text>
-                </View>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    <TouchableOpacity onPress={() => setEditProfileModal(true)} activeOpacity={0.8}>
+                        <Image
+                            source={profileImageUrl != '' ? { uri: profileImageUrl } : require('@components/blank-profile-picture.png')}
+                            style={styles.profileImage}
+                        />
+                        {/* <View style={styles.whiteCircle}>
+                            <Image
+                                source={require('@assets/icons/editBlack.png')}
+                                style={styles.editImage}
+                            />
+                        </View> */}
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditProfileModal(true)} activeOpacity={0.8}>
+                        <Text style={styles.name}>{name}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditProfileModal(true)} style={{ padding: 5, }} activeOpacity={0.8}>
+                        <Text style={styles.username}>@{username}</Text>
+                    </TouchableOpacity>
 
-                <Text style={styles.groupsLabel}>Steps: </Text>
-                {averageSteps.length !== 0 ? (
-                    StepsChart({ weeklySteps: averageSteps })
-                ) : (
-                    <Text style={styles.text}>Loading...</Text>
-                )}
-                
-                <Text style={styles.groupsLabel}>Groups:</Text>
-                <ScrollView style={styles.scrollContainer}>
-                    {groupNames === undefined || groupNames.length === 0 ? (
-                        <Text style={styles.text}>No groups found</Text>
+                    <Text style={styles.groupsLabel}>Steps This Week</Text>
+                    {averageSteps.length !== 0 ? (
+                        StepsChart({ weeklySteps: averageSteps })
                     ) : (
-                        groupNames.map((groupName) => (
-                            <Text key={groupName} style={styles.text}>{groupName}</Text>
-                        ))
+                        <Text style={styles.text}>Loading...</Text>
                     )}
-                </ScrollView>
 
-                <View style={styles.logoutButtonContainer}>
-                <TouchableOpacity onPress={handleEditProfile}>
-                    <Text style={[styles.buttonText, {color: 'blue'}]}>Edit Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleLogout} disabled={isLoggingOut}>
-                    <Text style={[styles.buttonText, {color: 'red'}]}>Log Out</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditProfileModal(true)} style={[styles.logoutButton, { borderColor: '#fff' }]}>
+                        <Text style={[styles.logoutText, { color: '#fff', }]}>Edit Profile</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={handleLogout} disabled={isLoggingOut} style={[styles.logoutButton, { borderColor: '#74FF6D' }]}>
+                        <Text style={[styles.logoutText, { color: '#74FF6D', }]}>Log Out</Text>
+                    </TouchableOpacity>
                 </View>
-            </View>
+                <Modal
+                    transparent={true}
+                    visible={editProfileModal}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <View style={styles.header}>
+                                <TouchableOpacity onPress={handleCloseEdit} activeOpacity={1}>
+                                    <Text style={styles.headerText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleEdit} style={styles.saveButton} activeOpacity={1}>
+                                    <Text style={styles.saveText}>Save</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
+                                <Image
+                                    source={currentPic != '' ? { uri: currentPic } : require('@components/blank-profile-picture.png')}
+                                    style={{ width: 110, height: 110, borderRadius: 60, borderColor: '#74FF6D', borderWidth: 2, marginBottom: 20 }}
+                                />
+                                <Text style={styles.editImageText}>Change or Upload Profile Photo</Text>
+                            </TouchableOpacity>
+                            <TextInput
+                                ref={inputRef}
+                                style={styles.nameInput}
+                                value={currentName}
+                                onChangeText={setCurrentName}
+                            />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 25, }}>
+                                <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 17, width: '5%', marginLeft: 17, }}>@</Text>
+                                <TextInput
+                                    ref={inputRef}
+                                    style={[styles.nameInput, { width: '84%', marginLeft: 5, }]}
+                                    value={currentUsername}
+                                    onChangeText={setCurrentUsername}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            </LinearGradient>
         </SafeAreaView>
     );
 
@@ -198,15 +319,14 @@ const PersonalProfilePage: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
-        // flex: 1,
+        flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
         marginTop: 50,
-        height: '100%',
+        // height: '100%',
     },
     row: {
         flexDirection: 'row',
@@ -217,18 +337,53 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     profileImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        marginTop: 40,
+        width: 110,
+        height: 110,
+        borderRadius: 60,
+        marginBottom: 20,
+        borderColor: '#74FF6D',
+        borderWidth: 2,
+    },
+    editImageText: {
+        fontFamily: "Lexend",
+        fontSize: 13,
+        color: '#74FF6D',
+        marginBottom: 30,
+    },
+    whiteCircle: {
+        position: 'absolute',
+        bottom: 20,
+        right: 0,
+        width: 34,
+        height: 34,
+        borderRadius: 50,
+        backgroundColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    editImage: {
+        width: 14,
+        height: 14,
     },
     name: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 34,
+        fontFamily: "Lexend",
+        fontSize: 25,
+        color: '#fff',
+    },
+    username: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#74FF6D',
     },
     groupsLabel: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 22,
-        marginVertical: 10,
+        alignSelf: 'flex-start',
+        left: 5,
+        fontFamily: "Lexend",
+        fontSize: 16,
+        marginTop: 20,
+        marginBottom: 5,
+        color: '#fff',
     },
     scrollContainer: {
         maxHeight: 150, // Adjust based on your needs
@@ -244,7 +399,6 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 18,
         marginBottom: 20,
-        // center
         textAlign: 'center',
     },
     buttonText: {
@@ -259,7 +413,75 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
     },
+    logoutText: {
+        fontFamily: "Lexend",
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    logoutButton: {
+        marginTop: 25,
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 10,
+        // paddingHorizontal: 50,
+        // set width
+        width: '40%',
+    },
+
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+    },
+    modalContainer: {
+        width: '93%',
+        backgroundColor: 'black',
+        position: 'absolute',
+        top: '13%',
+        borderWidth: 1, // Thin border
+        borderColor: '#4A4A4A', // Dark grey border
+        borderRadius: 20,
+    },
+    imageContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    nameInput: {
+        fontFamily: "Lexend",
+        fontSize: 17,
+        color: '#fff',
+        borderWidth: 1,
+        borderColor: '#656565',
+        backgroundColor: '#000', // Light gray input area
+        padding: 13,
+        marginHorizontal: 17,
+        marginVertical: 5,
+        borderRadius: 16,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 25,
+    },
+    headerText: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#fff',
+    },
+    saveText: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#74FF6D',
+    },
+    saveButton: {
+        borderColor: '#74FF6D',
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 5,
+        paddingHorizontal: 20
+    },
 });
 
-// export default ProfileTab;
 export default PersonalProfilePage;
