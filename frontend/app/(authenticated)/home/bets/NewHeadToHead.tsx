@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal, PanResponder, Animated } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
 import BetRecapPage from './Recap';
@@ -10,7 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const HeadToHeadPage: React.FC = () => {
+const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
     const route = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
@@ -29,6 +30,7 @@ const HeadToHeadPage: React.FC = () => {
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
+    const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [isModalVisible, setModalVisible] = useState(true);
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -88,6 +90,29 @@ const HeadToHeadPage: React.FC = () => {
             const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
+            }
+
+            // Get amount of time left
+            const gameType = groups[groupID]?.gameType;
+            const currentPlayersInGame = groups[groupID]?.currentPlayersInGame;
+            const cycle = groups[groupID]?.cycle;
+            const cycleCount = groups[groupID]?.cycleCount;
+            const totalCycles = groups[groupID]?.totalCycles;
+            const userList = groups[groupID]?.userList;
+            const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+            if(gameType == "weekly"){
+                console.log("weeksLeft -- ", timeLeft);
+                if(timeLeft == 1){
+                    setGameTimeLeft(`${timeLeft} week`)
+                } else {
+                    setGameTimeLeft(`${timeLeft} weeks`)
+                }
+            } else {
+                if(timeLeft == 1){
+                    setGameTimeLeft(`${timeLeft} day`)
+                } else {
+                    setGameTimeLeft(`${timeLeft} days`)
+                }
             }
 
             let dailyDuel = groups[groupID]?.unbetDuels;
@@ -295,128 +320,24 @@ const HeadToHeadPage: React.FC = () => {
                     width: '100%',
                 }}
             >
-                {/* Overlay to dismiss the keyboard */}
-                {keyboardVisible && (
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                        <View style={styles.dismissOverlay} />
-                    </TouchableWithoutFeedback>
-                )}
-                <TouchableOpacity 
-                    style={styles.infoButton}
-                    onPress={handleInfoButton}
-                >
-                    <Ionicons name="information-circle" size={24} color="#666" />
-                </TouchableOpacity>
-                <View style={styles.tokens}>
-                    <Text style={{fontFamily: "Lexend"}}>Your Tokens: {currentUserTokens}</Text>
-                </View>
-                <View style={styles.betTokens}>
-                    <Text style={{fontFamily: "Lexend"}}>Bet Tokens: {totalBetTokens}</Text>
+                <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                    <Image 
+                        source={require('@assets/icons/timeLeft.png')}
+                        style={styles.timeLeftIcon}
+                    />
+                    <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
+                    <Text style={styles.timeLeftText}> left in game</Text>
                 </View>
 
-                {/* Top-left (Player 1) */}
-                <TouchableOpacity
-                    style={[
-                        styles.player1Container,
-                        isSelected(player1ID) && styles.selectedPlayer1,
-                    ]}
-                    onPress={() => !isCurrentUser(player1ID) && handleSelectPlayer(player1ID)}
-                    activeOpacity={1}
-                >
-                    <Text style={styles.playerText}>{player1}</Text>
-                    {isSelected(player1ID) && (
-                        <>
-                            <Text style={styles.betNumber}>{betAmount1 || 0}</Text>
-                            {!isValidBet(currentUserTokens ?? 0, +betAmount1) && (betAmount1 != '') && (
-                                <Text style={styles.errorText}>Invalid bet</Text>
-                            )}
-                            <View style={styles.bettingRow}>
-                                {increments.map((amount) => (
-                                <TouchableOpacity
-                                    style={styles.incrementButton}
-                                    onPress={() => increaseBetAmount('player1', amount)}
-                                >
-                                    <Text style={styles.incrementText}>+{amount}</Text>
-                                </TouchableOpacity>
-                                ))}
-                                <TextInput
-                                    style={styles.input}
-                                    value={betAmount1}
-                                    onChangeText={setBetAmount1}
-                                    keyboardType="numeric"
-                                    editable={!isCurrentUser(player1ID)}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setBetAmount1('')}
-                                >
-                                    <Text style={styles.incrementText}>Clear bet</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    )}
-                </TouchableOpacity>
+                <Text>Who will walk more steps this week?</Text>
 
-                {/* Bottom-right (Player 2) */}
-                <TouchableOpacity
-                    style={[
-                        styles.player2Container,
-                        isSelected(player2ID) && styles.selectedPlayer2,
-                    ]}
-                    onPress={() => !isCurrentUser(player2ID) && handleSelectPlayer(player2ID)}
-                    activeOpacity={1}
-                >
-                    <Text style={[
-                        styles.playerText,
-                        isSelected(player2ID) && keyboardVisible && styles.usernameWithKeyboard
-                    ]}>{player2}</Text>
-                    {isSelected(player2ID) && (
-                        <>
-                            <Text style={styles.betNumber}>{betAmount2 || 0}</Text>
-                            {!isValidBet(currentUserTokens ?? 0, +betAmount2) && (betAmount2 != '') && (
-                                <Text style={styles.errorText}>Invalid bet</Text>
-                            )}
-                            <View style={styles.bettingRow}>
-                                {increments.map((amount) => (
-                                <TouchableOpacity
-                                    style={styles.incrementButton}
-                                    onPress={() => increaseBetAmount('player2', amount)}
-                                >
-                                    <Text style={styles.incrementText}>+{amount}</Text>
-                                </TouchableOpacity>
-                                ))}
-                                <TextInput
-                                    style={[styles.input, isSelected(player2ID) && keyboardVisible && { ...styles.inputWithKeyboard, bottom: keyboardHeight + 40 }]}
-                                    value={betAmount2}
-                                    onChangeText={setBetAmount2}
-                                    keyboardType="numeric"
-                                    editable={!isCurrentUser(player2ID)}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setBetAmount2('')}
-                                >
-                                    <Text style={styles.incrementText}>Clear bet</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    )}
-                </TouchableOpacity>
-
-                {/* Diagonal line */}
-                <View style={styles.dividingLine} />
-
-                {/* Button: Next or Submit */}
-                {shouldShowSubmit() && (
-                    <TouchableHighlight
-                        style={[styles.submitButton, keyboardVisible && styles.submitButtonWithKeyboard]}
-                        underlayColor="#ff7043"
-                        onPress={currentMatchupIndex === matchups.length - 1 ? () => handleSubmit() : handleNext}
-                        disabled={isProcessing}
-                    >
-                        <Text style={styles.submitButtonText}>
-                            {currentMatchupIndex === matchups.length - 1 ? 'Submit' : 'Next'}
-                        </Text>
-                    </TouchableHighlight>
-                )}
+                {/* swipeable cards */}
+                <View>
+                    <View>
+                        <Text>Place Your Bet</Text>
+                        {/* Text: tokens & tokens left */}
+                    </View>
+                </View>
 
                 {/* Modal */}
                 {/* <InfoModal /> */}
@@ -451,13 +372,27 @@ const HeadToHeadPage: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        position: 'relative',
-        backgroundColor: '#F5F5F5',
+        // position: 'relative',
+        // backgroundColor: '#F5F5F5',
         marginTop: 50,
     },
     dismissOverlay: {
         ...StyleSheet.absoluteFillObject,
         zIndex: 1,
+    },
+    timeLeftIcon: {
+        width: 13,
+        height: 13,
+    },
+    timeLeft: {
+        color: '#74FF6D',
+        fontFamily: 'Lexend',
+        fontSize: 11,
+    },
+    timeLeftText: {
+        fontFamily: 'Lexend',
+        fontSize: 11,
+        color: '#fff',
     },
     infoButton: {
         position: 'absolute',
@@ -673,4 +608,4 @@ const styles = StyleSheet.create({
       },
 });
 
-export default HeadToHeadPage;
+export default NewHeadToHeadPage;
