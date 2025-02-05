@@ -8,10 +8,16 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const ProfilePage: React.FC = () => {
     const { username, groups, loading } = useUser();
-    const { selectedUserIDTemp, groupIDTemp, averageStepsTemp, stepsTemp } = useLocalSearchParams();
+    const { 
+        selectedUserIDTemp, 
+        groupIDTemp, 
+        averageStepsTemp, 
+        stepsTemp
+    } = useLocalSearchParams();
 
     // Convert parameters to strings
     const selectedUserID = selectedUserIDTemp ? String(selectedUserIDTemp) : '';
@@ -27,8 +33,11 @@ const ProfilePage: React.FC = () => {
 
     console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
+    const currentName = groups[groupID]?.users[selectedUserID]?.name || '';
     const currentUserName = groups[groupID]?.users[selectedUserID]?.username || '';
     const currentUserTokens = groups[groupID]?.users[selectedUserID]?.tokens || 0;
+    const currentUserBetTokens = groups[groupID]?.users[selectedUserID]?.betOnTokens || 0;
+    const currentUserDiamonds = groups[groupID]?.users[selectedUserID]?.diamonds || 0;
     const currentSteps = groups[groupID]?.users[selectedUserID]?.steps || 0;
     const [nudgeMessage, setNudgeMessage] = useState<string>('');
     const [modalVisible, setModalVisible] = useState<boolean>(false);
@@ -92,28 +101,42 @@ const ProfilePage: React.FC = () => {
         return (
             <LineChart
                 data={data}
-                width={screenWidth - 40} // Account for padding
-                height={220}
+                width={screenWidth - 40}
+                height={240}
+                yAxisInterval={1}
+                fromZero={true}
+                withVerticalLabels={true}
                 chartConfig={{
-                    backgroundColor: '#1b2c1c',
-                    backgroundGradientFrom: '#1b2c1c',
-                    backgroundGradientTo: '#1b2c1c',
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientFrom: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientTo: 'rgba(2, 68, 5, 1)',
                     decimalPlaces: 0,
                     color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    propsForBackgroundLines: {
+                        strokeWidth: 1,
+                        stroke: "rgba(0, 255, 0, 0.3)",
+                        strokeDasharray: [] // Solid lines
+                    },
                     style: {
                         borderRadius: 16
                     },
                     propsForDots: {
                         r: "6",
                         strokeWidth: "2",
-                        stroke: "#51ba51"
-                    }
+                        stroke: "#00FF00"
+                    },
+                    propsForLabels: {
+                        fontFamily: 'Lexend',
+                        fontSize: 11,
+                    },
                 }}
-                bezier // Makes the line curved
                 style={{
                     marginVertical: 8,
-                    borderRadius: 16
+                    borderRadius: 16,
+                    paddingTop: 20,
+                    paddingBottom: 5,
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
                 }}
                 decorator={() => {
                     return tooltipPos.visible ? (
@@ -153,75 +176,100 @@ const ProfilePage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@assets/icons/back.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+
                     <Image
-                        source={require('@components/back-icon.png')}
-                        style={styles.backImage}
+                        source={currentProfilePic != '' ? { uri: currentProfilePic } : require('@components/blank-profile-picture.png')}
+                        style={styles.profileImage}
                     />
-                </TouchableOpacity>
+                    <Text style={styles.name}>{currentName ? currentName : 'Loading...'}</Text>
+                    <Text style={styles.username}>@{currentUserName ? currentUserName : 'Loading...'}</Text>
+                    
+                    {/* Nudge Button */}
+                    <TouchableOpacity style={styles.nudgeButton} onPress={() => setModalVisible(true)}>
+                        <Text style={styles.nudgeButtonText}>Nudge</Text>
+                    </TouchableOpacity>
 
-                <View style={styles.row}>
-                    <Image
-                    source={currentProfilePic ? { uri: currentProfilePic } : require('@components/blank-profile-picture.png')}
-                    style={styles.profileImage}
-                    />
-                    <Text style={styles.name}>{currentUserName ? currentUserName : 'Loading...'}</Text>
-                </View>
-
-                <Text style={styles.groupsLabel}>Steps: </Text>
-                {averageSteps.length !== 0 ? (
-                    averageSteps.length === 1 && averageSteps[0] === 0 ? (
-                        <Text style={styles.text}>0</Text>
-                    ) : (
-                        StepsChart({ weeklySteps: averageSteps })
-                    )
-                ) : (
-                    <Text style={styles.text}>Loading...</Text>
-                )}
-
-                <Text style={styles.groupsLabel}>Tokens: </Text>
-                {currentUserTokens != undefined ? (
-                    <Text style={styles.text}>{currentUserTokens}</Text>
-                ) : (
-                    <Text style={styles.text}>Loading...</Text>
-                )
-                }
-                {/* Nudge Button */}
-                <TouchableOpacity style={styles.nudgeButton} onPress={() => setModalVisible(true)}>
-                    <Text style={styles.nudgeButtonText}>Nudge</Text>
-                </TouchableOpacity>
-
-                {/* Nudge Message Modal */}
-                <Modal
-                    // animationType="slide"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Send a Nudge</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="Type your message here..."
-                                value={nudgeMessage}
-                                onChangeText={(text) => setNudgeMessage(text)}
-                                maxLength={250}
+                    <Text style={styles.groupsLabel}>Total Stats</Text>
+                    <View style={styles.statsContainer}>
+                        <View style={styles.statItem}>
+                            <Image
+                                source={require('@assets/icons/tokens.png')}
+                                style={styles.tokensIcon}
                             />
-                            {/* Character Count */}
-                            <View style={styles.characterCountContainer}>
-                                <Text style={styles.characterCountText}>
-                                    {nudgeMessage.length}/250
-                                </Text>
-                            </View>
-                            <Button title="Send Nudge" onPress={handleSendNudge} />
-                            <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
+                            <Text style={styles.statValue}> {currentUserTokens}</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Image
+                                source={require('@assets/icons/betTokens.png')}
+                                style={styles.betTokensIcon}
+                            />
+                            <Text style={styles.statValue}> {currentUserBetTokens}</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Image
+                                source={require('@assets/icons/diamonds.png')}
+                                style={styles.diamondsIcon}
+                            />
+                            <Text style={styles.statValue}> {currentUserDiamonds}</Text>
                         </View>
                     </View>
-                </Modal>
-            </View>
+
+                    <Text style={styles.groupsLabel}>Steps This Week</Text>
+                    {averageSteps.length !== 0 ? (
+                        averageSteps.length === 1 && averageSteps[0] === 0 ? (
+                            <Text style={styles.text}>0</Text>
+                        ) : (
+                            StepsChart({ weeklySteps: averageSteps })
+                        )
+                    ) : (
+                        <Text style={styles.text}>Loading...</Text>
+                    )}
+
+                    {/* Nudge Message Modal */}
+                    <Modal
+                        // animationType="slide"
+                        transparent={true}
+                        visible={modalVisible}
+                        onRequestClose={() => setModalVisible(false)}
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>Send a Nudge</Text>
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Type your message here..."
+                                    value={nudgeMessage}
+                                    onChangeText={(text) => setNudgeMessage(text)}
+                                    maxLength={250}
+                                />
+                                {/* Character Count */}
+                                <View style={styles.characterCountContainer}>
+                                    <Text style={styles.characterCountText}>
+                                        {nudgeMessage.length}/250
+                                    </Text>
+                                </View>
+                                <Button title="Send Nudge" onPress={handleSendNudge} />
+                                <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />
+                            </View>
+                        </View>
+                    </Modal>
+                </View>
+            </LinearGradient>
         </SafeAreaView>
     );
 
@@ -238,7 +286,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         marginTop: 50,
-        height: '100%',
     },
     backButton: {
         position: 'absolute',
@@ -258,18 +305,32 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     profileImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        marginTop: 40,
+        width: 110,
+        height: 110,
+        borderRadius: 60,
+        marginBottom: 10,
+        borderColor: '#74FF6D',
+        borderWidth: 2,
     },
     name: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 34,
+        fontFamily: "Lexend",
+        fontSize: 25,
+        color: '#fff',
+    },
+    username: {
+        fontFamily: "Lexend",
+        fontSize: 15,
+        color: '#74FF6D',
     },
     groupsLabel: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 22,
-        marginVertical: 10,
+        alignSelf: 'flex-start',
+        left: 5,
+        fontFamily: "Lexend",
+        fontSize: 16,
+        marginTop: 20,
+        marginBottom: 5,
+        color: '#fff',
     },
     text: {
         fontFamily: "Lexend",
@@ -285,12 +346,84 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
     },
-    nudgeButton: { backgroundColor: '#007AFF', padding: 12, borderRadius: 8, marginTop: 20 },
-    nudgeButtonText: { color: '#fff', fontWeight: 'bold' },
-    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-    modalContent: { width: 300, padding: 20, backgroundColor: '#fff', borderRadius: 10, alignItems: 'center' },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-    textInput: { height: 100, borderColor: '#ccc', borderWidth: 1, width: '100%', padding: 10, marginBottom: 10, textAlignVertical: 'top' },
+    nudgeButton: { 
+        marginTop: 20,
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 10,
+        width: '40%',
+        borderColor: '#fff',
+    },
+    nudgeButtonText: {
+        fontFamily: "Lexend",
+        fontSize: 14,
+        textAlign: 'center',
+        color: '#fff',
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: '#65656580',
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        padding: 15,
+        marginBottom: 5,
+        width: '100%',
+        gap: 10,
+    },
+    statItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#00000080',
+        borderRadius: 15,
+        padding: 10,
+        width: '30%',
+    },
+    statValue: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: 13,
+    },
+    tokensIcon: {
+        width: 16,
+        height: 16,
+    },
+    betTokensIcon: {
+        width: 15,
+        height: 15,
+    },
+    diamondsIcon: {
+        width: 14,
+        height: 12,
+    },
+    modalContainer: { 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: 'rgba(0, 0, 0, 0.5)' 
+    },
+    modalContent: { 
+        width: 300, 
+        padding: 20, 
+        backgroundColor: '#fff', 
+        borderRadius: 10, 
+        alignItems: 'center' 
+    },
+    modalTitle: { 
+        fontSize: 20, 
+        fontWeight: 'bold', 
+        marginBottom: 10 
+    },
+    textInput: { 
+        height: 100, 
+        borderColor: '#ccc', 
+        borderWidth: 1, 
+        width: '100%', 
+        padding: 10, 
+        marginBottom: 10, 
+        textAlignVertical: 'top' 
+    },
 });
 
 export default ProfilePage;
