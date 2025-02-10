@@ -212,7 +212,7 @@ const HomeTab: React.FC = () => {
             }
             else if (!isFinishedBetting) {
                 router.push({
-                    pathname: '/(authenticated)/home/bets/HeadToHead',
+                    pathname: '/(authenticated)/home/bets/NewHeadToHead',
                     params: { groupIDTemp },
                 });
             } else {
