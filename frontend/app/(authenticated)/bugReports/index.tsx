@@ -15,9 +15,11 @@ const BugReportsPage: React.FC = () => {
     const { userID, username } = useUser();
     const [subject, setSubject] = useState<string>('');
     const [issue, setIssue] = useState<string>('');
+    const [submitting, setSubmitting] = useState<boolean>(false);
     const router = useRouter();
 
     const handleSubmit = async () => {
+        setSubmitting(true);
         if (!subject.trim() || !issue.trim()) {
             Alert.alert('Error', 'Both fields are required.');
             return;
@@ -36,6 +38,8 @@ const BugReportsPage: React.FC = () => {
             Alert.alert('Success', `Thank you for your feedback, ${username}!`);
         } catch (error) {
             console.error('Error:', error);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -71,6 +75,7 @@ const BugReportsPage: React.FC = () => {
                     <TouchableOpacity 
                         onPress={handleSubmit}
                         style={[styles.button_container]}
+                        disabled={submitting}
                     >
                         <Text style={styles.button_text}>Submit Form</Text>
                     </TouchableOpacity>
