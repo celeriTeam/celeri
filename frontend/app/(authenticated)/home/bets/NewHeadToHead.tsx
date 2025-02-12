@@ -49,7 +49,7 @@ const NewHeadToHeadPage: React.FC = () => {
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const increments = [10, 25, 50, 100];
+    const increments = [25, 50, 100, 250];
   
     const router = useRouter();
 
@@ -464,7 +464,7 @@ const NewHeadToHeadPage: React.FC = () => {
 
                             {/* player 1 */}
                             {matchups[currentMatchupIndex]?.player1 && playerCard(matchups[currentMatchupIndex]?.player1, '#FF6060')}
-                            <View style={styles.row}>
+                            <View style={styles.secondRow}>
                                 <TouchableOpacity onPress={() => {if (currentMatchupIndex > 0) setCurrentMatchupIndex(currentMatchupIndex - 1)}}>
                                     <Image
                                         source={require('@assets/icons/leftArrow.png')}
@@ -578,6 +578,14 @@ const styles = StyleSheet.create({
         width: '90%',
         paddingHorizontal: 5,
     },
+
+    secondRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '90%',
+        //paddingHorizontal: 5,
+    },
     betTitle: {
         fontFamily: 'Lexend',
         fontSize: 16,
@@ -604,7 +612,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     betItem: {
-        padding: 10,
+        padding: 8,
         borderColor: '#fff',
         borderWidth: 1,
         borderRadius: 10,
@@ -624,6 +632,8 @@ const styles = StyleSheet.create({
         height: 34,
         textAlign: 'center',
         color: '#FFF',
+        fontFamily: "Lexend",
+        fontSize: 12,
     },
     dotRow: {
         flexDirection: 'row',

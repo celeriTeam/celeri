@@ -337,7 +337,6 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     profileImage: {
-        marginTop: 40,
         width: 110,
         height: 110,
         borderRadius: 60,
