@@ -326,6 +326,85 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
     }
 }
 
+export const getRacesSummary = async (groupID: string, weeksAgo: number, groups: Record<string, any>): Promise<{ races: Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number; steps: number }>} | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+
+        if(groupDoc.exists()){
+
+            // grab the reset day 
+            const resetDay = groupDoc.data().resetDay; 
+            const players = Object.keys(groupDoc.data().users || {});
+
+            // initialize the record
+            const races = players.reduce((acc, userID) => {
+                const username =  groups[groupID]?.users[userID]?.username;
+                const profilePic =  groups[groupID]?.users[userID]?.profilePic;
+                acc[userID] = {
+                  gain: 0,
+                  username: username || '',
+                  profilePic: profilePic || '',
+                  weeksAgo: weeksAgo,
+                  steps: 0,
+                };
+                return acc;
+            }, {} as Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number; steps: number }>);
+        
+
+
+            // the end of the query 
+
+            const rightNow = new Date();
+
+            // now find the time parameters based on the weeksAgo
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset to start of the day
+
+            let desiredReset = new Date(today);
+            desiredReset.setDate(
+                today.getDate() - ((today.getDay() - resetDay + 7) % 7) - ((weeksAgo-1) * 7)
+            );
+
+            const startDay = Timestamp.fromDate(desiredReset);
+            const endDay = Timestamp.fromDate(rightNow);
+
+            console.log('Start Day:', startDay.toDate());
+            console.log('End Day:', endDay.toDate());
+
+
+            // Get snapshot of duels for today
+            const racesCollection = collection(groupDocRef, 'races');
+            const q = query(racesCollection,
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getRacesSummary - error: No races found for this past week');
+                return undefined;
+            }
+
+            querySnapshot.forEach((doc) => {
+                //should only be one document
+                const raceData = doc.data();
+                const gains = new Map<string, number>(Object.entries(raceData.gains || {}));
+                const weeklySteps = raceData.weeklySteps;
+
+                gains.forEach((amountGained, userID) => {
+                    races[userID].gain += amountGained;
+                    races[userID].steps = weeklySteps[userID];
+                });
+            });
+            return { races };
+            
+        }
+    } catch (error) {
+        console.error("getGainsSummary - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
 // GET weekly gains
 // GET gains
 export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, groups: Record<string, any>): Promise<{ gains: Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number }>} | undefined> => {

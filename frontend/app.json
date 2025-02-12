@@ -2,7 +2,7 @@
   "expo": {
     "name": "health-bets-app",
     "slug": "health-bets-app",
-    "version": "1.0.0",
+    "version": "1.2.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -22,7 +22,7 @@
           "remote-notification"
         ]
       },
-      "buildNumber": "2"
+      "buildNumber": "1.2.7"
     },
     "android": {
       "googleServicesFile": "google-services.json",

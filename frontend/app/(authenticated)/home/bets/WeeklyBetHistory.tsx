@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
-import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary } from '@/backend/src/bets';
+import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
 
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
@@ -12,13 +12,15 @@ import Svg, { Circle, G } from 'react-native-svg';
 const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
     const { userID, groups, loading } = useUser();
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
-    const [activeTab, setActiveTab] = useState<'bets' | 'gains'>('gains'); // Default to 'gains'
+    const [activeTab, setActiveTab] = useState<'bets' | 'gains' | 'races'>('gains'); // Default to 'gains'
     const [betHistory, setBetHistory] = useState<any[]>([]); // Holds all fetched duels
     const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
+    const [raceHistory, setRaceHistory] = useState<{weeksAgo: number; races: RaceItem[]}[]>([]);
     const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
+    const [raceWeeksAgo, setRaceWeeksAgo] = useState(1);
 
-    interface Bet {
+    interface BetItem {
         userID: string;
         wager: number;
         betOnUserID: string;
@@ -30,6 +32,15 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         username: string;
         profilePic: string;
         weeksAgo: number;
+    }
+    
+    interface RaceItem {
+        userID: string;
+        gain: number;
+        username: string;
+        profilePic: string;
+        weeksAgo: number;
+        steps: number;
     }
     
     // Initial load for yesterday's duels
@@ -55,7 +66,7 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         console.log("gainHistory updated:", gainHistory);
     }, [gainHistory])
 
-    const toggleTab = (tab: 'bets' | 'gains') => {
+    const toggleTab = (tab: 'bets' | 'gains' | 'races' ) => {
         setActiveTab(tab);
     };
 
@@ -75,6 +86,23 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
             setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
         }
     };
+
+    const loadMoreRaces = async () => {
+        let moreRaces;
+        moreRaces = await getRacesSummary(groupID, raceWeeksAgo, groups);
+        if(moreRaces){
+            const newRaceWeek = {
+                weeksAgo: raceWeeksAgo,
+                races: Object.entries(moreRaces.races).map(([userID, raceData]) => ({
+                    userID,
+                    ...raceData,
+                }))
+            }
+
+            setRaceHistory(prevRaceHistory => [...prevRaceHistory, newRaceWeek]);
+            setRaceWeeksAgo(prevRaceWeeksAgo => prevRaceWeeksAgo + 1);
+        }
+    }
 
     // Function to fetch gains based on gainsDaysAgo
     const loadMoreGains = async () => {
@@ -131,7 +159,7 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         const createdAtDate = bet.createdAt.toDate();  // Convert Firestore Timestamp to JavaScript Date
         const timeDifference = now.getTime() - createdAtDate.getTime();
         const daysSinceCreated = Math.floor(timeDifference / (1000 * 60 * 60 * 24));  // Convert ms to days and floor it
-        const weeks = Math.floor(daysSinceCreated / 7) + 1;
+        const weeks = Math.floor(daysSinceCreated / 7);
 
         let winner = 'draw';
         if (bet.winner != 'draw') {
@@ -165,25 +193,25 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         else {
             // Separate bets for player1 and player2
             const player1Bets = bet.bets
-                .filter((b: Bet) => b.betOnUserID === bet.player1)
-                .map((b: Bet) => ({
+                .filter((b: BetItem) => b.betOnUserID === bet.player1)
+                .map((b: BetItem) => ({
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
             const player2Bets = bet.bets
-                .filter((b: Bet) => b.betOnUserID === bet.player2)
-                .map((b: Bet) => ({
+                .filter((b: BetItem) => b.betOnUserID === bet.player2)
+                .map((b: BetItem) => ({
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
-            const hasBet = bet.bets.some((betItem: Bet)=>
+            const hasBet = bet.bets.some((betItem: BetItem)=>
                 betItem.userID === userID,
             );
-            const hasUserWon = bet.bets.some((betItem: Bet) =>
+            const hasUserWon = bet.bets.some((betItem: BetItem) =>
                 betItem.userID === userID && betItem.betOnUserID === bet.winner,
             );
             const calculateEarnings = () => {
-                const userBet = bet.bets.find((betItem: Bet) => betItem.userID === userID);
+                const userBet = bet.bets.find((betItem: BetItem) => betItem.userID === userID);
 
                 // No bet
                 if (!userBet) return 0;
@@ -199,7 +227,7 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
                 // User won bet
                 let totalWagers = 0;
                 let totalWagersOnWinner = 0;
-                bet.bets.forEach((betItem: Bet) => {
+                bet.bets.forEach((betItem: BetItem) => {
                     totalWagers += betItem.wager;
                     if (betItem.betOnUserID === bet.winner) {
                         totalWagersOnWinner += betItem.wager;
@@ -300,6 +328,33 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
                         ]}
                     >
                         {item.gain > 0 ? `+${item.gain}` : item.gain}
+                    </Text>
+                </View>
+            ))}
+        </View>
+    );
+
+    const renderRaceItem = ({ item }: { item: {weeksAgo: number; races: RaceItem[]} }) => (
+        <View style={styles.gainsFlatList}>
+            <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
+                <Text style={styles.createdAtText}>{`${weeksAgo}w ago`}</Text>
+            </View>
+        
+            {item.races.map((race) => (
+                <View key={`${race.userID}_${item.weeksAgo}`} style={styles.row}>
+                    <Image source={{ uri: race.profilePic }} style={styles.profileImage} />
+                    <Text style={styles.playerGain}>{race.username}</Text>
+                    <Text style={styles.zeroGainEarningsText}>{`${race.steps} steps`}</Text>
+                    <Text
+                        style={[
+                            race.gain > 0 
+                                ? styles.wonGainEarningsText 
+                                : race.gain < 0 
+                                ? styles.lostGainEarningsText 
+                                : styles.zeroGainEarningsText,
+                        ]}
+                    >
+                        {race.gain > 0 ? `+${race.gain}` : race.gain}
                     </Text>
                 </View>
             ))}
@@ -427,11 +482,14 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
             <Text style={styles.title}>History</Text>
             {/* Tab Buttons */}
             <View style={styles.tabContainer}>
-            <TouchableOpacity onPress={() => toggleTab('gains')}>
+                <TouchableOpacity onPress={() => toggleTab('gains')}>
                     <Text style={[styles.buttonText, activeTab === 'gains' && styles.activeButtonText]}>Gains</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => toggleTab('bets')}>
                     <Text style={[styles.buttonText, activeTab === 'bets' && styles.activeButtonText]}>Bets</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => toggleTab('races')}>
+                    <Text style={[styles.buttonText, activeTab === 'races' && styles.activeButtonText]}>Races</Text>
                 </TouchableOpacity>
             </View>
             {/* Render Gains or Bets based on activeTab */}
@@ -445,13 +503,21 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
                     onEndReached={loadMoreGains} // Load more duels when reaching the end
                     onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
                 />
-            ) : (
+            ) : activeTab === 'bets' ? (
                 <FlatList
                     data={currentRecapBets}
                     keyExtractor={(item) => item.duelID}
                     renderItem={renderBetItem}
                     onEndReached={loadMoreDuels} // Load more duels when reaching the end
                     onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
+                />
+            ) : (
+                <FlatList
+                    data={raceHistory} // Replace with your actual data source for races
+                    keyExtractor={(item) => item.weeksAgo.toString()}
+                    renderItem={renderRaceItem} // Implement this function to render race items
+                    onEndReached={loadMoreRaces} // Implement if you want pagination
+                    onEndReachedThreshold={0.5}
                 />
             )}
         </View>

@@ -9,6 +9,7 @@ import Svg, { Circle, G } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 const WeeklyBetRecapPage: React.FC = () => {
+    console.log("in weeklyBetRecapPage");
     const { userID, groups, loading } = useUser();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';

@@ -446,7 +446,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
-      console.log("gameType: ", data.gameType);
+      console.log(doc.id, ": gameType: ", data.gameType);
       if (gameType && gameType == "weekly") {
         // propogate weeklySteps, should be a map
         const weeklySteps = {};
@@ -457,15 +457,14 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           const currentSteps = userSteps[userID] || 0;
 
           // Calculate users weekly steps
-          const todayIndex = new Date().getDay();
-          const resetDay = data.resetDay || 0;
           let weeklyStepsData = users[userID].averageSteps ? users[userID].averageSteps : users[userID].averageStepsTemp;
 
           if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
             weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
           }
-          const daysPast = ((todayIndex - resetDay) % 7) + 1;
-          const userWeeklySteps = daysPast != 0 ? weeklyStepsData.slice(-daysPast).reduce((sum, steps) => sum + steps, 0) : 0;
+
+          // Sum the steps from the past six days and add the current day's steps
+          const userWeeklySteps = weeklyStepsData.slice(1).reduce((sum, steps) => sum + steps, 0) + currentSteps;
           weeklySteps[userID] = userWeeklySteps + currentSteps;
         });
 
@@ -477,145 +476,147 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
         // if it is the correct day of the week
         if (currentDay == resetDay) {
-          duelsRef
+          console.log(doc.id, ": currentDay == resetDay, resetting now.");
+
+          const duelsSnapshot = await duelsRef
             .where("createdAt", ">=", startOfLastWeek)
             .where("createdAt", "<", today)
-            .get()
-            .then(async (duelsSnapshot) => {
-              if (duelsSnapshot.empty) {
-                console.log(`No active duels found for group ${doc.id} from last week.`);
-                return;
+            .get();
+
+          if (duelsSnapshot.empty) {
+            console.log(`No active duels found for group ${doc.id} from last week.`);
+            return;
+          }
+
+          console.log(`Duels found for group ${doc.id}: `, duelsSnapshot.size);
+
+          // Create a new WriteBatch for this group
+          const batch = firestore.batch();
+
+          for (const duelDoc of duelsSnapshot.docs) {
+            const duelData = duelDoc.data();
+            const player1Id = duelData.player1;
+            const player2Id = duelData.player2;
+            let winner = "none";
+
+            try {
+              const player1BaseSteps = weeklySteps[player1Id] || 0;
+              const player2BaseSteps = weeklySteps[player2Id] || 0;
+
+              // Calculate additional steps from powerups
+              const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id, "weekly");
+              const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id, "weekly");
+
+              // Total steps for each player
+              const player1TotalSteps = player1BaseSteps + player1PowerupSteps;
+              const player2TotalSteps = player2BaseSteps + player2PowerupSteps;
+
+
+              if (player1TotalSteps > player2TotalSteps) {
+                winner = player1Id;
+              } else if (player1TotalSteps === player2TotalSteps) {
+                winner = "draw";
+              } else {
+                winner = player2Id;
               }
 
-              console.log(`Duels found for group ${doc.id}: `, duelsSnapshot.size);
+              console.log(`Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
 
-              // Create a new WriteBatch for this group
-              const batch = firestore.batch();
+              // now, distribute earnings
+              // if player1 wins, grab the bets
+              let totalWagers = 0;
+              let totalWagersOnWinner = 0;
 
-              for (const duelDoc of duelsSnapshot.docs) {
-                const duelData = duelDoc.data();
-                const player1Id = duelData.player1;
-                const player2Id = duelData.player2;
-                let winner = "none";
-
-                try {
-                  const player1BaseSteps = weeklySteps[player1Id] || 0;
-                  const player2BaseSteps = weeklySteps[player2Id] || 0;
-
-                  // Calculate additional steps from powerups
-                  const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id);
-                  const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id);
-
-                  // Total steps for each player
-                  const player1TotalSteps = player1BaseSteps + player1PowerupSteps;
-                  const player2TotalSteps = player2BaseSteps + player2PowerupSteps;
-
-
-                  if (player1TotalSteps > player2TotalSteps) {
-                    winner = player1Id;
-                  } else if (player1TotalSteps === player2TotalSteps) {
-                    winner = "draw";
-                  } else {
-                    winner = player2Id;
+              // iterate through it once to find out what the total wagers were
+              if (duelData.bets != null) {
+                for (let i = 0; i < duelData.bets.length; i++) {
+                  totalWagers += duelData.bets[i].wager;
+                  if (duelData.bets[i].betOnUserID == winner) {
+                    totalWagersOnWinner += duelData.bets[i].wager;
                   }
-
-                  console.log(`Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
-
-                  // now, distribute earnings
-                  // if player1 wins, grab the bets
-                  let totalWagers = 0;
-                  let totalWagersOnWinner = 0;
-
-                  // iterate through it once to find out what the total wagers were
-                  if (duelData.bets != null) {
-                    for (let i = 0; i < duelData.bets.length; i++) {
-                      totalWagers += duelData.bets[i].wager;
-                      if (duelData.bets[i].betOnUserID == winner) {
-                        totalWagersOnWinner += duelData.bets[i].wager;
-                      }
-                    }
-                  } else {
-                    console.log("there were no bets");
-                  }
-                  console.log("total wagers: " + totalWagers);
-                  console.log("totalWagersOnWinner: " + totalWagersOnWinner);
-
-                  if (duelData.bets != null) {
-                    // iterate through it again now that you have total wagers
-                    for (let i = 0; i < duelData.bets.length; i++) {
-                      let amountWon = 0.0;
-                      let percentage = 0.0;
-                      let diamonds = 0;
-                      if (duelData.bets[i].betOnUserID == winner) {
-                      // if they are the winner and there were no bets on them, they get 100%
-                        if (duelData.bets[i].userID === winner && totalWagersOnWinner == 0) {
-                          percentage = 1.0;
-                          amountWon = Math.floor(totalWagers);
-                          diamonds = 1;
-                        } else if (duelData.bets[i].userID === winner) {
-                        // if they are the winner, then they automatically get 50%
-                          percentage = 0.5;
-                          amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
-                          diamonds = 1;
-                        } else {
-                        // divided by two because the winner will get 50%
-                          percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
-                          amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
-                        }
-                        // add the amount won
-                        groupDocRef.update({
-                          [`users.${duelData.bets[i].userID}.placedBet`]: false,
-                          // this was the issue: you need to subtract by the amount you bet because of the math above
-                          [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
-                          // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
-                          [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(diamonds),
-                          [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
-                        }).then(() => {
-                          console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon} addded`);
-                          console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
-                        }).catch((error) => {
-                          console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
-                        });
-                      } else if (winner == "draw") {
-                        groupDocRef.update({
-                          [`users.${duelData.bets[i].userID}.placedBet`]: false,
-                        // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
-                        }).then(() => {
-                          console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
-                        }).catch((error) => {
-                          console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
-                        });
-                      } else { // if they lose, they lose what they wagered
-                        groupDocRef.update({
-                          [`users.${duelData.bets[i].userID}.placedBet`]: false,
-                          [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
-                        // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
-                        }).then(() => {
-                          console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
-                        }).catch((error) => {
-                          console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
-                        });
-                      }
-                    }
-                  } else {
-                    console.log("no tokens were updated because there were no bets");
-                  }
-
-                  // Update the 'ended' field to true in the duel document
-                  batch.update(duelDoc.ref, {
-                    ended: true,
-                    winner: winner,
-                    playerOneSteps: player1TotalSteps,
-                    playerTwoSteps: player2TotalSteps,
-                  });
-                } catch (error) {
-                  console.error(`Error fetching player steps for duel 
-                    ${duelDoc.id}:`, error);
                 }
+              } else {
+                console.log("there were no bets");
               }
-              // Add the batch to the array to commit later
-              allBatches.push(batch.commit());
-            });
+              console.log("Duel: ", duelDoc.id, " total wagers: " + totalWagers);
+              console.log("totalWagersOnWinner: " + totalWagersOnWinner);
+
+              if (duelData.bets != null) {
+                // iterate through it again now that you have total wagers
+                for (let i = 0; i < duelData.bets.length; i++) {
+                  let amountWon = 0.0;
+                  let percentage = 0.0;
+                  let diamonds = 0;
+                  if (duelData.bets[i].betOnUserID == winner) {
+                  // if they are the winner and there were no bets on them, they get 100%
+                    if (duelData.bets[i].userID === winner && totalWagersOnWinner == 0) {
+                      percentage = 1.0;
+                      amountWon = Math.floor(totalWagers);
+                      diamonds = 1;
+                    } else if (duelData.bets[i].userID === winner) {
+                    // if they are the winner, then they automatically get 50%
+                      percentage = 0.5;
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
+                      diamonds = 1;
+                    } else {
+                    // divided by two because the winner will get 50%
+                      percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
+                    }
+                    // add the amount won
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                      // this was the issue: you need to subtract by the amount you bet because of the math above
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
+                      // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
+                      [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(diamonds),
+                      [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon} addded`);
+                      console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  } else if (winner == "draw") {
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                    // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  } else { // if they lose, they lose what they wagered
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
+                    // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  }
+                }
+              } else {
+                console.log("no tokens were updated because there were no bets");
+              }
+
+              // Update the 'ended' field to true in the duel document
+              batch.update(duelDoc.ref, {
+                ended: true,
+                winner: winner,
+                playerOneSteps: player1TotalSteps,
+                playerTwoSteps: player2TotalSteps,
+              });
+            } catch (error) {
+              console.error(`Error fetching player steps for duel 
+                ${duelDoc.id}:`, error);
+            }
+          }
+          // Add the batch to the array to commit later
+          allBatches.push(batch.commit());
+
 
           // Wait for all batches to be committed
           await Promise.all(allBatches);
@@ -624,15 +625,15 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
 
           await resetBatch.commit();
           resetBatch = firestore.batch();
-          console.log("weeklySteps deleted successfully.");
 
           // Now do the race distirbution
           console.log("updateWinners -- race distribution starting now");
+          console.log("Right before race distribution -- Users Value:", users);
 
           // weeklySteps was declared much earlier
           let maxSteps = -Infinity; // Start with the lowest possible value
           let maxUser = null; // To store the key corresponding to the max value
-          for (const [key, value] of weeklySteps) {
+          for (const [key, value] of Object.entries(weeklySteps)) {
             if (value > maxSteps) {
               maxSteps = value;
               maxUser = key;
@@ -646,7 +647,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           const gains = {};
 
           // Iterate over each user to calculate decreases and updates
-          for (const [userID, userData] of users.entries()) {
+          for (const [userID, userData] of Object.entries(users)) {
             if (operationCount >= MAX_OPERATIONS) {
               await resetBatch.commit();
               resetBatch = firestore.batch();
@@ -666,7 +667,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           }
 
           // Add the total decrease to the maxUser's tokens
-          if (users.has(maxUser)) {
+          if (users[maxUser]) {
             resetBatch.update(groupDocRef, {
               [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
             });
@@ -741,8 +742,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
                 const player2BaseSteps = userSteps[player2Id] || 0;
 
                 // Calculate additional steps from powerups
-                const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id);
-                const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id);
+                const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id, "daily");
+                const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id, "daily");
 
                 // Total steps for each player
                 const player1TotalSteps = player1BaseSteps + player1PowerupSteps;
@@ -872,40 +873,70 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-const calculatePowerupSteps = async (groupID, userID, duelID) => {
+const calculatePowerupSteps = async (groupID, userID, duelID, gameType) => {
   const groupDocRef = firestore.collection("groups").doc(groupID);
   const powerupsCollectionRef = groupDocRef.collection("powerups");
 
   try {
     // Get the timestamp for 24 hours ago
     // Get the timestamp for 24 hours ago
-    const now = new Date();
-    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const startOfDayTimestamp = admin.firestore.Timestamp.fromDate(past24Hours);
 
-    // Query powerups created in the past 24 hours
-    const powerupsSnapshot = await powerupsCollectionRef
-      .where("createdAt", ">=", startOfDayTimestamp)
-      .where("duelID", "==", duelID)
-      .where("targetUserID", "==", userID)
-      .get();
+    if (gameType == "weekly") {
+      const pastSevenDays = new Date();
+      pastSevenDays.setDate(pastSevenDays.getDate() - 7);
+      pastSevenDays.setHours(0, 0, 0, 0);
 
-    if (powerupsSnapshot.empty) {
-      console.log(`No powerups found for user ${userID} in group ${groupID} for duel ${duelID}`);
-      return 0; // No steps to add
-    }
+      const powerupsSnapshot = await powerupsCollectionRef
+        .where("createdAt", ">=", pastSevenDays)
+        .where("duelID", "==", duelID)
+        .where("targetUserID", "==", userID)
+        .get();
 
-    // Calculate total steps added from 'secondWind' powerups
-    let totalAddedSteps = 0;
-    powerupsSnapshot.forEach((doc) => {
-      const powerup = doc.data();
-      if (powerup.type === "secondWind") {
-        totalAddedSteps += 200; // Each secondWind adds 200 steps
+      if (powerupsSnapshot.empty) {
+        console.log(`No powerups found for user ${userID} in group ${groupID} for duel ${duelID}`);
+        return 0; // No steps to add
       }
-    });
 
-    console.log(`Total added steps for user ${userID}: ${totalAddedSteps}`);
-    return totalAddedSteps;
+      // Calculate total steps added from 'secondWind' powerups
+      let totalAddedSteps = 0;
+      powerupsSnapshot.forEach((doc) => {
+        const powerup = doc.data();
+        if (powerup.type === "secondWind") {
+          totalAddedSteps += 200; // Each secondWind adds 200 steps
+        }
+      });
+
+      console.log(`Total added steps for user ${userID}: ${totalAddedSteps}`);
+      return totalAddedSteps;
+    } else {
+      const now = new Date();
+      const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const startOfDayTimestamp = admin.firestore.Timestamp.fromDate(past24Hours);
+
+      // Query powerups created in the past 24 hours
+      const powerupsSnapshot = await powerupsCollectionRef
+        .where("createdAt", ">=", startOfDayTimestamp)
+        .where("duelID", "==", duelID)
+        .where("targetUserID", "==", userID)
+        .get();
+
+      if (powerupsSnapshot.empty) {
+        console.log(`No powerups found for user ${userID} in group ${groupID} for duel ${duelID}`);
+        return 0; // No steps to add
+      }
+
+      // Calculate total steps added from 'secondWind' powerups
+      let totalAddedSteps = 0;
+      powerupsSnapshot.forEach((doc) => {
+        const powerup = doc.data();
+        if (powerup.type === "secondWind") {
+          totalAddedSteps += 200; // Each secondWind adds 200 steps
+        }
+      });
+
+      console.log(`Total added steps for user ${userID}: ${totalAddedSteps}`);
+      return totalAddedSteps;
+    }
   } catch (error) {
     console.error(`Error fetching powerups for user ${userID}:`, error);
     return 0; // Default to no steps added on error
