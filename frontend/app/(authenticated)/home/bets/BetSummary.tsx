@@ -228,6 +228,9 @@ const BetSummaryPage: React.FC = () => {
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
 
+                    console.log("propBetPlayerInfo:" , propBetPlayerInfo);
+                    console.log("propBetPlayerInfo average steps:" , propBetPlayerInfo?.averageSteps);
+
                     const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
                     const stepsLength = (propBetPlayerInfo?.averageSteps ?? []).length;
                     const averageStepCount: number = sum == 0 ? 0 : Number((sum / stepsLength).toFixed(0));

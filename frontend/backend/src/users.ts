@@ -311,7 +311,7 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 
         const todayIndex = new Date().getDay(); // Get the current day index (0-6)
         const resetDay = groupData?.resetDay || 0;
-        const weeklyStepsTemp = userData?.averageSteps ?? userData?.averageStepsTemp; // temp logic for averagesteps revamp (1/25/2024)
+        const weeklyStepsTemp = userData?.averageSteps; // temp logic for averagesteps revamp (1/25/2024)
 
         if (weeklyStepsTemp === undefined || weeklyStepsTemp.length !== 7) {
             console.error("getWeeklySteps - error: Invalid averageSteps data");
@@ -339,12 +339,12 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && (userDoc.data()?.averageStepsTemp !== undefined || userDoc.data()?.averageStepsTemp !== undefined)) {
-            const averageSteps = userDoc.data()?.averageSteps ?? userDoc.data()?.averageStepsTemp;
-            console.log("getAverageSteps - response:", averageSteps);
+        if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
+            const averageSteps = userDoc.data()?.averageSteps;
+            console.log("getAverageSteps - response:", id, averageSteps);
             return averageSteps;
         } else {
-            console.error("getAverageSteps - error: No such document!");
+            console.error("getAverageSteps - error: No such document!", id);
             return [];
         }
     } catch (error) {

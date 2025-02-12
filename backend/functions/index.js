@@ -163,22 +163,22 @@ exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-exports.sendTestNotiftoAll = onSchedule("every day 05:00", async (event) => {
-  const message = {
-    notification: {
-      title: "Testing notif.",
-      body: "This is a test",
-    },
-    topic: "allUsers",
-  };
+// exports.sendTestNotiftoAll = onSchedule("every day 05:00", async (event) => {
+//   const message = {
+//     notification: {
+//       title: "Testing notif.",
+//       body: "This is a test",
+//     },
+//     topic: "allUsers",
+//   };
 
-  try {
-    const response = await admin.messaging().send(message);
-    console.log("Successfully sent message:", response);
-  } catch (error) {
-    console.error("Error sending message:", error);
-  }
-});
+//   try {
+//     const response = await admin.messaging().send(message);
+//     console.log("Successfully sent message:", response);
+//   } catch (error) {
+//     console.error("Error sending message:", error);
+//   }
+// });
 
 exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) => {
   const snapshot = event.data;
@@ -457,7 +457,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           const currentSteps = userSteps[userID] || 0;
 
           // Calculate users weekly steps
-          let weeklyStepsData = users[userID].averageSteps ? users[userID].averageSteps : users[userID].averageStepsTemp;
+          let weeklyStepsData = users[userID].averageSteps;
 
           if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
             weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
@@ -640,6 +640,8 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
             }
           }
 
+          console.log("Race distribution -- checkpoint one");
+
           let totalDecrease = 0; // Track total token decrease
           // To reset operations count per batch:
           let operationCount = 1;
@@ -665,6 +667,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
               gains[userID] = -decrease;
             }
           }
+          console.log("Race distribution -- checkpoint two");
 
           // Add the total decrease to the maxUser's tokens
           if (users[maxUser]) {
