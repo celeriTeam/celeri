@@ -1,112 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
-import { getMoreDuelsSummary, getGainsSummary, getWeeklyGainsSummary } from '@/backend/src/bets';
+import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
 
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../UserProvider';
-import Svg, { Circle, G } from 'react-native-svg';
+import { useLocalSearchParams } from 'expo-router';
 
 
-const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ groupID, gameType }) => {
+const BetsHistoryPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
+    const { groupIDTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
-    const [activeTab, setActiveTab] = useState<'bets' | 'gains'>('gains'); // Default to 'gains'
     const [betHistory, setBetHistory] = useState<any[]>([]); // Holds all fetched duels
-    const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
-    const [daysAgo, setDaysAgo] = useState(2); // Initial daysAgo for yesterday's duels
-    const [gainsDaysAgo, setGainsDaysAgo] = useState(1); // Initial daysAgo for yesterday's duels - gains
-    const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
+    const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
 
-    interface Bet {
+    interface BetItem {
         userID: string;
         wager: number;
         betOnUserID: string;
     }
-
-    interface GainItem {
-        userID: string;
-        gain: number;
-        username: string;
-        profilePic: string;
-        daysAgo: number;
-    }
     
-
-    const toggleTab = (tab: 'bets' | 'gains') => {
-        setActiveTab(tab);
-    };
-
-    // Flatten the duels from the fetched data
-    const flattenDuels = (duels: { [key: string]: any }) => Object.values(duels);
-
-
-    // Function to fetch duels based on daysAgo
-    const loadMoreDuels = async () => {
-        console.log("Loading more duels");
-        const moreDuels = await getMoreDuelsSummary(groupID, daysAgo);
-        console.log('loadMoreDuels: moreDuels', moreDuels)
-        if (moreDuels) {
-            // Flatten and append new duels
-            const newDuels = flattenDuels(moreDuels);
-            setBetHistory((prevBetHistory) => [...prevBetHistory, ...newDuels]);
-            setDaysAgo((prevDaysAgo) => prevDaysAgo + 1); // Increment daysAgo for the next load
-        }
-    };
-
-    // Function to fetch gains based on gainsDaysAgo
-    const loadMoreGains = async () => {
-        console.log("Loading more gains");
-        let moreGains;
-        if(gameType == "weekly"){
-            moreGains = await getWeeklyGainsSummary(groupID, gainsWeeksAgo * 7, groups);
-            // multipled by 7 to get days 
-        }
-        else {
-            moreGains = await getGainsSummary(groupID, gainsDaysAgo, groups);
-        }
-        console.log('loadMoreGains: moreGains', moreGains)
-        console.log('loadMoreGains: moreGains.gains', moreGains?.gains)
-        if (moreGains) {
-            // Transform the `gains` map to an array of objects with `userID` and `gain` properties
-            const newGains = Object.entries(moreGains.gains).map(([userID, gainData]) => ({
-                userID,
-                ...gainData,
-                dayIdentifier: gameType == "weekly" ? gainsWeeksAgo : gainsDaysAgo, // Unique identifier for each day
-            }));
-            console.log('loadMoreGains: newGains', newGains)
-            setGainHistory((prevGainHistory) => {
-                const updatedGainHistory = [...prevGainHistory, ...newGains];
-                console.log("Updated gainHistory after set:", updatedGainHistory);
-                return updatedGainHistory;
-            });
-
-            if(gameType == "weekly"){
-                setGainsWeeksAgo((prevGainsWeeksAgo) => prevGainsWeeksAgo + 1);
-            } else {
-                setGainsDaysAgo((prevGainsDaysAgo) => prevGainsDaysAgo + 1); // Increment daysAgo for the next load
-            }
-        }
-    };
-
-    // Helper function to group gains by `daysAgo`
-    const groupByDaysAgo = (gainHistory: GainItem[]) => {
-        return gainHistory.reduce<{ [key: number]: GainItem[] }>((acc, item) => {
-            if (!acc[item.daysAgo]) {
-                acc[item.daysAgo] = [];
-            }
-            acc[item.daysAgo].push(item);
-            return acc;
-        }, {});
-    };
-
     // Initial load for yesterday's duels
     useEffect(() => {
         const fetchInitialDuels = async () => {
-            const yesterdaysBets = groups[groupID]?.yesterdaysDuels;
-            if (yesterdaysBets) {
-                const initialDuels = yesterdaysBets ? flattenDuels(yesterdaysBets) : [];
+            const lastWeekBets = groups[groupID]?.lastWeekDuels;
+            console.log("lastWeekBets: ", lastWeekBets)
+            if (lastWeekBets) {
+                const initialDuels = lastWeekBets ? flattenDuels(lastWeekBets) : [];
                 setBetHistory(initialDuels);
             } else {
                 await loadMoreDuels(); // Load if yesterdaysDuels not available
@@ -115,19 +38,22 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
         fetchInitialDuels();
     }, [groupID, groups]);
 
-    useEffect(() => {
-        loadMoreGains();
-    }, [groupID, groups]);
+    // Flatten the duels from the fetched data
+    const flattenDuels = (duels: { [key: string]: any }) => Object.values(duels);
 
-    useEffect(() => {
-        console.log("gainHistory updated:", gainHistory);
-    }, [gainHistory]);
 
-    const groupedGains = groupByDaysAgo(gainHistory); // Group gains by `daysAgo`
-    const groupedGainsArray = Object.entries(groupedGains).map(([daysAgo, gains]) => ({
-        daysAgo: parseInt(daysAgo, 10),
-        gains,
-    }));
+    // Function to fetch duels based on daysAgo
+    const loadMoreDuels = async () => {
+        console.log("WeeklyBethistory - Loading more duels");
+        const moreDuels = await getMoreWeeklyDuelsSummary(groupID, weeksAgo);
+        console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
+        if (moreDuels) {
+            // Flatten and append new duels
+            const newDuels = flattenDuels(moreDuels);
+            setBetHistory((prevBetHistory) => [...prevBetHistory, ...newDuels]);
+            setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
+        }
+    };
 
     const truncateString = (str: string, maxLength: number) => {
         return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
@@ -135,9 +61,9 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
 
     const currentRecapBets = betHistory.map((bet) => {
         const player1 = groups[groupID]?.users[bet.player1]?.username;
-        const player1Truncated = truncateString(player1, 13);
+        const player1Truncated = truncateString(player1, 8);
         const player2 = groups[groupID]?.users[bet.player2]?.username;
-        const player2Truncated = truncateString(player2, 13);
+        const player2Truncated = truncateString(player2, 8);
         const player1pfp = groups[groupID]?.users[bet.player1]?.profilePic;
         const player2pfp = groups[groupID]?.users[bet.player2]?.profilePic;
 
@@ -146,6 +72,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
         const createdAtDate = bet.createdAt.toDate();  // Convert Firestore Timestamp to JavaScript Date
         const timeDifference = now.getTime() - createdAtDate.getTime();
         const daysSinceCreated = Math.floor(timeDifference / (1000 * 60 * 60 * 24));  // Convert ms to days and floor it
+        const weeks = Math.floor(daysSinceCreated / 7);
 
         let winner = 'draw';
         if (bet.winner != 'draw') {
@@ -159,7 +86,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
         }
 
         // if there are no bets, return the duel with the player names
-        if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
+        if (bet.bets[0]?.wager == null || (bet.bets !== undefined && bet.bets.length === 0)) {
             return {
                 duelID: bet.duelID,
                 player1: player1Truncated,
@@ -172,32 +99,32 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 playerOneSteps: Math.floor(bet.playerOneSteps),
                 playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
-                createdAt: `${daysSinceCreated}d ago`,
+                createdAt: `${weeks}w ago`,
             };
         }
 
         else {
             // Separate bets for player1 and player2
             const player1Bets = bet.bets
-                .filter((b: Bet) => b.betOnUserID === bet.player1)
-                .map((b: Bet) => ({
+                .filter((b: BetItem) => b.betOnUserID === bet.player1)
+                .map((b: BetItem) => ({
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
             const player2Bets = bet.bets
-                .filter((b: Bet) => b.betOnUserID === bet.player2)
-                .map((b: Bet) => ({
+                .filter((b: BetItem) => b.betOnUserID === bet.player2)
+                .map((b: BetItem) => ({
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
-            const hasBet = bet.bets.some((betItem: Bet)=>
+            const hasBet = bet.bets.some((betItem: BetItem)=>
                 betItem.userID === userID,
             );
-            const hasUserWon = bet.bets.some((betItem: Bet) =>
+            const hasUserWon = bet.bets.some((betItem: BetItem) =>
                 betItem.userID === userID && betItem.betOnUserID === bet.winner,
             );
             const calculateEarnings = () => {
-                const userBet = bet.bets.find((betItem: Bet) => betItem.userID === userID);
+                const userBet = bet.bets.find((betItem: BetItem) => betItem.userID === userID);
 
                 // No bet
                 if (!userBet) return 0;
@@ -213,7 +140,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 // User won bet
                 let totalWagers = 0;
                 let totalWagersOnWinner = 0;
-                bet.bets.forEach((betItem: Bet) => {
+                bet.bets.forEach((betItem: BetItem) => {
                     totalWagers += betItem.wager;
                     if (betItem.betOnUserID === bet.winner) {
                         totalWagersOnWinner += betItem.wager;
@@ -267,15 +194,13 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 player1Bets,
                 player2Bets,
                 winner,
-                playerOneSteps: bet.playerOneSteps,
-                playerTwoSteps: bet.playerTwoSteps,
+                playerOneSteps: Math.floor(bet.playerOneSteps),
+                playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
-                createdAt: `${daysSinceCreated}d ago`,
+                createdAt: `${weeks}w ago`,
             };
         }
     });
-
-    console.log("CURRENTRECAPBETS", currentRecapBets);
 
     if (loading) {
         return (
@@ -292,33 +217,6 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             [duelID]: !prevExpandedItems[duelID], // toggle the current duelID
         }));
     };
-
-    // Component to render grouped gain items in one box
-    const GroupedGainItem = ({ gains, daysAgo }: { gains: GainItem[]; daysAgo: number }) => (
-        <View style={styles.gainsFlatList}>
-            <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
-                <Text style={styles.createdAtText}>{`${daysAgo}d ago`}</Text>
-            </View>
-           
-            {gains.map((item) => (
-                <View key={`${item.userID}_${item.daysAgo}`} style={styles.row}>
-                    <Image source={{ uri: item.profilePic }} style={styles.profileImage} />
-                    <Text style={styles.playerGain}>{item.username}</Text>
-                    <Text
-                        style={[
-                            item.gain > 0 
-                                ? styles.wonGainEarningsText 
-                                : item.gain < 0 
-                                ? styles.lostGainEarningsText 
-                                : styles.zeroGainEarningsText,
-                        ]}
-                    >
-                        {item.gain > 0 ? `+${item.gain}` : item.gain}
-                    </Text>
-                </View>
-            ))}
-        </View>
-    );
     
 
     const renderBetItem = ({ item }: { item: { duelID: string, createdAt: string, player1: string, player2: string, player1pfp: string, player2pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, earnings: { hasBet: boolean, hasUserWon: boolean, earning: number } } }) => {
@@ -438,36 +336,14 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>History</Text>
-            {/* Tab Buttons */}
-            <View style={styles.tabContainer}>
-            <TouchableOpacity onPress={() => toggleTab('gains')}>
-                    <Text style={[styles.buttonText, activeTab === 'gains' && styles.activeButtonText]}>Gains</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => toggleTab('bets')}>
-                    <Text style={[styles.buttonText, activeTab === 'bets' && styles.activeButtonText]}>Bets</Text>
-                </TouchableOpacity>
-            </View>
-            {/* Render Gains or Bets based on activeTab */}
-            {activeTab === 'gains' ? (
-                <FlatList
-                    data={groupedGainsArray}
-                    keyExtractor={(item) => item.daysAgo.toString()}
-                    renderItem={({ item }) => (
-                        <GroupedGainItem gains={item.gains} daysAgo={item.daysAgo} />
-                    )}
-                    onEndReached={loadMoreGains} // Load more duels when reaching the end
-                    onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
-                />
-            ) : (
-                <FlatList
-                    data={currentRecapBets}
-                    keyExtractor={(item) => item.duelID}
-                    renderItem={renderBetItem}
-                    onEndReached={loadMoreDuels} // Load more duels when reaching the end
-                    onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
-                />
-            )}
+            <Text style={styles.title}>Bets History</Text>
+            <FlatList
+                data={currentRecapBets}
+                keyExtractor={(item) => item.duelID}
+                renderItem={renderBetItem}
+                onEndReached={loadMoreDuels} // Load more duels when reaching the end
+                onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
+            />
         </View>
     );
 };
@@ -475,7 +351,8 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginTop: 20,
+        marginTop: 100,
+        padding: 20,
     },
     spacer: {
         flex: 1,
@@ -511,12 +388,6 @@ const styles = StyleSheet.create({
         paddingTop: 20,
         marginBottom: 20,
     },
-    header: {
-        fontFamily: "Lexend",
-        fontSize: 15,
-        marginBottom: 20,
-        textAlign: 'center',
-    },
     flatList: {
         borderWidth: 3,
         borderColor: '#ccc',
@@ -524,40 +395,17 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingBottom: 25,
     },
-    gainsFlatList: {
-        borderWidth: 3,
-        borderColor: '#ccc',
-        borderRadius: 5,
-        marginTop: 10,
-        paddingBottom: 25,
-        padding: 10,
-    },
     wonEarningsText: {
         fontFamily: "Lexend",
-		marginTop: 10,
+        marginTop: 10,
         color: 'green',
         fontSize: 30,
     },
     lostEarningsText: {
         fontFamily: "Lexend",
-		marginTop: 10,
+        marginTop: 10,
         color: 'red',
         fontSize: 30,
-    },
-    wonGainEarningsText: {
-        fontFamily: "Lexend",
-        color: 'green',
-        fontSize: 20,
-    },
-    lostGainEarningsText: {
-        fontFamily: "Lexend",
-        color: 'red',
-        fontSize: 20,
-    },
-    zeroGainEarningsText: {
-        fontFamily: "Lexend",
-        color: '#808080',
-        fontSize: 20,
     },
     row: {
         flexDirection: 'row',
@@ -599,12 +447,6 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'left',
     },
-    playerGain: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 15,
-        flex: 1,
-        textAlign: 'left',
-    },
     steps: {
         fontFamily: "Lexend",
         marginRight: 30,
@@ -626,25 +468,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
     },
-    tabContainer: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-around', 
-        marginBottom: 10 
-    },
-    button: {
-        padding: 10,
-        borderRadius: 5,
-    },
-    buttonText: {
-        fontFamily: 'Lexend',
-        color: 'gray',
-        fontSize: 16,
-    },
-    activeButtonText: {
-        color: 'green',
-    },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyText: { fontSize: 18, color: 'gray', fontFamily: 'Lexend_400Regular' },
 });
 
-export default BetHistoryPage;
+export default BetsHistoryPage;

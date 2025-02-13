@@ -37,6 +37,7 @@ const BetSummaryPage: React.FC = () => {
     const [isTokensModalVisible, setTokensModalVisible] = useState(false);
     const [isTokensUsedModalVisible, setTokensUsedModalVisible] = useState(false);
     const [isDiamondsModalVisible, setDiamondsModalVisible] = useState(false);
+    const [isHistoryDropdownVisible, setHistoryDropdownVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
@@ -491,12 +492,14 @@ const BetSummaryPage: React.FC = () => {
                             />
                         </TouchableOpacity>
                         <View style={styles.rightIcons}>
-                            <TouchableOpacity onPress={() => setBetHistoryModalVisible(true)}>
-                                <Image
-                                    source={require('@assets/icons/history.png')}
-                                    style={styles.historyIcon}
-                                />
-                            </TouchableOpacity>
+                            <View style={styles.historyContainer}>
+                                <TouchableOpacity onPress={() => {setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
+                                    <Image
+                                        source={require('@assets/icons/history.png')}
+                                        style={styles.historyIcon}
+                                    />
+                                </TouchableOpacity>
+                            </View>
                             <TouchableOpacity onPress={() => setStoreModalVisible(true)}>
                                 <Image
                                     source={require('@assets/icons/store.png')}
@@ -868,6 +871,50 @@ const BetSummaryPage: React.FC = () => {
             </LinearGradient>
             
             {/* ************************  MODALS  ********************** */}
+
+            {isHistoryDropdownVisible && (
+                <TouchableOpacity
+                    style={styles.dropdownOverlay}
+                    activeOpacity={1}
+                    onPress={() => setHistoryDropdownVisible(false)} // Close dropdown when overlay is pressed
+                >
+                    <View style={styles.dropdownMenu}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setHistoryDropdownVisible(false);
+                                router.push({
+                                pathname: '/(authenticated)/home/bets/GainsHistory',
+                                params: { groupIDTemp: groupID },
+                                });
+                            }}
+                        >
+                            <Text style={styles.dropdownText}>Gains</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setHistoryDropdownVisible(false);
+                                router.push({
+                                pathname: '/(authenticated)/home/bets/BetsHistory',
+                                params: { groupIDTemp: groupID },
+                                });
+                            }}
+                        >
+                            <Text style={styles.dropdownText}>Bets</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setHistoryDropdownVisible(false);
+                                router.push({
+                                pathname: '/(authenticated)/home/bets/RaceHistory',
+                                params: { groupIDTemp: groupID },
+                                });
+                            }}
+                        >
+                            <Text style={styles.dropdownText}>Races</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            )}
 
             {/* Bet History Modal */}
             <Modal
@@ -1361,9 +1408,42 @@ const styles = StyleSheet.create({
         width: 19,
         height: 19,
     },
+    historyContainer: {
+        // position: 'relative',
+    },
     historyIcon: {
         width: 27,
         height: 27,
+    },
+    dropdownOverlay: {
+        position: 'absolute',
+        flex: 1,
+        top: 60,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent dark background
+    },
+    dropdownMenu: {
+        position: 'absolute',
+        top: 90,
+        right: 50,
+        width: 100,
+        backgroundColor: '#000',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    dropdownText: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: 16,
+        padding: 10,
     },
     storeIcon: {
         width: 21,
