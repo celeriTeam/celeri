@@ -148,9 +148,15 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         gains,
     }));
 
+    const truncateString = (str: string, maxLength: number) => {
+        return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
+    };
+
     const currentRecapBets = betHistory.map((bet) => {
         const player1 = groups[groupID]?.users[bet.player1]?.username;
+        const player1Truncated = truncateString(player1, 8);
         const player2 = groups[groupID]?.users[bet.player2]?.username;
+        const player2Truncated = truncateString(player2, 8);
         const player1pfp = groups[groupID]?.users[bet.player1]?.profilePic;
         const player2pfp = groups[groupID]?.users[bet.player2]?.profilePic;
 
@@ -176,15 +182,15 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
         if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
             return {
                 duelID: bet.duelID,
-                player1,
-                player2,
+                player1: player1Truncated,
+                player2: player2Truncated,
                 player1pfp,
                 player2pfp,
                 player1Bets: [],
                 player2Bets: [],
                 winner,
-                playerOneSteps: bet.playerOneSteps,
-                playerTwoSteps: bet.playerTwoSteps,
+                playerOneSteps: Math.floor(bet.playerOneSteps),
+                playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
                 createdAt: `${weeks}w ago`,
             };
@@ -274,15 +280,15 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
 
             return {
                 duelID: bet.duelID,
-                player1,
-                player2,
+                player1: player1Truncated,
+                player2: player2Truncated,
                 player1pfp,
                 player2pfp,
                 player1Bets,
                 player2Bets,
                 winner,
-                playerOneSteps: bet.playerOneSteps,
-                playerTwoSteps: bet.playerTwoSteps,
+                playerOneSteps: Math.floor(bet.playerOneSteps),
+                playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
                 createdAt: `${weeks}w ago`,
             };
