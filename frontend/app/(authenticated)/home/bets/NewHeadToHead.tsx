@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, TouchableHighlight, Modal, PanResponder, Animated, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, SafeAreaView, Dimensions, ScrollView } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -10,6 +10,7 @@ import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
+import { match } from 'assert';
 
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
@@ -37,6 +38,7 @@ const NewHeadToHeadPage: React.FC = () => {
     }[]>([]);
     const [betAmount, setBetAmount] = useState<string[]>([]);
     const [chosenPlayer, setChosenPlayer] = useState<string[]>([]);
+    const [chosenProfilePic, setChosenProfilePic] = useState<string[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number>(0);
     const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -47,11 +49,14 @@ const NewHeadToHeadPage: React.FC = () => {
     const [errorText, setErrorText] = useState('');
     const [isModalVisible, setModalVisible] = useState(true);
     const [infoModalVisible, setInfoModalVisible] = useState(false);
+    const [isSubmittedModalVisible, setSubmittedModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 50, 100, 250];
   
     const router = useRouter();
+    const screenWidth = Dimensions.get('window').width;
+    const scrollViewRef = useRef<ScrollView>(null);
 
     const closeModal = async () => {
       setModalVisible(false);
@@ -75,10 +80,14 @@ const NewHeadToHeadPage: React.FC = () => {
                 const player1ID = matchup.player1;
                 const player1Name = groups[groupID]?.users[player1ID]?.username;
                 const player1Pic = groups[groupID]?.users[player1ID]?.profilePic;
+                const player1AverageSteps = groups[groupID]?.users[player1ID]?.averageSteps;
+                const player1Steps = (player1AverageSteps).reduce((a: number, b: number) => a + b, 0);
                 
                 const player2ID = matchup.player2;
                 const player2Name = groups[groupID]?.users[player2ID]?.username;
                 const player2Pic = groups[groupID]?.users[player2ID]?.profilePic;
+                const player2AverageSteps = groups[groupID]?.users[player2ID]?.averageSteps;
+                const player2Steps = (player2AverageSteps).reduce((a: number, b: number) => a + b, 0);
 
                 newMatchups.push({
                     duelID: matchup.duelID,
@@ -87,7 +96,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         username: player1Name,
                         profilePic: player1Pic,
                         duelsWon: 0,
-                        prevSteps: Math.floor(groups[groupID]?.users[player1ID]?.weeklySteps),
+                        prevSteps: Math.floor(player1Steps),
                         stepChange: 0,
                     },
                     player2: {
@@ -95,7 +104,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         username: player2Name,
                         profilePic: player2Pic,
                         duelsWon: 0,
-                        prevSteps: Math.floor(groups[groupID]?.users[player2ID]?.weeklySteps),
+                        prevSteps: Math.floor(player2Steps),
                         stepChange: 0,
                     }
                 })
@@ -143,9 +152,8 @@ const NewHeadToHeadPage: React.FC = () => {
             console.log('this is dailyduel length: ', Object.keys(dailyDuel).length);
             if (Object.keys(dailyDuel).length === 0 || groups[groupID]?.userTokens === 0) {
                 await addToFinishedBetting(groupID, userID);
-                router.replace('/(authenticated)/home'); // Navigate to HomeTab
                 setTimeout(() => {
-                    router.push({
+                    router.replace({
                         pathname: '/(authenticated)/home/bets/BetSummary',
                         params: { groupIDTemp: groupID },
                     });
@@ -161,6 +169,7 @@ const NewHeadToHeadPage: React.FC = () => {
             const emptyList = new Array(newmatchups.length).fill('');
             setBetAmount(emptyList);
             setChosenPlayer(emptyList);
+            setChosenProfilePic(emptyList);
             
             const todaysBetTokens = groups[groupID]?.todaysBetTokens ?? 0;
             // setTotalBetTokens(todaysBetTokens);
@@ -197,12 +206,33 @@ const NewHeadToHeadPage: React.FC = () => {
 
     const isCurrentUser = (playerID: string) => playerID === userID;
 
+    const profilePic = (player: string) => {
+        const usersArray = groups[groupID]?.users;
+    };
+
+    const handleScroll = (event: any) => {
+        const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+        setCurrentMatchupIndex(newIndex);
+    };
+
+    const scrollToIndex = (index: number) => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
+        }
+        setCurrentMatchupIndex(index);
+    };
+
     // const isValidBet = (tokens: number, bet: number) => (tokens - totalBetTokens) >= bet && bet > 0;
 
-    const updateChosenPlayer = (index: number, playerID: string) => {
+    const updateChosenPlayer = (index: number, playerID: string, playerPfp: string) => {
         setChosenPlayer((prev) => {
             const newArray = [...prev];
             newArray[index] = playerID;
+            return newArray;
+        });
+        setChosenProfilePic((prev) => {
+            const newArray = [...prev];
+            newArray[index] = playerPfp;
             return newArray;
         });
     };
@@ -262,8 +292,8 @@ const NewHeadToHeadPage: React.FC = () => {
         </Modal>
     );
 
-    const playerCard = (player: { id: string, username: string, profilePic: string, duelsWon: number, prevSteps: number, stepChange: number }, color: string) => (
-        <TouchableOpacity style={styles.playerContainer} onPress={() => updateChosenPlayer(currentMatchupIndex, player.id)} activeOpacity={1}>
+    const playerCard = (player: { id: string, username: string, profilePic: string, duelsWon: number, prevSteps: number, stepChange: number }, color: string, playerNum: string) => (
+        <TouchableOpacity style={styles.playerContainer} onPress={() => updateChosenPlayer(currentMatchupIndex, player.id, player.profilePic)} activeOpacity={1}>
             <LinearGradient
                 colors={isChosen(player.id) ? 
                     ['#fff', '#fff'] : 
@@ -273,6 +303,8 @@ const NewHeadToHeadPage: React.FC = () => {
                     width: '100%',
                     borderRadius: 20,
                     alignItems: 'center',
+                    paddingBottom: playerNum === 'player1' ? 40 : 10,
+                    // paddingTop: playerNum === 'player2' ? 20 : 0,
                 }}
             >
                 <View style={styles.userRow}>
@@ -379,13 +411,15 @@ const NewHeadToHeadPage: React.FC = () => {
 
         })};
         await addToFinishedBetting(groupID, userID);
-
         await setTodaysBetTokens(userID, groupID, totalBetTokens());
-        // navigation.navigate('BetSummaryPage', { groupID: groupID });
+        
+        setSubmittedModalVisible(true);
+    };
 
-        router.replace('/(authenticated)/home'); // Navigate to HomeTab
+    const handleSummaryPageNavigation = () => {
+        setSubmittedModalVisible(false);
         setTimeout(() => {
-            router.push({
+            router.replace({
                 pathname: '/(authenticated)/home/bets/BetSummary',
                 params: { groupIDTemp: groupID },
             });
@@ -432,77 +466,77 @@ const NewHeadToHeadPage: React.FC = () => {
                         <View style={styles.dividingLine} />
 
                         {/* swipeable cards */}
-                        <View>
-                            <View style={styles.row}>
-                                <Text style={styles.betTitle}>Place Your Bet</Text>
-                                <Text style={styles.tokenInfo}><Text style={{ color: (totalBetTokens() > currentUserTokens) ? 'red' : '#74FF6D' }}>{totalBetTokens()}</Text> bet so far (of {currentUserTokens} total)</Text>
-                            </View>
-                            {/* bet container */}
-                            <View style={styles.betContainer}>
-                                <Image
-                                    source={require('@assets/icons/tokens.png')}
-                                    style={styles.tokensIcon}
-                                />
-                                {increments.map((amount) => (
-                                    <TouchableOpacity
-                                        style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
-                                        onPress={() => updateBetAmount(currentMatchupIndex, amount)}
-                                        activeOpacity={1}
-                                    >
-                                        <Text style={[styles.betNumber, { color: containsBet(amount) ? '#000' : '#fff' }]}>{amount}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                                <TextInput
-                                    style={styles.input}
-                                    value={betAmount[currentMatchupIndex]}
-                                    onChangeText={(text) => updateBetAmount(currentMatchupIndex, +text)}
-                                    keyboardType="numeric"
-                                    placeholder='Custom'
-                                    placeholderTextColor="#fff"
-                                />
-                            </View>
+                        <ScrollView 
+                            ref={scrollViewRef}
+                            horizontal
+                            snapToInterval={screenWidth} // Snap to each card
+                            decelerationRate="fast"
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.scrollContainer}
+                            onScroll={handleScroll}
+                        >
+                            {matchups.map((matchup, index) => (
+                                <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }]}>
+                                    <View style={styles.row}>
+                                        <Text style={styles.betTitle}>Place Your Bet</Text>
+                                        <Text style={styles.tokenInfo}><Text style={{ color: (totalBetTokens() > currentUserTokens) ? 'red' : '#74FF6D' }}>{totalBetTokens()}</Text> bet so far (of {currentUserTokens} total)</Text>
+                                    </View>
+                                    {/* bet container */}
+                                    <View style={styles.betContainer}>
+                                        <Image
+                                            source={require('@assets/icons/tokens.png')}
+                                            style={styles.tokensIcon}
+                                        />
+                                        {increments.map((amount) => (
+                                            <TouchableOpacity
+                                                style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
+                                                onPress={() => updateBetAmount(index, amount)}
+                                                activeOpacity={1}
+                                            >
+                                                <Text style={[styles.betNumber, { color: containsBet(amount) ? '#000' : '#fff' }]}>{amount}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                        <TextInput
+                                            style={styles.input}
+                                            value={betAmount[index]}
+                                            onChangeText={(text) => updateBetAmount(index, +text)}
+                                            keyboardType="numeric"
+                                            placeholder='Custom'
+                                            placeholderTextColor="#fff"
+                                        />
+                                    </View>
 
-                            {/* player 1 */}
-                            {matchups[currentMatchupIndex]?.player1 && playerCard(matchups[currentMatchupIndex]?.player1, '#FF6060')}
-                            <View style={styles.secondRow}>
-                                <TouchableOpacity onPress={() => {if (currentMatchupIndex > 0) setCurrentMatchupIndex(currentMatchupIndex - 1)}}>
-                                    <Image
-                                        source={require('@assets/icons/leftArrow.png')}
-                                        style={{ width: 20, height: 20 }}
-                                    />
-                                </TouchableOpacity>
-                                <Text style={{ color: 'red', }}>{shouldShowSubmit().errorText}</Text>
-                                <TouchableOpacity onPress={() => {if (currentMatchupIndex < matchups.length - 1) setCurrentMatchupIndex(currentMatchupIndex + 1)}}>
-                                    <Image
-                                        source={require('@assets/icons/rightArrow.png')}
-                                        style={{ width: 20, height: 20 }}
-                                    />
-                                </TouchableOpacity>
-                            </View>
-                            {matchups[currentMatchupIndex]?.player2 && playerCard(matchups[currentMatchupIndex]?.player2, '#7464FF')}
+                                    {/* player 1 */}
+                                    {matchup.player1 && playerCard(matchup.player1, '#FF6060', 'player1')}
+                                    <View style={styles.versusContainer}>
+                                        <Text style={styles.versusText}>VS</Text>
+                                    </View>
+                                    {matchup.player2 && playerCard(matchup.player2, '#7464FF', 'player2')}
+                                </View>
+                            ))}
+                        </ScrollView>
                             
-                            {/* dots for completion indication */}
-                            <View style={styles.dotRow}>
-                                {matchups.map((_, index) => (
-                                    <TouchableOpacity
-                                        style={{
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: 5,
-                                            borderColor: '#fff',
-                                            borderWidth: 1,
-                                            backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
-                                            marginHorizontal: 3,
-                                        }}
-                                        onPress={() => setCurrentMatchupIndex(index)}
-                                        activeOpacity={1}
-                                    />
-                                ))}
-                            </View>
-                            <TouchableOpacity style={[styles.submitButton, { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' }]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
-                                <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
-                            </TouchableOpacity>
+                        {/* dots for completion indication */}
+                        <View style={styles.dotRow}>
+                            {matchups.map((_, index) => (
+                                <TouchableOpacity
+                                    style={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 5,
+                                        borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
+                                        borderWidth: 1,
+                                        backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
+                                        marginHorizontal: 3,
+                                    }}
+                                    onPress={() => scrollToIndex(index)}
+                                    activeOpacity={1}
+                                />
+                            ))}
                         </View>
+                        <TouchableOpacity style={[styles.submitButton, { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' }]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
+                            <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
+                        </TouchableOpacity>
                     </View>
                 </LinearGradient>
             </TouchableWithoutFeedback>
@@ -515,7 +549,7 @@ const NewHeadToHeadPage: React.FC = () => {
                 animationType="slide"
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
+                    <View style={[styles.modalContainer, { height: '90%', }]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
                             <Text style={styles.closeButtonText}>X</Text>
@@ -531,6 +565,53 @@ const NewHeadToHeadPage: React.FC = () => {
                         }
                     </View>
                 </View>
+            </Modal>
+
+            <Modal
+                transparent={true}
+                visible={isSubmittedModalVisible}
+                animationType="slide"
+            >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity onPress={handleSummaryPageNavigation} style={styles.summaryOKButton}>
+                        <Text style={styles.SummaryOKText}>OK</Text>
+                    </TouchableOpacity>
+                    <View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 30, }}>
+                            <Image
+                                source={require('@assets/icons/checkmark.png')}
+                                style={{ width: 29, height: 29 }}
+                            />
+                            <Text style={styles.modalSubmitted}>Submitted!</Text>
+                        </View>
+                        <Text style={styles.modalTitle}>Your bets this week:</Text>
+                    </View>
+                    <View style={styles.submissionContainer}>
+                        {chosenPlayer.map((player, index) => (
+                            <View style={styles.submissionRow} key={index}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                    <Image
+                                        source={chosenProfilePic[index] ? 
+                                            { uri: chosenProfilePic[index] } : 
+                                            require('@components/blank-profile-picture.png')
+                                        }
+                                        style={styles.submissionProfileImage}
+                                    />
+                                    <Text style={styles.submittedPlayerName}>{groups[groupID]?.users[player]?.username}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                    <Image
+                                        source={require('@assets/icons/tokens.png')}
+                                        style={{ width: 13, height: 13, marginRight: 5, }}
+                                    />
+                                    <Text style={styles.submissionTokenNumber}>{betAmount[index]}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </View>
             </Modal>
         </SafeAreaView>
     );
@@ -571,6 +652,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff80',
         marginVertical: 15,
     },
+    scrollContainer: {
+        alignItems: 'center',
+    },
+    cardContainer: {
+        // flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -600,6 +689,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-around',
         backgroundColor: '#65656580',
+        width: '90%',
         paddingHorizontal: 15,
         borderRadius: 20,
         padding: 10,
@@ -635,6 +725,19 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 12,
     },
+    versusContainer: {
+        marginVertical: -35,
+        paddingHorizontal: 35,
+        paddingVertical: 18,
+        backgroundColor: '#023404',
+        zIndex: 1,
+        borderRadius: 30,
+    },
+    versusText: {
+        fontFamily: 'Lexend-Bold',
+        fontSize: 25,
+        color: '#fff',
+    },
     dotRow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -647,8 +750,7 @@ const styles = StyleSheet.create({
         zIndex: 1000,
     },
     playerContainer: {
-        width: '90%',
-        marginVertical: 10,
+        width: '95%',
         padding: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -809,10 +911,11 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        marginBottom: 15,
         fontFamily: 'Lexend',
+        fontSize: 13,
+        color: '#fff',
+        marginBottom: 15,
+        textAlign: 'center',
     },
     instructionContainer: {
         width: '100%',
@@ -833,23 +936,83 @@ const styles = StyleSheet.create({
       },
       modalContainer: {
         width: '90%',
-        height: '90%',
-        backgroundColor: 'white',
-        borderRadius: 10,
+        // height: '90%',
+        backgroundColor: '#000',
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 25,
         padding: 20,
         position: 'relative',
       },
-      closeButton: {
+      summaryOKButton: {
+        position: 'absolute',
+        top: 18,
+        right: 18,
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 20,
+        padding: 8,
+        paddingHorizontal: 18,
+        zIndex: 1,
+      },
+    SummaryOKText: {
+        fontFamily: 'Lexend',
+        fontSize: 13,
+        color: '#fff',
+    },
+    modalSubmitted: {
+        fontFamily: "Lexend",
+        color: '#fff',
+        fontSize: 18,
+        textAlign: 'center',
+        margin: 10,
+    },
+    submissionContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 15,
+        backgroundColor: '#5BE35C32',
+        padding: 10,
+    },
+    submissionRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#00000080',
+        borderRadius: 10,
+        padding: 10,
+        margin: 3,
+        width: '100%',
+    },
+    submissionProfileImage: {
+        width: 26,
+        height: 26,
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 20,
+        marginRight: 10,
+    },
+    submittedPlayerName: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 11,
+    },
+    submissionTokenNumber: {
+        fontFamily: 'Lexend',
+        color: '#74FF6D',
+        fontSize: 11,
+    },
+    closeButton: {
         position: 'absolute',
         top: 10,
         right: 10,
         zIndex: 1,
-      },
-      closeButtonText: {
+    },
+    closeButtonText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: 'black',
-      },
+        color: '#fff',
+    },
 });
 
 export default NewHeadToHeadPage;
