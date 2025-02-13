@@ -11,6 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
+import { getWeeklyDuelsWon } from '@/backend/src/users';
 
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
@@ -82,12 +83,14 @@ const NewHeadToHeadPage: React.FC = () => {
                 const player1Pic = groups[groupID]?.users[player1ID]?.profilePic;
                 const player1AverageSteps = groups[groupID]?.users[player1ID]?.averageSteps;
                 const player1Steps = (player1AverageSteps).reduce((a: number, b: number) => a + b, 0);
+                const player1WonDuels = getWeeklyDuelsWon(player1ID, groupID);
                 
                 const player2ID = matchup.player2;
                 const player2Name = groups[groupID]?.users[player2ID]?.username;
                 const player2Pic = groups[groupID]?.users[player2ID]?.profilePic;
                 const player2AverageSteps = groups[groupID]?.users[player2ID]?.averageSteps;
                 const player2Steps = (player2AverageSteps).reduce((a: number, b: number) => a + b, 0);
+                const player2WonDuels = getWeeklyDuelsWon(player2ID, groupID);
 
                 newMatchups.push({
                     duelID: matchup.duelID,
@@ -95,17 +98,17 @@ const NewHeadToHeadPage: React.FC = () => {
                         id: player1ID,
                         username: player1Name,
                         profilePic: player1Pic,
-                        duelsWon: 0,
+                        duelsWon: player1WonDuels,
                         prevSteps: Math.floor(player1Steps),
-                        stepChange: 0,
+                        stepChange: 0, // in percentage
                     },
                     player2: {
                         id: player2ID,
                         username: player2Name,
                         profilePic: player2Pic,
-                        duelsWon: 0,
+                        duelsWon: player2WonDuels,
                         prevSteps: Math.floor(player2Steps),
-                        stepChange: 0,
+                        stepChange: 0, // in percentage
                     }
                 })
             })};

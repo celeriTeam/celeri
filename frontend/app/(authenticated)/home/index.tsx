@@ -24,7 +24,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 const HomeTab: React.FC = () => {
-    const { steps, averageSteps, weeklySteps, distance, flights, fetchHealthData } = useHealthData();
+    const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
     console.log("printing steps!!!");
@@ -66,35 +66,21 @@ const HomeTab: React.FC = () => {
         };
     }, []);
 
-    //HEALTHKIT
-    const getStepsSinceMidnight = async() => {
-        try {
-            console.log("getStepsSinceMidnight - printing steps", steps);
-            console.log("getStepsSinceMidnight - printing averageSteps", averageSteps);
-            const result = steps;
-            setStepsSinceMidnight(result);
-			setStepsFirebase(userID, result, averageSteps);
-        } catch (error) {
-            console.error("Error getting step count: ", error);
-            setStepsSinceMidnight(null);
-        }
-    }
-
     useEffect(() => {
         console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
         if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
             //setStepsSinceMidnight(steps);
-            setStepsFirebase(userID, steps, averageSteps); // Call your backend update here
+            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
         } else if(hasInitialized){
             // Updates backend every time the listener runs, since listener cannot wait 
             // for useHealthData, but this function can
             console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
-            setStepsFirebase(userID, steps, averageSteps);
+            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore);
         }
-    }, [steps, averageSteps, hasInitialized, userID]);
+    }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
 
     useEffect(() => {
         if(hasInitialized){

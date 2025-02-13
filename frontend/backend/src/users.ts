@@ -155,6 +155,19 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
     }
 }
 
+// GET weekly duels won
+export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promise<number | undefined> =>{
+    try {
+        const duelsRef = collection(db, `groups/${groupID}/duels`);
+        const q = query(duelsRef, where("winner", "==", userID));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.size;
+    } catch (error) {
+        console.error("getWeeklyDuelsWon - Error fetching duels won:", error);
+        return undefined;
+    }
+}
+
 
 /*********************************************** EDIT FUNCTIONS ********************************************/
 
@@ -266,16 +279,18 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 /*********************************************** HEALTH DATA FUNCTIONS ********************************************/
 
 // SET Steps and average steps
-export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number[]) => {
+export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number[], stepsFromWeekBefore: number) => {
     try {
         const userDocRef = doc(db, 'users', userID);
         console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
         await updateDoc(userDocRef, {
             steps: steps,
             averageSteps: averageSteps,
+            stepsFromWeekBefore: stepsFromWeekBefore,
         });
         const userDoc = await getDoc(userDocRef);
-        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps);
+        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps,
+    ' stepsFromWeekBefore: ', userDoc.data()?.stepsFromWeekBefore);
     } catch (error) {
         console.error('setSteps - Error updating username', error);
         return null;
@@ -287,7 +302,7 @@ export const getSteps = async (id: string): Promise<number> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.steps !== undefined) {
-            console.log("getSteps - response: ", userDoc.data()?.steps, " id: ", id);
+            //console.log("getSteps - response: ", userDoc.data()?.steps, " id: ", id);
             return userDoc.data()?.steps;
         } else {
             console.error("getSteps - error: No such document!");
@@ -351,4 +366,32 @@ export const getAverageSteps = async (id: string): Promise<number[]> => {
         console.error("getAverageSteps - Error fetching user document:", error);
         return [];
     }
+}
+
+// GET last week's steps; different from getWeeklySteps because it's looking at the past cycle's week, not the past week 
+// so if today is weds and reset day is sunday it would look for the past sunday-sunday, not weds-weds 
+export const getLastWeekSteps = async (userID: string, groupID: string): Promise<number> => {
+
+    try {
+        const groupDocRef = doc(db, `groups/${groupID}`);
+        const groupDocSnap = await getDoc(groupDocRef);
+
+        if (groupDocSnap.exists()) {
+            const weeklySteps = groupDocSnap.data().weeklySteps;
+            if(weeklySteps){
+                return weeklySteps?.[userID] ?? 0; // Return steps or 0 if not found
+            } else {
+                //if weeklySteps doesn't exist, it means its the first week, and you should grab it from the past seven days
+                const averageStepArray = await getAverageSteps(userID);
+                const sum = averageStepArray.reduce((a: number, b: number) => a + b, 0);
+                return sum;
+            }
+        }
+
+        return 0; // Return 0 if the group document does not exist
+    } catch (error) {
+        console.error("Error fetching last week's steps:", error);
+        return 0; // Return 0 in case of an error
+    }
+
 }

@@ -28,7 +28,7 @@ const BetSummaryPage: React.FC = () => {
     const { userID, loading } = useUser();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
-    const { steps, weeklySteps, averageSteps, distance, flights } = useHealthData();
+    const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);

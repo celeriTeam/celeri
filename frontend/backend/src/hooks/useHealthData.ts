@@ -29,9 +29,12 @@ const useHealthData = () => {
     console.log("useHealthData is running");
     const [steps, setSteps] = useState(0);
     const [averageSteps, setAverageSteps] = useState<number[]>([]);
-    const [weeklySteps, setWeeklySteps] = useState(0);
+    const [stepsFromWeekBefore, setStepsFromWeekBefore] = useState(0);
     const [flights, setFlights] = useState(0);
     const [distance, setDistance] = useState(0);
+
+    const [loadingStepsFromWeekBefore, setLoadingStepsFromWeekBefore] = useState(false);
+
 
     const [hasPermissions, setHasPermissions] = useState(false);
 
@@ -98,24 +101,33 @@ const useHealthData = () => {
         setAverageSteps(averageSteps); // Update state
         return averageSteps; // Return the calculated value
     };
-    
 
-    // Weekly steps minus current day
-    const getWeeklySteps = async (): Promise<number> => {
-        const today = new Date();
-    
-        const startDate = new Date(today);
-        while (startDate.getDay() !== 0) { // Find the most recent Sunday
-            startDate.setDate(startDate.getDate() - 1);
+    const getStepsFromWeekBefore = async(): Promise<number> => {
+
+        if (loadingStepsFromWeekBefore) {
+            console.log('Already loading steps from week before, skipping this call');
+            return stepsFromWeekBefore;
         }
     
-        let totalSteps = 0;
-        const currentDate = new Date(startDate);
+        setLoadingStepsFromWeekBefore(true);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 8);
+        sevenDaysAgo.setHours(23, 59, 59, 999); // End of yesterday
     
-        while (currentDate < today) {
+        const fourteenDaysAgo = new Date(sevenDaysAgo);
+        fourteenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // Go back 6 more days from yesterday
+        fourteenDaysAgo.setHours(0, 0, 0, 0); // Start of that day
+
+        let stepsFromWeekBeforeTemp = 0;
+        const currentDate = new Date(fourteenDaysAgo);
+    
+        while (currentDate <= sevenDaysAgo) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
             };
+
+            console.log("before everyuthing", stepsFromWeekBeforeTemp);
+            console.log("currentDate: ", currentDate);
     
             try {
                 const result = await new Promise<number>((resolve, reject) => {
@@ -127,25 +139,73 @@ const useHealthData = () => {
                         }
                     });
                 });
+
+                console.log("stepsFromWeeksBefore day: ", result);
     
-                totalSteps += result;
+                stepsFromWeekBeforeTemp += result;
+                console.log("stepsFromWeeksBefore after added: ", stepsFromWeekBeforeTemp);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
             }
     
-            currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+            currentDate.setDate(currentDate.getDate() + 1); // Move to next day
         }
-    
-        setWeeklySteps(totalSteps); // Update state
-        return totalSteps; // Return the total steps
+
+        setStepsFromWeekBefore(stepsFromWeekBeforeTemp); // Update state
+        console.log("StepsFromWeekBefore: ", stepsFromWeekBeforeTemp);
+
+        setLoadingStepsFromWeekBefore(false);
+        return stepsFromWeekBeforeTemp; // Return the calculated value
     };
+    
+
+    // Weekly steps minus current day; IF ITS SUNDAY MIGHT NOT WORK
+    // const getWeeklySteps = async (): Promise<number> => {
+    //     const today = new Date();
+    
+    //     const startDate = new Date(today);
+    //     while (startDate.getDay() !== 0) { // Find the most recent Sunday
+    //         startDate.setDate(startDate.getDate() - 1);
+    //     }
+    
+    //     let totalSteps = 0;
+    //     const currentDate = new Date(startDate);
+    
+    //     while (currentDate < today) {
+    //         const options: HealthInputOptions = {
+    //             date: currentDate.toISOString(),
+    //         };
+    
+    //         try {
+    //             const result = await new Promise<number>((resolve, reject) => {
+    //                 AppleHealthKit.getStepCount(options, (err, results) => {
+    //                     if (err) {
+    //                         reject(err);
+    //                     } else {
+    //                         resolve(results.value);
+    //                     }
+    //                 });
+    //             });
+    
+    //             totalSteps += result;
+    //         } catch (error) {
+    //             console.log("Error getting steps for date:", currentDate.toISOString(), error);
+    //         }
+    
+    //         currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+    //     }
+    
+    //     setWeeklySteps(totalSteps); // Update state
+    //     return totalSteps; // Return the total steps
+    // };
 
     const fetchHealthData =  useCallback(async ()  => {
         //if (!hasPermissions) return;
         console.log("fetchhealthData -- start");
         getDailySteps();
-        getWeeklySteps();
+        //getWeeklySteps();
         getWeeklyAverageOfSteps();
+        getStepsFromWeekBefore();
     }, []);
 
     useEffect(() => {
@@ -219,7 +279,7 @@ const useHealthData = () => {
                         const userID = user ? user.uid : "unknown_user";
             
                         console.log("Fetched HealthKit data:", healthData);
-                        setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps);
+                        setStepsFirebase(userID, healthData.dailySteps, healthData.avgSteps, healthData.stepsFromWeekBefore);
                     }
                 }
             });
@@ -235,17 +295,19 @@ const useHealthData = () => {
     const fetchHealthDataBackground = async () => {
         try {
             const dailySteps = await getDailySteps();
-            const weeklySteps = await getWeeklySteps();
+            //const weeklySteps = await getWeeklySteps();
             const avgSteps = await getWeeklyAverageOfSteps();
+            const stepsFromWeekBefore = await getStepsFromWeekBefore();
     
-            console.log("Fetched data: ", { dailySteps, weeklySteps, avgSteps });
+            console.log("Fetched data: ", { dailySteps, avgSteps, stepsFromWeekBefore });
     
             // Update state explicitly after fetching
             setSteps(dailySteps);
-            setWeeklySteps(weeklySteps);
+            //setWeeklySteps(weeklySteps);
             setAverageSteps(avgSteps);
+            setStepsFromWeekBefore(stepsFromWeekBefore);
     
-            return { dailySteps, weeklySteps, avgSteps };
+            return { dailySteps, avgSteps, stepsFromWeekBefore };
         } catch (error) {
             console.error("Error fetching health data in background:", error);
             return null;
@@ -269,7 +331,7 @@ const useHealthData = () => {
     
 
 
-    return { steps, weeklySteps, averageSteps, flights, distance, fetchHealthData };
+    return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData };
 };
 
 export default useHealthData;
