@@ -31,11 +31,10 @@ const HeadToHeadTutorialPage: React.FC = () => {
 	const handleSubmit = async () => {
 		try {
 			addToFinishedTutorial(groupID, userID);
-
-			router.replace('/(authenticated)/home'); // Navigate to HomeTab
+			
 			setTimeout(() => {
-				router.push({
-					pathname: '/(authenticated)/home/bets/HeadToHead',
+				router.replace({
+					pathname: '/(authenticated)/home/bets/NewHeadToHead',
 					params: { groupIDTemp: groupID },
 				});
 			}, 0); // Ensures the route updates in order

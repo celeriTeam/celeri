@@ -35,11 +35,9 @@ const CreateGroupPage: React.FC = () => {
         const groupID: any = await createGroup(userID, groupName || '', groupCode);
         await addGroupImage(groupID, groupImage || '');
         await addGroupToUser(userID, groupID);
-        // Replace current route with 'HomeTab'
-        router.replace('/(authenticated)/home'); // Replace with your HomeTab route
 
         // Navigate to 'InviteGroup' with parameters
-        router.push({
+        router.replace({
             pathname: '/(authenticated)/home/groups/InviteGroup',
             params: { groupID, fromCreate: "true" },
         });
