@@ -29,11 +29,8 @@ const JoinGroupPage: React.FC= () => {
                 if (groupInUserResponse === 'Group added successfully!') {
                     if (isGameActive) {
 
-                        // Replace current route with 'HomeTab'
-                        router.replace('/(authenticated)/home'); // Replace with your HomeTab route
-
                         // Navigate to 'InviteGroup' with parameters
-                        router.push({
+                        router.replace({
                             pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
                             params: { groupID, fromCreate: "true" },
                         });
@@ -46,11 +43,8 @@ const JoinGroupPage: React.FC= () => {
                         //     ],
                         // });
                     } else {
-                        // Replace current route with 'HomeTab'
-                        router.replace('/(authenticated)/home'); // Replace with your HomeTab route
-
                         // Navigate to 'InviteGroup' with parameters
-                        router.push({
+                        router.replace({
                             pathname: '/(authenticated)/home/groups/InviteGroup',
                             params: { groupID, fromCreate: "true" },
                         });

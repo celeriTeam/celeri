@@ -127,9 +127,9 @@ const InvitePage: React.FC = () => {
     // if groups[groupID]?.isGameActive is true, then nav to headtohead page
     useEffect(() => {
         if (groups && groupID && groups[resolvedGroupID]?.isGameActive) {
-            router.push({
-                pathname: '/(authenticated)/home/bets/HeadToHead',
-                params: { groupID: groupID },
+            router.replace({
+                pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+                params: { groupIDTemp: groupID },
             });
         }
     }, [groups, groupID,]);
@@ -176,19 +176,10 @@ const InvitePage: React.FC = () => {
         await startGame(resolvedGroupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf, gameType, resetDay);
         // navigation.navigate('GroupDetails', { groupID: groupID });
 
-        router.replace('/(authenticated)/home');
-
-        router.push({
-            pathname: '/(authenticated)/home/bets/HeadToHead',
-            params: { groupID: groupID },
+        router.replace({
+            pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+            params: { groupIDTemp: groupID },
         });
-        // navigation.reset({
-        //     index: 1,
-        //     routes: [
-        //         { name: 'HomeTab' }, // the first route in the stack
-        //         { name: 'HeadToHeadTutorialPage', params: { groupID: groupID } } // the top route in the stack
-        //     ],
-        // });
     };
 
     const handleStartReminderPress = async () => {
