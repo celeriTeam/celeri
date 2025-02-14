@@ -69,6 +69,10 @@ const LiveDuelPage: React.FC< {
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
     const yourName = yourUser?.name;
 
+    const truncateString = (str: string, maxLength: number) => {
+        return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
+    };
+
     const createMemberButtonHandle = (id: string, inBet: boolean) => {
         const userID = inBet ? currentGroupUsersArray.find((user) => user.name === id)?.id : id;
         console.log('id: ', userID);
@@ -101,7 +105,7 @@ const LiveDuelPage: React.FC< {
                     {/* Name and bet details */}
                     <View style={styles.betDetails}>
                         <Text style={styles.personName}>
-                            {yourName === bet.user ? 'You' : user?.name || 'Unknown'}
+                            {yourName === bet.user ? 'You' : truncateString(user?.name ?? '', 13) || 'Unknown'}
                         </Text>
                     </View>
 
