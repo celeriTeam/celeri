@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, SafeAreaView } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
@@ -55,6 +55,8 @@ const BetSummaryPage: React.FC = () => {
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
     const router = useRouter();
     const maxNameLength = 16;
+    const screenWidth = Dimensions.get('window').width * 0.8;
+    const scrollViewRef = useRef<ScrollView>(null);
 
     useEffect(() => {
         let cleanup: () => void;
@@ -387,12 +389,28 @@ const BetSummaryPage: React.FC = () => {
 
     const handleRightArrowPress = () => {
         setIsDuelExpanded(false);
-        if (currentBetIndex > 0) setCurrentBetIndex(currentBetIndex - 1);
+        if (currentBetIndex > 0) scrollToIndex(currentBetIndex - 1);
     };
 
     const handleLeftArrowPress = () => {
         setIsDuelExpanded(false);
-        if (currentBetIndex < (currentBets.length - 1)) setCurrentBetIndex(currentBetIndex + 1);
+        if (currentBetIndex < (currentBets.length - 1)) scrollToIndex(currentBetIndex + 1);
+    };
+
+    const truncateString = (str: string, maxLength: number) => {
+        return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
+    };
+
+    const scrollToIndex = (index: number) => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
+        }
+        setCurrentBetIndex(index);
+    };
+
+    const handleScroll = (event: any) => {
+        const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+        setCurrentBetIndex(newIndex);
     };
 
     // if it hits 12:00 am, navigate to hometab
@@ -601,78 +619,86 @@ const BetSummaryPage: React.FC = () => {
                     <View>
                         <Text style={[styles.sectionTitle, { paddingHorizontal: 25, paddingTop: 10, }]}>This Week's Live Duels</Text>
                         <View style={styles.duelRow}>
-
-                            <TouchableOpacity
-                                onPress={() => setLiveDuelModalVisible(true)}
-                                activeOpacity={1}
-                                style={styles.duelCardTouchable}
+                            <LinearGradient
+                                colors={['#74ff6db3', '#2fffe3b3']}
+                                style={styles.duelCard}
                             >
-                                <LinearGradient
-                                    colors={['#74ff6db3', '#2fffe3b3']}
-                                    style={styles.duelCard}
+                                <TouchableOpacity style={[styles.duelNavigation, { left: 0, }]} onPress={handleRightArrowPress}>
+                                    <Image
+                                        source={require('@assets/icons/leftArrow.png')}
+                                        style={styles.leftArrowIcon}
+                                    />
+                                </TouchableOpacity>
+                                <ScrollView 
+                                    ref={scrollViewRef}
+                                    horizontal
+                                    snapToInterval={screenWidth} // Snap to each card
+                                    decelerationRate="fast"
+                                    showsHorizontalScrollIndicator={false}
+                                    onScroll={handleScroll}
                                 >
+                                    {currentBets.map((bets, index) => (
                                     
-                                    <TouchableOpacity style={[styles.duelNavigation, { left: 0, }]} onPress={handleRightArrowPress}>
-                                        <Image
-                                            source={require('@assets/icons/leftArrow.png')}
-                                            style={styles.leftArrowIcon}
-                                        />
-                                    </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => setLiveDuelModalVisible(true)}
+                                            activeOpacity={1}
+                                            style={[styles.duelCardTouchable, { width: screenWidth, }]}
+                                        >
 
-                                    {/* player 1 */}
-                                    <View style={styles.playerInfo}>
-                                        <Image 
-                                            source={currentBets[currentBetIndex]?.player1Pfp ? 
-                                                { uri: currentBets[currentBetIndex]?.player1Pfp } : 
-                                                require('@components/blank-profile-picture.png')
-                                            }
-                                            style={[styles.playerImage, { borderColor: '#FF6060', }]}
-                                        />
-                                        <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player1}</Text>
-                                        <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
-                                        <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                                            <Image
-                                                source={require('@assets/icons/tokensWhite.png')}
-                                                style={styles.tokensWhiteIcon}
-                                            />
-                                            <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.duelInfo}>
-                                        <View style={styles.liveContainer}>
-                                            <Text style={styles.liveTag}><Text style={{ color: 'green', }}>•</Text> LIVE</Text>
-                                        </View>
-                                        <Text style={styles.versus}>VS</Text>
-                                        <Text style={styles.youBetText}>You've bet:</Text>
-                                    </View>
-                                    <View style={styles.playerInfo}>
-                                        <Image 
-                                            source={currentBets[currentBetIndex]?.player2Pfp ? 
-                                                { uri: currentBets[currentBetIndex]?.player2Pfp } : 
-                                                require('@components/blank-profile-picture.png')
-                                            }
-                                            style={[styles.playerImage, { borderColor: '#7464FF', }]}
-                                        />
-                                        <Text style={styles.playerName}>{currentBets[currentBetIndex]?.player2}</Text>
-                                        <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
-                                        <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                                            <Image
-                                                source={require('@assets/icons/tokensWhite.png')}
-                                                style={styles.tokensWhiteIcon}
-                                            />
-                                            <Text style={styles.playerTokens}> {currentBets[currentBetIndex]?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
-                                        </View>
-                                    </View>
-
-                                    <TouchableOpacity style={[styles.duelNavigation, { right: 0, }]} onPress={handleLeftArrowPress}>
-                                        <Image
-                                            source={require('@assets/icons/rightArrow.png')}
-                                            style={styles.rightArrowIcon}
-                                        />
-                                    </TouchableOpacity>
-                                    
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                            {/* player 1 */}
+                                            <View style={styles.playerInfo}>
+                                                <Image 
+                                                    source={bets?.player1Pfp ? 
+                                                        { uri: bets?.player1Pfp } : 
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[styles.playerImage, { borderColor: '#FF6060', }]}
+                                                />
+                                                <Text style={styles.playerName}>{truncateString(bets?.player1 ?? '', 13)}</Text>
+                                                <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
+                                                <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                                                    <Image
+                                                        source={require('@assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={styles.playerTokens}> {bets?.player1Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.duelInfo}>
+                                                <View style={styles.liveContainer}>
+                                                    <Text style={styles.liveTag}><Text style={{ color: 'green', }}>•</Text> LIVE</Text>
+                                                </View>
+                                                <Text style={styles.versus}>VS</Text>
+                                                <Text style={styles.youBetText}>You've bet:</Text>
+                                            </View>
+                                            <View style={styles.playerInfo}>
+                                                <Image 
+                                                    source={bets?.player2Pfp ? 
+                                                        { uri: bets?.player2Pfp } : 
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[styles.playerImage, { borderColor: '#7464FF', }]}
+                                                />
+                                                <Text style={styles.playerName}>{truncateString(bets?.player2 ?? '', 13)}</Text>
+                                                <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
+                                                <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                                                    <Image
+                                                        source={require('@assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={styles.playerTokens}> {bets?.player2Bets.reduce((sum, bet) => sum + bet.wager, 0)}</Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                                <TouchableOpacity style={[styles.duelNavigation, { right: 0, }]} onPress={handleLeftArrowPress}>
+                                    <Image
+                                        source={require('@assets/icons/rightArrow.png')}
+                                        style={styles.rightArrowIcon}
+                                    />
+                                </TouchableOpacity>
+                            </LinearGradient>
                         </View>
                         <View style={styles.betAmount}>
                             <Image
@@ -747,7 +773,7 @@ const BetSummaryPage: React.FC = () => {
                                                 <View style={styles.leaderboardTopCircle} >
                                                     <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>2</Text>
                                                 </View>
-                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[1]?.name}</Text>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
                                                     <Image
                                                         source={require('@assets/icons/tokensWhite.png')}
@@ -795,7 +821,7 @@ const BetSummaryPage: React.FC = () => {
                                                 <View style={styles.leaderboardTopCircle} >
                                                     <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>3</Text>
                                                 </View>
-                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[2]?.name}</Text>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
                                                     <Image
                                                         source={require('@assets/icons/tokensWhite.png')}
@@ -1004,7 +1030,11 @@ const BetSummaryPage: React.FC = () => {
                 transparent={true}
                 visible={isPropBetModalVisible}
             >
-                <View style={styles.modalOverlay}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setPropBetModalVisible(false)} // Close dropdown when overlay is pressed
+                >
                     <View style={[styles.moneyModalContainer, { height: '41%', }]}>
                         {/* Close button */}
                         {finishedPropBet && (
@@ -1027,7 +1057,7 @@ const BetSummaryPage: React.FC = () => {
                             setPropBetModalVisible={setPropBetModalVisible}
                         />
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
 
             {/* Edit Group Modal */}
@@ -1036,7 +1066,11 @@ const BetSummaryPage: React.FC = () => {
                 visible={isEditGroupModalVisible}
                 animationType="slide"
             >
-                <View style={styles.modalOverlay}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setEditGroupModalVisible(false)} // Close dropdown when overlay is pressed
+                >
                     <View style={styles.editGroupModalContainer}>
                         <EditGroupPage
                             groupID={groupID}
@@ -1050,16 +1084,20 @@ const BetSummaryPage: React.FC = () => {
                             }}
                         />
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
 
             {/* Info Modals */}
             <Modal
                 transparent={true}
                 visible={isTokensModalVisible}
-                //animationType="slide"
+                animationType="fade"
             >
-                <View style={styles.modalOverlay}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
+                >
                     <View style={[styles.moneyModalContainer, { height: '25%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
@@ -1074,14 +1112,18 @@ const BetSummaryPage: React.FC = () => {
                             </View>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
             <Modal
                 transparent={true}
                 visible={isTokensUsedModalVisible}
-                // animationType="slide"
+                animationType="fade"
             >
-                <View style={styles.modalOverlay}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
+                >
                     <View style={[styles.moneyModalContainer, { height: '13%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
@@ -1096,14 +1138,18 @@ const BetSummaryPage: React.FC = () => {
                             </View>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
             <Modal
                 transparent={true}
                 visible={isDiamondsModalVisible}
-                // animationType="slide"
+                animationType="fade"
             >
-                <View style={styles.modalOverlay}>
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setDiamondsModalVisible(false)} // Close dropdown when overlay is pressed
+                >
                     <View style={[styles.moneyModalContainer, { height: '20%',}]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
@@ -1118,7 +1164,7 @@ const BetSummaryPage: React.FC = () => {
                             </View>
                         </View>
                     </View>
-                </View>
+                </TouchableOpacity>
             </Modal>
         </SafeAreaView>
     );
@@ -1552,6 +1598,9 @@ const styles = StyleSheet.create({
     duelCardTouchable: {
         flex: 1,
         flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 10,
     },
     duelCard: {
         flex: 1,
@@ -1560,7 +1609,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderRadius: 15,
         padding: 20,
-        paddingVertical: 30,
     },
     duelNavigation: {
         position: 'absolute',
