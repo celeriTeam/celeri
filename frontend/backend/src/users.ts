@@ -156,15 +156,17 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
 }
 
 // GET weekly duels won
-export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promise<number | undefined> =>{
+export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promise<number> =>{
     try {
+        console.log("getWeeklyDuelsWon starting");
         const duelsRef = collection(db, `groups/${groupID}/duels`);
         const q = query(duelsRef, where("winner", "==", userID));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.size;
+        console.log("getWeeklyDuelsWon snapshotSize", querySnapshot.size);
+        return querySnapshot.size ?? 0;
     } catch (error) {
         console.error("getWeeklyDuelsWon - Error fetching duels won:", error);
-        return undefined;
+        return 0;
     }
 }
 
@@ -393,5 +395,26 @@ export const getLastWeekSteps = async (userID: string, groupID: string): Promise
         console.error("Error fetching last week's steps:", error);
         return 0; // Return 0 in case of an error
     }
+}
 
+// GET stepsFromWeekBefore
+export const getStepsFromWeekBefore = async(userID: string): Promise<number> => {
+    console.log("getStepsFromWeekBefore function running");
+    try {
+        const userDocRef = doc(db, `users/${userID}`)
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+            const data = userDocSnap.data();
+            const stepsFromWeekBefore = data.stepsFromWeekBefore ?? 0; // Fallback to 0 if field is missing
+            console.log(stepsFromWeekBefore, "here stepsFromWeekBefore");
+            return stepsFromWeekBefore;
+        } else {
+            console.error(`User document for ${userID} not found`);
+            return 0;
+        }
+    } catch (error) {
+        console.error("Error fetching stepsFromWeekBefore:", error);
+        return 0;
+    }
 }

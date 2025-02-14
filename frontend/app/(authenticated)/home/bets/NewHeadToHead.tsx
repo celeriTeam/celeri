@@ -11,7 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
-import { getWeeklyDuelsWon } from '@/backend/src/users';
+import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
@@ -81,16 +81,25 @@ const NewHeadToHeadPage: React.FC = () => {
                 const player1ID = matchup.player1;
                 const player1Name = groups[groupID]?.users[player1ID]?.username;
                 const player1Pic = groups[groupID]?.users[player1ID]?.profilePic;
-                const player1AverageSteps = groups[groupID]?.users[player1ID]?.averageSteps;
-                const player1Steps = (player1AverageSteps).reduce((a: number, b: number) => a + b, 0);
-                const player1WonDuels = getWeeklyDuelsWon(player1ID, groupID);
+                const player1Steps = groups[groupID]?.users[player1ID]?.lastWeekSteps;
+                const player1WonDuels = groups[groupID]?.users[player1ID]?.weeklyDuelsWon;
+                const player1StepsFromWeekBefore = groups[groupID]?.users[player1ID]?.stepsFromWeekBefore;
+                let player1StepsChangeFromWeekBefore = 0;
+                if (player1StepsFromWeekBefore !== 0 && player1Steps !== 0) {
+                    player1StepsChangeFromWeekBefore = Math.round(((player1Steps - player1StepsFromWeekBefore) / player1StepsFromWeekBefore) * 100);
+                }
                 
                 const player2ID = matchup.player2;
                 const player2Name = groups[groupID]?.users[player2ID]?.username;
                 const player2Pic = groups[groupID]?.users[player2ID]?.profilePic;
-                const player2AverageSteps = groups[groupID]?.users[player2ID]?.averageSteps;
-                const player2Steps = (player2AverageSteps).reduce((a: number, b: number) => a + b, 0);
-                const player2WonDuels = getWeeklyDuelsWon(player2ID, groupID);
+                const player2Steps = groups[groupID]?.users[player2ID]?.lastWeekSteps;
+                const player2WonDuels = groups[groupID]?.users[player2ID]?.weeklyDuelsWon;
+                const player2StepsFromWeekBefore = groups[groupID]?.users[player2ID]?.stepsFromWeekBefore;
+                console.log("player2StepsFromWeekBefore: ", player2StepsFromWeekBefore, player2ID);
+                let player2StepsChangeFromWeekBefore = 0;
+                if (player2StepsFromWeekBefore !== 0 && player2Steps !== 0) {
+                    player2StepsChangeFromWeekBefore = Math.round(((player2Steps - player2StepsFromWeekBefore) / player2StepsFromWeekBefore) * 100);
+                }
 
                 newMatchups.push({
                     duelID: matchup.duelID,
@@ -100,7 +109,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         profilePic: player1Pic,
                         duelsWon: player1WonDuels,
                         prevSteps: Math.floor(player1Steps),
-                        stepChange: 0, // in percentage
+                        stepChange: player1StepsFromWeekBefore, // in percentage
                     },
                     player2: {
                         id: player2ID,
@@ -108,7 +117,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         profilePic: player2Pic,
                         duelsWon: player2WonDuels,
                         prevSteps: Math.floor(player2Steps),
-                        stepChange: 0, // in percentage
+                        stepChange: player2StepsChangeFromWeekBefore, // in percentage
                     }
                 })
             })};
@@ -176,6 +185,7 @@ const NewHeadToHeadPage: React.FC = () => {
             
             const todaysBetTokens = groups[groupID]?.todaysBetTokens ?? 0;
             // setTotalBetTokens(todaysBetTokens);
+            console.log("H2H Checkpoint one");
         } catch(error) {
             console.error("Error fetching user data:", error);
         } finally {

@@ -410,10 +410,12 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
   try {
     const userSnapshots = await userRef.get();
     const userSteps = {};
+    const userAverageSteps = {};
 
     // Store all users' steps in memory
     userSnapshots.forEach((doc) => {
       userSteps[doc.id] = doc.data().steps || 0;
+      userAverageSteps[doc.id] = doc.data().averageSteps || [0,0,0,0,0,0,0];
     });
 
     const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
@@ -457,7 +459,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           const currentSteps = userSteps[userID] || 0;
 
           // Calculate users weekly steps
-          let weeklyStepsData = users[userID].averageSteps;
+          let weeklyStepsData = userAverageSteps[userID];
 
           if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
             weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
