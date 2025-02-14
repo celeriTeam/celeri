@@ -256,6 +256,10 @@ const NewHeadToHeadPage: React.FC = () => {
         });
     }
 
+    const truncateString = (str: string, maxLength: number) => {
+        return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
+    };
+
     const handleInfoButton = () => {
         router.replace({
             pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
@@ -315,7 +319,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         }
                         style={[styles.profileImage, { borderColor: color }]}
                     />
-                    <Text style={[styles.playerUsername, { color: isChosen(player.id) ? '#024405' : '#fff' }]}>{player?.username}</Text>
+                    <Text style={[styles.playerUsername, { color: isChosen(player.id) ? '#024405' : '#fff' }]}>{truncateString(player?.username ?? '', 13)}</Text>
                 </View>
                 <View style={styles.playerInfoContainerRow}>
                     <View style={[styles.playerInfoContainer, { borderColor: isChosen(player.id) ? '#024405' : '#fff' }]}>
