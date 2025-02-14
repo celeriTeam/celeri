@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
-
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../UserProvider';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
 const BetsHistoryPage: React.FC = () => {
@@ -16,6 +17,9 @@ const BetsHistoryPage: React.FC = () => {
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [betHistory, setBetHistory] = useState<any[]>([]); // Holds all fetched duels
     const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
+    
+    const router = useRouter();
+    const screenWidth = Dimensions.get('window').width;
 
     interface BetItem {
         userID: string;
@@ -223,7 +227,7 @@ const BetsHistoryPage: React.FC = () => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
     
         return (
-            <View style={styles.flatList}>
+            <View style={[styles.flatList, { width: screenWidth * 0.9 }]}>
                 {/* Players */}
                 <TouchableOpacity onPress={() => (item.player2Bets.length > 1 || item.player1Bets.length > 1) ? toggleItemExpansion(item.duelID) : null}
                     activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}>
@@ -335,24 +339,54 @@ const BetsHistoryPage: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Bets History</Text>
-            <FlatList
-                data={currentRecapBets}
-                keyExtractor={(item) => item.duelID}
-                renderItem={renderBetItem}
-                onEndReached={loadMoreDuels} // Load more duels when reaching the end
-                onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
-            />
-        </View>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@assets/icons/back.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Bets History</Text>
+                    <FlatList
+                        data={currentRecapBets}
+                        keyExtractor={(item) => item.duelID}
+                        renderItem={renderBetItem}
+                        onEndReached={loadMoreDuels} // Load more duels when reaching the end
+                        onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
+                    />
+                </View>
+            </LinearGradient>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        marginTop: 100,
-        padding: 20,
+        backgroundColor: '#fff',
+    },
+    container: {
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        padding: 16,
+        marginTop: 50,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+    },
+    backImage: {
+        width: 19,
+        height: 19,
     },
     spacer: {
         flex: 1,
@@ -382,9 +416,10 @@ const styles = StyleSheet.create({
     },
     title: {
         textAlign: "center",
-        fontSize: 30,
+        fontSize: 20,
         fontWeight: "200",
-        fontFamily: 'Lexend-Bold',
+        fontFamily: 'Lexend',
+        color: '#fff',
         paddingTop: 20,
         marginBottom: 20,
     },

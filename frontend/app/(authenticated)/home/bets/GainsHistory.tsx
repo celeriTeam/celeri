@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
-
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 
 const GainsHistoryPage: React.FC = () => {
@@ -17,6 +18,9 @@ const GainsHistoryPage: React.FC = () => {
     const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
     const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
+        
+    const router = useRouter();
+    const screenWidth = Dimensions.get('window').width;
 
     interface GainItem {
         userID: string;
@@ -111,106 +115,142 @@ const GainsHistoryPage: React.FC = () => {
 
     // Component to render grouped gain items in one box
     const GroupedGainItem = ({ gains, weeksAgo }: { gains: GainItem[]; weeksAgo: number }) => (
-        <View style={styles.gainsFlatList}>
+        <View style={[styles.gainsFlatList, { width: screenWidth * 0.9 }]}>
             <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
                 <Text style={styles.createdAtText}>{`${weeksAgo}w ago`}</Text>
             </View>
-           
-            {gains.map((item) => (
-                <View key={`${item.userID}_${item.weeksAgo}`} style={styles.row}>
-                    <Image source={{ uri: item.profilePic }} style={styles.profileImage} />
-                    <Text style={styles.playerGain}>{item.username}</Text>
-                    <Text
-                        style={[
-                            item.gain > 0 
-                                ? styles.wonGainEarningsText 
-                                : item.gain < 0 
-                                ? styles.lostGainEarningsText 
-                                : styles.zeroGainEarningsText,
-                        ]}
-                    >
-                        {item.gain > 0 ? `+${item.gain}` : item.gain}
-                    </Text>
-                </View>
-            ))}
+           <View style={styles.gainsContainer}>
+                {gains.map((item) => (
+                    <View key={`${item.userID}_${item.weeksAgo}`} style={styles.row}>
+                        <Image source={{ uri: item.profilePic }} style={styles.profileImage} />
+                        <Text style={styles.playerGain}>{item.username}</Text>
+                        <Text
+                            style={[
+                                item.gain > 0 
+                                    ? styles.wonGainEarningsText 
+                                    : item.gain < 0 
+                                    ? styles.lostGainEarningsText 
+                                    : styles.zeroGainEarningsText,
+                            ]}
+                        >
+                            {item.gain > 0 ? `+${item.gain}` : item.gain}
+                        </Text>
+                    </View>
+                ))}
+            </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Gains History</Text>
-            <FlatList
-                data={groupedGainsArray}
-                keyExtractor={(item) => item.weeksAgo.toString()}
-                renderItem={({ item }) => (
-                    <GroupedGainItem gains={item.gains} weeksAgo={item.weeksAgo} />
-                )}
-                onEndReached={loadMoreGains} // Load more duels when reaching the end
-                onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
-            />
-        </View>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@assets/icons/back.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Gains History</Text>
+                    <FlatList
+                        data={groupedGainsArray}
+                        keyExtractor={(item) => item.weeksAgo.toString()}
+                        renderItem={({ item }) => (
+                            <GroupedGainItem gains={item.gains} weeksAgo={item.weeksAgo} />
+                        )}
+                        onEndReached={loadMoreGains} // Load more duels when reaching the end
+                        onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
+                    />
+                </View>
+            </LinearGradient>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        marginTop: 100,
-        padding: 20,
+        backgroundColor: '#fff',
+    },
+    container: {
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        padding: 16,
+        marginTop: 50,
+    },
+    backButton: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+    },
+    backImage: {
+        width: 19,
+        height: 19,
     },
     title: {
         textAlign: "center",
         fontSize: 30,
         fontWeight: "200",
-        fontFamily: 'Lexend-Bold',
+        fontFamily: 'Lexend',
+        color: '#fff',
         paddingTop: 20,
         marginBottom: 20,
     },
     gainsFlatList: {
-        borderWidth: 3,
-        borderColor: '#ccc',
-        borderRadius: 5,
         marginTop: 10,
-        paddingBottom: 25,
+    },
+    gainsContainer: {
+        backgroundColor: '#5BE35C32',
+        borderRadius: 15,
         padding: 10,
     },
     wonGainEarningsText: {
         fontFamily: "Lexend",
-        color: 'green',
-        fontSize: 20,
+        color: '#74FF6D',
+        fontSize: 11,
     },
     lostGainEarningsText: {
         fontFamily: "Lexend",
-        color: 'red',
-        fontSize: 20,
+        color: '#FF6060',
+        fontSize: 11,
     },
     zeroGainEarningsText: {
         fontFamily: "Lexend",
-        color: '#808080',
-        fontSize: 20,
+        color: '#fff',
+        fontSize: 11,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 6,
+        backgroundColor: '#00000080',
+        borderRadius: 10,
+        padding: 10,
     },
     profileImage: {
-        width: 40,
-        height: 40,
+        width: 26,
+        height: 26,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: "#D3D3D3",
         marginRight: 10,
     },
     playerGain: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 15,
+        fontFamily: "Lexend",
+        fontSize: 11,
+        color: '#fff',
         flex: 1,
         textAlign: 'left',
     },
     createdAtText: {
-        color: '#808080',
+        color: '#fff',
     },
     centered: { 
         flex: 1, 
