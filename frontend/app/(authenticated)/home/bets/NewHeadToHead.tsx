@@ -12,6 +12,7 @@ import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTok
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
+import { useTabBar } from '../../../../hooks/useTabBar';
 
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
@@ -54,10 +55,20 @@ const NewHeadToHeadPage: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 50, 100, 250];
+
+    const { hideTabBar, showTabBar } = useTabBar();
+
+    useEffect(() => {
+        hideTabBar();
+        return () => {
+        showTabBar();
+        };
+    }, []);
   
     const router = useRouter();
     const screenWidth = Dimensions.get('window').width;
     const scrollViewRef = useRef<ScrollView>(null);
+    
 
     const closeModal = async () => {
       setModalVisible(false);
@@ -482,78 +493,81 @@ const NewHeadToHeadPage: React.FC = () => {
                         {/* dividing line */}
                         <View style={styles.dividingLine} />
 
-                        {/* swipeable cards */}
-                        <ScrollView 
-                            ref={scrollViewRef}
-                            horizontal
-                            snapToInterval={screenWidth} // Snap to each card
-                            decelerationRate="fast"
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.scrollContainer}
-                            onScroll={handleScroll}
-                        >
-                            {matchups.map((matchup, index) => (
-                                <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }]}>
-                                    <View style={styles.row}>
-                                        <Text style={styles.betTitle}>Place Your Bet</Text>
-                                        <Text style={styles.tokenInfo}><Text style={{ color: (totalBetTokens() > currentUserTokens) ? 'red' : '#74FF6D' }}>{totalBetTokens()}</Text> bet so far (of {currentUserTokens} total)</Text>
-                                    </View>
-                                    {/* bet container */}
-                                    <View style={styles.betContainer}>
-                                        <Image
-                                            source={require('@assets/icons/tokens.png')}
-                                            style={styles.tokensIcon}
-                                        />
-                                        {increments.map((amount) => (
-                                            <TouchableOpacity
-                                                style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
-                                                onPress={() => updateBetAmount(index, amount)}
-                                                activeOpacity={1}
-                                            >
-                                                <Text style={[styles.betNumber, { color: containsBet(amount) ? '#000' : '#fff' }]}>{amount}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                        <TextInput
-                                            style={styles.input}
-                                            value={betAmount[index]}
-                                            onChangeText={(text) => updateBetAmount(index, +text)}
-                                            keyboardType="numeric"
-                                            placeholder='Custom'
-                                            placeholderTextColor="#fff"
-                                        />
-                                    </View>
+                        <View style={styles.scrollAndDotsContainer}>
 
-                                    {/* player 1 */}
-                                    {matchup.player1 && playerCard(matchup.player1, '#FF6060', 'player1')}
-                                    <View style={styles.versusContainer}>
-                                        <Text style={styles.versusText}>VS</Text>
+                            {/* swipeable cards */}
+                            <ScrollView 
+                                ref={scrollViewRef}
+                                horizontal
+                                snapToInterval={screenWidth} // Snap to each card
+                                decelerationRate="fast"
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.scrollContainer}
+                                onScroll={handleScroll}
+                            >
+                                {matchups.map((matchup, index) => (
+                                    <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }]}>
+                                        <View style={styles.row}>
+                                            <Text style={styles.betTitle}>Place Your Bet</Text>
+                                            <Text style={styles.tokenInfo}><Text style={{ color: (totalBetTokens() > currentUserTokens) ? 'red' : '#74FF6D' }}>{totalBetTokens()}</Text> bet so far (of {currentUserTokens} total)</Text>
+                                        </View>
+                                        {/* bet container */}
+                                        <View style={styles.betContainer}>
+                                            <Image
+                                                source={require('@assets/icons/tokens.png')}
+                                                style={styles.tokensIcon}
+                                            />
+                                            {increments.map((amount) => (
+                                                <TouchableOpacity
+                                                    style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
+                                                    onPress={() => updateBetAmount(index, amount)}
+                                                    activeOpacity={1}
+                                                >
+                                                    <Text style={[styles.betNumber, { color: containsBet(amount) ? '#000' : '#fff' }]}>{amount}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                            <TextInput
+                                                style={styles.input}
+                                                value={betAmount[index]}
+                                                onChangeText={(text) => updateBetAmount(index, +text)}
+                                                keyboardType="numeric"
+                                                placeholder='Custom'
+                                                placeholderTextColor="#fff"
+                                            />
+                                        </View>
+
+                                        {/* player 1 */}
+                                        {matchup.player1 && playerCard(matchup.player1, '#FF6060', 'player1')}
+                                        <View style={styles.versusContainer}>
+                                            <Text style={styles.versusText}>VS</Text>
+                                        </View>
+                                        {matchup.player2 && playerCard(matchup.player2, '#7464FF', 'player2')}
                                     </View>
-                                    {matchup.player2 && playerCard(matchup.player2, '#7464FF', 'player2')}
-                                </View>
-                            ))}
-                        </ScrollView>
-                            
-                        {/* dots for completion indication */}
-                        <View style={styles.dotRow}>
-                            {matchups.map((_, index) => (
-                                <TouchableOpacity
-                                    style={{
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: 5,
-                                        borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
-                                        borderWidth: 1,
-                                        backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
-                                        marginHorizontal: 3,
-                                    }}
-                                    onPress={() => scrollToIndex(index)}
-                                    activeOpacity={1}
-                                />
-                            ))}
+                                ))}
+                            </ScrollView>
+                                
+                            {/* dots for completion indication */}
+                            <View style={styles.dotRow}>
+                                {matchups.map((_, index) => (
+                                    <TouchableOpacity
+                                        style={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: 5,
+                                            borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
+                                            borderWidth: 1,
+                                            backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
+                                            marginHorizontal: 3,
+                                        }}
+                                        onPress={() => scrollToIndex(index)}
+                                        activeOpacity={1}
+                                    />
+                                ))}
+                            </View>
+                            <TouchableOpacity style={[styles.submitButton, { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' }]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
+                                <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity style={[styles.submitButton, { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' }]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
-                            <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
-                        </TouchableOpacity>
                     </View>
                 </LinearGradient>
             </TouchableWithoutFeedback>
@@ -671,11 +685,13 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         alignItems: 'center',
+        
     },
     cardContainer: {
-        // flex: 1,
+        // flex: 1, 
         alignItems: 'center',
-        justifyContent: 'center',
+        height: '100%', // this helped move everything up 
+        //justifyContent: 'center',
     },
     row: {
         flexDirection: 'row',
@@ -755,6 +771,10 @@ const styles = StyleSheet.create({
         fontSize: 25,
         color: '#fff',
     },
+    scrollAndDotsContainer: {
+        height: '79%', // or a percentage that works well for your layout
+        justifyContent: 'flex-end',
+      },
     dotRow: {
         flexDirection: 'row',
         justifyContent: 'center',

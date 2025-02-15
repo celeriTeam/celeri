@@ -163,23 +163,6 @@ exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-// exports.sendTestNotiftoAll = onSchedule("every day 05:00", async (event) => {
-//   const message = {
-//     notification: {
-//       title: "Testing notif.",
-//       body: "This is a test",
-//     },
-//     topic: "allUsers",
-//   };
-
-//   try {
-//     const response = await admin.messaging().send(message);
-//     console.log("Successfully sent message:", response);
-//   } catch (error) {
-//     console.error("Error sending message:", error);
-//   }
-// });
-
 exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) => {
   const snapshot = event.data;
   if (!snapshot) {

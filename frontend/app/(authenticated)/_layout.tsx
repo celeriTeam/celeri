@@ -9,6 +9,8 @@ import * as Device from 'expo-device';
 import messaging from '@react-native-firebase/messaging';
 import firestore from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
+import TabBar from "../../components/TabBar";
+import { useTabBar, TabBarProvider } from '../,./../../hooks/useTabBar';
 
 // Register for push notifications function
 async function registerForPushNotificationsAsync(userID: string) {
@@ -133,55 +135,66 @@ const AuthenticatedLayout: React.FC = () => {
 
     return (
         <UserProvider>
-            <Tabs
-                screenOptions={({ route }) => ({
-                    headerShown: false,
-                    tabBarStyle: {
-                        backgroundColor: '#1b2c1c',
-                        borderTopWidth: 0,
-                        paddingBottom: 50,
-                        paddingTop: 0,
-                        height: 110,
-                    },
-                    tabBarShowLabel: false,
-                    tabBarActiveTintColor: '#51ba51',
-                    tabBarInactiveTintColor: '#ffffff',
-                    tabBarIcon: ({ focused, color }) => {
-                        let iconSource, width, height;
-
-                        if (route.name === 'home') {
-                            iconSource = require('@assets/icons/home.png');
-                            width = focused ? 24 : 22;
-                            height = focused ? 26 : 24;
-                        } else if (route.name === 'profile') {
-                            iconSource = require('@assets/icons/profile.png');
-                            width = focused ? 22 : 20;
-                            height = focused ? 25 : 23;
-                        } else if (route.name === 'bugReports/index') {
-                            iconSource = require('@assets/icons/bugReports.png');
-                            width = focused ? 31 : 29;
-                            height = focused ? 31 : 29;
-                        }
-
-                        return (
-                            <Image
-                                source={iconSource}
-                                style={{
-                                    width,
-                                    height,
-                                    tintColor: color,
-                                    opacity: focused ? 1 : 0.7,
-                                }}
-                            />
-                        );
-                    },
-                })}
-            >
-                <Tabs.Screen name="home" options={{ title: 'Home', headerShown: false }} />
-                <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: false }} />
-                <Tabs.Screen name="bugReports/index" options={{ title: 'Bug Reports', headerShown: false }} />
-            </Tabs>
+            <TabBarProvider>
+                <InnerAuthenticatedLayout />
+            </TabBarProvider>
         </UserProvider>
+    );
+}
+
+function InnerAuthenticatedLayout() {
+    const { isTabBarVisible } = useTabBar();
+  
+    return (
+      <Tabs
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#1b2c1c',
+            borderTopWidth: 0,
+            paddingBottom: isTabBarVisible ? 50 : 0,
+            paddingTop: 0,
+            height: isTabBarVisible ? 110 : 0, // <-- THE MAGIC
+          },
+          tabBarShowLabel: false,
+          tabBarActiveTintColor: '#51ba51',
+          tabBarInactiveTintColor: '#ffffff',
+          tabBarIcon: ({ focused, color }) => {
+            let iconSource, width, height;
+  
+            if (route.name === 'home') {
+              iconSource = require('@assets/icons/home.png');
+              width = focused ? 24 : 22;
+              height = focused ? 26 : 24;
+            } else if (route.name === 'profile') {
+              iconSource = require('@assets/icons/profile.png');
+              width = focused ? 22 : 20;
+              height = focused ? 25 : 23;
+            } else if (route.name === 'bugReports/index') {
+              iconSource = require('@assets/icons/bugReports.png');
+              width = focused ? 31 : 29;
+              height = focused ? 31 : 29;
+            }
+  
+            return (
+              <Image
+                source={iconSource}
+                style={{
+                  width,
+                  height,
+                  tintColor: color,
+                  opacity: focused ? 1 : 0.7,
+                }}
+              />
+            );
+          },
+        })}
+        tabBar={(props) => <TabBar {...props} />}
+      >
+        <Tabs.Screen name="home" options={{ title: 'Home' }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+        <Tabs.Screen name="bugReports/index" options={{ title: 'Bug Reports' }} />
+      </Tabs>
     );
 }
 
