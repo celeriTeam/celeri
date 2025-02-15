@@ -30,18 +30,6 @@ const GainsHistoryPage: React.FC = () => {
         weeksAgo: number;
     }
     
-    // Initial load for yesterday's duels
-    useEffect(() => {
-        const fetchInitialDuels = async () => {
-            const lastWeekBets = groups[groupID]?.lastWeekDuels;
-            console.log("lastWeekBets: ", lastWeekBets)
-            if (!lastWeekBets) {
-                await loadMoreDuels(); // Load if yesterdaysDuels not available
-            }
-        };
-        fetchInitialDuels();
-    }, [groupID, groups]);
-
     useEffect(() => {
         loadMoreGains();
     }, [groupID, groups]);
@@ -49,16 +37,6 @@ const GainsHistoryPage: React.FC = () => {
     useEffect(() => {
         console.log("gainHistory updated:", gainHistory);
     }, [gainHistory])
-
-    // Function to fetch duels based on daysAgo
-    const loadMoreDuels = async () => {
-        console.log("WeeklyBethistory - Loading more duels");
-        const moreDuels = await getMoreWeeklyDuelsSummary(groupID, weeksAgo);
-        console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
-        if (moreDuels) {
-            setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
-        }
-    };
 
     // Function to fetch gains based on gainsDaysAgo
     const loadMoreGains = async () => {

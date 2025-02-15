@@ -337,6 +337,8 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
             const resetDay = groupDoc.data().resetDay; 
             const players = Object.keys(groupDoc.data().users || {});
 
+            console.log("CHECKPOINT ONE");
+
             // initialize the record
             const races = players.reduce((acc, userID) => {
                 const username =  groups[groupID]?.users[userID]?.username;
@@ -352,10 +354,8 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
             }, {} as Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number; steps: number }>);
         
 
-
+            console.log("CHECKPOINT 2");
             // the end of the query 
-
-            const rightNow = new Date();
 
             // now find the time parameters based on the weeksAgo
             const today = new Date();
@@ -366,8 +366,11 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
                 today.getDate() - ((today.getDay() - resetDay + 7) % 7) - ((weeksAgo-1) * 7)
             );
 
+            const endReset = new Date(desiredReset);
+            endReset.setDate(desiredReset.getDate() + 7);
+
             const startDay = Timestamp.fromDate(desiredReset);
-            const endDay = Timestamp.fromDate(rightNow);
+            const endDay = Timestamp.fromDate(endReset);
 
             console.log('Start Day:', startDay.toDate());
             console.log('End Day:', endDay.toDate());
@@ -384,23 +387,24 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
                 console.log('getRacesSummary - error: No races found for this past week');
                 return undefined;
             }
+            console.log("CHECKPOINT THREE");
 
             querySnapshot.forEach((doc) => {
                 //should only be one document
                 const raceData = doc.data();
                 const gains = new Map<string, number>(Object.entries(raceData.gains || {}));
-                const weeklySteps = raceData.weeklySteps;
+                console.log("CHECKPOINT FOUR");
 
                 gains.forEach((amountGained, userID) => {
                     races[userID].gain += amountGained;
-                    races[userID].steps = weeklySteps[userID];
+                    races[userID].steps = raceData.steps[userID];
                 });
             });
             return { races };
             
         }
     } catch (error) {
-        console.error("getGainsSummary - Error fetching user document: ", error);
+        console.error("getRacesSummary - Error fetching user document: ", error);
         return undefined;
     }
 }

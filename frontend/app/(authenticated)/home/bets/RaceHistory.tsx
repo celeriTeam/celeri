@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
 
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useUser } from '../../../UserProvider';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 
 const RaceHistoryPage: React.FC = () => {
@@ -13,8 +16,10 @@ const RaceHistoryPage: React.FC = () => {
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [raceHistory, setRaceHistory] = useState<{weeksAgo: number; races: RaceItem[]}[]>([]);
-    const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [raceWeeksAgo, setRaceWeeksAgo] = useState(1);
+
+    const router = useRouter();
+    const screenWidth = Dimensions.get('window').width;
     
     interface RaceItem {
         userID: string;
@@ -27,33 +32,13 @@ const RaceHistoryPage: React.FC = () => {
     
     // Initial load for yesterday's duels
     useEffect(() => {
-        const fetchInitialDuels = async () => {
-            const lastWeekBets = groups[groupID]?.lastWeekDuels;
-            console.log("lastWeekBets: ", lastWeekBets)
-            if (!lastWeekBets) {
-                await loadMoreDuels(); // Load if yesterdaysDuels not available
-            }
-        };
-        fetchInitialDuels();
+        loadMoreRaces();
     }, [groupID, groups]);
 
-    // Flatten the duels from the fetched data
-    const flattenDuels = (duels: { [key: string]: any }) => Object.values(duels);
-
-
-    // Function to fetch duels based on daysAgo
-    const loadMoreDuels = async () => {
-        console.log("WeeklyBethistory - Loading more duels");
-        const moreDuels = await getMoreWeeklyDuelsSummary(groupID, weeksAgo);
-        console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
-        if (moreDuels) {
-            // Flatten and append new duels
-            setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
-        }
-    };
 
     const loadMoreRaces = async () => {
         let moreRaces;
+        console.log("raceWeeksAgo here", raceWeeksAgo);
         moreRaces = await getRacesSummary(groupID, raceWeeksAgo, groups);
         if(moreRaces){
             const newRaceWeek = {
@@ -79,55 +64,83 @@ const RaceHistoryPage: React.FC = () => {
     }
 
     const renderRaceItem = ({ item }: { item: {weeksAgo: number; races: RaceItem[]} }) => (
-        <View style={styles.gainsFlatList}>
+        <View style={[styles.racesFlatList, { width: screenWidth * 0.9 }]}>
             <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
-                <Text style={styles.createdAtText}>{`${weeksAgo}w ago`}</Text>
+                <Text style={styles.createdAtText}>{`${item.weeksAgo}w ago`}</Text>
             </View>
-        
-            {item.races.map((race) => (
-                <View key={`${race.userID}_${item.weeksAgo}`} style={styles.row}>
-                    <Image source={{ uri: race.profilePic }} style={styles.profileImage} />
-                    <Text style={styles.playerGain}>{race.username}</Text>
-                    <Text style={styles.zeroGainEarningsText}>{`${race.steps} steps`}</Text>
-                    <Text
-                        style={[
-                            race.gain > 0 
-                                ? styles.wonGainEarningsText 
-                                : race.gain < 0 
-                                ? styles.lostGainEarningsText 
-                                : styles.zeroGainEarningsText,
-                        ]}
-                    >
-                        {race.gain > 0 ? `+${race.gain}` : race.gain}
-                    </Text>
-                </View>
-            ))}
+            <View style={styles.racesContainer}>
+                {item.races.map((race) => (
+                    <View key={`${race.userID}_${item.weeksAgo}`} style={styles.row}>
+                        <Image source={{ uri: race.profilePic }} style={styles.profileImage} />
+                        <Text style={styles.playerGain}>{race.username}</Text>
+                        <Text style={styles.stepCountText}>{`${race.steps} steps`}</Text>
+                        <View style={styles.gainCountContainer}>
+                            <Text
+                                style={[
+                                    race.gain > 0 
+                                        ? styles.wonGainEarningsText 
+                                        : race.gain < 0 
+                                        ? styles.lostGainEarningsText 
+                                        : styles.zeroGainEarningsText,
+                                ]}
+                            >
+                                {race.gain > 0 ? `+${race.gain}` : race.gain}
+                            </Text>
+                        </View>
+                    </View>
+                ))}
+            </View>
         </View>
     );
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Race History</Text>
-            <FlatList
-                data={raceHistory} // Replace with your actual data source for races
-                keyExtractor={(item) => item.weeksAgo.toString()}
-                renderItem={renderRaceItem} // Implement this function to render race items
-                onEndReached={loadMoreRaces} // Implement if you want pagination
-                onEndReachedThreshold={0.5}
-            />
-        </View>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={styles.container}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <Image
+                            source={require('@assets/icons/back.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                    <Text style={styles.title}>Race History</Text>
+                    <FlatList
+                        data={raceHistory} // Replace with your actual data source for races
+                        keyExtractor={(item) => item.weeksAgo.toString()}
+                        renderItem={renderRaceItem} // Implement this function to render race items
+                        onEndReached={loadMoreRaces} // Implement if you want pagination
+                        onEndReachedThreshold={0.5}
+                    />
+                </View>
+            </LinearGradient>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    safeArea: {
         flex: 1,
-        marginTop: 100,
-        padding: 20,
+        backgroundColor: '#fff',
+    },
+    container: {
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        padding: 16,
+        marginTop: 50,
     },
     spacer: {
         flex: 1,
         marginRight: 10,
+    },
+    gainCountContainer: {
+        width: 30,
+        alignItems: 'flex-end',
     },
     statusBar: {
         paddingVertical: 4,
@@ -151,11 +164,21 @@ const styles = StyleSheet.create({
     drawStatus: {
         backgroundColor: '#9e9e9e', // Gray color
     },
+    backButton: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+    },
+    backImage: {
+        width: 19,
+        height: 19,
+    },
     title: {
         textAlign: "center",
         fontSize: 30,
         fontWeight: "200",
-        fontFamily: 'Lexend-Bold',
+        fontFamily: 'Lexend',
+        color: '#fff',
         paddingTop: 20,
         marginBottom: 20,
     },
@@ -172,12 +195,20 @@ const styles = StyleSheet.create({
         marginTop: 10,
         paddingBottom: 25,
     },
-    gainsFlatList: {
-        borderWidth: 3,
-        borderColor: '#ccc',
-        borderRadius: 5,
+    racesFlatList: {
         marginTop: 10,
-        paddingBottom: 25,
+    },
+    // racesFlatList: {
+    //     borderWidth: 3,
+    //     borderColor: '#ccc',
+    //     borderRadius: 5,
+    //     marginTop: 10,
+    //     paddingBottom: 25,
+    //     padding: 10,
+    // },
+    racesContainer: {
+        backgroundColor: '#5BE35C32',
+        borderRadius: 15,
         padding: 10,
     },
     wonEarningsText: {
@@ -194,24 +225,33 @@ const styles = StyleSheet.create({
     },
     wonGainEarningsText: {
         fontFamily: "Lexend",
-        color: 'green',
-        fontSize: 20,
+        color: '#74FF6D',
+        fontSize: 11,
     },
     lostGainEarningsText: {
         fontFamily: "Lexend",
-        color: 'red',
-        fontSize: 20,
+        color: '#FF6060',
+        fontSize: 11,
     },
     zeroGainEarningsText: {
         fontFamily: "Lexend",
-        color: '#808080',
-        fontSize: 20,
+        color: '#fff',
+        fontSize: 11,
+    },
+    stepCountText: {
+        fontFamily: "Lexend",
+        color: '#fff',
+        fontSize: 11,
+        paddingRight: 15,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 6,
+        backgroundColor: '#00000080',
+        borderRadius: 10,
+        padding: 10,
     },
     carrotIcon: {
         textAlign: 'right',
@@ -230,8 +270,8 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     profileImage: {
-        width: 40,
-        height: 40,
+        width: 26,
+        height: 26,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: "#D3D3D3",
@@ -248,8 +288,9 @@ const styles = StyleSheet.create({
         textAlign: 'left',
     },
     playerGain: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 15,
+        fontFamily: "Lexend",
+        fontSize: 11,
+        color: '#fff',
         flex: 1,
         textAlign: 'left',
     },
@@ -260,7 +301,7 @@ const styles = StyleSheet.create({
         fontSize: 28,
     },
     createdAtText: {
-        color: '#808080',
+        color: '#fff',
     },
     loserText: {
         color: '#808080',
