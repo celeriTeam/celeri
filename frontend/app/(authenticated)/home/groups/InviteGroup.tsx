@@ -31,9 +31,9 @@ const InvitePage: React.FC = () => {
     const [isModalVisible, setModalVisible] = useState(false);
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
-    const [cycles, setCycles] = useState('5');
+    const [cycles, setCycles] = useState('1');
     const [dailyTokens, setDailyTokens] = useState('100');
-    const [startingTokens, setStartingTokens] = useState('1000');
+    const [startingTokens, setStartingTokens] = useState('2000');
     const [gameType, setGameType] = useState("weekly");
     const [resetDay, setResetDay] = useState(0);
     const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
@@ -373,7 +373,7 @@ const InvitePage: React.FC = () => {
                             <Text style={styles.settingText}>Amount of Cycles (Rounds):</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="5"
+                                placeholder="1"
                                 value={cycles}
                                 onChangeText={setCycles}
                                 keyboardType="numeric"
@@ -393,7 +393,7 @@ const InvitePage: React.FC = () => {
                             <Text style={styles.settingText}>Starting Tokens (Minimum 1000):</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="1000"
+                                placeholder="2000"
                                 value={startingTokens}
                                 onChangeText={setStartingTokens}
                                 keyboardType="numeric"
