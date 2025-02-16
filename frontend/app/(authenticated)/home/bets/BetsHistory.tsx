@@ -404,7 +404,10 @@ const BetsHistoryPage: React.FC = () => {
                         <View style={styles.playerContainer}>
                             <View style={styles.row}>
                                 {item.playerOneSteps > item.playerTwoSteps && (
-                                    <Text style={styles.triangleText}>▶</Text>
+                                    <Image
+                                        source={require('@assets/icons/winnerHistory.png')}
+                                        style={styles.winnerIcon}
+                                    />
                                 )}
                                 <Image
                                     source={{ uri: item.player1pfp }}
@@ -436,7 +439,10 @@ const BetsHistoryPage: React.FC = () => {
                         <View style={styles.playerContainer}>
                             <View style={styles.row}>
                                 {item.playerOneSteps < item.playerTwoSteps && (
-                                    <Text style={styles.triangleText}>▶</Text>
+                                    <Image
+                                        source={require('@assets/icons/winnerHistory.png')}
+                                        style={styles.winnerIcon}
+                                    />
                                 )}
                                 <Image
                                     source={{ uri: item.player2pfp }}
@@ -639,6 +645,12 @@ const styles = StyleSheet.create({
         marginVertical: 10,
         width: '100%',
         alignSelf: 'center',
+    },
+    winnerIcon: {
+        width: 7, 
+        height: 33,
+        position: 'absolute',
+        left: -20,
     },
     profileImage: {
         width: 40,
