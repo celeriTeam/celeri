@@ -23,7 +23,8 @@ const BetsHistoryPage: React.FC = () => {
     const [propBetHistory, setPropBetHistory] = useState<any[]>([]);
     const [duelsFilter, setDuelsFilter] = useState(true);
     const [propBetsFilter, setPropBetsFilter] = useState(true);
-    const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
+    const [duelsOffset, setDuelsOffset] = useState(1); // Weeks offset for duel bets
+    const [propBetsOffset, setPropBetsOffset] = useState(1); // Days offset for prop bets
     
     const router = useRouter();
 
@@ -46,7 +47,6 @@ const BetsHistoryPage: React.FC = () => {
                 setPropBetHistory(initialPropBets);
             } else {
                 await loadMoreDuels();
-                await loadMorePropBets();
             }
         };
         fetchInitialDuels();
@@ -81,26 +81,39 @@ const BetsHistoryPage: React.FC = () => {
 
     // Function to fetch duels based on daysAgo
     const loadMoreDuels = async () => {
-        console.log("WeeklyBethistory - Loading more duels");
-        const moreDuels = await getMoreWeeklyDuelsSummary(groupID, weeksAgo);
+        console.log("WeeklyBethistory - Loading more duels & prop bets");
+        const moreDuels = await getMoreWeeklyDuelsSummary(groupID, duelsOffset);
+        const morePropBets = await getMorePropBets(groupID, userID, propBetsOffset);
         console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
-        if (moreDuels) {
-            // Flatten and append new duels
-            const newDuels = flattenDuels(moreDuels);
-            setBetHistory((prevBetHistory) => [...prevBetHistory, ...newDuels]);
-            setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
-        }
-    };
-    
-    const loadMorePropBets = async () => {
-        console.log("WeeklyBethistory - Loading more prop bets");
-        const morePropBets = await getMorePropBets(groupID, userID, weeksAgo);
         console.log('WeeklyBetHistory - loadMorePropBets: morePropBets', morePropBets)
+        if (moreDuels) {
+            // Flatten and merge new duel bets.
+            const newDuels = flattenDuels(moreDuels);
+            setBetHistory((prevBetHistory) => {
+                // Merge existing and new bets, filtering duplicates based on duelID
+                const merged = [...prevBetHistory, ...newDuels];
+                return merged.filter(
+                    (item, index, array) =>
+                        index === array.findIndex((t) => t.duelID === item.duelID)
+                );
+            });
+            // Increment weekly offset for the next load
+            setDuelsOffset((prev) => prev + 1);
+        }
+
         if (morePropBets) {
-            // Flatten and append new duels
+            // Flatten and merge new prop bets.
             const newPropBets = flattenDuels(morePropBets);
-            setPropBetHistory((prevPropBetHistory) => [...prevPropBetHistory, ...newPropBets]);
-            setWeeksAgo((prevWeeksAgo) => prevWeeksAgo + 1); // Increment daysAgo for the next load
+            setPropBetHistory((prevPropBetHistory) => {
+                // Merge existing and new prop bets, filtering duplicates based on duelID
+                const merged = [...prevPropBetHistory, ...newPropBets];
+                return merged.filter(
+                    (item, index, array) =>
+                        index === array.findIndex((t) => t.duelID === item.duelID)
+                );
+            });
+            // Increment daily offset for prop bets so that subsequent queries target a new day
+            setPropBetsOffset((prev) => prev + 1);
         }
     };
 

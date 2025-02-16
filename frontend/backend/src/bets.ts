@@ -395,34 +395,32 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
 }
 
 // GET more prop bets
-export const getMorePropBets = async (groupID: string, userID: string, daysAgo: number): Promise<{ [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } | undefined> => {
+export const getMorePropBets = async (groupID: string, userID: string, weeksAgo: number): Promise<{ [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } | undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists()){
-        
-
             // find the parameters of the given day
+            // Start of the day 7 days ago
+            let endOfWeek = new Date();
+            endOfWeek.setHours(0, 0, 0, 0);
+            endOfWeek.setDate(endOfWeek.getDate() - (weeksAgo * 7));
 
-            // Create a Date object for the current date and set it to the start of today
-            let dayStartTemp = new Date();
-            dayStartTemp.setHours(0, 0, 0, 0);
-            dayStartTemp.setDate(dayStartTemp.getDate() - daysAgo);
-
-            // Create a new Date object for the end of the same day
-            let dayEndTemp = new Date(dayStartTemp);
-            dayEndTemp.setHours(23, 59, 59, 999);
+            // Start of the day 14 days ago
+            let startOfWeek = new Date();
+            startOfWeek.setHours(0, 0, 0, 0);
+            startOfWeek.setDate(startOfWeek.getDate() - ((weeksAgo + 1) * 7));
 
             // Convert to Firestore Timestamps
-            const dayStart = Timestamp.fromDate(dayStartTemp);
-            const dayEnd = Timestamp.fromDate(dayEndTemp);
+            const weekStart = Timestamp.fromDate(startOfWeek);
+            const weekEnd = Timestamp.fromDate(endOfWeek);
 
             // Get snapshot of duels for today
             const propBetsCollection = collection(groupDocRef, 'propBets');
             const q = query(propBetsCollection,
                 where("userID", "==", userID),
-                where('createdAt', '>=', dayStart),
-                where('createdAt', '<', dayEnd));
+                where('createdAt', '>=', weekStart),
+                where('createdAt', '<', weekEnd));
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
