@@ -398,7 +398,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
     // Store all users' steps in memory
     userSnapshots.forEach((doc) => {
       userSteps[doc.id] = doc.data().steps || 0;
-      userAverageSteps[doc.id] = doc.data().averageSteps || [0,0,0,0,0,0,0];
+      userAverageSteps[doc.id] = doc.data().averageSteps || [0, 0, 0, 0, 0, 0, 0];
     });
 
     const groupSnapshots = await groupRef.where("isGameActive", "==", true).get();
@@ -988,6 +988,7 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
             await groupDocRef.collection("propBets").add({
               ...bet, // Include all bet data
               win, // Include the win status
+              steps, // Include the user's steps
               createdAt: FieldValue.serverTimestamp(), // Add the timestamp
             });
             console.log(`Added propBet record for user ${userID} in group ${groupDocRef.id}.`);
