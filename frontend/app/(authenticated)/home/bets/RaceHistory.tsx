@@ -133,6 +133,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         marginTop: 50,
+        height: '95%',
     },
     spacer: {
         flex: 1,
