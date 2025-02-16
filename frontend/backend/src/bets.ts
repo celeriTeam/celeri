@@ -193,25 +193,22 @@ export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: numbe
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists()){
-        
-
             // find the parameters of the given day
+            // Start of the day 7 days ago
+            let endOfWeek = new Date();
+            endOfWeek.setHours(0, 0, 0, 0);
+            endOfWeek.setDate(endOfWeek.getDate() - (weeksAgo * 7));
 
-             // Start of the day 7 days ago
-             let endOfWeek = new Date();
-             endOfWeek.setHours(0, 0, 0, 0);
-             endOfWeek.setDate(endOfWeek.getDate() - (weeksAgo * 7));
- 
-             // Start of the day 14 days ago
-             let startOfWeek = new Date();
-             startOfWeek.setHours(0, 0, 0, 0);
-             startOfWeek.setDate(startOfWeek.getDate() - ((weeksAgo + 1) * 7));
+            // Start of the day 14 days ago
+            let startOfWeek = new Date();
+            startOfWeek.setHours(0, 0, 0, 0);
+            startOfWeek.setDate(startOfWeek.getDate() - ((weeksAgo + 1) * 7));
 
             // Convert to Firestore Timestamps
             const weekStart = Timestamp.fromDate(startOfWeek);
             const weekEnd = Timestamp.fromDate(endOfWeek);
 
-        // Get snapshot of duels for today
+            // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
             const q = query(duelsCollection,
                 where('createdAt', '>=', weekStart),
@@ -263,10 +260,7 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists()){
-        
-
             // find the parameters of the given day
-
             // Create a Date object for the current date and set it to the start of today
             let dayStartTemp = new Date();
             dayStartTemp.setHours(0, 0, 0, 0);
@@ -322,6 +316,144 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
 
     } catch (error) {
         console.error("getMoreDuelsSummary - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
+// GET last weeks prop bets
+export const getLastWeekPropBets = async (groupID: string, userID: string): Promise<{ [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } | undefined> => {
+    // get the createdAt timestamp of the latest duel in duel history
+    // return all prop bets that were made after that timestamp (or on the same day)
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if(groupDoc.exists()){
+            const groupData = groupDoc.data();
+            const resetDay = groupData.resetDay;
+            const players = Object.keys(groupData.users || {});
+
+            // Initialize prop bets map with duel IDs as keys and 0 as default values
+            const propBets: { [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } = {};
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset to start of the day
+
+            // Calculate the most recent reset day
+            let mostRecentReset = new Date(today);
+            mostRecentReset.setDate(today.getDate() - ((today.getDay() - resetDay + 7) % 7));
+
+            // Calculate the reset day 7 days prior
+            const previousReset = new Date(mostRecentReset);
+            previousReset.setDate(mostRecentReset.getDate() - 7);
+
+            // Convert to timestamps or use as needed
+            const startDay = Timestamp.fromDate(previousReset);
+            const endDay = Timestamp.fromDate(today);
+
+            console.log('Start Day:', startDay.toDate());
+            console.log('End Day:', endDay.toDate());
+
+            console.log('getYesterdayDuelsSummary - Checkpoint Zero');
+
+            // Get snapshot of duels for today
+            console.log('my userid:', userID);
+            const propBetsCollection = collection(groupDocRef, 'propBets');
+            const q = query(propBetsCollection,
+                where("userID", "==", userID),
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getLastWeekPropBets - error: No prop bets found for today');
+                return undefined;
+            }
+
+            querySnapshot.forEach(doc => {
+                const propBetData = doc.data();
+                propBets[doc.id] = {
+                    duelID: doc.id,
+                    userID: propBetData.userID,
+                    betOnUserID: propBetData.betOnUserID,
+                    steps: propBetData.steps,
+                    averageStepCount: propBetData.averageStepCount,
+                    overUnder: propBetData.overUnder,
+                    win: propBetData.win,
+                    createdAt: propBetData.createdAt,
+                };
+            });
+            console.log("getLastWeekPropBets - response: ", propBets);
+            return propBets;
+        } else{
+            console.error("getLastWeekPropBets - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getLastWeekPropBets - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
+// GET more prop bets
+export const getMorePropBets = async (groupID: string, userID: string, daysAgo: number): Promise<{ [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if(groupDoc.exists()){
+        
+
+            // find the parameters of the given day
+
+            // Create a Date object for the current date and set it to the start of today
+            let dayStartTemp = new Date();
+            dayStartTemp.setHours(0, 0, 0, 0);
+            dayStartTemp.setDate(dayStartTemp.getDate() - daysAgo);
+
+            // Create a new Date object for the end of the same day
+            let dayEndTemp = new Date(dayStartTemp);
+            dayEndTemp.setHours(23, 59, 59, 999);
+
+            // Convert to Firestore Timestamps
+            const dayStart = Timestamp.fromDate(dayStartTemp);
+            const dayEnd = Timestamp.fromDate(dayEndTemp);
+
+            // Get snapshot of duels for today
+            const propBetsCollection = collection(groupDocRef, 'propBets');
+            const q = query(propBetsCollection,
+                where("userID", "==", userID),
+                where('createdAt', '>=', dayStart),
+                where('createdAt', '<', dayEnd));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                console.log('getMorePropBets - error: No duels found for today');
+                return undefined;
+            }
+                
+            const propBets: { [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } = {};
+            querySnapshot.forEach(doc => {
+                const propBetData = doc.data();
+                propBets[doc.id] = {
+                    duelID: doc.id,
+                    userID: propBetData.userID,
+                    betOnUserID: propBetData.betOnUserID,
+                    steps: propBetData.steps,
+                    averageStepCount: propBetData.averageStepCount,
+                    overUnder: propBetData.overUnder,
+                    win: propBetData.win,
+                    createdAt: propBetData.createdAt,
+                };
+            });
+            console.log("getMorePropBets - response: ", propBets);
+            return propBets;
+        } else{
+            console.error("getMorePropBets - error: No such document!");
+            return undefined;
+        }
+
+
+    } catch (error) {
+        console.error("getMorePropBets - Error fetching user document: ", error);
         return undefined;
     }
 }
