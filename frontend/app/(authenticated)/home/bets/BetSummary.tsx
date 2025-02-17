@@ -24,6 +24,17 @@ import EditGroupPage from './EditGroup';
 
 const db = getFirestore(app);
 
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
+
 const BetSummaryPage: React.FC = () => {
     const { userID, loading } = useUser();
     const { groupIDTemp } = useLocalSearchParams();
@@ -510,7 +521,7 @@ const BetSummaryPage: React.FC = () => {
                             />
                         </TouchableOpacity>
                         <View style={styles.rightIcons}>
-                            <View style={styles.historyContainer}>
+                            <View>
                                 <TouchableOpacity onPress={() => {setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
                                     <Image
                                         source={require('@assets/icons/history.png')}
@@ -552,7 +563,7 @@ const BetSummaryPage: React.FC = () => {
                                                 right: 0,
                                                 top: 0,
                                                 height: '100%',
-                                                width: 40
+                                                width: scale(40),
                                             }}
                                         />
                                     )}
@@ -560,7 +571,7 @@ const BetSummaryPage: React.FC = () => {
                                 <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
                                     <Image 
                                         source={require('@assets/icons/edit.png')}
-                                        style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: -10, }]}
+                                        style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: scale(-10), }]}
                                     />
                                 </TouchableOpacity>
                             </View>
@@ -583,7 +594,7 @@ const BetSummaryPage: React.FC = () => {
                     </View>
 
                     {/* Stats Container */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 25, paddingTop: 15, }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(25), paddingTop: scale(15), }}>
                         <Text style={styles.sectionTitle}>Your Total Stats</Text>
                         {groups[groupID]?.gameType === 'weekly' && (
                             <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
@@ -617,7 +628,7 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Live Duel Section */}
                     <View>
-                        <Text style={[styles.sectionTitle, { paddingHorizontal: 25, paddingTop: 10, }]}>This Week's Live Duels</Text>
+                        <Text style={[styles.sectionTitle, { paddingHorizontal: scale(25), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
                         <View style={styles.duelRow}>
                             <LinearGradient
                                 colors={['#74ff6db3', '#2fffe3b3']}
@@ -626,7 +637,7 @@ const BetSummaryPage: React.FC = () => {
                                 <TouchableOpacity style={[styles.duelNavigation, { left: 0, }]} onPress={handleRightArrowPress}>
                                     <Image
                                         source={require('@assets/icons/leftArrow.png')}
-                                        style={styles.leftArrowIcon}
+                                        style={styles.arrowIcon}
                                     />
                                 </TouchableOpacity>
                                 <ScrollView 
@@ -695,7 +706,7 @@ const BetSummaryPage: React.FC = () => {
                                 <TouchableOpacity style={[styles.duelNavigation, { right: 0, }]} onPress={handleLeftArrowPress}>
                                     <Image
                                         source={require('@assets/icons/rightArrow.png')}
-                                        style={styles.rightArrowIcon}
+                                        style={styles.arrowIcon}
                                     />
                                 </TouchableOpacity>
                             </LinearGradient>
@@ -703,7 +714,7 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.betAmount}>
                             <Image
                                 source={require('@assets/icons/tokensBlack.png')}
-                                style={[styles.tokensBlackIcon, { marginRight: 5 }]}
+                                style={[styles.tokensBlackIcon, { marginRight: scale(5), }]}
                             />
                                 <Text style={styles.betText}>
                                     {(() => {
@@ -721,7 +732,7 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Leaderboard Section */}
                     <View style={styles.leaderboardContainer}>
-                    <Text style={[styles.sectionTitle, { paddingHorizontal: 10, }]}>Leaderboards</Text>
+                    <Text style={[styles.sectionTitle, { paddingHorizontal: scale(10), }]}>Leaderboards</Text>
                         <View style={styles.tabContainer}>
                             {selectedTab === 'Tokens' ? (
                                 <>
@@ -768,10 +779,10 @@ const BetSummaryPage: React.FC = () => {
                                                         { uri: currentGroupUsersArray[1]?.pfp } : 
                                                         require('@components/blank-profile-picture.png')
                                                     }
-                                                    style={{ width: 37, height: 37, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
+                                                    style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
                                                 />
                                                 <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>2</Text>
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>2</Text>
                                                 </View>
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
@@ -782,12 +793,12 @@ const BetSummaryPage: React.FC = () => {
                                                     <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
                                                 </View>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: 15, }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
+                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
                                                 <View style={{
                                                     shadowColor: '#51ba51',
                                                     shadowOffset: { width: 0, height: 0 },
                                                     shadowOpacity: 0.7,
-                                                    shadowRadius: 7,
+                                                    shadowRadius: moderateScale(7),
                                                     elevation: 10,
                                                 }}>
                                                     <Image
@@ -795,11 +806,11 @@ const BetSummaryPage: React.FC = () => {
                                                             { uri: currentGroupUsersArray[0]?.pfp } : 
                                                             require('@components/blank-profile-picture.png')
                                                         }
-                                                        style={{ width: 51, height: 51, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
+                                                        style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
                                                     />
                                                 </View>
                                                 <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>1</Text>
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
                                                 </View>
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
@@ -816,10 +827,10 @@ const BetSummaryPage: React.FC = () => {
                                                         { uri: currentGroupUsersArray[2]?.pfp } : 
                                                         require('@components/blank-profile-picture.png')
                                                     }
-                                                    style={{ width: 37, height: 37, borderRadius: 50, borderWidth: 1.5, borderColor: '#fff', }}
+                                                    style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
                                                 />
                                                 <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: 9, }}>3</Text>
+                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>3</Text>
                                                 </View>
                                                 <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
                                                 <View style={styles.leaderboardTopTokens}>
@@ -840,7 +851,7 @@ const BetSummaryPage: React.FC = () => {
                                                                 { uri: user.pfp } : 
                                                                 require('@components/blank-profile-picture.png')
                                                             }
-                                                            style={[styles.leaderboardImage, { marginRight: 10 }]}
+                                                            style={[styles.leaderboardImage, { marginRight: scale(10), }]}
                                                         />
                                                     <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
                                                     <View style={styles.leaderboardTokensNumTokens}>
@@ -877,9 +888,9 @@ const BetSummaryPage: React.FC = () => {
                                                         style={{
                                                             backgroundColor: user.id === userID ? '#fff' : '#4bff6c99',
                                                             width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
-                                                            height: 30,
-                                                            borderTopRightRadius: 5,
-                                                            borderBottomRightRadius: 5,
+                                                            height: scale(30),
+                                                            borderTopRightRadius: moderateScale(5),
+                                                            borderBottomRightRadius: moderateScale(5),
                                                         }}
                                                     />
                                                     <Text style={styles.leaderboardSteps}>
@@ -1170,148 +1181,384 @@ const BetSummaryPage: React.FC = () => {
     );
 };
 
-
-type CircularIconProps = {
-    value: number; // Value from 0 to 1, where 1 is 100%
-    size?: number; // Diameter of the circle
-    strokeWidth?: number; // Width of the border
-};
-const CircularIcon: React.FC<CircularIconProps> = ({ value, size = 100, strokeWidth = 10 }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const blueStrokeLength = value * circumference;
-    const redStrokeLength = (1 - value) * circumference;
-
-    return (
-        <View style={[styles.circleContainer, { width: size, height: size }]}>
-            <Svg width={size} height={size}>
-                <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
-                    {/* Blue portion of the border */}
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="#1E90FF"
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={`${blueStrokeLength} ${circumference}`}
-                        strokeLinecap="round"
-                        fill="transparent"
-                    />
-                    {/* Red portion of the border */}
-                    <Circle
-                        cx={size / 2}
-                        cy={size / 2}
-                        r={radius}
-                        stroke="#ff3535"
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={`${redStrokeLength} ${circumference}`}
-                        strokeDashoffset={-blueStrokeLength}
-                        strokeLinecap="round"
-                        fill="transparent"
-                    />
-                </G>
-            </Svg>
-            {/* Center text */}
-            <View style={styles.VStextContainer}>
-                <Text style={styles.VStext}>VS</Text>
-            </View>
-        </View>
-    );
-};
-
 const styles = StyleSheet.create({
-    circleContainer: {
+    safeView: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+        marginTop: verticalScale(50),
+    },
+    infoModalContainer: {
+        padding: moderateScale(30),
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingTop: 25,
     },
-    VStextContainer: {
-        position: 'absolute',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingTop: 25,
-    },
-    VStext: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: 'black',
-    },
-    row: {
+    header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingHorizontal: scale(20),
+        marginBottom: verticalScale(5),
+    },
+    rightIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: scale(10),
+    },
+    backIcon: {
+      width: scale(19),
+      height: scale(19),
+    },
+    historyIcon: {
+      width: scale(27),
+      height: scale(27),
+    },
+    dropdownOverlay: {
+        position: 'absolute',
+        flex: 1,
+        top: verticalScale(60),
+        left: 0,
         width: '100%',
-        //marginHorizontal: 20, // Adjust margin to fit the back button and tokens in the same row
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent dark background
     },
-    backImage: {
-        width: 40,
-        height: 40,
-    },
-    backButton: {
+    dropdownMenu: {
         position: 'absolute',
-        top: 22,
-        left: 20,
+        top: verticalScale(90),
+        right: scale(50),
+        width: scale(100),
+        backgroundColor: '#000',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: scale(0), height: verticalScale(2) },
+        shadowOpacity: 0.2,
+        shadowRadius: moderateScale(4),
+        elevation: moderateScale(5),
+    },
+    dropdownText: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(16),
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(10),
+    },
+    storeIcon: {
+        width: scale(21),
+        height: scale(21),
+    },
+    propBetButton: {
+        fontFamily: 'Lexend',
+        fontSize: 11,
+        color: '#74FF6D',
+    },
+    groupInfo: {
+        flexDirection: 'row',
+        paddingHorizontal: scale(20),
+        alignItems: 'center',
+    },
+    groupImage: {
+        width: scale(70),
+        height: scale(70),
+        borderRadius: moderateScale(35),
+        borderWidth: 2,
+        borderColor: '#74FF6D',
+    },
+    groupNameContainer: {
+        marginLeft: scale(20),
+        justifyContent: 'center',
+    },
+    groupName: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(28),
+        marginRight: scale(5),
+    },
+    editIcon: {
+        width: scale(16),
+        height: scale(16),
+      },
+      timeLeftIcon: {
+        width: scale(13),
+        height: scale(13),
+    },
+    timeLeft: {
+        color: '#74FF6D',
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(11),
+    },
+    timeLeftText: {
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(11),
+        color: '#fff',
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: '#65656580',
+        paddingHorizontal: scale(20),
+        borderRadius: moderateScale(20),
+        padding: moderateScale(10),
+        marginHorizontal: scale(20),
+        marginBottom: verticalScale(5),
+    },
+    statItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#00000080',
+        borderRadius: moderateScale(15),
+        padding: moderateScale(10),
+        width: '30%',
+    },
+    statValue: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(13),
+    },
+    tokensIcon: {
+      width: scale(16),
+      height: scale(16),
+    },
+    betTokensIcon: {
+      width: scale(15),
+      height: scale(15),
+    },
+    diamondsIcon: {
+      width: scale(14),
+      height: scale(12),
+    },
+    sectionTitle: {
+        color: '#fff',
+        fontSize: moderateScale(16),
+        fontFamily: 'Lexend',
+        marginBottom: verticalScale(10),
+    },
+    duelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: scale(20),
+    },
+    duelCardTouchable: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: verticalScale(10),
+    },
+    duelCard: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: moderateScale(15),
+        padding: moderateScale(20),
+    },
+    duelNavigation: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        width: '15%', // Adjust this value to control the width of the clickable area
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
+        zIndex: 1
     },
-    recapButton: {
-        position: 'absolute',
-        top: 22,
-        right: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
+    arrowIcon: {
+      width: scale(15),
+      height: scale(15),
     },
-    storeButton: {
-        position: 'absolute',
-        top: 90,
-        left: 20,
-        padding: 10,
-        justifyContent: 'center',
+    playerInfo: {
         alignItems: 'center',
-        elevation: 5,
-        zIndex: 10,
+        justifyContent: 'center',
+        width: '38%',
+    },
+    playerImage: {
+        width: scale(50),
+        height: scale(50),
+        borderRadius: moderateScale(25),
+        borderWidth: moderateScale(2),
+    },
+    playerName: {
+        color: '#fff',
+        fontSize: moderateScale(14),
+        fontFamily: 'Lexend-Bold',
+        marginVertical: verticalScale(5),
+    },
+    playerSteps: {
+        color: '#BEFFBB',
+        fontSize: moderateScale(11),
+        fontFamily: 'Lexend',
+    },
+    tokensWhiteIcon: {
+        width: scale(10),
+        height: scale(10),
+    },
+    playerTokens: {
+        color: '#BEFFBB',
+        fontSize: moderateScale(11),
+    },
+    duelInfo: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: verticalScale(10),
+        width: '20%',
+    },
+    liveContainer: {
+        position: 'absolute',
+        top: verticalScale(-30),
+        padding: moderateScale(5),
+        backgroundColor: '#fff',
+        borderRadius: moderateScale(20),
+        marginTop: verticalScale(5),
+    },
+    liveTag: {
+        color: '#000',
+        fontSize: moderateScale(12),
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    versus: {
+        color: '#fff',
+        fontFamily: 'Lexend-Bold',
+        fontSize: moderateScale(28),
+    },
+    youBetText: {
+        position: 'absolute',
+        bottom: verticalScale(-30),
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(11),
+    },
+    betAmount: {
+        position: 'absolute',
+        flexDirection: 'row',
+        alignItems: 'center',
+        bottom: verticalScale(-20),
+        alignSelf: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: scale(20),
+        paddingVertical: verticalScale(10),
+        borderRadius: moderateScale(20),
+    },
+    tokensBlackIcon: {
+        width: scale(15),
+        height: scale(14.3),
+    },
+    betText: {
+        color: '#000',
+        fontSize: moderateScale(15),
+        fontFamily: 'Lexend',
+    },
+    leaderboardContainer: {
+        flex: 1,
+        padding: moderateScale(20),
+        marginTop: verticalScale(10),
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#65656580',
+        borderRadius: moderateScale(15),
+        marginBottom: verticalScale(10),
+    },
+    tab: {
+        flex: 1,
+        padding: moderateScale(10),
+        alignItems: 'center',
+        borderRadius: moderateScale(15),
+    },
+    tabText: {
+        color: '#fff',
+        fontSize: moderateScale(13),
+        fontFamily: 'Lexend',
+    },
+    leaderboard: {
+        flex: 1,
+        backgroundColor: '#65656580',
+        borderRadius: moderateScale(20),
+        padding: moderateScale(15),
+    },
+    grayLine: { 
+        position: 'absolute',
+        left: scale(40),
+        width: scale(1.5),
+        height: '95%',
+        backgroundColor: '#fff',
+        zIndex: 1,
+    },
+    leaderboardTop: {
+        flexDirection: 'row', 
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        marginBottom: verticalScale(15),
+    },
+    leaderboardTopStyles: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: scale(20),
+    },
+    leaderboardTopCircle: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: verticalScale(-7),
+        marginBottom: verticalScale(5),
+        width: scale(17),
+        height: scale(17),
+        borderRadius: moderateScale(9),
+        backgroundColor: '#74FF6D',
+    },
+    leaderboardTopTokens: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    leaderboardTokensRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(5),
+        padding: moderateScale(10),
+        borderRadius: moderateScale(10),
+    },
+    leaderboardRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: verticalScale(10),
+    },
+    leaderboardTokensText: {
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(11),
+    },
+    leaderboardTokensNumberText: {
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(11),
+        marginHorizontal: scale(10),
+    },
+    leaderboardTokensNumTokens: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // align to right
+        position: 'absolute',
+        right: scale(15),
+    },
+    leaderboardImage: {
+        width: scale(30),
+        height: scale(30),
+        borderRadius: moderateScale(15),
+        marginRight: scale(10),
+        borderWidth: moderateScale(1.5),
+        borderColor: '#fff',
+    },
+    leaderboardSteps: {
+        color: '#fff',
+        fontSize: moderateScale(11),
+        fontFamily: 'Lexend',
+        marginLeft: scale(10),
     },
     tokenText: {
-        fontFamily: "Lexend",
-        fontSize: 15,
-        color: "white"
-    },
-    profileImage: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        borderWidth: 1,
-        borderColor: "#D3D3D3",
-    },
-    flatList: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
-        marginTop: 20,
-    },
-    player1text: {
         fontFamily: 'Lexend',
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#ff3535',
-        marginBottom: 5,
-        textAlign: "center",
-    },
-    player2text: {
-        fontFamily: 'Lexend',
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#1E90FF',
-        marginBottom: 5,
-        textAlign: "center",
-    },
-    stepTitle: {
-        fontFamily: "Lexend",
-    },
-    betsList: {
-        marginTop: 10,
+        fontSize: moderateScale(15),
+        color: 'white',
     },
     // MODAL
     modalOverlay: {
@@ -1324,8 +1571,8 @@ const styles = StyleSheet.create({
         width: '90%',
         height: '90%',
         backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
+        borderRadius: moderateScale(10),
+        padding: moderateScale(20),
         position: 'relative',
     },
     liveDuelModalContainer: {
@@ -1333,18 +1580,17 @@ const styles = StyleSheet.create({
         height: '80%',
         backgroundColor: 'black',
         position: 'relative',
-        borderWidth: 1, // Thin border
-        borderColor: '#4A4A4A', // Dark grey border
-        borderRadius: 15,
+        borderWidth: moderateScale(1),
+        borderColor: '#4A4A4A',
+        borderRadius: moderateScale(15),
     },
     moneyModalContainer: {
         width: '90%',
-        // height: '80%',
         backgroundColor: 'black',
         position: 'relative',
-        borderWidth: 1, // Thin border
-        borderColor: '#4A4A4A', // Dark grey border
-        borderRadius: 15,
+        borderWidth: moderateScale(1),
+        borderColor: '#4A4A4A',
+        borderRadius: moderateScale(15),
     },
     editGroupModalContainer: {
         height: '88%',
@@ -1352,484 +1598,26 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         backgroundColor: '#000',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        borderWidth: 1,
+        borderTopLeftRadius: moderateScale(20),
+        borderTopRightRadius: moderateScale(20),
+        borderWidth: moderateScale(1),
         borderBottomWidth: 0, // No border on the bottom
         borderColor: '#fff',
     },
     closeButton: {
         position: 'absolute',
-        top: 10,
-        right: 10,
+        top: verticalScale(10),
+        right: scale(10),
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: 'black',
     },
     closeButtonIcon: {
-        width: 20,
-        height: 20,
-    },
-    closeButtonText2: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: 'white',
-    },
-    moneyIcons: {
-        width: 35,
-        height: 35,
-        marginLeft: -17,
-        zIndex: 10,
-    },
-    diamondIcon: {
-        width: 30,
-        height: 30,
-        margin: 5,
-        marginLeft: -17,
-        zIndex: 10,
-    },
-    coinIcon: {
-        width: 30,
-        height: 30,
-    },
-    centeredColumn: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-    },
-    rowBets: {
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'center', // Center the entire row
-        alignItems: 'center', // Align vertically in the center
-    },
-    betsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center', // Align the number and coin vertically
-        marginHorizontal: 10,
-    },
-    betsText: {
-        color: '#BEFFBB',
-        textAlign: 'center',
-        fontFamily: 'Lexend',
-        fontSize: 12,
-    },
-    betsColonText: {
-        textAlign: 'center',
-        fontFamily: 'Lexend-Bold',
-        paddingHorizontal: 10,
-
-    },
-
-    // NEW STUFF
-    safeView: {
-        flex: 1,
-    },
-    container: {
-        flex: 1,
-        marginTop: 50,
-    },
-    infoModalContainer: {
-        padding: 30,
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 5,
-    },
-    rightIcons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    backIcon: {
-        width: 19,
-        height: 19,
-    },
-    historyContainer: {
-        // position: 'relative',
-    },
-    historyIcon: {
-        width: 27,
-        height: 27,
-    },
-    dropdownOverlay: {
-        position: 'absolute',
-        flex: 1,
-        top: 60,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent dark background
-    },
-    dropdownMenu: {
-        position: 'absolute',
-        top: 90,
-        right: 50,
-        width: 100,
-        backgroundColor: '#000',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 5,
-    },
-    dropdownText: {
-        color: '#fff',
-        fontFamily: 'Lexend',
-        fontSize: 16,
-        padding: 10,
-    },
-    storeIcon: {
-        width: 21,
-        height: 21,
-    },
-    propBetButton: {
-        fontFamily: 'Lexend',
-        fontSize: 11,
-        color: '#74FF6D',
-    },
-    groupInfo: {
-        flexDirection: 'row',
-        paddingHorizontal: 20,
-        alignItems: 'center',
-    },
-    groupImage: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        borderWidth: 2,
-        borderColor: '#74FF6D',
-    },
-    groupNameContainer: {
-        marginLeft: 20,
-        justifyContent: 'center',
-    },
-    groupName: {
-        color: '#fff',
-        fontFamily: 'Lexend',
-        fontSize: 28,
-        marginRight: 5,
-    },
-    editIcon: {
-        width: 16,
-        height: 16,
-    },
-    timeLeftIcon: {
-        width: 13,
-        height: 13,
-    },
-    timeLeft: {
-        color: '#74FF6D',
-        fontFamily: 'Lexend',
-        fontSize: 11,
-    },
-    timeLeftText: {
-        fontFamily: 'Lexend',
-        fontSize: 11,
-        color: '#fff',
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: '#65656580',
-        paddingHorizontal: 20,
-        borderRadius: 20,
-        padding: 10,
-        marginHorizontal: 20,
-        marginBottom: 5,
-    },
-    statItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#00000080',
-        borderRadius: 15,
-        padding: 10,
-        width: '30%',
-    },
-    statValue: {
-        color: '#fff',
-        fontFamily: 'Lexend',
-        fontSize: 13,
-    },
-    tokensIcon: {
-        width: 16,
-        height: 16,
-    },
-    betTokensIcon: {
-        width: 15,
-        height: 15,
-    },
-    diamondsIcon: {
-        width: 14,
-        height: 12,
-    },
-    duelContainer: {
-        paddingHorizontal: 20,
-    },
-    sectionTitle: {
-        color: '#fff',
-        fontSize: 16,
-        fontFamily: 'Lexend',
-        marginBottom: 10,
-    },
-    duelRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-    },
-    duelIterate: {
-        color: '#BEFFBB',
-        fontFamily: 'Lexend',
-        paddingHorizontal: 10,
-    },
-    duelCardTouchable: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginVertical: 10,
-    },
-    duelCard: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 15,
-        padding: 20,
-    },
-    duelNavigation: {
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        width: '15%', // Adjust this value to control the width of the clickable area
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1
-    },
-    leftArrowIcon: {
-        width: 15,
-        height: 15,
-    },
-    rightArrowIcon: {
-        width: 15,
-        height: 15,
-    },
-    betMoreInfoTitle:  {
-        color: '#BEFFBB',
-        textAlign: 'center',
-        fontFamily: 'Lexend',
-        fontSize: 12,
-    },
-    betMoreInfo: {
-        color: '#BEFFBB',
-        fontFamily: 'Lexend',
-        fontSize: 11,
-    },
-    playerInfo: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '38%',
-        // flex: 1,
-    },
-    playerImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 2,
-    },
-    playerName: {
-        color: '#fff',
-        fontSize: 14,
-        fontFamily: 'Lexend-Bold',
-        marginVertical: 5,
-    },
-    playerSteps: {
-        color: '#BEFFBB',
-        fontSize: 11,
-        fontFamily: 'Lexend',
-    },
-    tokensWhiteIcon: {
-        width: 10,
-        height: 10,
-    },
-    playerTokens: {
-        color: '#BEFFBB',
-        fontSize: 11,
-    },
-    duelInfo: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 10,
-        width: '20%',
-    },
-    liveContainer: {
-        position: 'absolute',
-        top: -30,
-        padding: 5,
-        backgroundColor: '#fff',
-        borderRadius: 20,
-        marginTop: 5,
-    },
-    liveTag: {
-        color: '#000',
-        fontSize: 12,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    versus: {
-        color: '#fff',
-        fontFamily: 'Lexend-Bold',
-        fontSize: 28,
-    },
-    youBetText: {
-        position: 'absolute',
-        bottom: -30,
-        color: '#fff',
-        fontFamily: 'Lexend',
-        fontSize: 11,
-    },
-    betAmount: {
-        position: 'absolute',
-        flexDirection: 'row',
-        alignItems: 'center',
-        bottom: -20,
-        alignSelf: 'center',
-        backgroundColor: '#fff',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
-    },
-    tokensBlackIcon: {
-        width: 15,
-        height: 14.3,
-    },
-    betText: {
-        color: '#000',
-        fontSize: 15,
-        fontFamily: 'Lexend',
-    },
-    leaderboardContainer: {
-        flex: 1,
-        padding: 20,
-        marginTop: 10,
-    },
-    tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#65656580',
-        borderRadius: 15,
-        marginBottom: 10,
-    },
-    tab: {
-        flex: 1,
-        padding: 10,
-        alignItems: 'center',
-        borderRadius: 15,
-    },
-    tabText: {
-        color: '#fff',
-        fontSize: 13,
-        fontFamily: 'Lexend',
-    },
-    leaderboard: {
-        flex: 1,
-        backgroundColor: '#65656580',
-        borderRadius: 20,
-        padding: 15,
-    },
-    grayLine: { 
-        position: 'absolute',
-        left: 40,
-        width: 1.5,
-        height: '95%',
-        backgroundColor: '#fff',
-        zIndex: 1,
-    },
-    leaderboardTop: {
-        flexDirection: 'row', 
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-        marginBottom: 15,
-    },
-    leaderboardTopStyles: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginHorizontal: 20,
-    },
-    leaderboardTopCircle: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: -7,
-        marginBottom: 5,
-        width: 17,
-        height: 17,
-        borderRadius: 9,
-        backgroundColor: '#74FF6D',
-    },
-    leaderboardTopTokens: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    leaderboardTokensRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 5,
-        padding: 10,
-        borderRadius: 10,
-    },
-    leaderboardRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    leaderboardTokensText: {
-        fontFamily: 'Lexend',
-        fontSize: 11,
-    },
-    leaderboardTokensNumberText: {
-        fontFamily: 'Lexend',
-        fontSize: 11,
-        marginHorizontal: 10,
-    },
-    leaderboardTokensNumTokens: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // align to right
-        position: 'absolute',
-        right: 15,
-    },
-    leaderboardImage: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        marginRight: 10,
-        borderWidth: 1.5,
-        borderColor: '#fff',
-    },
-    placementImage: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: 15, // Adjust width based on your image size
-        height: 15, // Adjust height based on your image size
-    },
-    leaderboardSteps: {
-        color: '#fff',
-        fontSize: 11,
-        fontFamily: 'Lexend',
-        marginLeft: 10,
+        width: scale(20),
+        height: scale(20),
     },
 });
 

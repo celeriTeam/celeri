@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, } from 'react-native';
+import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -9,13 +9,24 @@ import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
-import { getUserName, getProfilePic, addGroupToUser } from '@backend/src/users';
+import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getWeeklySteps, getSteps } from '@backend/src/users';
 import { useUser } from '../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const db = getFirestore(app);
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const InvitePage: React.FC = () => {
     const { userID } = useUser();
@@ -86,14 +97,21 @@ const InvitePage: React.FC = () => {
                 let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined }[] = [];
                 if (userList) {
                     await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username] = await Promise.all([
+                        const [profilePic, username, averageSteps, weeklySteps, steps] = await Promise.all([
                             getProfilePic(selectedUserID),
                             getUserName(selectedUserID),
+                            getAverageSteps(selectedUserID),
+                            getWeeklySteps(resolvedGroupID, selectedUserID),
+                            getSteps(selectedUserID),
                         ]);
+
+                        const newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
 
                         users[selectedUserID] = {
                             profilePic,
                             username,
+                            averageSteps,
+                            steps: newSteps,
                         };
                         groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic });
                     }));
@@ -106,6 +124,7 @@ const InvitePage: React.FC = () => {
                     groupImageUrl, 
                     groupCreator,
                     userList,
+                    users,
                 };
                 setGroups(currentGroups);
             }
@@ -129,11 +148,26 @@ const InvitePage: React.FC = () => {
         if (groups && groupID && groups[resolvedGroupID]?.isGameActive) {
             router.replace({
                 pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                params: { groupIDTemp: groupID },
+                params: { groupIDTemp: resolvedGroupID },
             });
         }
-    }, [groups, groupID,]);
+    }, [groups, resolvedGroupID,]);
 
+    const createMemberButtonHandle = (id: string) => {
+        console.log('userid: ', id);
+        console.log('groupid: ', resolvedGroupID);
+        console.log('averagesteptemp: ', groups[resolvedGroupID]?.users[id]?.averageSteps ?? []);
+        console.log('stepstemp: ', groups[resolvedGroupID]?.users[id]?.steps ?? 0);
+        router.push({
+            pathname: '/(authenticated)/home/bets/publicProfile',
+            params: { 
+                selectedUserIDTemp: id ?? '', 
+                groupIDTemp: resolvedGroupID, 
+                averageStepsTemp: groups[resolvedGroupID]?.users[id]?.averageSteps ?? [], 
+                stepsTemp: groups[resolvedGroupID]?.users[id]?.steps ?? 0, 
+            },
+        });
+    };
 
     const [gameTypeItems, setGameTypeItems] = useState([
         { label: 'Weekly', value: 'weekly' },
@@ -230,7 +264,7 @@ const InvitePage: React.FC = () => {
             // Compress and resize the image
             const manipulatedImage = await ImageManipulator.manipulateAsync(
                 selectedAsset.uri,
-                [{ resize: { width: 800 } }], // Resize to 800px width
+                [{ resize: { width: scale(800) } }], // Resize to 800px width
                 { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
             );
 
@@ -297,7 +331,7 @@ const InvitePage: React.FC = () => {
                         </Text>
                     )}
 
-                    <Text style={[styles.text, { fontWeight: "bold", marginBottom: 10 }]}>
+                    <Text style={[styles.text, { fontWeight: "bold", marginBottom: verticalScale(10) }]}>
                         Group Members ({groups[resolvedGroupID]?.userList.length}):
                     </Text>
                     <ScrollView
@@ -305,13 +339,13 @@ const InvitePage: React.FC = () => {
                     >
                         {currentGroupUsersArray ? (
                             currentGroupUsersArray.map((user) => (
-                                <View key={user.id} style={styles.row}>
+                                <TouchableOpacity key={user.id} style={styles.row} onPress={() => createMemberButtonHandle(user.id)}>
                                     <Image
                                         source={{ uri: user.pfp }}
                                         style={styles.profileImage}
                                     />
                                     <Text key={user.id} style={styles.username}>{user.name}</Text>
-                                </View>
+                                </TouchableOpacity>
                             ))
                         ) : (
                             <Text>No users found.</Text>
@@ -421,7 +455,7 @@ const InvitePage: React.FC = () => {
                                 containerStyle={[styles.dropdownContainer, {zIndex: 100}]}
                                 dropDownContainerStyle={styles.dropdownStyle}
                                 textStyle={styles.settingText}
-                                style={{ borderColor: '#ccc', minHeight: 40, }}
+                                style={{ borderColor: '#ccc', minHeight: scale(40), }}
                             /> 
 
                             <Text style={styles.settingText}>Reset Day:</Text>
@@ -435,7 +469,7 @@ const InvitePage: React.FC = () => {
                                     containerStyle={[styles.dropdownContainer, {zIndex: 99}]}
                                     dropDownContainerStyle={styles.dropdownStyle}
                                     textStyle={styles.settingText}
-                                    style={{ borderColor: '#ccc', minHeight: 40, }}
+                                    style={{ borderColor: '#ccc', minHeight: scale(40), }}
                                 /> 
 
                             {/* Buttons */}
@@ -460,7 +494,7 @@ const InvitePage: React.FC = () => {
                 >
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContainer}>
-                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: 10 }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
+                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: verticalScale(10) }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
                             <TouchableOpacity style={styles.button}>
                                 <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
                             </TouchableOpacity>
@@ -481,7 +515,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     dropdownContainer: {
-        marginVertical: 10,
+        marginVertical: verticalScale(10),
         width: '100%',
     },
     dropdownStyle: {
@@ -491,119 +525,116 @@ const styles = StyleSheet.create({
     },
     contentView: {
         flex: 1,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
     },
     container: {
-        // flex: 1,
         justifyContent: 'center',
-        marginTop: 20,
+        // marginTop: 20,
         height: '100%',
     },
     groupImageContainer: {
         alignItems: 'center',
-        //marginBottom: 10,
     },
     groupImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        marginVertical: 10,
+        width: scale(120),
+        height: scale(120),
+        borderRadius: moderateScale(60),
+        marginVertical: verticalScale(10),
     },
     settingText: {
-        fontFamily: "Lexend",
+        fontFamily: 'Lexend',
     },
     buttonText: {
-        fontFamily: "Lexend",
+        fontFamily: 'Lexend',
         textAlign: 'center',
         color: 'blue',
     },
     backButton: {
-        left: 20,
+        left: scale(20),
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 5,
+        elevation: moderateScale(5),
     },
     button: {
-        marginTop: 10,
-        padding: 10,
-        borderRadius: 10,
+        marginTop: verticalScale(10),
+        padding: moderateScale(10),
+        borderRadius: moderateScale(10),
         alignSelf: 'center',
         backgroundColor: '#f24646',
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 10,
-        marginLeft: 20, 
+        marginBottom: verticalScale(10),
+        marginLeft: scale(20),
     },
     profileImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: "#D3D3D3",
-        marginRight: 10,
+        width: scale(40),
+        height: scale(40),
+        borderRadius: moderateScale(20),
+        borderWidth: moderateScale(1),
+        borderColor: '#D3D3D3',
+        marginRight: scale(10),
     },
     backImage: {
-        width: 40,
-        height: 40,
+        width: scale(40),
+        height: scale(40),
     },
     groupNameCreated: {
-        // marginTop: -30,
-        fontSize: 20,
-        fontFamily: "Lexend",
-        textAlign: "center",
-        alignSelf: "center",
+        fontSize: moderateScale(20),
+        fontFamily: 'Lexend',
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     groupName: {
-        fontSize: 24,
-        fontFamily: "Lexend-Bold",
+        fontSize: moderateScale(24),
+        fontFamily: 'Lexend-Bold',
     },
     titleContainer: {
-        justifyContent: "center",
+        justifyContent: 'center',
     },
     scrollContainer: {
-        backgroundColor: "#f0f0f0",
-        borderRadius: 5,
-        marginHorizontal: 10,
-        paddingTop: 10,
+        backgroundColor: '#f0f0f0',
+        borderRadius: moderateScale(5),
+        marginHorizontal: scale(10),
+        paddingTop: verticalScale(10),
         maxHeight: '20%',
         flexGrow: 0,
     },
     groupNameStandalone: {
-        textAlign: "center",
-        fontSize: 30,
-        fontWeight: "200",
+        textAlign: 'center',
+        fontSize: moderateScale(30),
+        fontWeight: '200',
         fontFamily: 'Lexend-Bold',
-        marginTop: -30,
+        marginTop: verticalScale(-30),
     },
     text: {
-        fontSize: 18,
-        marginTop: 20,
-        marginHorizontal: 20,
-        fontFamily: "Lexend",
+        fontSize: moderateScale(18),
+        marginTop: verticalScale(20),
+        marginHorizontal: scale(20),
+        fontFamily: 'Lexend',
     },
     bold_text: {
-        fontSize: 18,
-        marginTop: 20,
-        marginBottom: 40,
-        marginHorizontal: 20,
-        fontFamily: "Lexend-Bold",
-        textAlign: "center",
-        alignSelf: "center"
+        fontSize: moderateScale(18),
+        marginTop: verticalScale(20),
+        marginBottom: verticalScale(40),
+        marginHorizontal: scale(20),
+        fontFamily: 'Lexend-Bold',
+        textAlign: 'center',
+        alignSelf: 'center',
     },
     username: {
-        fontSize: 16,
-        fontFamily: "Lexend"
+        fontSize: moderateScale(16),
+        fontFamily: 'Lexend',
     },
     closeButton: {
         position: 'absolute',
-        top: 10,
-        right: 10,
+        top: verticalScale(10),
+        right: scale(10),
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: 'black',
     },
@@ -611,31 +642,30 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 10,
+        padding: moderateScale(10),
     },
     groupCode: {
-        fontSize: 45,
+        fontSize: moderateScale(45),
         color: '#0F1108',
         backgroundColor: '#1E90FF',
         fontWeight: 'bold',
-        padding: 15,
-        borderRadius: 5,
+        padding: scale(15),
+        borderRadius: moderateScale(5),
     },
     clipboardIcon: {
-        marginLeft: 10,
+        marginLeft: scale(10),
     },
     startButton: {
-        borderRadius: 30,
-        flexDirection: "row",
-        padding: 18,
-        justifyContent: "center",
+        borderRadius: moderateScale(30),
+        flexDirection: 'row',
+        padding: moderateScale(18),
+        justifyContent: 'center',
         backgroundColor: '#1976d2',
-        alignSelf: "center",
-        // width: 150,
+        alignSelf: 'center',
     },
     startButtonText: {
-        textAlign: "center",
-        fontSize: 15,
+        textAlign: 'center',
+        fontSize: moderateScale(15),
         color: 'white',
         fontFamily: 'Lexend',
     },
@@ -652,44 +682,44 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 10,
+        padding: moderateScale(20),
+        borderRadius: moderateScale(10),
         width: '80%',
     },
     modalTitle: {
         textAlign: 'center',
         fontFamily: 'Lexend-Bold',
-        fontSize: 20,
-        marginBottom: 20,
+        fontSize: moderateScale(20),
+        marginBottom: verticalScale(20),
     },
     input: {
-        borderWidth: 1,
+        borderWidth: moderateScale(1),
         borderColor: '#ccc',
-        padding: 10,
-        marginVertical: 10,
-        borderRadius: 5,
+        padding: moderateScale(10),
+        marginVertical: verticalScale(10),
+        borderRadius: moderateScale(5),
         fontFamily: 'Lexend',
     },
     confirmButton: {
         backgroundColor: '#28a745',
-        padding: 10,
-        borderRadius: 10,
+        padding: moderateScale(10),
+        borderRadius: moderateScale(10),
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: verticalScale(20),
     },
     confirmButtonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         fontWeight: 'bold',
     },
     cancelButton: {
-        marginTop: 10,
-        padding: 10,
+        marginTop: verticalScale(10),
+        padding: moderateScale(10),
         alignItems: 'center',
     },
     cancelButtonText: {
         color: '#ff0000',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         fontWeight: 'bold',
     },
 });
