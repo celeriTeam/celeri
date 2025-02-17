@@ -14,6 +14,18 @@ import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 import { useTabBar } from '../../../../hooks/useTabBar';
 
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
+
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
     const route = useRouter();
@@ -42,15 +54,13 @@ const NewHeadToHeadPage: React.FC = () => {
     const [chosenPlayer, setChosenPlayer] = useState<string[]>([]);
     const [chosenProfilePic, setChosenProfilePic] = useState<string[]>([]);
     const [currentUserTokens, setCurrentUserTokens] = useState<number>(0);
-    const [selectedPlayer, setSelectedPlayer] = useState<null | string>(null);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const [currentMatchupIndex, setCurrentMatchupIndex] = useState(0);
     const [changePageForUserName, setChangePageForUserName] = useState(false);
     const [gameTimeLeft, setGameTimeLeft] = useState("");
-    const [errorText, setErrorText] = useState('');
     const [isModalVisible, setModalVisible] = useState(true);
-    const [infoModalVisible, setInfoModalVisible] = useState(false);
+    // const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isSubmittedModalVisible, setSubmittedModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -222,18 +232,6 @@ const NewHeadToHeadPage: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const handleSelectPlayer = (player: string) => {
-        setSelectedPlayer(player);
-    };
-
-    const isSelected = (player: string) => selectedPlayer === player;
-
-    const isCurrentUser = (playerID: string) => playerID === userID;
-
-    const profilePic = (player: string) => {
-        const usersArray = groups[groupID]?.users;
-    };
-
     const handleScroll = (event: any) => {
         const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
         setCurrentMatchupIndex(newIndex);
@@ -284,41 +282,41 @@ const NewHeadToHeadPage: React.FC = () => {
         return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
     };
 
-    const handleInfoButton = () => {
-        router.replace({
-            pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-            params: { groupIDTemp: groupID },
-        });
-    };
+    // const handleInfoButton = () => {
+    //     router.replace({
+    //         pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+    //         params: { groupIDTemp: groupID },
+    //     });
+    // };
 
-    const InfoModal = () => (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={infoModalVisible}
-            onRequestClose={() => setInfoModalVisible(false)}
-        >
-            <TouchableOpacity 
-                style={styles.modalOverlay}
-                activeOpacity={1}
-                onPress={() => setInfoModalVisible(false)}
-            >
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>How to Place a Bet</Text>
-                    <View style={styles.instructionContainer}>
-                        <Text style={styles.instructionText}>1. Click on which friend you want to bet on!</Text>
-                        <Text style={styles.instructionText}>2. Type in your desired bet into the box, and continue.</Text>
-                    </View>
-                    <TouchableOpacity 
-                        style={styles.closeButton}
-                        onPress={() => setInfoModalVisible(false)}
-                    >
-                        <Text style={styles.closeButtonText}>Got it!</Text>
-                    </TouchableOpacity>
-                </View>
-            </TouchableOpacity>
-        </Modal>
-    );
+    // const InfoModal = () => (
+    //     <Modal
+    //         animationType="fade"
+    //         transparent={true}
+    //         visible={infoModalVisible}
+    //         onRequestClose={() => setInfoModalVisible(false)}
+    //     >
+    //         <TouchableOpacity 
+    //             style={styles.modalOverlay}
+    //             activeOpacity={1}
+    //             onPress={() => setInfoModalVisible(false)}
+    //         >
+    //             <View style={styles.modalContent}>
+    //                 <Text style={styles.modalTitle}>How to Place a Bet</Text>
+    //                 <View style={styles.instructionContainer}>
+    //                     <Text style={styles.instructionText}>1. Click on which friend you want to bet on!</Text>
+    //                     <Text style={styles.instructionText}>2. Type in your desired bet into the box, and continue.</Text>
+    //                 </View>
+    //                 <TouchableOpacity 
+    //                     style={styles.closeButton}
+    //                     onPress={() => setInfoModalVisible(false)}
+    //                 >
+    //                     <Text style={styles.closeButtonText}>Got it!</Text>
+    //                 </TouchableOpacity>
+    //             </View>
+    //         </TouchableOpacity>
+    //     </Modal>
+    // );
 
     const playerCard = (player: { id: string, username: string, profilePic: string, duelsWon: number, prevSteps: number, stepChange: number }, color: string, playerNum: string) => (
         <TouchableOpacity style={styles.playerContainer} onPress={() => updateChosenPlayer(currentMatchupIndex, player.id, player.profilePic)} activeOpacity={1}>
@@ -329,10 +327,9 @@ const NewHeadToHeadPage: React.FC = () => {
                 style={{
                     // flex: 1,
                     width: '100%',
-                    borderRadius: 20,
+                    borderRadius: moderateScale(20),
                     alignItems: 'center',
-                    paddingBottom: playerNum === 'player1' ? 40 : 10,
-                    // paddingTop: playerNum === 'player2' ? 20 : 0,
+                    paddingBottom: playerNum === 'player1' ? scale(40) : scale(10),
                 }}
             >
                 <View style={styles.userRow}>
@@ -551,13 +548,13 @@ const NewHeadToHeadPage: React.FC = () => {
                                 {matchups.map((_, index) => (
                                     <TouchableOpacity
                                         style={{
-                                            width: 10,
-                                            height: 10,
-                                            borderRadius: 5,
+                                            width: scale(10),
+                                            height: scale(10),
+                                            borderRadius: moderateScale(5),
                                             borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
                                             borderWidth: 1,
                                             backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
-                                            marginHorizontal: 3,
+                                            marginHorizontal: scale(3),
                                         }}
                                         onPress={() => scrollToIndex(index)}
                                         activeOpacity={1}
@@ -609,10 +606,10 @@ const NewHeadToHeadPage: React.FC = () => {
                         <Text style={styles.SummaryOKText}>OK</Text>
                     </TouchableOpacity>
                     <View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 30, }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: verticalScale(30), }}>
                             <Image
                                 source={require('@assets/icons/checkmark.png')}
-                                style={{ width: 29, height: 29 }}
+                                style={{ width: scale(29), height: scale(29) }}
                             />
                             <Text style={styles.modalSubmitted}>Submitted!</Text>
                         </View>
@@ -634,7 +631,7 @@ const NewHeadToHeadPage: React.FC = () => {
                                 <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                                     <Image
                                         source={require('@assets/icons/tokens.png')}
-                                        style={{ width: 13, height: 13, marginRight: 5, }}
+                                        style={{ width: scale(13), height: scale(13), marginRight: scale(5), }}
                                     />
                                     <Text style={styles.submissionTokenNumber}>{betAmount[index]}</Text>
                                 </View>
@@ -654,68 +651,53 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        marginTop: 60,
+        marginTop: verticalScale(60),
         alignItems: 'center',
     },
-    dismissOverlay: {
-        ...StyleSheet.absoluteFillObject,
-        zIndex: 1,
-    },
     timeLeftIcon: {
-        width: 13,
-        height: 13,
+        width: scale(13),
+        height: scale(13),
     },
     timeLeft: {
         color: '#74FF6D',
         fontFamily: 'Lexend',
-        fontSize: 11,
+        fontSize: moderateScale(11),
     },
     question: {
         fontFamily: 'Lexend',
-        fontSize: 22,
+        fontSize: moderateScale(22),
         color: '#fff',
         textAlign: 'center',
-        marginTop: 10,
+        marginTop: verticalScale(10),
     },
     dividingLine: {
         width: '90%',
         height: 1,
         backgroundColor: '#ffffff80',
-        marginVertical: 15,
+        marginVertical: verticalScale(15),
     },
     scrollContainer: {
         alignItems: 'center',
-        
     },
     cardContainer: {
-        // flex: 1, 
         alignItems: 'center',
-        height: '100%', // this helped move everything up 
-        //justifyContent: 'center',
+        height: '100%', // this helped move everything up
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '90%',
-        paddingHorizontal: 5,
-    },
-
-    secondRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '90%',
-        //paddingHorizontal: 5,
+        paddingHorizontal: scale(5),
     },
     betTitle: {
         fontFamily: 'Lexend',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         color: '#fff',
     },
     tokenInfo: {
         fontFamily: 'Lexend',
-        fontSize: 11,
+        fontSize: moderateScale(11),
         color: '#74FF6D',
     },
     betContainer: {
@@ -723,72 +705,66 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         backgroundColor: '#65656580',
         width: '90%',
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        padding: 10,
-        margin: 5,
+        paddingHorizontal: scale(15),
+        borderRadius: moderateScale(20),
+        padding: scale(10),
+        margin: scale(5),
         alignItems: 'center',
     },
     tokensIcon: {
-        width: 20,
-        height: 20,
-        marginRight: 10,
+        width: scale(20),
+        height: scale(20),
+        marginRight: scale(10),
     },
     betItem: {
-        padding: 8,
+        padding: scale(8),
         borderColor: '#fff',
         borderWidth: 1,
-        borderRadius: 10,
-        width: 44,
-        height: 34,
+        borderRadius: moderateScale(10),
+        width: scale(44),
+        height: verticalScale(34),
     },
     betNumber: {
-        fontFamily: "Lexend",
-        fontSize: 12,
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(12),
         textAlign: 'center',
     },
     input: {
         backgroundColor: '#00000080',
-        borderRadius: 10,
-        padding: 10,
-		width: 82,
-        height: 34,
+        borderRadius: moderateScale(10),
+        padding: scale(10),
+        width: scale(82),
+        height: verticalScale(34),
         textAlign: 'center',
         color: '#FFF',
-        fontFamily: "Lexend",
-        fontSize: 12,
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(12),
     },
     versusContainer: {
-        marginVertical: -35,
-        paddingHorizontal: 35,
-        paddingVertical: 18,
+        marginVertical: -verticalScale(35),
+        paddingHorizontal: scale(35),
+        paddingVertical: scale(18),
         backgroundColor: '#023404',
         zIndex: 1,
-        borderRadius: 30,
+        borderRadius: moderateScale(30),
     },
     versusText: {
         fontFamily: 'Lexend-Bold',
-        fontSize: 25,
+        fontSize: moderateScale(25),
         color: '#fff',
     },
     scrollAndDotsContainer: {
-        height: '79%', // or a percentage that works well for your layout
+        height: '79%',
         justifyContent: 'flex-end',
-      },
+    },
     dotRow: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    infoButton: {
-        position: 'absolute',
-        top: 70,
-        left: 20,
-        zIndex: 1000,
-    },
     playerContainer: {
         width: '95%',
-        padding: 10,
+        padding: scale(10),
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
@@ -797,256 +773,161 @@ const styles = StyleSheet.create({
         left: 0,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 15,
-        marginTop: 10,
+        padding: scale(15),
+        marginTop: verticalScale(10),
     },
     profileImage: {
-        width: 51,
-        height: 51,
-        borderRadius: 30,
+        width: scale(51),
+        height: scale(51),
+        borderRadius: scale(30),
         borderWidth: 2,
-        marginRight: 10,
+        marginRight: scale(10),
     },
     playerUsername: {
         fontFamily: 'Lexend-Bold',
-        fontSize: 30,
+        fontSize: moderateScale(30),
     },
     playerInfoContainerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: 10,
-        gap: 10,
-        marginTop: 85,
+        padding: scale(10),
+        marginTop: verticalScale(85),
     },
     playerInfoContainer: {
         width: '30%',
-        height: 80,
-        justifyContent: 'flex-end', // move to bottom
-        paddingBottom: 5,
-        paddingLeft: 10,
+        height: verticalScale(80),
+        justifyContent: 'flex-end', // Move to bottom
+        paddingBottom: scale(5),
+        paddingLeft: scale(10),
         borderWidth: 1,
-        borderRadius: 8,
+        borderRadius: moderateScale(8),
     },
     playerInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     trophyIcon: {
-        width: 16,
-        height: 16,
-        marginRight: 5,
+        width: scale(16),
+        height: scale(16),
+        marginRight: scale(5),
     },
     upArrowIcon: {
-        width: 22,
-        height: 22,
-        margin: -3,
-        marginRight: 2,
+        width: scale(22),
+        height: scale(22),
+        margin: -scale(3),
+        marginRight: scale(2),
     },
     playerInfoNumber: {
         fontFamily: 'Lexend-Bold',
-        fontSize: 15,
+        fontSize: moderateScale(15),
     },
     playerInfoText: {
         fontFamily: 'Lexend',
-        fontSize: 9,
-        paddingTop: 5,
+        fontSize: moderateScale(9),
+        paddingTop: scale(5),
     },
     submitButton: {
-        borderRadius: 20,
-        padding: 10,
-        width: 100,
+        borderRadius: moderateScale(20),
+        padding: scale(10),
+        width: scale(100),
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 10,
+        marginTop: verticalScale(10),
         alignSelf: 'center',
     },
     submitButtonText: {
-        fontFamily: "Lexend",
-        fontSize: 13,
-    },
-    player1Container: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '50%',
-        backgroundColor: '#D3E9FF', // Default background color for player 1
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    player2Container: {
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: '100%',
-        height: '50%',
-        backgroundColor: '#FFE9D6', // Default background color for player 2
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    selectedPlayer1: {
-        backgroundColor: '#B0C4DE', // Highlight color for player 1
-    },
-    selectedPlayer2: {
-        backgroundColor: '#FFDAB9', // Highlight color for player 2
-    },
-    playerText: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 24,
-        color: '#333',
-    },
-    usernameWithKeyboard: {
-        position: 'absolute',
-        fontFamily: 'Lexend-Bold',
-        bottom: 250,
-        left: 20,
-    },
-    inputWithKeyboard: {
-        position: 'absolute',
-        fontFamily: 'Lexend-Bold',
-        left: 20,
-    },
-    valueTextWithKeyboard: {
-        position: 'absolute',
         fontFamily: 'Lexend',
-        bottom: 200,
-        left: 20,
-        backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#AAA',
-        padding: 10,
-        zIndex: 1000,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    errorText: {
-        color: 'red',
-        fontSize: 14,
-        fontFamily: 'Lexend',
-    },
-    // INFO MODAL
-    modalContent: {
-        backgroundColor: 'white',
-        borderRadius: 15,
-        padding: 20,
-        width: '80%',
-        maxWidth: 400,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
-    },
-    modalTitle: {
-        fontFamily: 'Lexend',
-        fontSize: 13,
-        color: '#fff',
-        marginBottom: 15,
-        textAlign: 'center',
-    },
-    instructionContainer: {
-        width: '100%',
-        paddingHorizontal: 10,
-    },
-    instructionText: {
-        fontSize: 16,
-        marginBottom: 10,
-        lineHeight: 22,
-        fontFamily: 'Lexend',
+        fontSize: moderateScale(13),
     },
     // MODAL
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
-      },
-      modalContainer: {
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    },
+    modalContainer: {
         width: '90%',
-        // height: '90%',
         backgroundColor: '#000',
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: 25,
-        padding: 20,
+        borderRadius: moderateScale(25),
+        padding: scale(20),
         position: 'relative',
-      },
-      summaryOKButton: {
+    },
+    modalTitle: {
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(13),
+        color: '#fff',
+        marginBottom: verticalScale(15),
+        textAlign: 'center',
+    },
+    summaryOKButton: {
         position: 'absolute',
-        top: 18,
-        right: 18,
+        top: scale(18),
+        right: scale(18),
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: 20,
-        padding: 8,
-        paddingHorizontal: 18,
+        borderRadius: moderateScale(20),
+        padding: scale(8),
+        paddingHorizontal: scale(18),
         zIndex: 1,
-      },
+    },
     SummaryOKText: {
         fontFamily: 'Lexend',
-        fontSize: 13,
+        fontSize: moderateScale(13),
         color: '#fff',
     },
     modalSubmitted: {
-        fontFamily: "Lexend",
+        fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         textAlign: 'center',
-        margin: 10,
+        margin: scale(10),
     },
     submissionContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 15,
+        borderRadius: moderateScale(15),
         backgroundColor: '#5BE35C32',
-        padding: 10,
+        padding: scale(10),
     },
     submissionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#00000080',
-        borderRadius: 10,
-        padding: 10,
-        margin: 3,
+        borderRadius: moderateScale(10),
+        padding: scale(10),
+        margin: scale(3),
         width: '100%',
     },
     submissionProfileImage: {
-        width: 26,
-        height: 26,
+        width: scale(26),
+        height: scale(26),
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: 20,
-        marginRight: 10,
+        borderRadius: scale(20),
+        marginRight: scale(10),
     },
     submittedPlayerName: {
         fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: 11,
+        fontSize: moderateScale(11),
     },
     submissionTokenNumber: {
         fontFamily: 'Lexend',
         color: '#74FF6D',
-        fontSize: 11,
+        fontSize: moderateScale(11),
     },
     closeButton: {
         position: 'absolute',
-        top: 10,
-        right: 10,
+        top: scale(10),
+        right: scale(10),
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: 18,
+        fontSize: moderateScale(18),
         fontWeight: 'bold',
         color: '#fff',
     },
