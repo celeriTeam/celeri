@@ -146,23 +146,6 @@ exports.sendTestSilentNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-exports.sendTestNotif = onSchedule("every day 05:00", async (event) => {
-  const directMessage = {
-    notification: {
-      title: "Test Notification",
-      body: "This is a direct test notification",
-    },
-    token: "cQJVXePbF0n3u1gljn6pnA:APA91bHfsQcKlAoaxHkh_eBo7HZEUYjCGuOxqPrpSOz0t1ymY1Dbhu123eD9-7xiNKCHsu5uYuuZjkdmC3whCJX98Dpd-ZNNoNCEv58Y9gRiEG6d3_gW0Sk",
-  };
-
-  try {
-    const response = await admin.messaging().send(directMessage);
-    console.log("Successfully sent direct message:", response);
-  } catch (error) {
-    console.error("Error sending direct message:", error);
-  }
-});
-
 exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) => {
   const snapshot = event.data;
   if (!snapshot) {
@@ -451,6 +434,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           // Sum the steps from the past six days and add the current day's steps
           const userWeeklySteps = weeklyStepsData.slice(1).reduce((sum, steps) => sum + steps, 0) + currentSteps;
           weeklySteps[userID] = userWeeklySteps + currentSteps;
+          console.log("weeklyStep for user: ", userID, userWeeklySteps, currentSteps);
         });
 
         console.log("weeklySteps: ", weeklySteps);

@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -377,11 +377,51 @@ export const getLastWeekSteps = async (userID: string, groupID: string): Promise
     try {
         const groupDocRef = doc(db, `groups/${groupID}`);
         const groupDocSnap = await getDoc(groupDocRef);
+        
 
         if (groupDocSnap.exists()) {
-            const weeklySteps = groupDocSnap.data().weeklySteps;
-            if(weeklySteps){
-                return weeklySteps?.[userID] ?? 0; // Return steps or 0 if not found
+            const resetDay = groupDocSnap.data().resetDay as number; 
+
+            // Get the date of the most recent "resetDay"
+            const today = new Date();
+            const currentDay = today.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+
+            // Find the most recent occurrence of the resetDay
+            const daysSinceResetDay = (currentDay - resetDay + 7) % 7;
+            const lastResetDayDate = new Date(today);
+            lastResetDayDate.setDate(today.getDate() - daysSinceResetDay);
+
+            // Get the date 7 days before that resetDay
+            const previousResetDayDate = new Date(lastResetDayDate);
+            previousResetDayDate.setDate(lastResetDayDate.getDate() - 7);
+
+            // Normalize both dates to 00:00:00 for comparison
+            previousResetDayDate.setHours(0, 0, 0, 0);
+            const nextDay = new Date(previousResetDayDate);
+            nextDay.setDate(previousResetDayDate.getDate() + 1);
+
+
+            // Query the "duels" subcollection for matching player and date range
+            const duelsRef = collection(db, `groups/${groupID}/duels`);
+            const duelsQuery = query(
+            duelsRef,
+                where('createdAt', '>=', Timestamp.fromDate(previousResetDayDate)),
+                where('createdAt', '<', Timestamp.fromDate(nextDay))
+            );
+
+            const duelsSnap = await getDocs(duelsQuery);
+
+            // Filter the duels to check for player1 or player2
+            const matchingDuel = duelsSnap.docs.find(
+                (doc) => doc.data().player1 === userID || doc.data().player2 === userID
+            );
+        
+
+        
+            const duelData = matchingDuel?.data();
+
+            if(duelData?.steps && duelData?.steps > 0){
+                return duelData?.steps ?? 0; // Return steps or 0 if not found
             } else {
                 //if weeklySteps doesn't exist, it means its the first week, and you should grab it from the past seven days
                 const averageStepArray = await getAverageSteps(userID);
