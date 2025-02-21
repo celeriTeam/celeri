@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -13,9 +13,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+//import {StyleSheet} from 'react-native-size-scaling';
 
 const PersonalProfilePage: React.FC = () => {
-    const { weeklySteps, averageSteps, distance, flights } = useHealthData();
+    const { averageSteps, distance, flights } = useHealthData();
     const { userID, profileImageUrl, username, name, steps, groupNames, loading } = useUser();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [editProfileModal, setEditProfileModal] = useState(false);

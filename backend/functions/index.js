@@ -368,6 +368,128 @@ function createCycle(players) {
 }
 
 
+function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRounds) {
+  console.log("Entering createCyclesInGame -- means there are new players")
+
+  // First identify who the new players are 
+  // players is an array of players, ordered by which they joined
+  // number of old players is current players
+
+  const newPlayers = players.slice(numberOfOldPlayers);
+  console.log(`New players: ${JSON.stringify(newPlayers)}`);
+
+  // 1. Store past duels to avoid duplicates
+  const pastDuels = new Set();
+  for (let i = 0; i < roundsSoFar; i++) {
+    const round = currentRounds[i];
+    for (const duelKey in round) {
+      const { player1, player2 } = round[duelKey];
+      pastDuels.add([player1, player2].sort().join('-'));
+    }
+  }
+
+  console.log("Past duels ", pastDuels);
+
+  // 2. Generate all possible duels between players
+  const allDuels = [];
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      const duelKey = [players[i], players[j]].sort().join('-');
+      allDuels.push({
+        player1: players[i],
+        player2: players[j],
+        duelKey,
+        isRepeat: pastDuels.has(duelKey), // Mark if this is a repeat
+      });
+    }
+  }
+
+  console.log("All Duels", allDuels);
+
+  // 3. Split duels into fresh and repeats
+  const freshDuels = allDuels.filter((duel) => !duel.isRepeat);
+  const repeatDuels = allDuels.filter((duel) => duel.isRepeat);
+
+  // Shuffle for fairness
+  freshDuels.sort(() => Math.random() - 0.5);
+
+  console.log("Fresh Duels", freshDuels);
+  console.log("Repeat Duels", repeatDuels);
+
+  // 4. Re-create cycles
+  const newCycles = [];
+  const duelsPerRound = players.length / 2;
+
+  if (playerCount % 2 !== 0){
+    players.push("BYE");
+  }
+
+  const rounds = players.length - 1;
+
+  for (let round = 0; round < rounds; round++){
+
+    // if this is a round that has already happened, keep it the way it is
+    if( round < roundsSoFar ){
+      newCycles.push(currentRounds[round]);
+    } else {
+      // edit the round
+      const roundMatchups = {};
+      let duelCounter = 1;
+      const usedPlayers = new Set();
+
+      // Try to fill this round with fresh duels first
+      for (let i = 0; i < freshDuels.length; i++) {
+        if(duelCounter > duelsPerRound) break;
+        const duel = freshDuels[i];
+      
+        if (usedPlayers.has(duel.player1) || usedPlayers.has(duel.player2)) {
+          continue; // Skip this duel
+        }
+      
+        const duelKey = `duel${duelCounter++}`;
+        roundMatchups[duelKey] = { player1: duel.player1, player2: duel.player2 };
+        usedPlayers.add(duel.player1);
+        usedPlayers.add(duel.player2);
+      
+        // Remove the used duel from freshDuels
+        freshDuels.splice(i, 1);
+        i--; // Decrement index because we modified the array
+      }
+
+      // If we couldn't fill the round with fresh duels, use repeats
+      if (duelCounter <= duelsPerRound) {
+        console.log("About to use repeatDuels");
+        for (const duel of repeatDuels) {
+          if (
+            !usedPlayers.has(duel.player1) &&
+            !usedPlayers.has(duel.player2)
+          ) {
+            const duelKey = `duel${duelCounter}`;
+            roundMatchups[duelKey] = {
+              player1: duel.player1,
+              player2: duel.player2,
+            };
+            usedPlayers.add(duel.player1);
+            usedPlayers.add(duel.player2);
+            duelCounter++;
+          }
+
+          if (duelCounter > duelsPerRound) {
+            break;
+          }
+        }
+      }
+
+
+      newCycles.push(roundMatchups);
+    }
+
+
+  }
+  return newCycles;
+
+}
+
 exports.updateWinners = onSchedule("every day 05:00", async (event) => {
   console.log("updateWinners is running");
   const groupRef = firestore.collection("groups");
@@ -1063,6 +1185,10 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               currentPlayersInGame: playerCount,
             });
             console.log("checkpoint three");
+          } else if (players > numberOfPlayers){
+            console.log("More people have joined the game");
+            createCyclesInGame(players, currentPlayersInGame, cycleWeek, cycleDuels)
+            cycleWeek += 1;
           } else {
             cycleWeek += 1;
             console.log(`Incrementing cycleDay to ${cycleWeek} for group ${doc.id}`);
