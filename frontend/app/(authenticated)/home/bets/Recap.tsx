@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const BetRecapPage: React.FC = () => {
     const { userID, groups, loading } = useUser();

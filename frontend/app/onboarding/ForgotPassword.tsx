@@ -1,14 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
+import { Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError, updatePassword, sendPasswordResetEmail } from "firebase/auth";
-import firebase from '@react-native-firebase/app';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
 import { app, auth, db } from "@firebaseConfig";
-import { doc, setDoc } from 'firebase/firestore';
-import { CTAButton } from "@components/CTAButton";
-import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState<string | undefined>();

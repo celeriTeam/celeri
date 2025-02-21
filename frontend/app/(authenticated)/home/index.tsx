@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View,
     Text,
     TouchableOpacity,
-    StyleSheet,
     ActivityIndicator,
     Image,
     Button,
@@ -19,6 +18,7 @@ import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from 
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -228,7 +228,7 @@ const HomeTab: React.FC = () => {
 
     if (groups === null || groups === undefined) {
         return (
-            <SafeAreaView style={styles.safeView}>
+            <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
                     <Text>Failed to fetch user groups</Text>
                 </View>
@@ -236,7 +236,7 @@ const HomeTab: React.FC = () => {
         );
     } else if (Object.keys(groups).length === 0) {
         return (
-            <SafeAreaView style={styles.safeView}>
+            <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={[styles.container, { justifyContent: 'center' }]}>
                     <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
                         <Text style={styles.buttonText}>Create Group</Text>
@@ -249,7 +249,7 @@ const HomeTab: React.FC = () => {
         );
     } else {
         return (
-            <SafeAreaView style={styles.safeView}>
+            <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
                     <View style={styles.titleContainer}>
                             <Text style={styles.titleText}>Groups</Text>
@@ -345,11 +345,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
     },
     container: {
-        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         backgroundColor: '#fff',
-        marginTop: 50,
+        marginTop: 10,
         height: '100%',
     },
     username: {
@@ -388,7 +387,6 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: "200",
         fontFamily: 'Lexend-Bold',
-        paddingTop: 20,
     },
     scrollContainer: {
         flex: 1,

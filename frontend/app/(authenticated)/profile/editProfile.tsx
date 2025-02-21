@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, Button, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, Alert, Button, TouchableOpacity, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -7,6 +7,7 @@ import { editProfilePic, editUsername } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const EditProfilePage: React.FC = () => {
     const { userID, profileImageUrl, username } = useUser();

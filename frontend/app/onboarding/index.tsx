@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, Button, TouchableOpacity, StatusBar, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 
 
 const STATUS_BAR_HEIGHT = Platform.OS === "ios" ? 20 : StatusBar.currentHeight;

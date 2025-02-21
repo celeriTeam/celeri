@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const WeeklyBetRecapPage: React.FC = () => {
     console.log("in weeklyBetRecapPage");
@@ -50,8 +51,8 @@ const WeeklyBetRecapPage: React.FC = () => {
                 player1Bets: [],
                 player2Bets: [],
                 winner,
-                playerOneSteps: bet.playerOneSteps,
-                playerTwoSteps: bet.playerTwoSteps,
+                playerOneSteps: Math.floor(bet.playerOneSteps),
+                playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
             };
         }
@@ -141,8 +142,8 @@ const WeeklyBetRecapPage: React.FC = () => {
                 player1Bets,
                 player2Bets,
                 winner,
-                playerOneSteps: bet.playerOneSteps,
-                playerTwoSteps: bet.playerTwoSteps,
+                playerOneSteps: Math.floor(bet.playerOneSteps),
+                playerTwoSteps: Math.floor(bet.playerTwoSteps),
                 earnings,
             };
         }
@@ -169,104 +170,121 @@ const WeeklyBetRecapPage: React.FC = () => {
     
         return (
             <View style={styles.flatList}>
-                {/* Players */}
-                <TouchableOpacity onPress={() => (item.player2Bets.length > 1 || item.player1Bets.length > 1) ? toggleItemExpansion(item.duelID) : null}
-                    activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}><View style={styles.row}>
-                    <View style={styles.spacer} />
-                        <View style={[
-                            styles.statusBar,
-                            (!item.earnings.hasBet || item.winner === 'draw' || item.earnings.earning === 0) ? styles.drawStatus :
-                            (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
-                        ]}>
-                            <Text style={styles.statusText}>
-                                {!item.earnings.hasBet ? 'No bet' :
-                                item.winner === 'draw' ? 'Draw' :
-                                item.earnings.earning === 0 ? 'No winnings' :
-                                item.earnings.hasUserWon ? 'Win' : 'Lose'}
-                            </Text>
+                {/* <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 8, paddingVertical: 5 }}>
+                    <Text style={styles.createdAtText}>{item.timePast}</Text>
+                </View> */}
+                <View style={styles.betsContainer}>
+                    {/* Players */}
+                    <TouchableOpacity onPress={() => (item.player2Bets.length > 1 || item.player1Bets.length > 1) ? toggleItemExpansion(item.duelID) : null}
+                        activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}
+                    >
+                        <View style={styles.row}>
+                        
+                            <View style={[
+                                styles.statusBar,
+                                (!item.earnings.hasBet || item.winner === 'draw' || item.earnings.earning === 0) ? styles.drawStatus :
+                                (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
+                            ]}>
+                                <Text style={styles.statusText}>
+                                    {!item.earnings.hasBet ? 'No bet' :
+                                    item.winner === 'draw' ? 'Draw' :
+                                    item.earnings.earning === 0 ? 'No winnings' :
+                                    item.earnings.hasUserWon ? 'Win' : 'Loss'}
+                                </Text>
+                            </View>
+                            
+                            {/* earnings */}
+                            {item.earnings.hasBet && item.winner !== 'draw' && (
+                                <View style={styles.earningsContainer}>
+                                    <Text style={[
+                                        item.earnings.earning > 0 ? styles.wonEarningsText : 
+                                        item.earnings.earning === 0 ? styles.drawEarningsText : 
+                                        styles.lostEarningsText,
+                                    ]}>
+                                        {item.earnings.earning > 0 && <Text>+ </Text>}
+                                        {item.earnings.earning < 0 && <Text>- </Text>}
+                                        {Math.abs(item.earnings.earning)}
+                                    </Text>
+                                    <Image
+                                        source={require('@assets/icons/tokens.png')}
+                                        style={{ width: 18, height: 18, tintColor: item.earnings.earning > 0 ? '#74FF6D' : item.earnings.earning === 0 ? '#fff' : '#FF6060' }}
+                                    />
+                                </View>
+                            )}
                         </View>
-                        {/* Carrot Icon */}
-                        <View style={styles.spacer}>
-                            {(item.player2Bets.length > 1 || item.player1Bets.length > 1) && (
-                                <MaterialIcons
-                                    name={isExpanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                                    size={24}
-                                    style={styles.carrotIcon}
+                        <View style={styles.horizontalLine}></View>
+                        {/* player 1 */}
+                        <View style={styles.playerContainer}>
+                            <View style={styles.row}>
+                                {item.playerOneSteps > item.playerTwoSteps && (
+                                    <Image
+                                        source={require('@assets/icons/winnerHistory.png')}
+                                        style={styles.winnerIcon}
+                                    />
+                                )}
+                                <Image
+                                    source={{ uri: item.player1pfp }}
+                                    style={[
+                                        styles.profileImage,
+                                        item.playerOneSteps < item.playerTwoSteps && styles.loserImage,
+                                    ]}
                                 />
-                            )}
-                        </View>
-                    </View>
-                    {/* player 1 */}
-                    <View style={styles.playerContainer}>
-                        <View style={[styles.row, { marginTop: 10 }]}>
-                            <Image
-                                source={{ uri: item.player1pfp }}
-                                style={styles.profileImage}
-                            />
-                            <Text style={[
-                                styles.player,
-                                item.winner === item.player2 && styles.loserText,
-                            ]}>{item.player1}</Text>
-                            {item.winner === item.player1 && <Text style={styles.triangleText}>▶</Text>}
-                            <Text style={[
-                                styles.steps,
-                                item.winner === item.player2 && styles.loserText,
-                            ]}>{item.playerOneSteps}</Text>
-                        </View>
-                        {isExpanded && (
-                            <View>
-                                {item.player1Bets.map((bet, index) => (
-                                    (bet.user !== item.player1) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
-                                    )
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                    {/* player 2 */}
-                    <View style={styles.playerContainer}>
-                        <View style={[styles.row, { marginTop: 10 }]}>
-                            <Image
-                                source={{ uri: item.player2pfp }}
-                                style={[
-                                    styles.profileImage,
-                                    item.winner === item.player1 && styles.loserImage,
-                                ]}
-                            />
-                            <Text style={[
-                                styles.player,
-                                item.winner === item.player1 && styles.loserText,
-                            ]}>{item.player2}</Text>
-                            {item.winner === item.player2 && (
-                                <Text style={styles.triangleText}>▶</Text>
-                            )}
-                            <Text style={[
-                                styles.steps,
-                                item.winner === item.player1 && styles.loserText,
-                            ]}>{item.playerTwoSteps}</Text>
-                        </View>
-                        {isExpanded && (
-                            <View>
-                                {item.player2Bets.map((bet, index) => (
-                                    (bet.user !== item.player2) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
-                                    )
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                    {/* earnings */}
-                    {item.earnings.hasBet && item.winner !== 'draw' && (
-                        <>
-                            <View style={styles.horizontalLine}></View>
-                            <View style={styles.centeredColumn}>
                                 <Text style={[
-                                    item.earnings.earning > 0 ? styles.wonEarningsText : styles.lostEarningsText,
-                                ]}>{item.earnings.earning > 0 && <Text>+</Text>}{item.earnings.earning}</Text>
+                                    styles.player,
+                                    item.playerOneSteps < item.playerTwoSteps && styles.loserText,
+                                ]}>{item.player1}</Text>
+                                <Text style={[
+                                    styles.steps,
+                                    item.playerOneSteps < item.playerTwoSteps && styles.loserText,
+                                ]}>{item.playerOneSteps} steps</Text>
                             </View>
-                        </>
-                    )}
-                </TouchableOpacity>
+                        </View>
+                        {isExpanded && (
+                            <View style={{ paddingBottom: 5, }}>
+                                {item.player1Bets.map((bet: { user: string, wager: number }, index: number) => (
+                                    (bet.user !== item.player1) && (
+                                        <Text key={index} style={{fontFamily: "Lexend", color: '#fff', fontSize: 11, }}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                    )
+                                ))}
+                            </View>
+                        )}
+                        {/* player 2 */}
+                        <View style={styles.playerContainer}>
+                            <View style={styles.row}>
+                                {item.playerOneSteps < item.playerTwoSteps && (
+                                    <Image
+                                        source={require('@assets/icons/winnerHistory.png')}
+                                        style={styles.winnerIcon}
+                                    />
+                                )}
+                                <Image
+                                    source={{ uri: item.player2pfp }}
+                                    style={[
+                                        styles.profileImage,
+                                        item.playerOneSteps > item.playerTwoSteps && styles.loserImage,
+                                    ]}
+                                />
+                                <Text style={[
+                                    styles.player,
+                                    item.playerOneSteps > item.playerTwoSteps && styles.loserText,
+                                ]}>{item.player2}</Text>
+                                <Text style={[
+                                    styles.steps,
+                                    item.playerOneSteps > item.playerTwoSteps && styles.loserText,
+                                ]}>{item.playerTwoSteps} steps</Text>
+                            </View>
+                        </View>
+                        {isExpanded && (
+                            <View style={{ paddingBottom: 5, }}>
+                                {item.player2Bets.map((bet: { user: string, wager: number }, index: number) => (
+                                    (bet.user !== item.player2) && (
+                                        <Text key={index} style={{ fontFamily: "Lexend", color: '#fff', fontSize: 11, }}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                    )
+                                ))}
+                            </View>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     };
@@ -316,43 +334,50 @@ const styles = StyleSheet.create({
         backgroundColor: '#9e9e9e', // Gray color
     },
     title: {
+        fontFamily: 'Lexend',
         textAlign: "center",
+        color: '#fff',
         fontSize: 30,
-        fontWeight: "200",
-        fontFamily: 'Lexend-Bold',
-        paddingTop: 20,
-        marginBottom: 20,
+        paddingBottom: 20,
     },
     header: {
         fontFamily: "Lexend",
+        color: '#fff',
         fontSize: 15,
-        marginBottom: 20,
+        marginBottom: 10,
         textAlign: 'center',
     },
     flatList: {
-        borderWidth: 1.5,
-        borderColor: '#ccc',
-        borderRadius: 5,
         marginTop: 10,
-        paddingBottom: 25,
+        width: '100%',
+    },
+    betsContainer: {
+        backgroundColor: '#5BE35C32',
+        borderRadius: 15,
+        padding: 10,
     },
     wonEarningsText: {
         fontFamily: "Lexend",
-        marginTop: 10,
-        color: 'green',
-        fontSize: 30,
+        color: '#74FF6D',
+        fontSize: 15,
+        marginRight: 5,
     },
     lostEarningsText: {
         fontFamily: "Lexend",
-        marginTop: 10,
-        color: 'red',
-        fontSize: 30,
+        color: '#FF6060',
+        fontSize: 15,
+        marginRight: 5,
+    },
+    drawEarningsText: {
+        fontFamily: "Lexend",
+        color: '#fff',
+        fontSize: 15,
+        marginRight: 5,
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
     },
     carrotIcon: {
         textAlign: 'right',
@@ -364,11 +389,17 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     horizontalLine: {
-        borderBottomColor: '#ccc',
-        borderBottomWidth: 1.5,
+        borderBottomColor: '#ffffff80',
+        borderBottomWidth: 1,
         marginVertical: 10,
-        width: '90%',
+        width: '100%',
         alignSelf: 'center',
+    },
+    winnerIcon: {
+        width: 7, 
+        height: 33,
+        position: 'absolute',
+        left: -20,
     },
     profileImage: {
         width: 40,
@@ -379,20 +410,32 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     playerContainer: {
-        paddingLeft: 25,
-        paddingRight: 25,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+        backgroundColor: '#00000080',
+        borderRadius: 10,
+        padding: 10,
+        paddingHorizontal: 20,
     },
     player: {
-        fontFamily: "Lexend-Bold",
-        fontSize: 18,
+        fontFamily: "Lexend",
+        fontSize: 11,
+        color: '#fff',
         flex: 1,
         textAlign: 'left',
     },
     steps: {
         fontFamily: "Lexend",
-        marginRight: 30,
+        fontSize: 11,
+        color: '#fff',
         textAlign: 'right',
-        fontSize: 28,
+    },
+    createdAtText: {
+        fontFamily: "Lexend",
+        fontSize: 13,
+        color: '#fff',
     },
     loserText: {
         color: '#808080',
@@ -401,10 +444,10 @@ const styles = StyleSheet.create({
     loserImage: {
         opacity: 0.5,
     },
-    centeredColumn: {
+    earningsContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        flex: 1,
     },
 });
 

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Image, View, Text, ActivityIndicator } from 'react-native';
+import { Image, View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '../UserProvider';
 import * as Font from 'expo-font';
 import { useEffect, useState } from 'react';
@@ -11,6 +11,20 @@ import firestore from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
 import TabBar from "../../components/TabBar";
 import { useTabBar, TabBarProvider } from '../,./../../hooks/useTabBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 // Register for push notifications function
 async function registerForPushNotificationsAsync(userID: string) {
@@ -134,11 +148,13 @@ const AuthenticatedLayout: React.FC = () => {
     }
 
     return (
-        <UserProvider>
-            <TabBarProvider>
-                <InnerAuthenticatedLayout />
-            </TabBarProvider>
-        </UserProvider>
+        <SafeAreaView style={{ flex: 1 }}>
+            <UserProvider>
+                <TabBarProvider>
+                    <InnerAuthenticatedLayout />
+                </TabBarProvider>
+            </UserProvider>
+        </SafeAreaView>
     );
 }
 
@@ -152,9 +168,9 @@ function InnerAuthenticatedLayout() {
           tabBarStyle: {
             backgroundColor: '#1b2c1c',
             borderTopWidth: 0,
-            paddingBottom: isTabBarVisible ? 50 : 0,
+            paddingBottom: isTabBarVisible ? scale(18) : 0,
             paddingTop: 0,
-            height: isTabBarVisible ? 110 : 0, // <-- THE MAGIC
+            height: isTabBarVisible ? scale(83) : 0, // <-- THE MAGIC
           },
           tabBarShowLabel: false,
           tabBarActiveTintColor: '#51ba51',

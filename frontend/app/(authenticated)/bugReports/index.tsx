@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getUserName } from '@backend/src/users';
 import { useUser } from '../../UserProvider';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // type Props = {
 //     navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;
@@ -44,7 +45,7 @@ const BugReportsPage: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={styles.container}>
                     <View style={styles.titleContainer}>
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff', 
         justifyContent: 'flex-start',
         alignItems: 'center',
-        marginTop: 50,
         height: '100%',
+        marginTop: 10,
     },
     text: {
         fontSize: 18,
@@ -134,7 +135,6 @@ const styles = StyleSheet.create({
     },
     titleContainer: {
         marginBottom: 0,
-        paddingTop: 20,
         justifyContent: "flex-start"
     },
     titleText: {
