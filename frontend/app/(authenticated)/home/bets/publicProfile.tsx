@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { useUser } from '../../../UserProvider';
 import { createNudge } from '@/backend/src/notifs';
@@ -9,13 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const ProfilePage: React.FC = () => {
     const { username, groups, loading } = useUser();
-    const { 
-        selectedUserIDTemp, 
-        groupIDTemp, 
-        averageStepsTemp, 
+    const {
+        selectedUserIDTemp,
+        groupIDTemp,
+        averageStepsTemp,
         stepsTemp
     } = useLocalSearchParams();
 
@@ -24,11 +25,11 @@ const ProfilePage: React.FC = () => {
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const averageSteps = Array.isArray(averageStepsTemp)
         ? averageStepsTemp.map(Number)
-        : typeof averageStepsTemp === 'string' 
+        : typeof averageStepsTemp === 'string'
             ? averageStepsTemp.split(',').map(Number)
             : [];
     const steps = stepsTemp ? Number(stepsTemp) : 0;
-            
+
     console.log('weeklySteps: ', averageSteps);
 
     console.log('selectedUserID: ', selectedUserID);
@@ -81,23 +82,23 @@ const ProfilePage: React.FC = () => {
         const getLast8DaysLabels = () => {
             const today = new Date();
             const labels = [];
-            
+
             for (let i = 7; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
                 labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
             }
-            
+
             return labels;
         };
-    
+
         const data = {
             labels: getLast8DaysLabels(),
             datasets: [{
                 data: [...weeklySteps, steps]
             }]
         };
-    
+
         return (
             <LineChart
                 data={data}
@@ -154,7 +155,7 @@ const ProfilePage: React.FC = () => {
                         </View>
                     ) : null;
                 }}
-                onDataPointClick={({x, y, value}) => {
+                onDataPointClick={({ x, y, value }) => {
                     setTooltipPos({
                         x: x,
                         y: y,
@@ -176,14 +177,14 @@ const ProfilePage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Image
@@ -198,7 +199,7 @@ const ProfilePage: React.FC = () => {
                     />
                     <Text style={styles.name}>{currentName ? currentName : 'Loading...'}</Text>
                     <Text style={styles.username}>@{currentUserName ? currentUserName : 'Loading...'}</Text>
-                    
+
                     {/* Nudge Button */}
                     <TouchableOpacity style={styles.nudgeButton} onPress={() => setModalVisible(true)}>
                         <Text style={styles.nudgeButtonText}>Nudge</Text>
@@ -269,8 +270,8 @@ const ProfilePage: React.FC = () => {
                         </View>
                     </Modal>
                 </View>
-            </LinearGradient>
-        </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
     );
 
 }
@@ -278,14 +279,11 @@ const ProfilePage: React.FC = () => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
-        // flex: 1,
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
-        marginTop: 50,
     },
     backButton: {
         position: 'absolute',
@@ -346,7 +344,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#999',
     },
-    nudgeButton: { 
+    nudgeButton: {
         marginTop: 20,
         borderWidth: 1,
         borderRadius: 25,
@@ -397,32 +395,32 @@ const styles = StyleSheet.create({
         width: 14,
         height: 12,
     },
-    modalContainer: { 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        backgroundColor: 'rgba(0, 0, 0, 0.5)' 
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
     },
-    modalContent: { 
-        width: 300, 
-        padding: 20, 
-        backgroundColor: '#fff', 
-        borderRadius: 10, 
-        alignItems: 'center' 
+    modalContent: {
+        width: 300,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        alignItems: 'center'
     },
-    modalTitle: { 
-        fontSize: 20, 
-        fontWeight: 'bold', 
-        marginBottom: 10 
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 10
     },
-    textInput: { 
-        height: 100, 
-        borderColor: '#ccc', 
-        borderWidth: 1, 
-        width: '100%', 
-        padding: 10, 
-        marginBottom: 10, 
-        textAlignVertical: 'top' 
+    textInput: {
+        height: 100,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        width: '100%',
+        padding: 10,
+        marginBottom: 10,
+        textAlignVertical: 'top'
     },
 });
 

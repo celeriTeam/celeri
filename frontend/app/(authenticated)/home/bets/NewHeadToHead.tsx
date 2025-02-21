@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, SafeAreaView, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 import { useTabBar } from '../../../../hooks/useTabBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 const { width, height } = Dimensions.get('window');
@@ -31,22 +32,22 @@ const NewHeadToHeadPage: React.FC = () => {
     const route = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
-    const [matchups, setMatchups] = useState<{ 
-        duelID: string, 
+    const [matchups, setMatchups] = useState<{
+        duelID: string,
         player1: {
-            id: string, 
-            username: string, 
-            profilePic: string, 
-            duelsWon: number, 
-            prevSteps: number, 
+            id: string,
+            username: string,
+            profilePic: string,
+            duelsWon: number,
+            prevSteps: number,
             stepChange: number
         },
         player2: {
-            id: string, 
-            username: string, 
-            profilePic: string, 
-            duelsWon: number, 
-            prevSteps: number, 
+            id: string,
+            username: string,
+            profilePic: string,
+            duelsWon: number,
+            prevSteps: number,
             stepChange: number
         },
     }[]>([]);
@@ -71,23 +72,23 @@ const NewHeadToHeadPage: React.FC = () => {
     useEffect(() => {
         hideTabBar();
         return () => {
-        showTabBar();
+            showTabBar();
         };
     }, []);
-  
+
     const router = useRouter();
     const screenWidth = Dimensions.get('window').width;
     const scrollViewRef = useRef<ScrollView>(null);
-    
+
 
     const closeModal = async () => {
-      setModalVisible(false);
-      await addToFinishedRecap(groupID, userID);
+        setModalVisible(false);
+        await addToFinishedRecap(groupID, userID);
     };
 
     useEffect(() => {
         // if (!loading) {
-          fetchData();
+        fetchData();
         // }
     }, []);
 
@@ -98,53 +99,55 @@ const NewHeadToHeadPage: React.FC = () => {
             const userTokens = groups[groupID]?.userTokens;
             setCurrentUserTokens(userTokens);
             //map for each matchup
-            {matchups.map((matchup) => {
-                const player1ID = matchup.player1;
-                const player1Name = groups[groupID]?.users[player1ID]?.username;
-                const player1Pic = groups[groupID]?.users[player1ID]?.profilePic;
-                const player1Steps = groups[groupID]?.users[player1ID]?.lastWeekSteps;
-                const player1WonDuels = groups[groupID]?.users[player1ID]?.weeklyDuelsWon;
-                const player1StepsFromWeekBefore = groups[groupID]?.users[player1ID]?.stepsFromWeekBefore;
-                let player1StepsChangeFromWeekBefore = 0;
-                if (player1StepsFromWeekBefore !== 0 && player1Steps !== 0) {
-                    player1StepsChangeFromWeekBefore = Math.round(((player1Steps - player1StepsFromWeekBefore) / player1StepsFromWeekBefore) * 100);
-                }
-                
-                const player2ID = matchup.player2;
-                const player2Name = groups[groupID]?.users[player2ID]?.username;
-                const player2Pic = groups[groupID]?.users[player2ID]?.profilePic;
-                const player2Steps = groups[groupID]?.users[player2ID]?.lastWeekSteps;
-                const player2WonDuels = groups[groupID]?.users[player2ID]?.weeklyDuelsWon;
-                const player2StepsFromWeekBefore = groups[groupID]?.users[player2ID]?.stepsFromWeekBefore;
-                console.log("player2StepsFromWeekBefore: ", player2StepsFromWeekBefore, player2ID);
-                let player2StepsChangeFromWeekBefore = 0;
-                if (player2StepsFromWeekBefore !== 0 && player2Steps !== 0) {
-                    player2StepsChangeFromWeekBefore = Math.round(((player2Steps - player2StepsFromWeekBefore) / player2StepsFromWeekBefore) * 100);
-                }
-
-                newMatchups.push({
-                    duelID: matchup.duelID,
-                    player1: {
-                        id: player1ID,
-                        username: player1Name,
-                        profilePic: player1Pic,
-                        duelsWon: player1WonDuels,
-                        prevSteps: Math.floor(player1Steps),
-                        stepChange: player1StepsChangeFromWeekBefore, // in percentage
-                    },
-                    player2: {
-                        id: player2ID,
-                        username: player2Name,
-                        profilePic: player2Pic,
-                        duelsWon: player2WonDuels,
-                        prevSteps: Math.floor(player2Steps),
-                        stepChange: player2StepsChangeFromWeekBefore, // in percentage
+            {
+                matchups.map((matchup) => {
+                    const player1ID = matchup.player1;
+                    const player1Name = groups[groupID]?.users[player1ID]?.username;
+                    const player1Pic = groups[groupID]?.users[player1ID]?.profilePic;
+                    const player1Steps = groups[groupID]?.users[player1ID]?.lastWeekSteps;
+                    const player1WonDuels = groups[groupID]?.users[player1ID]?.weeklyDuelsWon;
+                    const player1StepsFromWeekBefore = groups[groupID]?.users[player1ID]?.stepsFromWeekBefore;
+                    let player1StepsChangeFromWeekBefore = 0;
+                    if (player1StepsFromWeekBefore !== 0 && player1Steps !== 0) {
+                        player1StepsChangeFromWeekBefore = Math.round(((player1Steps - player1StepsFromWeekBefore) / player1StepsFromWeekBefore) * 100);
                     }
+
+                    const player2ID = matchup.player2;
+                    const player2Name = groups[groupID]?.users[player2ID]?.username;
+                    const player2Pic = groups[groupID]?.users[player2ID]?.profilePic;
+                    const player2Steps = groups[groupID]?.users[player2ID]?.lastWeekSteps;
+                    const player2WonDuels = groups[groupID]?.users[player2ID]?.weeklyDuelsWon;
+                    const player2StepsFromWeekBefore = groups[groupID]?.users[player2ID]?.stepsFromWeekBefore;
+                    console.log("player2StepsFromWeekBefore: ", player2StepsFromWeekBefore, player2ID);
+                    let player2StepsChangeFromWeekBefore = 0;
+                    if (player2StepsFromWeekBefore !== 0 && player2Steps !== 0) {
+                        player2StepsChangeFromWeekBefore = Math.round(((player2Steps - player2StepsFromWeekBefore) / player2StepsFromWeekBefore) * 100);
+                    }
+
+                    newMatchups.push({
+                        duelID: matchup.duelID,
+                        player1: {
+                            id: player1ID,
+                            username: player1Name,
+                            profilePic: player1Pic,
+                            duelsWon: player1WonDuels,
+                            prevSteps: Math.floor(player1Steps),
+                            stepChange: player1StepsFromWeekBefore, // in percentage
+                        },
+                        player2: {
+                            id: player2ID,
+                            username: player2Name,
+                            profilePic: player2Pic,
+                            duelsWon: player2WonDuels,
+                            prevSteps: Math.floor(player2Steps),
+                            stepChange: player2StepsChangeFromWeekBefore, // in percentage
+                        }
+                    })
                 })
-            })};
-            
+            };
+
             return newMatchups;
-        } catch(error) {
+        } catch (error) {
             console.error("Error fetching user data:", error);
             return [];
         }
@@ -166,15 +169,15 @@ const NewHeadToHeadPage: React.FC = () => {
             const totalCycles = groups[groupID]?.totalCycles;
             const userList = groups[groupID]?.userList;
             const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-            if(gameType == "weekly"){
+            if (gameType == "weekly") {
                 console.log("weeksLeft -- ", timeLeft);
-                if(timeLeft == 1){
+                if (timeLeft == 1) {
                     setGameTimeLeft(`${timeLeft} week`)
                 } else {
                     setGameTimeLeft(`${timeLeft} weeks`)
                 }
             } else {
-                if(timeLeft == 1){
+                if (timeLeft == 1) {
                     setGameTimeLeft(`${timeLeft} day`)
                 } else {
                     setGameTimeLeft(`${timeLeft} days`)
@@ -195,7 +198,7 @@ const NewHeadToHeadPage: React.FC = () => {
             const flattenDuels = (duels: { [key: string]: { duelID: string, player1: string, player2: string } }) => {
                 return Object.values(duels);
             };
-        
+
             const matchups = dailyDuel ? flattenDuels(dailyDuel) : [];
             const newmatchups = fetchUserName(matchups);
             setMatchups(newmatchups);
@@ -203,11 +206,11 @@ const NewHeadToHeadPage: React.FC = () => {
             setBetAmount(emptyList);
             setChosenPlayer(emptyList);
             setChosenProfilePic(emptyList);
-            
+
             const todaysBetTokens = groups[groupID]?.todaysBetTokens ?? 0;
             // setTotalBetTokens(todaysBetTokens);
             console.log("H2H Checkpoint one");
-        } catch(error) {
+        } catch (error) {
             console.error("Error fetching user data:", error);
         } finally {
             setIsLoading(false);
@@ -239,7 +242,7 @@ const NewHeadToHeadPage: React.FC = () => {
 
     const scrollToIndex = (index: number) => {
         if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
+            scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
         }
         setCurrentMatchupIndex(index);
     };
@@ -321,21 +324,23 @@ const NewHeadToHeadPage: React.FC = () => {
     const playerCard = (player: { id: string, username: string, profilePic: string, duelsWon: number, prevSteps: number, stepChange: number }, color: string, playerNum: string) => (
         <TouchableOpacity style={styles.playerContainer} onPress={() => updateChosenPlayer(currentMatchupIndex, player.id, player.profilePic)} activeOpacity={1}>
             <LinearGradient
-                colors={isChosen(player.id) ? 
-                    ['#fff', '#fff'] : 
+                colors={isChosen(player.id) ?
+                    ['#fff', '#fff'] :
                     ['#5BE35C', '#14B582']}
                 style={{
                     // flex: 1,
                     width: '100%',
                     borderRadius: moderateScale(20),
-                    alignItems: 'center',
-                    paddingBottom: playerNum === 'player1' ? scale(40) : scale(10),
+                    // alignItems: 'center',
+                    paddingHorizontal: scale(20),
+                    paddingTop: playerNum === 'player2' ? scale(20) : scale(10),
+                    paddingBottom: playerNum === 'player1' ? scale(30) : scale(10),
                 }}
             >
                 <View style={styles.userRow}>
                     <Image
-                        source={player?.profilePic ? 
-                            { uri: player?.profilePic } : 
+                        source={player?.profilePic ?
+                            { uri: player?.profilePic } :
                             require('@components/blank-profile-picture.png')
                         }
                         style={[styles.profileImage, { borderColor: color }]}
@@ -346,11 +351,8 @@ const NewHeadToHeadPage: React.FC = () => {
                     <View style={[styles.playerInfoContainer, { borderColor: isChosen(player.id) ? '#024405' : '#fff' }]}>
                         <View style={styles.playerInfoRow}>
                             <Image
-                                source={isChosen(player.id) ? 
-                                    require('@assets/icons/trophyGreen.png') : 
-                                    require('@assets/icons/trophy.png')
-                                }
-                                style={styles.trophyIcon}
+                                source={require('@assets/icons/trophy.png')}
+                                style={[styles.trophyIcon, { tintColor: isChosen(player.id) ? '#024405' : '#fff' }]}
                             />
                             <Text style={[styles.playerInfoNumber, { color: isChosen(player.id) ? '#024405' : '#fff' }]}>{player?.duelsWon}</Text>
                         </View>
@@ -359,11 +361,8 @@ const NewHeadToHeadPage: React.FC = () => {
                     <View style={[styles.playerInfoContainer, { borderColor: isChosen(player.id) ? '#024405' : '#fff' }]}>
                         <View style={styles.playerInfoRow}>
                             <Image
-                                source={isChosen(player.id) ? 
-                                    require('@assets/icons/shoeGreen.png') : 
-                                    require('@assets/icons/shoe.png')
-                                }
-                                style={styles.trophyIcon}
+                                source={require('@assets/icons/shoe.png')}
+                                style={[styles.trophyIcon, { tintColor: isChosen(player.id) ? '#024405' : '#fff' }]}
                             />
                             <Text style={[styles.playerInfoNumber, { color: isChosen(player.id) ? '#024405' : '#fff' }]}>{player?.prevSteps}</Text>
                         </View>
@@ -372,15 +371,11 @@ const NewHeadToHeadPage: React.FC = () => {
                     <View style={[styles.playerInfoContainer, { borderColor: isChosen(player.id) ? '#024405' : '#fff' }]}>
                         <View style={styles.playerInfoRow}>
                             <Image
-                                source={player?.stepChange >= 0 ? 
-                                    isChosen(player.id) ? 
-                                        require('@assets/icons/upArrowGreen.png') : 
-                                        require('@assets/icons/upArrow.png') : 
-                                    isChosen(player.id) ?
-                                        require('@assets/icons/downArrow.png') : 
-                                        require('@assets/icons/downArrow.png')
+                                source={player?.stepChange >= 0 ?
+                                    require('@assets/icons/upArrow.png') :
+                                    require('@assets/icons/downArrow.png')
                                 }
-                                style={styles.upArrowIcon}
+                                style={[styles.upArrowIcon, { tintColor: isChosen(player.id) ? '#024405' : '#fff' }]}
                             />
                             <Text style={[styles.playerInfoNumber, { color: isChosen(player.id) ? '#024405' : '#fff' }]}>{Math.abs(player?.stepChange)}%</Text>
                         </View>
@@ -395,7 +390,7 @@ const NewHeadToHeadPage: React.FC = () => {
         // Add listeners to track the keyboard state
         const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
             setKeyboardVisible(true);
-            setKeyboardHeight(e.endCoordinates.height/3);
+            setKeyboardHeight(e.endCoordinates.height / 3);
         });
         const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
             setKeyboardVisible(false);
@@ -420,24 +415,26 @@ const NewHeadToHeadPage: React.FC = () => {
         } else if (!isBetsValid) {
             errorText = 'Bets should not exceed your total tokens';
         }
-        return {isValid: isBettingComplete && isBetsValid && isBetsNotZero, errorText: errorText};
+        return { isValid: isBettingComplete && isBetsValid && isBetsNotZero, errorText: errorText };
     };
 
     const handleSubmit = async () => {
         setIsProcessing(true);
-        
-        {matchups.map( async (matchup, index) => {
-            const submittedPlayer = chosenPlayer[index];
-            const submittedBet = +(betAmount[index]);
-            console.log('you bet on: ', submittedPlayer);
-            console.log('you bet: ', submittedBet);
-            console.log('duelid: ', matchup.duelID);
-            await createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
 
-        })};
+        {
+            matchups.map(async (matchup, index) => {
+                const submittedPlayer = chosenPlayer[index];
+                const submittedBet = +(betAmount[index]);
+                console.log('you bet on: ', submittedPlayer);
+                console.log('you bet: ', submittedBet);
+                console.log('duelid: ', matchup.duelID);
+                await createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
+
+            })
+        };
         await addToFinishedBetting(groupID, userID);
         await setTodaysBetTokens(userID, groupID, totalBetTokens());
-        
+
         setSubmittedModalVisible(true);
     };
 
@@ -464,21 +461,21 @@ const NewHeadToHeadPage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeView}>
-            <TouchableWithoutFeedback
-                onPress={Keyboard.dismiss}
-                style={styles.safeView}
+        <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+            style={styles.safeView}
+        >
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
             >
-                <LinearGradient
-                    colors={['#000000', '#024405']}
-                    style={{
-                        flex: 1,
-                        width: '100%',
-                    }}
-                >
+                <SafeAreaView style={styles.safeView} edges={['top']}>
                     <View style={styles.container}>
-                        <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                            <Image 
+                        <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                            <Image
                                 source={require('@assets/icons/timeLeft.png')}
                                 style={styles.timeLeftIcon}
                             />
@@ -493,7 +490,7 @@ const NewHeadToHeadPage: React.FC = () => {
                         <View style={styles.scrollAndDotsContainer}>
 
                             {/* swipeable cards */}
-                            <ScrollView 
+                            <ScrollView
                                 ref={scrollViewRef}
                                 horizontal
                                 snapToInterval={screenWidth} // Snap to each card
@@ -542,7 +539,7 @@ const NewHeadToHeadPage: React.FC = () => {
                                     </View>
                                 ))}
                             </ScrollView>
-                                
+
                             {/* dots for completion indication */}
                             <View style={styles.dotRow}>
                                 {matchups.map((_, index) => (
@@ -566,82 +563,82 @@ const NewHeadToHeadPage: React.FC = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
-                </LinearGradient>
-            </TouchableWithoutFeedback>
-                
-            {/* Modal */}
-            {/* <InfoModal /> */}
-            <Modal
-                transparent={true}
-                visible={isModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContainer, { height: '90%', }]}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
 
-                        {/* BetRecapPage as the modal content */}
-                        {
-                            groups?.[groupID]?.gameType === "weekly" ? (
-                                <WeeklyBetRecapPage />
-                            ) : (
-                                <BetRecapPage />
-                            )
-                        }
-                    </View>
-                </View>
-            </Modal>
+                    {/* Modal */}
+                    {/* <InfoModal /> */}
+                    <Modal
+                        transparent={true}
+                        visible={isModalVisible}
+                        animationType="slide"
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={[styles.modalContainer, { height: '85%', }]}>
+                                {/* Close button */}
+                                <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+                                    <Text style={styles.closeButtonText}>X</Text>
+                                </TouchableOpacity>
 
-            <Modal
-                transparent={true}
-                visible={isSubmittedModalVisible}
-                animationType="slide"
-            >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                    <TouchableOpacity onPress={handleSummaryPageNavigation} style={styles.summaryOKButton}>
-                        <Text style={styles.SummaryOKText}>OK</Text>
-                    </TouchableOpacity>
-                    <View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: verticalScale(30), }}>
-                            <Image
-                                source={require('@assets/icons/checkmark.png')}
-                                style={{ width: scale(29), height: scale(29) }}
-                            />
-                            <Text style={styles.modalSubmitted}>Submitted!</Text>
+                                {/* BetRecapPage as the modal content */}
+                                {
+                                    groups?.[groupID]?.gameType === "weekly" ? (
+                                        <WeeklyBetRecapPage />
+                                    ) : (
+                                        <BetRecapPage />
+                                    )
+                                }
+                            </View>
                         </View>
-                        <Text style={styles.modalTitle}>Your bets this week:</Text>
-                    </View>
-                    <View style={styles.submissionContainer}>
-                        {chosenPlayer.map((player, index) => (
-                            <View style={styles.submissionRow} key={index}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                    <Image
-                                        source={chosenProfilePic[index] ? 
-                                            { uri: chosenProfilePic[index] } : 
-                                            require('@components/blank-profile-picture.png')
-                                        }
-                                        style={styles.submissionProfileImage}
-                                    />
-                                    <Text style={styles.submittedPlayerName}>{groups[groupID]?.users[player]?.username}</Text>
+                    </Modal>
+
+                    <Modal
+                        transparent={true}
+                        visible={isSubmittedModalVisible}
+                        animationType="slide"
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContainer}>
+                                <TouchableOpacity onPress={handleSummaryPageNavigation} style={styles.summaryOKButton}>
+                                    <Text style={styles.SummaryOKText}>OK</Text>
+                                </TouchableOpacity>
+                                <View>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: verticalScale(30), }}>
+                                        <Image
+                                            source={require('@assets/icons/checkmark.png')}
+                                            style={{ width: scale(29), height: scale(29) }}
+                                        />
+                                        <Text style={styles.modalSubmitted}>Submitted!</Text>
+                                    </View>
+                                    <Text style={styles.modalTitle}>Your bets this week:</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                    <Image
-                                        source={require('@assets/icons/tokens.png')}
-                                        style={{ width: scale(13), height: scale(13), marginRight: scale(5), }}
-                                    />
-                                    <Text style={styles.submissionTokenNumber}>{betAmount[index]}</Text>
+                                <View style={styles.submissionContainer}>
+                                    {chosenPlayer.map((player, index) => (
+                                        <View style={styles.submissionRow} key={index}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                                <Image
+                                                    source={chosenProfilePic[index] ?
+                                                        { uri: chosenProfilePic[index] } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={styles.submissionProfileImage}
+                                                />
+                                                <Text style={styles.submittedPlayerName}>{groups[groupID]?.users[player]?.username}</Text>
+                                            </View>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                                <Image
+                                                    source={require('@assets/icons/tokens.png')}
+                                                    style={{ width: scale(13), height: scale(13), marginRight: scale(5), }}
+                                                />
+                                                <Text style={styles.submissionTokenNumber}>{betAmount[index]}</Text>
+                                            </View>
+                                        </View>
+                                    ))}
                                 </View>
                             </View>
-                        ))}
-                    </View>
-                </View>
-            </View>
-            </Modal>
-        </SafeAreaView>
+                        </View>
+                    </Modal>
+                </SafeAreaView>
+            </LinearGradient>
+        </TouchableWithoutFeedback>
     );
 };
 
@@ -651,7 +648,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        marginTop: verticalScale(60),
         alignItems: 'center',
     },
     timeLeftIcon: {
@@ -708,7 +704,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: scale(15),
         borderRadius: moderateScale(20),
         padding: scale(10),
-        margin: scale(5),
+        marginVertical: scale(5),
+        marginBottom: verticalScale(15),
         alignItems: 'center',
     },
     tokensIcon: {
@@ -717,7 +714,8 @@ const styles = StyleSheet.create({
         marginRight: scale(10),
     },
     betItem: {
-        padding: scale(8),
+        justifyContent: 'center',
+        alignItems: 'center',
         borderColor: '#fff',
         borderWidth: 1,
         borderRadius: moderateScale(10),
@@ -732,7 +730,9 @@ const styles = StyleSheet.create({
     input: {
         backgroundColor: '#00000080',
         borderRadius: moderateScale(10),
-        padding: scale(10),
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(5),
         width: scale(82),
         height: verticalScale(34),
         textAlign: 'center',
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(12),
     },
     versusContainer: {
-        marginVertical: -verticalScale(35),
+        marginVertical: -verticalScale(25),
         paddingHorizontal: scale(35),
         paddingVertical: scale(18),
         backgroundColor: '#023404',
@@ -763,18 +763,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     playerContainer: {
-        width: '95%',
-        padding: scale(10),
+        width: '90%',
+        // padding: scale(10),
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     userRow: {
-        position: 'absolute',
-        left: 0,
+        // position: 'absolute',
+        // left: 0,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: scale(15),
-        marginTop: verticalScale(10),
+        paddingVertical: scale(15),
+        // marginTop: verticalScale(10),
     },
     profileImage: {
         width: scale(51),
@@ -790,15 +790,14 @@ const styles = StyleSheet.create({
     playerInfoContainerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        padding: scale(10),
-        marginTop: verticalScale(85),
+        paddingVertical: scale(10),
+        // marginTop: verticalScale(85),
     },
     playerInfoContainer: {
-        width: '30%',
+        width: '31%',
         height: verticalScale(80),
         justifyContent: 'flex-end', // Move to bottom
-        paddingBottom: scale(5),
-        paddingLeft: scale(10),
+        padding: scale(8),
         borderWidth: 1,
         borderRadius: moderateScale(8),
     },

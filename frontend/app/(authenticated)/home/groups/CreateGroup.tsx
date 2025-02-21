@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    View, Text, Image, Button, StyleSheet, Alert, Pressable, Keyboard, TouchableOpacity,
+    View, Text, Image, Button, Alert, Pressable, Keyboard, TouchableOpacity,
     SafeAreaView, TextInput,
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -16,6 +16,7 @@ import { generateGroupCode, createGroup, addGroupImage } from '@backend/src/grou
 import { addGroupToUser } from '@backend/src/users';
 import { useUser } from '../../../UserProvider';
 import { useRouter } from 'expo-router'
+import { StyleSheet } from 'react-native-size-scaling';
 
 const CreateGroupPage: React.FC = () => {
     const { userID } = useUser();

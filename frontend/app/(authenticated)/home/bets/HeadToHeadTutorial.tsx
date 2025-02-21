@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, StyleSheet as RNStyleSheet } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native-size-scaling';
 
 type ModalStyle = {
     width: string | number;
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
 		marginTop: 50,
 	},
     dismissOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...RNStyleSheet.absoluteFillObject,
         zIndex: 1000,
     },
 	tokens: {
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
 		margin: 'auto', // center
     },
 	interactiveOverlay: {
-		...StyleSheet.absoluteFillObject,
+		...RNStyleSheet.absoluteFillObject,
 		backgroundColor: 'transparent',
 	},
 	nonInteractiveArea: {

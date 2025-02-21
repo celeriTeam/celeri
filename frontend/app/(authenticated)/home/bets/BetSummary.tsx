@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -21,6 +21,7 @@ import LiveDuelPage from './LiveDuel';
 import { group } from 'console';
 import PropBetPage from './PropBet';
 import EditGroupPage from './EditGroup';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const db = getFirestore(app);
 
@@ -71,7 +72,7 @@ const BetSummaryPage: React.FC = () => {
 
     useEffect(() => {
         let cleanup: () => void;
-    
+
         const initialize = async () => {
             try {
                 cleanup = await fetchGroupData(userID);
@@ -82,9 +83,9 @@ const BetSummaryPage: React.FC = () => {
                 setIsLoading(false);
             }
         };
-    
+
         initialize();
-    
+
         return () => {
             if (cleanup) {
                 cleanup();
@@ -105,16 +106,16 @@ const BetSummaryPage: React.FC = () => {
     const setPropBetPlayerLogic = (userList: string[], cycle: number, cycleCount: number) => {
         // Find current user's index
         const currentUserIndex = userList.indexOf(userID);
-        
+
         // Calculate initial chosen index with wraparound
         const today = new Date().getDay();
         let chosenIndex = (currentUserIndex + cycle + cycleCount + today) % userList.length;
-        
+
         // If chosen player is current user, increment index
         if (userList[chosenIndex] === userID) {
             chosenIndex = (chosenIndex + 1) % userList.length;
         }
-        
+
         // Set the prop bet player
         return userList[chosenIndex];
     };
@@ -163,7 +164,7 @@ const BetSummaryPage: React.FC = () => {
                                 getTodaysBetTokens(selectedUserID, groupID),
                                 getUserDiamonds(selectedUserID, groupID)
                             ]);
-                            
+
                             const newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
 
                             users[selectedUserID] = {
@@ -172,16 +173,16 @@ const BetSummaryPage: React.FC = () => {
                                 newSteps,
                                 tokens
                             };
-                            groupUsersArray.push({ 
-                                id: selectedUserID, 
-                                name: username, 
-                                pfp: profilePic, 
-                                tokens: tokens, 
+                            groupUsersArray.push({
+                                id: selectedUserID,
+                                name: username,
+                                pfp: profilePic,
+                                tokens: tokens,
                                 betOnTokens: betOnTokens,
                                 diamonds: diamonds,
-                                steps: newSteps, 
-                                todaysSteps: steps, 
-                                averageSteps: averageSteps 
+                                steps: newSteps,
+                                todaysSteps: steps,
+                                averageSteps: averageSteps
                             });
                         }));
                         // Sort users by tokens in descending order
@@ -203,15 +204,15 @@ const BetSummaryPage: React.FC = () => {
 
                     // Set # of days/weeks left in the game
                     const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-                    if(gameType == "weekly"){
+                    if (gameType == "weekly") {
                         console.log("weeksLeft -- ", timeLeft);
-                        if(timeLeft == 1){
+                        if (timeLeft == 1) {
                             setGameTimeLeft(`${timeLeft} week`)
                         } else {
                             setGameTimeLeft(`${timeLeft} weeks`)
                         }
                     } else {
-                        if(timeLeft == 1){
+                        if (timeLeft == 1) {
                             setGameTimeLeft(`${timeLeft} day`)
                         } else {
                             setGameTimeLeft(`${timeLeft} days`)
@@ -242,13 +243,13 @@ const BetSummaryPage: React.FC = () => {
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
 
-                    console.log("propBetPlayerInfo:" , propBetPlayerInfo);
-                    console.log("propBetPlayerInfo average steps:" , propBetPlayerInfo?.averageSteps);
+                    console.log("propBetPlayerInfo:", propBetPlayerInfo);
+                    console.log("propBetPlayerInfo average steps:", propBetPlayerInfo?.averageSteps);
 
                     const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
                     const stepsLength = (propBetPlayerInfo?.averageSteps ?? []).length;
                     const averageStepCount: number = sum == 0 ? 0 : Number((sum / stepsLength).toFixed(0));
-                    setPropBetPlayer([{id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0}]);
+                    setPropBetPlayer([{ id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0 }]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
                     if (!isFinishedPropBet && gameType === 'weekly') {
@@ -389,11 +390,11 @@ const BetSummaryPage: React.FC = () => {
     const createMemberButtonHandle = (id: string) => {
         router.push({
             pathname: '/(authenticated)/home/bets/publicProfile',
-            params: { 
-                selectedUserIDTemp: id ?? '', 
-                groupIDTemp: groupID, 
-                averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [], 
-                stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0, 
+            params: {
+                selectedUserIDTemp: id ?? '',
+                groupIDTemp: groupID,
+                averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [],
+                stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0,
             },
         });
     };
@@ -414,7 +415,7 @@ const BetSummaryPage: React.FC = () => {
 
     const scrollToIndex = (index: number) => {
         if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
+            scrollViewRef.current.scrollTo({ x: index * screenWidth, animated: true });
         }
         setCurrentBetIndex(index);
     };
@@ -455,10 +456,10 @@ const BetSummaryPage: React.FC = () => {
 
         // Filter powerups for player1 and player2
         const player1Powerups = powerups
-        .filter(([type, targetID, targetUserName, userID, duelID]) => {
-            console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
-            return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player1;
-        });
+            .filter(([type, targetID, targetUserName, userID, duelID]) => {
+                console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
+                return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player1;
+            });
 
         const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
             console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player2}`);
@@ -470,7 +471,7 @@ const BetSummaryPage: React.FC = () => {
         let player2AddedSteps = 0;
 
         // Create modified versions of the powerups for display
-         // Transform and modify powerups
+        // Transform and modify powerups
         const modifiedPlayer1Powerups = player1Powerups.map(([type, targetID, targetUserName, userID, duelID]) => {
             if (type === "secondWind") player1AddedSteps += 200;
             if (type === "brickWall") player1AddedSteps -= 200;
@@ -499,18 +500,18 @@ const BetSummaryPage: React.FC = () => {
         const player1TotalSteps = currentBets[currentBetIndex]?.player1Steps + player1AddedSteps;
         const player2TotalSteps = currentBets[currentBetIndex]?.player2Steps + player2AddedSteps;
 
-        return {player1Steps: player1TotalSteps, player2Steps: player2TotalSteps, player2Ratio: player2Ratio, player1Powerups: modifiedPlayer1Powerups, player2Powerups: modifiedPlayer2Powerups};
+        return { player1Steps: player1TotalSteps, player2Steps: player2TotalSteps, player2Ratio: player2Ratio, player1Powerups: modifiedPlayer1Powerups, player2Powerups: modifiedPlayer2Powerups };
     };
 
     return (
-        <SafeAreaView style={styles.safeView}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
                     {/* Header Section */}
                     <View style={styles.header}>
@@ -522,7 +523,7 @@ const BetSummaryPage: React.FC = () => {
                         </TouchableOpacity>
                         <View style={styles.rightIcons}>
                             <View>
-                                <TouchableOpacity onPress={() => {setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
+                                <TouchableOpacity onPress={() => { setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -539,9 +540,9 @@ const BetSummaryPage: React.FC = () => {
                     </View>
                     <View style={styles.groupInfo}>
                         <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
-                            <Image 
-                                source={groups[groupID]?.groupImageUrl ? 
-                                    { uri: groups[groupID]?.groupImageUrl } : 
+                            <Image
+                                source={groups[groupID]?.groupImageUrl ?
+                                    { uri: groups[groupID]?.groupImageUrl } :
                                     require('@components/blank-profile-picture.png')
                                 }
                                 style={styles.groupImage}
@@ -569,14 +570,14 @@ const BetSummaryPage: React.FC = () => {
                                     )}
                                 </View>
                                 <TouchableOpacity onPress={() => setEditGroupModalVisible(true)} activeOpacity={0.8}>
-                                    <Image 
+                                    <Image
                                         source={require('@assets/icons/edit.png')}
                                         style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: scale(-10), }]}
                                     />
                                 </TouchableOpacity>
                             </View>
-                            <View style={{  flexDirection: 'row', alignItems: 'center', }}>
-                                <Image 
+                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                                <Image
                                     source={require('@assets/icons/timeLeft.png')}
                                     style={styles.timeLeftIcon}
                                 />
@@ -594,7 +595,7 @@ const BetSummaryPage: React.FC = () => {
                     </View>
 
                     {/* Stats Container */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(25), paddingTop: scale(15), }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), paddingTop: scale(15), }}>
                         <Text style={styles.sectionTitle}>Your Total Stats</Text>
                         {groups[groupID]?.gameType === 'weekly' && (
                             <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
@@ -628,7 +629,7 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Live Duel Section */}
                     <View>
-                        <Text style={[styles.sectionTitle, { paddingHorizontal: scale(25), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
+                        <Text style={[styles.sectionTitle, { paddingHorizontal: scale(20), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
                         <View style={styles.duelRow}>
                             <LinearGradient
                                 colors={['#74ff6db3', '#2fffe3b3']}
@@ -640,7 +641,7 @@ const BetSummaryPage: React.FC = () => {
                                         style={styles.arrowIcon}
                                     />
                                 </TouchableOpacity>
-                                <ScrollView 
+                                <ScrollView
                                     ref={scrollViewRef}
                                     horizontal
                                     snapToInterval={screenWidth} // Snap to each card
@@ -649,7 +650,7 @@ const BetSummaryPage: React.FC = () => {
                                     onScroll={handleScroll}
                                 >
                                     {currentBets.map((bets, index) => (
-                                    
+
                                         <TouchableOpacity
                                             onPress={() => setLiveDuelModalVisible(true)}
                                             activeOpacity={1}
@@ -658,16 +659,16 @@ const BetSummaryPage: React.FC = () => {
 
                                             {/* player 1 */}
                                             <View style={styles.playerInfo}>
-                                                <Image 
-                                                    source={bets?.player1Pfp ? 
-                                                        { uri: bets?.player1Pfp } : 
+                                                <Image
+                                                    source={bets?.player1Pfp ?
+                                                        { uri: bets?.player1Pfp } :
                                                         require('@components/blank-profile-picture.png')
                                                     }
                                                     style={[styles.playerImage, { borderColor: '#FF6060', }]}
                                                 />
                                                 <Text style={styles.playerName}>{truncateString(bets?.player1 ?? '', 13)}</Text>
                                                 <Text style={styles.playerSteps}>{getBetPlayerInfo().player1Steps} steps</Text>
-                                                <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                                                     <Image
                                                         source={require('@assets/icons/tokensWhite.png')}
                                                         style={styles.tokensWhiteIcon}
@@ -683,16 +684,16 @@ const BetSummaryPage: React.FC = () => {
                                                 <Text style={styles.youBetText}>You've bet:</Text>
                                             </View>
                                             <View style={styles.playerInfo}>
-                                                <Image 
-                                                    source={bets?.player2Pfp ? 
-                                                        { uri: bets?.player2Pfp } : 
+                                                <Image
+                                                    source={bets?.player2Pfp ?
+                                                        { uri: bets?.player2Pfp } :
                                                         require('@components/blank-profile-picture.png')
                                                     }
                                                     style={[styles.playerImage, { borderColor: '#7464FF', }]}
                                                 />
                                                 <Text style={styles.playerName}>{truncateString(bets?.player2 ?? '', 13)}</Text>
                                                 <Text style={styles.playerSteps}>{getBetPlayerInfo().player2Steps} steps</Text>
-                                                <View style={{  flexDirection: 'row', alignItems: 'center', }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                                                     <Image
                                                         source={require('@assets/icons/tokensWhite.png')}
                                                         style={styles.tokensWhiteIcon}
@@ -716,67 +717,52 @@ const BetSummaryPage: React.FC = () => {
                                 source={require('@assets/icons/tokensBlack.png')}
                                 style={[styles.tokensBlackIcon, { marginRight: scale(5), }]}
                             />
-                                <Text style={styles.betText}>
-                                    {(() => {
-                                        const userName = currentGroupUsersArray?.find(usr => usr.id === userID)?.name || "";
-                                        const combinedBets = [
-                                            ...(currentBets[currentBetIndex]?.player1Bets || []),
-                                            ...(currentBets[currentBetIndex]?.player2Bets || []),
-                                        ];
-                                        const userBet = combinedBets.find(bet => bet.user === userName);
-                                        return userBet?.wager || 0;
-                                    })()}
-                                </Text>
+                            <Text style={styles.betText}>
+                                {(() => {
+                                    const userName = currentGroupUsersArray?.find(usr => usr.id === userID)?.name || "";
+                                    const combinedBets = [
+                                        ...(currentBets[currentBetIndex]?.player1Bets || []),
+                                        ...(currentBets[currentBetIndex]?.player2Bets || []),
+                                    ];
+                                    const userBet = combinedBets.find(bet => bet.user === userName);
+                                    return userBet?.wager || 0;
+                                })()}
+                            </Text>
                         </View>
                     </View>
 
                     {/* Leaderboard Section */}
                     <View style={styles.leaderboardContainer}>
-                    <Text style={[styles.sectionTitle, { paddingHorizontal: scale(10), }]}>Leaderboards</Text>
+                        <Text style={styles.sectionTitle}>Leaderboards</Text>
                         <View style={styles.tabContainer}>
-                            {selectedTab === 'Tokens' ? (
-                                <>
-                                    <LinearGradient
-                                        colors={['#5BE35C', '#14B582']}
-                                        style={styles.tab}
-                                    >
-                                    <Text style={styles.tabText}>Tokens</Text>
-                                </LinearGradient>
-                                    <TouchableOpacity 
-                                        style={styles.tab}
-                                        onPress={() => setSelectedTab('Steps')}
-                                        activeOpacity={1}
-                                    >
-                                        <Text style={styles.tabText}>Steps</Text>
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <>
-                                    <TouchableOpacity 
-                                        style={styles.tab}
-                                        onPress={() => setSelectedTab('Tokens')}
-                                        activeOpacity={1}
-                                    >
-                                        <Text style={styles.tabText}>Tokens</Text>
-                                    </TouchableOpacity>
-                                    <LinearGradient
-                                        colors={['#5BE35C', '#14B582']}
-                                        style={styles.tab}
-                                    >
-                                        <Text style={styles.tabText}>Steps</Text>
-                                    </LinearGradient>
-                                </>
-                            )}
+                            <TouchableOpacity
+                                style={[styles.tab, { borderBottomColor: selectedTab === 'Tokens' ? '#74FF6D' : 'transparent', }]}
+                                onPress={() => setSelectedTab('Tokens')}
+                                activeOpacity={1}
+                            >
+                                <Text style={[styles.tabText, { color: selectedTab === 'Tokens' ? '#74FF6D' : '#fff', }]}>Tokens</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, { borderBottomColor: selectedTab === 'Steps' ? '#74FF6D' : 'transparent', }]}
+                                onPress={() => setSelectedTab('Steps')}
+                                activeOpacity={1}
+                            >
+                                <Text style={[styles.tabText, { color: selectedTab === 'Steps' ? '#74FF6D' : '#fff', }]}>Steps</Text>
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.leaderboard}>
-                            <ScrollView showsVerticalScrollIndicator={false}>
+                        {/* Line for showing selected tab */}
+                        <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
+                            selectedTab === 'Steps' ? 
+                                { alignSelf: 'flex-end', right: scale(10) } :
+                                { alignSelf: 'flex-start', left: scale(10), }]} />
                                 {selectedTab === 'Tokens' ? (
-                                    <>
+                        <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
+                            <ScrollView showsVerticalScrollIndicator={false}>
                                         <View style={styles.leaderboardTop}>
                                             <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
                                                 <Image
-                                                    source={currentGroupUsersArray[1]?.pfp ? 
-                                                        { uri: currentGroupUsersArray[1]?.pfp } : 
+                                                    source={currentGroupUsersArray[1]?.pfp ?
+                                                        { uri: currentGroupUsersArray[1]?.pfp } :
                                                         require('@components/blank-profile-picture.png')
                                                     }
                                                     style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
@@ -802,8 +788,8 @@ const BetSummaryPage: React.FC = () => {
                                                     elevation: 10,
                                                 }}>
                                                     <Image
-                                                        source={currentGroupUsersArray[0]?.pfp ? 
-                                                            { uri: currentGroupUsersArray[0]?.pfp } : 
+                                                        source={currentGroupUsersArray[0]?.pfp ?
+                                                            { uri: currentGroupUsersArray[0]?.pfp } :
                                                             require('@components/blank-profile-picture.png')
                                                         }
                                                         style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
@@ -823,8 +809,8 @@ const BetSummaryPage: React.FC = () => {
                                             </TouchableOpacity>
                                             <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
                                                 <Image
-                                                    source={currentGroupUsersArray[2]?.pfp ? 
-                                                        { uri: currentGroupUsersArray[2]?.pfp } : 
+                                                    source={currentGroupUsersArray[2]?.pfp ?
+                                                        { uri: currentGroupUsersArray[2]?.pfp } :
                                                         require('@components/blank-profile-picture.png')
                                                     }
                                                     style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
@@ -845,14 +831,14 @@ const BetSummaryPage: React.FC = () => {
                                         {currentGroupUsersArray.slice(3).map((user, index) => (
                                             <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
                                                 <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
-                                                    <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index+4}</Text>
-                                                        <Image
-                                                            source={user.pfp ? 
-                                                                { uri: user.pfp } : 
-                                                                require('@components/blank-profile-picture.png')
-                                                            }
-                                                            style={[styles.leaderboardImage, { marginRight: scale(10), }]}
-                                                        />
+                                                    <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
+                                                    <Image
+                                                        source={user.pfp ?
+                                                            { uri: user.pfp } :
+                                                            require('@components/blank-profile-picture.png')
+                                                        }
+                                                        style={[styles.leaderboardImage, { marginRight: scale(10), }]}
+                                                    />
                                                     <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
                                                     <View style={styles.leaderboardTokensNumTokens}>
                                                         <Image
@@ -864,16 +850,18 @@ const BetSummaryPage: React.FC = () => {
                                                 </View>
                                             </TouchableOpacity>
                                         ))}
-                                    </>
+                            </ScrollView>
+                        </View>
                                 ) : (
-                                    <>
+                                    <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
+                                        <ScrollView showsVerticalScrollIndicator={false}>
                                         <View style={styles.grayLine} />
                                         {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                             <View key={user.id} style={styles.leaderboardRow}>
                                                 <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
                                                     <Image
-                                                        source={user.pfp ? 
-                                                            { uri: user.pfp } : 
+                                                        source={user.pfp ?
+                                                            { uri: user.pfp } :
                                                             require('@components/blank-profile-picture.png')
                                                         }
                                                         style={styles.leaderboardImage}
@@ -888,7 +876,7 @@ const BetSummaryPage: React.FC = () => {
                                                         style={{
                                                             backgroundColor: user.id === userID ? '#fff' : '#4bff6c99',
                                                             width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
-                                                            height: scale(30),
+                                                            height: scale(26),
                                                             borderTopRightRadius: moderateScale(5),
                                                             borderBottomRightRadius: moderateScale(5),
                                                         }}
@@ -899,285 +887,284 @@ const BetSummaryPage: React.FC = () => {
                                                 </View>
                                             </View>
                                         ))}
-                                    </>
+                                        </ScrollView>
+                                    </View>
                                 )}
-                            </ScrollView>
+                    </View>
+                </View>
+
+                {/* ************************  MODALS  ********************** */}
+
+                {isHistoryDropdownVisible && (
+                    <TouchableOpacity
+                        style={styles.dropdownOverlay}
+                        activeOpacity={1}
+                        onPress={() => setHistoryDropdownVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={styles.dropdownMenu}>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setHistoryDropdownVisible(false);
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/GainsHistory',
+                                        params: { groupIDTemp: groupID },
+                                    });
+                                }}
+                            >
+                                <Text style={styles.dropdownText}>Gains</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setHistoryDropdownVisible(false);
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/BetsHistory',
+                                        params: { groupIDTemp: groupID },
+                                    });
+                                }}
+                            >
+                                <Text style={styles.dropdownText}>Bets</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setHistoryDropdownVisible(false);
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/RaceHistory',
+                                        params: { groupIDTemp: groupID },
+                                    });
+                                }}
+                            >
+                                <Text style={styles.dropdownText}>Races</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                )}
+
+                {/* Bet History Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isBetHistoryModalVisible}
+                    animationType="slide"
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setBetHistoryModalVisible(false)}>
+                                <Text style={styles.closeButtonText}>X</Text>
+                            </TouchableOpacity>
+
+                            {/* BetRecapPage as the modal content */}
+                            {groups[groupID]?.gameType === "weekly" ? (
+                                <WeeklyBetHistoryPage groupID={groupID} />
+                            ) : (
+                                <BetHistoryPage groupID={groupID} gameType={groups[groupID]?.gameType} />
+                            )}
+
                         </View>
                     </View>
-                </View>
-            </LinearGradient>
-            
-            {/* ************************  MODALS  ********************** */}
+                </Modal>
 
-            {isHistoryDropdownVisible && (
-                <TouchableOpacity
-                    style={styles.dropdownOverlay}
-                    activeOpacity={1}
-                    onPress={() => setHistoryDropdownVisible(false)} // Close dropdown when overlay is pressed
+                {/* Live Duel Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isLiveDuelModalVisible}
+                    animationType="fade"
                 >
-                    <View style={styles.dropdownMenu}>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setHistoryDropdownVisible(false);
-                                router.push({
-                                pathname: '/(authenticated)/home/bets/GainsHistory',
-                                params: { groupIDTemp: groupID },
-                                });
-                            }}
-                        >
-                            <Text style={styles.dropdownText}>Gains</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setHistoryDropdownVisible(false);
-                                router.push({
-                                pathname: '/(authenticated)/home/bets/BetsHistory',
-                                params: { groupIDTemp: groupID },
-                                });
-                            }}
-                        >
-                            <Text style={styles.dropdownText}>Bets</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => {
-                                setHistoryDropdownVisible(false);
-                                router.push({
-                                pathname: '/(authenticated)/home/bets/RaceHistory',
-                                params: { groupIDTemp: groupID },
-                                });
-                            }}
-                        >
-                            <Text style={styles.dropdownText}>Races</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            )}
-
-            {/* Bet History Modal */}
-            <Modal
-                transparent={true}
-                visible={isBetHistoryModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setBetHistoryModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
-
-                        {/* BetRecapPage as the modal content */}
-                        {groups[groupID]?.gameType === "weekly" ? (
-                            <WeeklyBetHistoryPage groupID={groupID} />
-                        ) : (
-                            <BetHistoryPage groupID={groupID} gameType={groups[groupID]?.gameType} />
-                        )}
-
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Live Duel Modal */}
-            <Modal
-                transparent={true}
-                visible={isLiveDuelModalVisible}
-                animationType="fade"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.liveDuelModalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} activeOpacity={1}>
-                            <Image
-                                source={require('@assets/icons/x.png')}
-                                style={styles.closeButtonIcon}
-                            />
-                        </TouchableOpacity>
-                        {/* LiveDuelPage as the modal content */}
-                        <LiveDuelPage
-                            betPlayerInfo={getBetPlayerInfo()} 
-                            bet={currentBets[currentBetIndex]}
-                            currentGroupUsersArray={currentGroupUsersArray}
-                            userID={userID}
-                            groupID={groupID}
-                            onNavigate={(id) => {
-                                setLiveDuelModalVisible(false);
-                                // Add small delay to ensure modal is closed before navigation
-                                setTimeout(() => {
-                                    createMemberButtonHandle(id);
-                                }, 100);
-                            }}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Store Modal */}
-            <Modal
-                transparent={true}
-                visible={isStoreModalVisible}
-                animationType="slide"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setStoreModalVisible(false)}>
-                            <Text style={styles.closeButtonText}>X</Text>
-                        </TouchableOpacity>
-
-                        {/* StorePage as the modal content */}
-                        <StorePage
-                            groupID={groupID}
-                            userDiamonds={groups[groupID]?.userDiamonds}
-                            gameType = {groups[groupID]?.gameType}
-                            currentGroupUsersArray={currentGroupUsersArray}
-                            setStoreModalVisible={setStoreModalVisible}
-                        />
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Prop Bet Modal */}
-            <Modal
-                transparent={true}
-                visible={isPropBetModalVisible}
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setPropBetModalVisible(false)} // Close dropdown when overlay is pressed
-                >
-                    <View style={[styles.moneyModalContainer, { height: '41%', }]}>
-                        {/* Close button */}
-                        {finishedPropBet && (
-                            <TouchableOpacity style={styles.closeButton} onPress={() => {setPropBetModalVisible(false); setSelectedPropBet(null);}}>
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.liveDuelModalContainer}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} activeOpacity={1}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
                                 />
                             </TouchableOpacity>
-                        )}
-                        
-                        <PropBetPage
-                            groupID={groupID}
-                            userID={userID}
-                            propBetPlayer={propBetPlayer}
-                            finishedPropBet={finishedPropBet}
-                            currentPropBet={currentPropBet}
-                            overUnder={setSelectedPropBet}
-                            setFinishedPropBet={setFinishedPropBet}
-                            setPropBetModalVisible={setPropBetModalVisible}
-                        />
+                            {/* LiveDuelPage as the modal content */}
+                            <LiveDuelPage
+                                betPlayerInfo={getBetPlayerInfo()}
+                                bet={currentBets[currentBetIndex]}
+                                currentGroupUsersArray={currentGroupUsersArray}
+                                userID={userID}
+                                groupID={groupID}
+                                onNavigate={(id) => {
+                                    setLiveDuelModalVisible(false);
+                                    // Add small delay to ensure modal is closed before navigation
+                                    setTimeout(() => {
+                                        createMemberButtonHandle(id);
+                                    }, 100);
+                                }}
+                            />
+                        </View>
                     </View>
-                </TouchableOpacity>
-            </Modal>
+                </Modal>
 
-            {/* Edit Group Modal */}
-            <Modal
-                transparent={true}
-                visible={isEditGroupModalVisible}
-                animationType="slide"
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setEditGroupModalVisible(false)} // Close dropdown when overlay is pressed
+                {/* Store Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isStoreModalVisible}
+                    animationType="slide"
                 >
-                    <View style={styles.editGroupModalContainer}>
-                        <EditGroupPage
-                            groupID={groupID}
-                            setEditGroupModalVisible={setEditGroupModalVisible}
-                            onNavigate={(id) => {
-                                setEditGroupModalVisible(false);
-                                // Add small delay to ensure modal is closed before navigation
-                                setTimeout(() => {
-                                    createMemberButtonHandle(id);
-                                }, 100);
-                            }}
-                        />
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setStoreModalVisible(false)}>
+                                <Text style={styles.closeButtonText}>X</Text>
+                            </TouchableOpacity>
+
+                            {/* StorePage as the modal content */}
+                            <StorePage
+                                groupID={groupID}
+                                userDiamonds={groups[groupID]?.userDiamonds}
+                                gameType={groups[groupID]?.gameType}
+                                currentGroupUsersArray={currentGroupUsersArray}
+                                setStoreModalVisible={setStoreModalVisible}
+                            />
+                        </View>
                     </View>
-                </TouchableOpacity>
-            </Modal>
+                </Modal>
 
-            {/* Info Modals */}
-            <Modal
-                transparent={true}
-                visible={isTokensModalVisible}
-                animationType="fade"
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
+                {/* Prop Bet Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isPropBetModalVisible}
                 >
-                    <View style={[styles.moneyModalContainer, { height: '25%',}]}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setPropBetModalVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={[styles.moneyModalContainer, { height: '41%', }]}>
+                            {/* Close button */}
+                            {finishedPropBet && (
+                                <TouchableOpacity style={styles.closeButton} onPress={() => { setPropBetModalVisible(false); setSelectedPropBet(null); }}>
+                                    <Image
+                                        source={require('@assets/icons/x.png')}
+                                        style={styles.closeButtonIcon}
+                                    />
+                                </TouchableOpacity>
+                            )}
+
+                            <PropBetPage
+                                groupID={groupID}
+                                userID={userID}
+                                propBetPlayer={propBetPlayer}
+                                finishedPropBet={finishedPropBet}
+                                currentPropBet={currentPropBet}
+                                overUnder={setSelectedPropBet}
+                                setFinishedPropBet={setFinishedPropBet}
+                                setPropBetModalVisible={setPropBetModalVisible}
+                            />
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+
+                {/* Edit Group Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isEditGroupModalVisible}
+                    animationType="slide"
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setEditGroupModalVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={styles.editGroupModalContainer}>
+                            <EditGroupPage
+                                groupID={groupID}
+                                setEditGroupModalVisible={setEditGroupModalVisible}
+                                onNavigate={(id) => {
+                                    setEditGroupModalVisible(false);
+                                    // Add small delay to ensure modal is closed before navigation
+                                    setTimeout(() => {
+                                        createMemberButtonHandle(id);
+                                    }, 100);
+                                }}
+                            />
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+
+                {/* Info Modals */}
+                <Modal
+                    transparent={true}
+                    visible={isTokensModalVisible}
+                    animationType="fade"
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={[styles.moneyModalContainer, { height: '25%', }]}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
                                 />
-                        </TouchableOpacity>
-                        <View style={styles.infoModalContainer}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={styles.tokenText}>Here are your total tokens. You can earn more by winning your bets or the weekly race!{"\n\n"}The person with the most tokens at the end of your game wins!</Text>
+                            </TouchableOpacity>
+                            <View style={styles.infoModalContainer}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Text style={styles.tokenText}>Here are your total tokens. You can earn more by winning your bets or the weekly race!{"\n\n"}The person with the most tokens at the end of your game wins!</Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-            <Modal
-                transparent={true}
-                visible={isTokensUsedModalVisible}
-                animationType="fade"
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
+                    </TouchableOpacity>
+                </Modal>
+                <Modal
+                    transparent={true}
+                    visible={isTokensUsedModalVisible}
+                    animationType="fade"
                 >
-                    <View style={[styles.moneyModalContainer, { height: '13%',}]}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
-                            <Image
-                                source={require('@assets/icons/x.png')}
-                                style={styles.closeButtonIcon}
-                            />
-                        </TouchableOpacity>
-                        <View style={styles.infoModalContainer}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={styles.tokenText}>Here are the tokens you've bet this week.</Text>
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={[styles.moneyModalContainer, { height: '13%', }]}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
+                                <Image
+                                    source={require('@assets/icons/x.png')}
+                                    style={styles.closeButtonIcon}
+                                />
+                            </TouchableOpacity>
+                            <View style={styles.infoModalContainer}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Text style={styles.tokenText}>Here are the tokens you've bet this week.</Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-            <Modal
-                transparent={true}
-                visible={isDiamondsModalVisible}
-                animationType="fade"
-            >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setDiamondsModalVisible(false)} // Close dropdown when overlay is pressed
+                    </TouchableOpacity>
+                </Modal>
+                <Modal
+                    transparent={true}
+                    visible={isDiamondsModalVisible}
+                    animationType="fade"
                 >
-                    <View style={[styles.moneyModalContainer, { height: '20%',}]}>
-                        {/* Close button */}
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
-                            <Image
-                                source={require('@assets/icons/x.png')}
-                                style={styles.closeButtonIcon}
-                            />
-                        </TouchableOpacity>
-                        <View style={styles.infoModalContainer}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setDiamondsModalVisible(false)} // Close dropdown when overlay is pressed
+                    >
+                        <View style={[styles.moneyModalContainer, { height: '20%', }]}>
+                            {/* Close button */}
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
+                                <Image
+                                    source={require('@assets/icons/x.png')}
+                                    style={styles.closeButtonIcon}
+                                />
+                            </TouchableOpacity>
+                            <View style={styles.infoModalContainer}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                                    <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
-        </SafeAreaView>
+                    </TouchableOpacity>
+                </Modal>
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
@@ -1187,7 +1174,6 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        marginTop: verticalScale(50),
     },
     infoModalContainer: {
         padding: moderateScale(30),
@@ -1208,12 +1194,12 @@ const styles = StyleSheet.create({
         gap: scale(10),
     },
     backIcon: {
-      width: scale(19),
-      height: scale(19),
+        width: scale(19),
+        height: scale(19),
     },
     historyIcon: {
-      width: scale(27),
-      height: scale(27),
+        width: scale(27),
+        height: scale(27),
     },
     dropdownOverlay: {
         position: 'absolute',
@@ -1280,8 +1266,8 @@ const styles = StyleSheet.create({
     editIcon: {
         width: scale(16),
         height: scale(16),
-      },
-      timeLeftIcon: {
+    },
+    timeLeftIcon: {
         width: scale(13),
         height: scale(13),
     },
@@ -1300,7 +1286,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         backgroundColor: '#65656580',
         paddingHorizontal: scale(20),
-        borderRadius: moderateScale(20),
+        borderRadius: moderateScale(15),
         padding: moderateScale(10),
         marginHorizontal: scale(20),
         marginBottom: verticalScale(5),
@@ -1320,22 +1306,22 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(13),
     },
     tokensIcon: {
-      width: scale(16),
-      height: scale(16),
+        width: scale(16),
+        height: scale(16),
     },
     betTokensIcon: {
-      width: scale(15),
-      height: scale(15),
+        width: scale(15),
+        height: scale(15),
     },
     diamondsIcon: {
-      width: scale(14),
-      height: scale(12),
+        width: scale(14),
+        height: scale(12),
     },
     sectionTitle: {
         color: '#fff',
         fontSize: moderateScale(16),
         fontFamily: 'Lexend',
-        marginBottom: verticalScale(10),
+        marginBottom: verticalScale(5),
     },
     duelRow: {
         flexDirection: 'row',
@@ -1367,8 +1353,8 @@ const styles = StyleSheet.create({
         zIndex: 1
     },
     arrowIcon: {
-      width: scale(15),
-      height: scale(15),
+        width: scale(15),
+        height: scale(15),
     },
     playerInfo: {
         alignItems: 'center',
@@ -1455,13 +1441,12 @@ const styles = StyleSheet.create({
     leaderboardContainer: {
         flex: 1,
         padding: moderateScale(20),
-        marginTop: verticalScale(10),
+        // marginTop: verticalScale(10),
     },
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: '#65656580',
-        borderRadius: moderateScale(15),
-        marginBottom: verticalScale(10),
+        borderRadius: moderateScale(10),
     },
     tab: {
         flex: 1,
@@ -1478,18 +1463,27 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#65656580',
         borderRadius: moderateScale(20),
-        padding: moderateScale(15),
+        paddingHorizontal: moderateScale(10),
+        marginTop: verticalScale(8),
     },
-    grayLine: { 
+    leaderboardStepsContainer: {
+        flex: 1,
+        backgroundColor: '#65656580',
+        paddingHorizontal: moderateScale(10),
+        marginTop: verticalScale(8),
+        borderTopLeftRadius: moderateScale(20),
+        borderTopRightRadius: moderateScale(20),
+    },
+    grayLine: {
         position: 'absolute',
-        left: scale(40),
+        left: scale(36),
         width: scale(1.5),
-        height: '95%',
+        height: '100%',
         backgroundColor: '#fff',
         zIndex: 1,
     },
     leaderboardTop: {
-        flexDirection: 'row', 
+        flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'flex-end',
         marginBottom: verticalScale(15),
@@ -1542,8 +1536,8 @@ const styles = StyleSheet.create({
         right: scale(15),
     },
     leaderboardImage: {
-        width: scale(30),
-        height: scale(30),
+        width: scale(26),
+        height: scale(26),
         borderRadius: moderateScale(15),
         marginRight: scale(10),
         borderWidth: moderateScale(1.5),

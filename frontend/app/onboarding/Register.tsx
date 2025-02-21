@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     SafeAreaView, Pressable, Keyboard,
-    View, Image, Text, TouchableOpacity, TextInput, Alert, StyleSheet,
+    View, Image, Text, TouchableOpacity, TextInput, Alert,
     KeyboardAvoidingView, Platform, ScrollView
 } from 'react-native';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
@@ -12,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
+import { StyleSheet } from 'react-native-size-scaling';
 //import db from "@react-native-firebase/firestore";
 
 

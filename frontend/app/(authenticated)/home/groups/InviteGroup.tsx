@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, SafeAreaView, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
+import { View, TextInput, StyleSheet, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -14,6 +14,8 @@ import { useUser } from '../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const db = getFirestore(app);
 
@@ -288,26 +290,34 @@ const InvitePage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.contentView}>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Image
-                            source={require('@components/back-icon.png')}
-                            style={styles.backImage}
-                        />
-                    </TouchableOpacity>
-                    {isFromCreate ? (
-                        <Text style={styles.groupNameCreated}>
-                            <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
-                        </Text>
-                    ) : (
-                        <View>
-                            <View style={styles.titleContainer}>
-                                <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
+                    <View style={styles.header}>
+                        <TouchableOpacity style={{ position: 'absolute', left: 0, padding: 16 }} onPress={() => router.back()}>
+                            <Image
+                                source={require('@components/back-icon.png')}
+                                style={styles.backImage}
+                            />
+                        </TouchableOpacity>
+                        {isFromCreate ? (
+                            <Text style={styles.groupNameCreated}>
+                                <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
+                            </Text>
+                        ) : (
+                            <View>
+                                <View style={styles.titleContainer}>
+                                    <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
+                                </View>
                             </View>
-                        </View>
-                    )}
+                        )}
+                    </View>
                     <View style={styles.groupImageContainer}>
                         {groups[resolvedGroupID]?.groupImageUrl ? (
                             <Image source={{ uri: groups[resolvedGroupID]?.groupImageUrl }} style={styles.groupImage} />
@@ -331,7 +341,7 @@ const InvitePage: React.FC = () => {
                         </Text>
                     )}
 
-                    <Text style={[styles.text, { fontWeight: "bold", marginBottom: verticalScale(10) }]}>
+                    <Text style={[styles.text, { marginBottom: verticalScale(10) }]}>
                         Group Members ({groups[resolvedGroupID]?.userList.length}):
                     </Text>
                     <ScrollView
@@ -385,7 +395,6 @@ const InvitePage: React.FC = () => {
                             <Text style={styles.cancelButtonText}>Leave Group</Text>
                         </TouchableOpacity>
                     )}
-                </View>
                 {/* Settings Modal */}
                 <Modal
                     transparent={true}
@@ -506,13 +515,13 @@ const InvitePage: React.FC = () => {
                 </Modal>
             </View>
         </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     dropdownContainer: {
         marginVertical: verticalScale(10),
@@ -523,14 +532,39 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         borderColor: '#ccc',
     },
-    contentView: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
     container: {
-        justifyContent: 'center',
-        // marginTop: 20,
         height: '100%',
+        paddingTop: verticalScale(10),
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: scale(20),
+        marginBottom: verticalScale(5),
+    },
+    backImage: {
+        width: scale(40),
+        height: scale(40),
+    },
+    groupNameCreated: {
+        fontSize: moderateScale(20),
+        fontFamily: 'Lexend',
+    },
+    groupName: {
+        fontSize: moderateScale(24),
+        fontFamily: 'Lexend',
+        color: '#fff',
+    },
+    titleContainer: {
+        // flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    groupNameStandalone: {
+        fontFamily: 'Lexend',
+        fontSize: moderateScale(30),
+        color: '#fff',
     },
     groupImageContainer: {
         alignItems: 'center',
@@ -540,6 +574,8 @@ const styles = StyleSheet.create({
         height: scale(120),
         borderRadius: moderateScale(60),
         marginVertical: verticalScale(10),
+        borderWidth: 2,
+        borderColor: '#74FF6D'
     },
     settingText: {
         fontFamily: 'Lexend',
@@ -547,7 +583,7 @@ const styles = StyleSheet.create({
     buttonText: {
         fontFamily: 'Lexend',
         textAlign: 'center',
-        color: 'blue',
+        color: '#74FF6D',
     },
     backButton: {
         left: scale(20),
@@ -573,46 +609,25 @@ const styles = StyleSheet.create({
         height: scale(40),
         borderRadius: moderateScale(20),
         borderWidth: moderateScale(1),
-        borderColor: '#D3D3D3',
+        borderColor: '#74FF6D',
         marginRight: scale(10),
     },
-    backImage: {
-        width: scale(40),
-        height: scale(40),
-    },
-    groupNameCreated: {
-        fontSize: moderateScale(20),
-        fontFamily: 'Lexend',
-        textAlign: 'center',
-        alignSelf: 'center',
-    },
-    groupName: {
-        fontSize: moderateScale(24),
-        fontFamily: 'Lexend-Bold',
-    },
-    titleContainer: {
-        justifyContent: 'center',
-    },
     scrollContainer: {
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#5BE35C32',
         borderRadius: moderateScale(5),
         marginHorizontal: scale(10),
-        paddingTop: verticalScale(10),
-        maxHeight: '20%',
+        paddingVertical: verticalScale(10),
+        maxHeight: '27%',
         flexGrow: 0,
-    },
-    groupNameStandalone: {
-        textAlign: 'center',
-        fontSize: moderateScale(30),
-        fontWeight: '200',
-        fontFamily: 'Lexend-Bold',
-        marginTop: verticalScale(-30),
+        borderWidth: 1,
+        borderColor: '#00000032',
     },
     text: {
         fontSize: moderateScale(18),
         marginTop: verticalScale(20),
         marginHorizontal: scale(20),
         fontFamily: 'Lexend',
+        color: '#fff',
     },
     bold_text: {
         fontSize: moderateScale(18),
@@ -622,10 +637,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend-Bold',
         textAlign: 'center',
         alignSelf: 'center',
+        color: '#fff',
     },
     username: {
         fontSize: moderateScale(16),
         fontFamily: 'Lexend',
+        color: '#fff',
     },
     closeButton: {
         position: 'absolute',
@@ -666,7 +683,7 @@ const styles = StyleSheet.create({
     startButtonText: {
         textAlign: 'center',
         fontSize: moderateScale(15),
-        color: 'white',
+        color: '#fff',
         fontFamily: 'Lexend',
     },
     // Modal styles
