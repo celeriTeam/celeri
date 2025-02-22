@@ -367,15 +367,23 @@ function createCycle(players) {
   // Return the array of objects, each representing a round
 }
 
-
+/**
+ * Function to createCyclesInGame
+ * @param {Object} players - object from firebase.
+ * @param {Object} numberOfOldPlayers - amount of players from the start of the cycle
+ * @param {Object} roundsSoFar - amount of weeks that have passed
+ * @param {Object} currentRounds - the cycleDuels from firebase
+ * @return {Object} cycles
+ */
 function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRounds) {
-  console.log("Entering createCyclesInGame -- means there are new players")
+  console.log("Entering createCyclesInGame -- means there are new players");
 
-  // First identify who the new players are 
+  // First identify who the new players are
   // players is an array of players, ordered by which they joined
   // number of old players is current players
 
   const newPlayers = players.slice(numberOfOldPlayers);
+  const playerCount = players.length;
   console.log(`New players: ${JSON.stringify(newPlayers)}`);
 
   // 1. Store past duels to avoid duplicates
@@ -383,8 +391,10 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
   for (let i = 0; i < roundsSoFar; i++) {
     const round = currentRounds[i];
     for (const duelKey in round) {
-      const { player1, player2 } = round[duelKey];
-      pastDuels.add([player1, player2].sort().join('-'));
+      if (Object.hasOwn(round, duelKey)) {
+        const {player1, player2} = round[duelKey];
+        pastDuels.add([player1, player2].sort().join("-"));
+      }
     }
   }
 
@@ -394,7 +404,7 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
   const allDuels = [];
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
-      const duelKey = [players[i], players[j]].sort().join('-');
+      const duelKey = [players[i], players[j]].sort().join("-");
       allDuels.push({
         player1: players[i],
         player2: players[j],
@@ -420,16 +430,15 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
   const newCycles = [];
   const duelsPerRound = players.length / 2;
 
-  if (playerCount % 2 !== 0){
+  if (playerCount % 2 !== 0) {
     players.push("BYE");
   }
 
   const rounds = players.length - 1;
 
-  for (let round = 0; round < rounds; round++){
-
+  for (let round = 0; round < rounds; round++) {
     // if this is a round that has already happened, keep it the way it is
-    if( round < roundsSoFar ){
+    if ( round < roundsSoFar ) {
       newCycles.push(currentRounds[round]);
     } else {
       // edit the round
@@ -439,18 +448,18 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
 
       // Try to fill this round with fresh duels first
       for (let i = 0; i < freshDuels.length; i++) {
-        if(duelCounter > duelsPerRound) break;
+        if (duelCounter > duelsPerRound) break;
         const duel = freshDuels[i];
-      
+
         if (usedPlayers.has(duel.player1) || usedPlayers.has(duel.player2)) {
           continue; // Skip this duel
         }
-      
+
         const duelKey = `duel${duelCounter++}`;
-        roundMatchups[duelKey] = { player1: duel.player1, player2: duel.player2 };
+        roundMatchups[duelKey] = {player1: duel.player1, player2: duel.player2};
         usedPlayers.add(duel.player1);
         usedPlayers.add(duel.player2);
-      
+
         // Remove the used duel from freshDuels
         freshDuels.splice(i, 1);
         i--; // Decrement index because we modified the array
@@ -483,11 +492,8 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
 
       newCycles.push(roundMatchups);
     }
-
-
   }
   return newCycles;
-
 }
 
 exports.updateWinners = onSchedule("every day 05:00", async (event) => {
@@ -1185,9 +1191,9 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               currentPlayersInGame: playerCount,
             });
             console.log("checkpoint three");
-          } else if (players > numberOfPlayers){
+          } else if (players > cycleDuels.length) { // cycleDuels.length because when if we did currentPlayersInGame it wouldn't update
             console.log("More people have joined the game");
-            createCyclesInGame(players, currentPlayersInGame, cycleWeek, cycleDuels)
+            cycleDuels = createCyclesInGame(players, numberOfPlayers, cycleWeek, cycleDuels);
             cycleWeek += 1;
           } else {
             cycleWeek += 1;
