@@ -1,13 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
-
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-//import { getBetPlayerInfo } from './BetSummary';
-
-//from fetchPowerups, 
-//powerupsArray.push([powerupType, targetUserID, targetUserName, userID, duelID]);
+import { StyleSheet } from 'react-native-size-scaling';
 
 type BetPlayerInfo = {
     player1Steps: number, 

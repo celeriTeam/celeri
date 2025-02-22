@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
+import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-//import {StyleSheet} from 'react-native-size-scaling';
+import { StyleSheet } from 'react-native-size-scaling';
 
 const PersonalProfilePage: React.FC = () => {
     const { averageSteps, distance, flights } = useHealthData();
@@ -36,8 +36,8 @@ const PersonalProfilePage: React.FC = () => {
             if (!token) {
                 console.error("Failed to get a valid Firebase token.");
                 return;
-              }
-          
+            }
+
             console.log("Token retrieved successfully:", token);
 
             const subscribedTopics = await getActiveUserGroupIDs(userID) || [];
@@ -85,13 +85,13 @@ const PersonalProfilePage: React.FC = () => {
     }
 
     const handleEdit = async () => {
-        if (currentName !== name){
+        if (currentName !== name) {
             editName(userID, currentName);
         }
-        if (currentUsername !== username){
+        if (currentUsername !== username) {
             editUsername(userID, currentUsername);
         }
-        if (currentPic !== profileImageUrl){
+        if (currentPic !== profileImageUrl) {
             editProfilePic(userID, currentPic);
         }
         setEditProfileModal(false);
@@ -100,12 +100,12 @@ const PersonalProfilePage: React.FC = () => {
     const pickImage = async () => {
         // Request permission to access the media library
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
         if (permissionResult.granted === false) {
             Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
             return;
         }
-    
+
         // Launch image picker
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -116,14 +116,14 @@ const PersonalProfilePage: React.FC = () => {
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-            // Compress and resize the image
-            const manipulatedImage = await ImageManipulator.manipulateAsync(
-                selectedAsset.uri,
-                [{ resize: { width: 800 } }], // Resize to 800px width
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
+                // Compress and resize the image
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    selectedAsset.uri,
+                    [{ resize: { width: 800 } }], // Resize to 800px width
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
 
-            setCurrentPic(manipulatedImage.uri);
+                setCurrentPic(manipulatedImage.uri);
             }
         }
     };
@@ -134,23 +134,23 @@ const PersonalProfilePage: React.FC = () => {
         const getLast8DaysLabels = () => {
             const today = new Date();
             const labels = [];
-            
+
             for (let i = 7; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
                 labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
             }
-            
+
             return labels;
         };
-    
+
         const data = {
             labels: getLast8DaysLabels(),
             datasets: [{
                 data: [...weeklySteps, steps]
             }]
         };
-    
+
         return (
             <LineChart
                 data={data}
@@ -207,7 +207,7 @@ const PersonalProfilePage: React.FC = () => {
                         </View>
                     ) : null;
                 }}
-                onDataPointClick={({x, y, value}) => {
+                onDataPointClick={({ x, y, value }) => {
                     setTooltipPos({
                         x: x,
                         y: y,
@@ -229,14 +229,14 @@ const PersonalProfilePage: React.FC = () => {
     }
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity onPress={() => setEditProfileModal(true)} activeOpacity={0.8}>
                         <Image
@@ -286,13 +286,17 @@ const PersonalProfilePage: React.FC = () => {
                                     <Text style={styles.saveText}>Save</Text>
                                 </TouchableOpacity>
                             </View>
-                            <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
-                                <Image
-                                    source={currentPic != '' ? { uri: currentPic } : require('@components/blank-profile-picture.png')}
-                                    style={{ width: 110, height: 110, borderRadius: 60, borderColor: '#74FF6D', borderWidth: 2, marginBottom: 20 }}
-                                />
-                                <Text style={styles.editImageText}>Change or Upload Profile Photo</Text>
-                            </TouchableOpacity>
+                            <View style={styles.imageContainer}>
+                                <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
+                                    <Image
+                                        source={currentPic != '' ? { uri: currentPic } : require('@components/blank-profile-picture.png')}
+                                        style={styles.profileImageEdit}
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
+                                    <Text style={styles.editImageText}>Change or Upload Profile Photo</Text>
+                                </TouchableOpacity>
+                            </View>
                             <TextInput
                                 ref={inputRef}
                                 style={styles.nameInput}
@@ -311,8 +315,8 @@ const PersonalProfilePage: React.FC = () => {
                         </View>
                     </View>
                 </Modal>
-            </LinearGradient>
-        </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
     );
 
 };
@@ -326,8 +330,6 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         alignItems: 'center',
         padding: 16,
-        marginTop: 50,
-        // height: '100%',
     },
     row: {
         flexDirection: 'row',
@@ -344,6 +346,14 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderColor: '#74FF6D',
         borderWidth: 2,
+    },
+    profileImageEdit: {
+        width: 110,
+        height: 110,
+        borderRadius: 60,
+        borderColor: '#74FF6D',
+        borderWidth: 2,
+        marginBottom: 20,
     },
     editImageText: {
         fontFamily: "Lexend",
@@ -435,12 +445,12 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
     },
     modalContainer: {
-        width: '93%',
+        width: '90%',
         backgroundColor: 'black',
         position: 'absolute',
-        top: '13%',
-        borderWidth: 1, // Thin border
-        borderColor: '#4A4A4A', // Dark grey border
+        top: '11%',
+        borderWidth: 1,
+        borderColor: '#A7A7A7',
         borderRadius: 20,
     },
     imageContainer: {

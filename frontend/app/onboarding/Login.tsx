@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     SafeAreaView, Pressable, Keyboard,
-    View, Text, TouchableOpacity, Button, TextInput, Alert, StyleSheet
+    View, Text, TouchableOpacity, Button, TextInput, Alert
 } from 'react-native';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError } from "firebase/auth";
 import { app, auth, db } from "@firebaseConfig";
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
-//import db from "@react-native-firebase/firestore";
+import { StyleSheet } from 'react-native-size-scaling';
 
 const LoginPage: React.FC = () => {
     const [email, setEmail] = useState<string | undefined>();
