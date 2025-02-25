@@ -421,12 +421,12 @@ export const getLastWeekSteps = async (userID: string, groupID: string): Promise
             const duelData = matchingDuel?.data();
 
             if(duelData?.steps && duelData?.steps > 0){
-                return duelData?.steps ?? 0; // Return steps or 0 if not found
+                return Math.floor(duelData?.steps) ?? 0; // Return steps or 0 if not found
             } else {
                 //if weeklySteps doesn't exist, it means its the first week, and you should grab it from the past seven days
                 const averageStepArray = await getAverageSteps(userID);
                 const sum = averageStepArray.reduce((a: number, b: number) => a + b, 0);
-                return sum;
+                return Math.floor(sum);
             }
         }
 
