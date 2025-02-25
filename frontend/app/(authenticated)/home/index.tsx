@@ -1,13 +1,17 @@
 // HomeTab.tsx
 import React, { useCallback, useEffect, useState } from 'react';
-import { View,
+import {
+    View,
     Text,
     TouchableOpacity,
     ActivityIndicator,
     Image,
     Button,
     Modal,
-    ScrollView} from 'react-native';
+    ScrollView,
+    Dimensions,
+    Touchable
+} from 'react-native';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
@@ -19,9 +23,21 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const HomeTab: React.FC = () => {
     const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData } = useHealthData();
@@ -40,6 +56,8 @@ const HomeTab: React.FC = () => {
     const [groupsState, setGroupsState] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [hasInitialized, setHasInitialized] = useState(false);
+    const [selectedTab, setSelectedTab] = useState('Group');
+    const [comingSoonModal, setComingSoonModal] = useState(false);
     const router = useRouter();
 
     // Getting data because its the first page
@@ -74,7 +92,7 @@ const HomeTab: React.FC = () => {
             //setStepsSinceMidnight(steps);
             setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore); // Call your backend update here
             setHasInitialized(true); // Mark initialization as complete
-        } else if(hasInitialized){
+        } else if (hasInitialized) {
             // Updates backend every time the listener runs, since listener cannot wait 
             // for useHealthData, but this function can
             console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
@@ -83,7 +101,7 @@ const HomeTab: React.FC = () => {
     }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
 
     useEffect(() => {
-        if(hasInitialized){
+        if (hasInitialized) {
             console.log("HomeTab -- already initialized");
             //getStepsSinceMidnight();
             const intervalId = setInterval(() => {
@@ -98,10 +116,10 @@ const HomeTab: React.FC = () => {
                 //     return newNeedsUpdate;
                 // });
 
-                
+
                 //getStepsSinceMidnight();
             }, 300000); // 5 minutes in milliseconds
-        
+
             // Clean up the interval when the component unmounts
             return () => {
                 clearInterval(intervalId);
@@ -125,7 +143,7 @@ const HomeTab: React.FC = () => {
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setIsLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupImageUrl, groupName, isGameActive,  isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
+                        const [groupImageUrl, groupName, isGameActive, isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
@@ -150,9 +168,9 @@ const HomeTab: React.FC = () => {
                     }
                     // Ensures all groups show at first load
                     loadingGroups.delete(groupName);
-                    setGetGroupID({...getGroupID});
-                    setGroups({...groups});
-                    
+                    setGetGroupID({ ...getGroupID });
+                    setGroups({ ...groups });
+
                     setIsLoading(false);
                 });
                 return unsubscribeGroup;
@@ -249,92 +267,175 @@ const HomeTab: React.FC = () => {
         );
     } else {
         return (
-            <SafeAreaView style={styles.safeView} edges={['top']}>
-                <View style={styles.container}>
-                    <View style={styles.titleContainer}>
-                            <Text style={styles.titleText}>Groups</Text>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <SafeAreaView style={styles.safeView} edges={['top']}>
+                    <View style={styles.container}>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.titleText}>Home</Text>
                         </View>
-                    <Text style={styles.subTitle}>Your Groups:</Text>
-                    <ScrollView style={styles.scrollContainer}>
-                    
-                        {/* testing headtohead tutorial */}
-                        {/* <TouchableOpacity onPress={() => { router.push({ pathname: '/(authenticated)/home/bets/HeadToHeadTutorial', params: { groupIDTemp: 'h8MNidtUi653BlZbR6nU' }, }) }}>
-                            <Text style={[styles.buttonText, {color: 'blue'}]}>Head To Head Tutorial</Text>
-                        </TouchableOpacity> */}
-
-                        {Object.entries(groups).map(([groupID, group]) => (
+                        <View style={styles.tabContainer}>
                             <TouchableOpacity
-                                key={groupID}
-                                style={styles.groupButton}
-                                onPress={() => goToGroup(group.groupName)}
+                                style={[styles.tab, { borderBottomColor: selectedTab === 'Group' ? '#74FF6D' : 'transparent', }]}
+                                onPress={() => setSelectedTab('Group')}
+                                activeOpacity={1}
                             >
-                                {group.groupImageUrl ? (
+                                <Text style={[styles.tabText, { color: selectedTab === 'Group' ? '#74FF6D' : '#fff', }]}>Group Mode</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.tab, { borderBottomColor: selectedTab === 'Solo' ? '#74FF6D' : 'transparent', }]}
+                                onPress={() => setSelectedTab('Solo')}
+                                activeOpacity={1}
+                            >
+                                <Text style={[styles.tabText, { color: selectedTab === 'Solo' ? '#74FF6D' : '#fff', }]}>Solo Mode</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {/* Line for showing selected tab */}
+                        <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
+                        selectedTab === 'Solo' ?
+                            { alignSelf: 'flex-end', right: scale(10) } :
+                            { alignSelf: 'flex-start', left: scale(10), }]}
+                        />
+                        {selectedTab === 'Group' ? (
+                            <>
+                                <Text style={styles.subTitle}>Your Groups:</Text>
+                                <ScrollView style={styles.scrollContainer}>
+
+                                    {/* testing headtohead tutorial */}
+                                    {/* <TouchableOpacity onPress={() => { router.push({ pathname: '/(authenticated)/home/bets/HeadToHeadTutorial', params: { groupIDTemp: 'h8MNidtUi653BlZbR6nU' }, }) }}>
+                                        <Text style={[styles.buttonText, {color: 'blue'}]}>Head To Head Tutorial</Text>
+                                    </TouchableOpacity> */}
+
+                                    {Object.entries(groups).map(([groupID, group]) => (
+                                        <TouchableOpacity
+                                            key={groupID}
+                                            style={styles.groupButton}
+                                            onPress={() => goToGroup(group.groupName)}
+                                        >
+                                            {group.groupImageUrl ? (
+                                                <Image
+                                                    source={{ uri: group.groupImageUrl }}
+                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
+                                                />
+                                            ) : (
+                                                <Image
+                                                    source={require('@components/blank-profile-picture.png')}
+                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
+                                                />
+                                            )}
+                                            <View style={styles.groupInfo}>
+                                                <Text style={styles.groupName}>{group.groupName}</Text>
+                                                <Text style={[styles.groupDetails, { color: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}>
+                                                    {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+
+                                {/* Floating Action Button */}
+                                <TouchableOpacity style={styles.fab} onPress={toggleModal} activeOpacity={1}>
+                                    <Text style={styles.fabText}>+</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <View style={styles.row}>
                                     <Image
-                                        source={{ uri: group.groupImageUrl }}
-                                        style={styles.groupImage}
+                                        source={require('@assets/icons/history.png')}
+                                        style={styles.historyIcon}
                                     />
-                                ) : (
-                                    <Image 
-                                        source={require('@components/blank-profile-picture.png')}
-                                        style={styles.groupImage}
+                                    <Image
+                                        source={require('@assets/icons/trophy.png')}
+                                        style={styles.trophyIcon}
                                     />
-                                )}
-                                <View style={styles.groupInfo}>
-                                    <Text style={styles.groupName}>{group.groupName}</Text>
-                                    <Text style={styles.groupDetails}>
-                                        {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
-                                    </Text>
+                                </View>
+                                <Image
+                                    source={require('@assets/icons/magnify.png')}
+                                    style={styles.magifyIcon}
+                                />
+                                <Text style={styles.noMatchText}>No match in progress.</Text>
+                                <TouchableOpacity style={styles.challengeButton} onPress={() => setComingSoonModal(true)}>
+                                    <Text style={styles.challengeText}>Challenge a friend</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
+                                    <Text style={styles.randomText}>Find Random Match</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+
+                        {/* Modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={isModalVisible}
+                            onRequestClose={toggleModal}
+                        >
+                            <TouchableOpacity
+                                style={styles.modalOverlay}
+                                activeOpacity={1}
+                                onPress={toggleModal} // Closes the modal when clicked outside the content
+                            >
+                                <BlurView intensity={50} style={styles.blurView}>
+                                    <TouchableOpacity
+                                        activeOpacity={1}
+                                        style={styles.modalContentWrapper}
+                                        onPress={() => { }} // Prevent closing when clicking inside the modal content
+                                    >
+                                        <View style={styles.modalContent}>
+                                            <Text style={styles.modalTitle}>Group Options</Text>
+                                            <TouchableOpacity style={styles.button} onPress={() => {
+                                                toggleModal();
+                                                joinGroupButtonHandle();
+                                            }}
+                                            >
+                                                <Text style={styles.buttonText}>Join Group</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={styles.button} onPress={() => {
+                                                toggleModal();
+                                                createGroupButtonHandle();
+                                            }}
+                                            >
+                                                <Text style={styles.buttonText}>Create Group</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableOpacity>
+                                </BlurView>
+                            </TouchableOpacity>
+                        </Modal>
+
+                        {/* Coming Soon Modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={comingSoonModal}
+                            onRequestClose={() => setComingSoonModal(false)}
+                        >
+                            <TouchableOpacity
+                                style={styles.modalOverlay}
+                                activeOpacity={1}
+                                onPress={() => setComingSoonModal(false)} // Close dropdown when overlay is pressed
+                            >
+                                <View style={[styles.modalContainer, { height: '41%', }]}>
+                                    {/* Close button */}
+                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setComingSoonModal(false)}>
+                                        <Image
+                                            source={require('@assets/icons/x.png')}
+                                            style={styles.closeButtonIcon}
+                                        />
+                                    </TouchableOpacity>
+                                    <Text style={styles.modalText}>Coming soon</Text>
                                 </View>
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    {/* Floating Action Button */}
-                    <TouchableOpacity style={styles.fab} onPress={toggleModal}>
-                        <Text style={styles.fabText}>+</Text>
-                    </TouchableOpacity>
-
-                    {/* Modal */}
-                    <Modal
-                        animationType="fade"
-                        transparent={true}
-                        visible={isModalVisible}
-                        onRequestClose={toggleModal}
-                    >
-                        <TouchableOpacity
-                            style={styles.modalOverlay}
-                            activeOpacity={1}
-                            onPress={toggleModal} // Closes the modal when clicked outside the content
-                        >
-                            <BlurView intensity={50} style={styles.blurView}>
-                                <TouchableOpacity
-                                    activeOpacity={1}
-                                    style={styles.modalContentWrapper}
-                                    onPress={() => {}} // Prevent closing when clicking inside the modal content
-                                >
-                                    <View style={styles.modalContent}>
-                                        <Text style={styles.modalTitle}>Group Options</Text>
-                                        <TouchableOpacity style={styles.button} onPress={() => {
-                                            toggleModal();
-                                            joinGroupButtonHandle();
-                                        }}
-                                        >
-                                            <Text style={styles.buttonText}>Join Group</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={styles.button} onPress={() => {
-                                            toggleModal();
-                                            createGroupButtonHandle();
-                                        }}
-                                        >
-                                            <Text style={styles.buttonText}>Create Group</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
-                            </BlurView>
-                        </TouchableOpacity>
-                    </Modal>
-                </View>
-            </SafeAreaView>
+                        </Modal>
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
         );
     }
 };
@@ -342,25 +443,28 @@ const HomeTab: React.FC = () => {
 const styles = StyleSheet.create({
     safeView: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
         justifyContent: 'flex-start',
         alignItems: 'center',
-        backgroundColor: '#fff',
         marginTop: 10,
         height: '100%',
+        width: '90%',
+        alignSelf: 'center',
     },
     username: {
-        fontWeight: 'bold',
+        fontFamily: 'Lexend',
+        color: '#fff',
     },
     subTitle: {
-        paddingTop: 20,
-        paddingLeft: 20,
-        textAlign: "left",
-        fontSize: 20,
         fontFamily: 'Lexend',
+        color: '#fff',
+        paddingLeft: 10,
+        paddingTop: 20,
+        textAlign: "left",
+        fontSize: 16,
         alignSelf: 'flex-start',
+        marginBottom: 10,
     },
     button: {
         backgroundColor: '#1976d2', // Blue background color
@@ -373,7 +477,7 @@ const styles = StyleSheet.create({
     buttonText: {
         textAlign: "center",
         fontSize: 15,
-        color: 'white',
+        color: '#fff',
         fontFamily: 'Lexend',
     },
     spaceAboveButton: {
@@ -383,10 +487,27 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     titleText: {
+        fontFamily: 'Lexend',
         textAlign: "center",
-        fontSize: 30,
-        fontWeight: "200",
-        fontFamily: 'Lexend-Bold',
+        fontSize: 20,
+        color: '#fff',
+        marginBottom: 20,
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#65656580',
+        borderRadius: 10,
+    },
+    tab: {
+        flex: 1,
+        padding: 10,
+        alignItems: 'center',
+        borderRadius: 15,
+    },
+    tabText: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'Lexend',
     },
     scrollContainer: {
         flex: 1,
@@ -395,11 +516,11 @@ const styles = StyleSheet.create({
     groupButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8f8f8',
+        backgroundColor: '#5BE35C32',
         padding: 15,
         borderRadius: 10,
-        marginVertical: 10,
-        width: '90%',
+        marginBottom: 10,
+        width: '100%',
         shadowColor: '#000',
         shadowOpacity: 0.1,
         shadowOffset: { width: 0, height: 2 },
@@ -412,40 +533,90 @@ const styles = StyleSheet.create({
         height: 50,
         borderRadius: 25,
         marginRight: 15,
+        borderWidth: 1.5,
     },
     groupInfo: {
         flex: 1,
     },
     groupName: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontSize: 15,
         fontFamily: 'Lexend',
+        color: '#fff',
     },
     groupDetails: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: 11,
         fontFamily: 'Lexend',
     },
     fab: {
         position: 'absolute',
-        top: 75,
-        right: 20,
-        backgroundColor: '#1E90FF',
-        width: 45,
-        height: 45,
+        top: 110,
+        right: 10,
+        backgroundColor: '#74FF6D',
+        width: 35,
+        height: 35,
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.3,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 5,
         elevation: 5,
     },
     fabText: {
-        color: '#fff',
+        fontFamily: 'Lexend',
+        color: '#000',
         fontSize: 24,
-        fontWeight: 'bold',
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        width: '98%',
+        gap: 5,
+        margin: 20,
+    },
+    historyIcon: {
+        width: 27,
+        height: 27,
+    },
+    trophyIcon: {
+        width: 21,
+        height: 21,
+    },
+    magifyIcon: {
+        width: 86,
+        height: 86,
+        alignSelf: 'center',
+        marginVertical: 40,
+    },
+    noMatchText: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 13,
+    },
+    challengeButton: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: 10,
+        borderWidth: 1,
+        borderColor: '#74FF6D',
+        borderRadius: 20,
+        marginVertical: 20,
+    },
+    challengeText: {
+        fontFamily: 'Lexend',
+        color: '#74FF6D',
+        fontSize: 13,
+        padding: 10,
+    },
+    randomButton: {
+        backgroundColor: 'transparent',
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 30,
+    },
+    randomText: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 13,
+        padding: 10,
     },
     blurView: {
         position: 'absolute',
@@ -481,13 +652,33 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     modalOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
+    },
+    modalContainer: {
+        width: '90%',
+        backgroundColor: 'black',
+        position: 'relative',
+        borderWidth: moderateScale(1),
+        borderColor: '#4A4A4A',
+        borderRadius: moderateScale(15),
+    },
+    modalCloseButton: {
+        position: 'absolute',
+        top: verticalScale(10),
+        right: scale(10),
+        zIndex: 1,
+    },
+    closeButtonIcon: {
+        width: scale(20),
+        height: scale(20),
+    },
+    modalText: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 20,
     },
     modalContentWrapper: {
         width: '100%',

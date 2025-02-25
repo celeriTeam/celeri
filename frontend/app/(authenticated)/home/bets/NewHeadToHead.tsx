@@ -132,7 +132,7 @@ const NewHeadToHeadPage: React.FC = () => {
                             profilePic: player1Pic,
                             duelsWon: player1WonDuels,
                             prevSteps: Math.floor(player1Steps),
-                            stepChange: player1StepsFromWeekBefore, // in percentage
+                            stepChange: player1StepsChangeFromWeekBefore, // in percentage
                         },
                         player2: {
                             id: player2ID,

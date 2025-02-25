@@ -754,142 +754,143 @@ const BetSummaryPage: React.FC = () => {
                         <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
                             selectedTab === 'Steps' ? 
                                 { alignSelf: 'flex-end', right: scale(10) } :
-                                { alignSelf: 'flex-start', left: scale(10), }]} />
-                                {selectedTab === 'Tokens' ? (
-                        <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
+                                { alignSelf: 'flex-start', left: scale(10), }]}
+                        />
+                        {selectedTab === 'Tokens' ? (
+                        <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(40), }]}>
                             <ScrollView showsVerticalScrollIndicator={false}>
-                                        <View style={styles.leaderboardTop}>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
-                                                <Image
-                                                    source={currentGroupUsersArray[1]?.pfp ?
-                                                        { uri: currentGroupUsersArray[1]?.pfp } :
-                                                        require('@components/blank-profile-picture.png')
-                                                    }
-                                                    style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                                />
-                                                <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>2</Text>
-                                                </View>
-                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
-                                                <View style={styles.leaderboardTopTokens}>
-                                                    <Image
-                                                        source={require('@assets/icons/tokensWhite.png')}
-                                                        style={styles.tokensWhiteIcon}
-                                                    />
-                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
-                                                </View>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
-                                                <View style={{
-                                                    shadowColor: '#51ba51',
-                                                    shadowOffset: { width: 0, height: 0 },
-                                                    shadowOpacity: 0.7,
-                                                    shadowRadius: moderateScale(7),
-                                                    elevation: 10,
-                                                }}>
-                                                    <Image
-                                                        source={currentGroupUsersArray[0]?.pfp ?
-                                                            { uri: currentGroupUsersArray[0]?.pfp } :
-                                                            require('@components/blank-profile-picture.png')
-                                                        }
-                                                        style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                                    />
-                                                </View>
-                                                <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
-                                                </View>
-                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
-                                                <View style={styles.leaderboardTopTokens}>
-                                                    <Image
-                                                        source={require('@assets/icons/tokensWhite.png')}
-                                                        style={styles.tokensWhiteIcon}
-                                                    />
-                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
-                                                </View>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
-                                                <Image
-                                                    source={currentGroupUsersArray[2]?.pfp ?
-                                                        { uri: currentGroupUsersArray[2]?.pfp } :
-                                                        require('@components/blank-profile-picture.png')
-                                                    }
-                                                    style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                                />
-                                                <View style={styles.leaderboardTopCircle} >
-                                                    <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>3</Text>
-                                                </View>
-                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
-                                                <View style={styles.leaderboardTopTokens}>
-                                                    <Image
-                                                        source={require('@assets/icons/tokensWhite.png')}
-                                                        style={styles.tokensWhiteIcon}
-                                                    />
-                                                    <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
-                                                </View>
-                                            </TouchableOpacity>
+                                <View style={styles.leaderboardTop}>
+                                    <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
+                                        <Image
+                                            source={currentGroupUsersArray[1]?.pfp ?
+                                                { uri: currentGroupUsersArray[1]?.pfp } :
+                                                require('@components/blank-profile-picture.png')
+                                            }
+                                            style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                        />
+                                        <View style={styles.leaderboardTopCircle} >
+                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>2</Text>
                                         </View>
-                                        {currentGroupUsersArray.slice(3).map((user, index) => (
-                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
-                                                <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
-                                                    <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
-                                                    <Image
-                                                        source={user.pfp ?
-                                                            { uri: user.pfp } :
-                                                            require('@components/blank-profile-picture.png')
-                                                        }
-                                                        style={[styles.leaderboardImage, { marginRight: scale(10), }]}
-                                                    />
-                                                    <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
-                                                    <View style={styles.leaderboardTokensNumTokens}>
-                                                        <Image
-                                                            source={require('@assets/icons/tokensWhite.png')}
-                                                            style={styles.tokensWhiteIcon}
-                                                        />
-                                                        <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
-                                                    </View>
-                                                </View>
-                                            </TouchableOpacity>
-                                        ))}
+                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
+                                        <View style={styles.leaderboardTopTokens}>
+                                            <Image
+                                                source={require('@assets/icons/tokensWhite.png')}
+                                                style={styles.tokensWhiteIcon}
+                                            />
+                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
+                                        <View style={{
+                                            shadowColor: '#51ba51',
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: 0.7,
+                                            shadowRadius: moderateScale(7),
+                                            elevation: 10,
+                                        }}>
+                                            <Image
+                                                source={currentGroupUsersArray[0]?.pfp ?
+                                                    { uri: currentGroupUsersArray[0]?.pfp } :
+                                                    require('@components/blank-profile-picture.png')
+                                                }
+                                                style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                            />
+                                        </View>
+                                        <View style={styles.leaderboardTopCircle} >
+                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
+                                        </View>
+                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
+                                        <View style={styles.leaderboardTopTokens}>
+                                            <Image
+                                                source={require('@assets/icons/tokensWhite.png')}
+                                                style={styles.tokensWhiteIcon}
+                                            />
+                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
+                                        <Image
+                                            source={currentGroupUsersArray[2]?.pfp ?
+                                                { uri: currentGroupUsersArray[2]?.pfp } :
+                                                require('@components/blank-profile-picture.png')
+                                            }
+                                            style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                        />
+                                        <View style={styles.leaderboardTopCircle} >
+                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>3</Text>
+                                        </View>
+                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
+                                        <View style={styles.leaderboardTopTokens}>
+                                            <Image
+                                                source={require('@assets/icons/tokensWhite.png')}
+                                                style={styles.tokensWhiteIcon}
+                                            />
+                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                </View>
+                                {currentGroupUsersArray.slice(3).map((user, index) => (
+                                    <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                                        <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
+                                            <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
+                                            <Image
+                                                source={user.pfp ?
+                                                    { uri: user.pfp } :
+                                                    require('@components/blank-profile-picture.png')
+                                                }
+                                                style={[styles.leaderboardImage, { marginRight: scale(10), }]}
+                                            />
+                                            <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
+                                            <View style={styles.leaderboardTokensNumTokens}>
+                                                <Image
+                                                    source={require('@assets/icons/tokensWhite.png')}
+                                                    style={styles.tokensWhiteIcon}
+                                                />
+                                                <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
                             </ScrollView>
                         </View>
-                                ) : (
-                                    <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
-                                        <ScrollView showsVerticalScrollIndicator={false}>
-                                        <View style={styles.grayLine} />
-                                        {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
-                                            <View key={user.id} style={styles.leaderboardRow}>
-                                                <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
-                                                    <Image
-                                                        source={user.pfp ?
-                                                            { uri: user.pfp } :
-                                                            require('@components/blank-profile-picture.png')
-                                                        }
-                                                        style={styles.leaderboardImage}
-                                                    />
-                                                </TouchableOpacity>
-                                                <View style={{
-                                                    flex: 1,
-                                                    flexDirection: 'row',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <View
-                                                        style={{
-                                                            backgroundColor: user.id === userID ? '#fff' : '#4bff6c99',
-                                                            width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
-                                                            height: scale(26),
-                                                            borderTopRightRadius: moderateScale(5),
-                                                            borderBottomRightRadius: moderateScale(5),
-                                                        }}
-                                                    />
-                                                    <Text style={styles.leaderboardSteps}>
-                                                        {user.steps}
-                                                    </Text>
-                                                </View>
+                            ) : (
+                                <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
+                                    <ScrollView showsVerticalScrollIndicator={false}>
+                                    <View style={styles.grayLine} />
+                                    {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
+                                        <View key={user.id} style={styles.leaderboardRow}>
+                                            <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)}>
+                                                <Image
+                                                    source={user.pfp ?
+                                                        { uri: user.pfp } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={styles.leaderboardImage}
+                                                />
+                                            </TouchableOpacity>
+                                            <View style={{
+                                                flex: 1,
+                                                flexDirection: 'row',
+                                                alignItems: 'center'
+                                            }}>
+                                                <View
+                                                    style={{
+                                                        backgroundColor: user.id === userID ? '#fff' : '#4bff6c99',
+                                                        width: `${((user.steps || 0) / Math.max(...currentGroupUsersArray.map(user => user.steps || 0))) * 80}%`,
+                                                        height: scale(26),
+                                                        borderTopRightRadius: moderateScale(5),
+                                                        borderBottomRightRadius: moderateScale(5),
+                                                    }}
+                                                />
+                                                <Text style={styles.leaderboardSteps}>
+                                                    {user.steps}
+                                                </Text>
                                             </View>
-                                        ))}
-                                        </ScrollView>
-                                    </View>
-                                )}
+                                        </View>
+                                    ))}
+                                    </ScrollView>
+                                </View>
+                            )}
                     </View>
                 </View>
 
@@ -1174,6 +1175,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
+        height: '100%',
     },
     infoModalContainer: {
         padding: moderateScale(30),
@@ -1467,7 +1469,7 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(8),
     },
     leaderboardStepsContainer: {
-        flex: 1,
+        // flex: 1,
         backgroundColor: '#65656580',
         paddingHorizontal: moderateScale(10),
         marginTop: verticalScale(8),
