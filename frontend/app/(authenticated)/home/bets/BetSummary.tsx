@@ -1214,7 +1214,7 @@ const styles = StyleSheet.create({
     },
     dropdownMenu: {
         position: 'absolute',
-        top: verticalScale(90),
+        top: verticalScale(20),
         right: scale(50),
         width: scale(100),
         backgroundColor: '#000',

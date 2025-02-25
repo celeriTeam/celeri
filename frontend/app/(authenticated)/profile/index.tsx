@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     logoutButton: {
-        marginTop: 25,
+        marginTop: 15,
         borderWidth: 1,
         borderRadius: 25,
         padding: 10,

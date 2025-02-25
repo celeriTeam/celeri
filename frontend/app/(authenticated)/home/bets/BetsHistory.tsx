@@ -26,7 +26,7 @@ const BetsHistoryPage: React.FC = () => {
     const [propBetsFilter, setPropBetsFilter] = useState(true);
     const [duelsOffset, setDuelsOffset] = useState(1); // Weeks offset for duel bets
     const [propBetsOffset, setPropBetsOffset] = useState(1); // Days offset for prop bets
-    
+
     const router = useRouter();
 
     interface BetItem {
@@ -34,7 +34,7 @@ const BetsHistoryPage: React.FC = () => {
         wager: number;
         betOnUserID: string;
     }
-    
+
     // Initial load for yesterday's duels
     useEffect(() => {
         const fetchInitialDuels = async () => {
@@ -171,7 +171,7 @@ const BetsHistoryPage: React.FC = () => {
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
-            const hasBet = bet.bets.some((betItem: BetItem)=>
+            const hasBet = bet.bets.some((betItem: BetItem) =>
                 betItem.userID === userID,
             );
             const hasUserWon = bet.bets.some((betItem: BetItem) =>
@@ -184,7 +184,7 @@ const BetsHistoryPage: React.FC = () => {
                 if (!userBet) return 0;
 
                 // draw
-                if(bet.winner == "draw") return 0;
+                if (bet.winner == "draw") return 0;
 
                 // User lost bet
                 if (userBet.betOnUserID !== bet.winner) {
@@ -205,17 +205,17 @@ const BetsHistoryPage: React.FC = () => {
                 let percentage = 0.0;
                 let amountWon = 0.0;
                 // if they are the winner and there were no bets on them, they get 100%
-                if(userID == bet.winner && totalWagersOnWinner == 0){
+                if (userID == bet.winner && totalWagersOnWinner == 0) {
                     percentage = 1.0;
                     amountWon = totalWagers;
                     return Math.floor(amountWon);
-                } else if (userID == bet.winner){
+                } else if (userID == bet.winner) {
                     percentage = 0.5;
                     amountWon = percentage * (totalWagers - totalWagersOnWinner)
                     return Math.floor(amountWon - userBet.wager);
                 } else {
 
-                //changed because now winner gets 50% by default
+                    //changed because now winner gets 50% by default
                     percentage = (userBet.wager / totalWagersOnWinner) / 2;
                     console.log("percentage", percentage);
                     amountWon = percentage * (totalWagers - totalWagersOnWinner);
@@ -304,7 +304,7 @@ const BetsHistoryPage: React.FC = () => {
             [duelID]: !prevExpandedItems[duelID], // toggle the current duelID
         }));
     };
-    
+
 
     const renderBetItem = ({ item }: { item: any }) => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
@@ -368,7 +368,7 @@ const BetsHistoryPage: React.FC = () => {
                 </View>
             );
         }
-    
+
         return (
             <View style={styles.flatList}>
                 <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 8, paddingVertical: 5 }}>
@@ -380,27 +380,27 @@ const BetsHistoryPage: React.FC = () => {
                         activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}
                     >
                         <View style={styles.row}>
-                        
+
                             <View style={[
                                 styles.statusBar,
                                 (!item.earnings.hasBet || item.winner === 'draw' || item.earnings.earning === 0) ? styles.drawStatus :
-                                (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
+                                    (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
                             ]}>
                                 <Text style={styles.statusText}>
                                     {!item.earnings.hasBet ? 'No bet' :
-                                    item.winner === 'draw' ? 'Draw' :
-                                    item.earnings.earning === 0 ? 'No winnings' :
-                                    item.earnings.hasUserWon ? 'Win' : 'Loss'}
+                                        item.winner === 'draw' ? 'Draw' :
+                                            item.earnings.earning === 0 ? 'No winnings' :
+                                                item.earnings.hasUserWon ? 'Win' : 'Loss'}
                                 </Text>
                             </View>
-                            
+
                             {/* earnings */}
                             {item.earnings.hasBet && item.winner !== 'draw' && (
                                 <View style={styles.earningsContainer}>
                                     <Text style={[
-                                        item.earnings.earning > 0 ? styles.wonEarningsText : 
-                                        item.earnings.earning === 0 ? styles.drawEarningsText : 
-                                        styles.lostEarningsText,
+                                        item.earnings.earning > 0 ? styles.wonEarningsText :
+                                            item.earnings.earning === 0 ? styles.drawEarningsText :
+                                                styles.lostEarningsText,
                                     ]}>
                                         {item.earnings.earning > 0 && <Text>+ </Text>}
                                         {item.earnings.earning < 0 && <Text>- </Text>}
@@ -444,7 +444,7 @@ const BetsHistoryPage: React.FC = () => {
                             <View style={{ paddingBottom: 5, }}>
                                 {item.player1Bets.map((bet: { user: string, wager: number }, index: number) => (
                                     (bet.user !== item.player1) && (
-                                        <Text key={index} style={{fontFamily: "Lexend", color: '#fff', fontSize: 11, }}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                        <Text key={index} style={{ fontFamily: "Lexend", color: '#fff', fontSize: 11, }}> {'\t'}{bet.user}: {bet.wager}</Text>
                                     )
                                 ))}
                             </View>
@@ -491,14 +491,14 @@ const BetsHistoryPage: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Image
@@ -511,56 +511,55 @@ const BetsHistoryPage: React.FC = () => {
                         <Text style={styles.createdAtText}>Filter By:</Text>
                         <TouchableOpacity style={[styles.filterButton, { backgroundColor: duelsFilter ? '#fff' : '#000' }]} onPress={() => setDuelsFilter(!duelsFilter)} activeOpacity={0.8}>
                             <Text style={[styles.createdAtText, { color: duelsFilter ? '#000' : '#fff' }]}>Weekly Duels</Text>
-                            {duelsFilter ? 
-                            <Image
-                                source={require('@assets/icons/checkFilter.png')}
-                                style={{ width: 12, height: 9 }}
-                            /> : 
-                            <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 13 }}>+</Text>}
+                            {duelsFilter ?
+                                <Image
+                                    source={require('@assets/icons/checkFilter.png')}
+                                    style={{ width: 12, height: 9 }}
+                                /> :
+                                <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 13 }}>+</Text>}
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.filterButton, { backgroundColor: propBetsFilter ? '#fff' : '#000' }]} onPress={() => setPropBetsFilter(!propBetsFilter)} activeOpacity={0.8}>
                             <Text style={[styles.createdAtText, { color: propBetsFilter ? '#000' : '#fff' }]}>Daily Prop Bets</Text>
-                            {propBetsFilter ? 
-                            <Image
-                                source={require('@assets/icons/checkFilter.png')}
-                                style={{ width: 12, height: 9 }}
-                            /> : 
-                            <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 13 }}>+</Text>}
+                            {propBetsFilter ?
+                                <Image
+                                    source={require('@assets/icons/checkFilter.png')}
+                                    style={{ width: 12, height: 9 }}
+                                /> :
+                                <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 13 }}>+</Text>}
                         </TouchableOpacity>
                     </View>
                     <FlatList
                         data={
-                            duelsFilter && propBetsFilter ? 
-                            allRecapBets :
-                            duelsFilter ? currentDuelsBets :
-                            propBetsFilter ? currentPropBets : []
+                            duelsFilter && propBetsFilter ?
+                                allRecapBets :
+                                duelsFilter ? currentDuelsBets :
+                                    propBetsFilter ? currentPropBets : []
                         }
                         keyExtractor={(item) => item.duelID}
                         renderItem={renderBetItem}
                         onEndReached={loadMoreDuels} // Load more duels when reaching the end
+                        showsVerticalScrollIndicator={false}
                         onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
                     />
                 </View>
-            </LinearGradient>
-        </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
         justifyContent: 'flex-start',
         alignItems: 'center',
-        padding: 16,
-        marginTop: 50,
-        height: '95%',
+        paddingHorizontal: 20,
+        height: '100%',
     },
     backButton: {
         position: 'absolute',
-        top: 16,
+        top: 10,
         left: 16,
     },
     backImage: {
@@ -605,16 +604,15 @@ const styles = StyleSheet.create({
     },
     title: {
         textAlign: "center",
-        fontSize: 20,
+        fontSize: 30,
         fontWeight: "200",
         fontFamily: 'Lexend',
         color: '#fff',
-        paddingTop: 20,
         marginBottom: 20,
     },
     flatList: {
         marginTop: 10,
-        width: screenWidth * 0.9,
+        width: '100%',
     },
     betsContainer: {
         backgroundColor: '#5BE35C32',
@@ -661,7 +659,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     winnerIcon: {
-        width: 7, 
+        width: 7,
         height: 33,
         position: 'absolute',
         left: -20,

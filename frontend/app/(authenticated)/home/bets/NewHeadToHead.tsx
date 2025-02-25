@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
     versusContainer: {
         marginVertical: -verticalScale(25),
         paddingHorizontal: scale(35),
-        paddingVertical: scale(18),
+        paddingVertical: scale(13),
         backgroundColor: '#023404',
         zIndex: 1,
         borderRadius: moderateScale(30),
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     scrollAndDotsContainer: {
-        height: '79%',
+        height: '84%',
         justifyContent: 'flex-end',
     },
     dotRow: {
@@ -799,7 +799,8 @@ const styles = StyleSheet.create({
         width: '31%',
         height: verticalScale(80),
         justifyContent: 'flex-end', // Move to bottom
-        padding: scale(8),
+        paddingLeft: scale(8),
+        paddingBottom: scale(8),
         borderWidth: 1,
         borderRadius: moderateScale(8),
     },

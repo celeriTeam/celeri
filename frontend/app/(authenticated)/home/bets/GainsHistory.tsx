@@ -19,7 +19,7 @@ const GainsHistoryPage: React.FC = () => {
     const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
     const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
-        
+
     const router = useRouter();
     const screenWidth = Dimensions.get('window').width;
 
@@ -30,7 +30,7 @@ const GainsHistoryPage: React.FC = () => {
         profilePic: string;
         weeksAgo: number;
     }
-    
+
     useEffect(() => {
         loadMoreGains();
     }, [groupID, groups]);
@@ -98,18 +98,18 @@ const GainsHistoryPage: React.FC = () => {
             <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
                 <Text style={styles.createdAtText}>{`${weeksAgo}w ago`}</Text>
             </View>
-           <View style={styles.gainsContainer}>
+            <View style={styles.gainsContainer}>
                 {gains.map((item) => (
                     <View key={`${item.userID}_${item.weeksAgo}`} style={styles.row}>
                         <Image source={{ uri: item.profilePic }} style={styles.profileImage} />
                         <Text style={styles.playerGain}>{item.username}</Text>
                         <Text
                             style={[
-                                item.gain > 0 
-                                    ? styles.wonGainEarningsText 
-                                    : item.gain < 0 
-                                    ? styles.lostGainEarningsText 
-                                    : styles.zeroGainEarningsText,
+                                item.gain > 0
+                                    ? styles.wonGainEarningsText
+                                    : item.gain < 0
+                                        ? styles.lostGainEarningsText
+                                        : styles.zeroGainEarningsText,
                             ]}
                         >
                             {item.gain > 0 ? `+${item.gain}` : item.gain}
@@ -121,14 +121,14 @@ const GainsHistoryPage: React.FC = () => {
     );
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Image
@@ -144,29 +144,28 @@ const GainsHistoryPage: React.FC = () => {
                             <GroupedGainItem gains={item.gains} weeksAgo={item.weeksAgo} />
                         )}
                         onEndReached={loadMoreGains} // Load more duels when reaching the end
+                        showsVerticalScrollIndicator={false}
                         onEndReachedThreshold={0.5} // Trigger when scrolled 50% from the bottom
                     />
                 </View>
-            </LinearGradient>
-        </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
         justifyContent: 'flex-start',
         alignItems: 'center',
-        padding: 16,
-        marginTop: 50,
+        paddingHorizontal: 16,
         height: '95%',
     },
     backButton: {
         position: 'absolute',
-        top: 16,
+        top: 10,
         left: 16,
     },
     backImage: {
@@ -179,7 +178,6 @@ const styles = StyleSheet.create({
         fontWeight: "200",
         fontFamily: 'Lexend',
         color: '#fff',
-        paddingTop: 20,
         marginBottom: 20,
     },
     gainsFlatList: {
@@ -232,10 +230,10 @@ const styles = StyleSheet.create({
     createdAtText: {
         color: '#fff',
     },
-    centered: { 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center' 
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
     },
 });
 

@@ -15,12 +15,12 @@ const RaceHistoryPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
-    const [raceHistory, setRaceHistory] = useState<{weeksAgo: number; races: RaceItem[]}[]>([]);
+    const [raceHistory, setRaceHistory] = useState<{ weeksAgo: number; races: RaceItem[] }[]>([]);
     const [raceWeeksAgo, setRaceWeeksAgo] = useState(1);
 
     const router = useRouter();
     const screenWidth = Dimensions.get('window').width;
-    
+
     interface RaceItem {
         userID: string;
         gain: number;
@@ -29,7 +29,7 @@ const RaceHistoryPage: React.FC = () => {
         weeksAgo: number;
         steps: number;
     }
-    
+
     // Initial load for yesterday's duels
     useEffect(() => {
         loadMoreRaces();
@@ -40,7 +40,7 @@ const RaceHistoryPage: React.FC = () => {
         let moreRaces;
         console.log("raceWeeksAgo here", raceWeeksAgo);
         moreRaces = await getRacesSummary(groupID, raceWeeksAgo, groups);
-        if(moreRaces){
+        if (moreRaces) {
             const newRaceWeek = {
                 weeksAgo: raceWeeksAgo,
                 races: Object.entries(moreRaces.races).map(([userID, raceData]) => ({
@@ -63,7 +63,7 @@ const RaceHistoryPage: React.FC = () => {
         );
     }
 
-    const renderRaceItem = ({ item }: { item: {weeksAgo: number; races: RaceItem[]} }) => (
+    const renderRaceItem = ({ item }: { item: { weeksAgo: number; races: RaceItem[] } }) => (
         <View style={[styles.racesFlatList, { width: screenWidth * 0.9 }]}>
             <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
                 <Text style={styles.createdAtText}>{`${item.weeksAgo}w ago`}</Text>
@@ -77,11 +77,11 @@ const RaceHistoryPage: React.FC = () => {
                         <View style={styles.gainCountContainer}>
                             <Text
                                 style={[
-                                    race.gain > 0 
-                                        ? styles.wonGainEarningsText 
-                                        : race.gain < 0 
-                                        ? styles.lostGainEarningsText 
-                                        : styles.zeroGainEarningsText,
+                                    race.gain > 0
+                                        ? styles.wonGainEarningsText
+                                        : race.gain < 0
+                                            ? styles.lostGainEarningsText
+                                            : styles.zeroGainEarningsText,
                                 ]}
                             >
                                 {race.gain > 0 ? `+${race.gain}` : race.gain}
@@ -94,14 +94,14 @@ const RaceHistoryPage: React.FC = () => {
     );
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
                         <Image
@@ -115,24 +115,23 @@ const RaceHistoryPage: React.FC = () => {
                         keyExtractor={(item) => item.weeksAgo.toString()}
                         renderItem={renderRaceItem} // Implement this function to render race items
                         onEndReached={loadMoreRaces} // Implement if you want pagination
+                        showsVerticalScrollIndicator={false}
                         onEndReachedThreshold={0.5}
                     />
                 </View>
-            </LinearGradient>
-        </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
     );
 };
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     container: {
         justifyContent: 'flex-start',
         alignItems: 'center',
-        padding: 16,
-        marginTop: 50,
+        paddingHorizontal: 16,
         height: '95%',
     },
     spacer: {
@@ -167,7 +166,7 @@ const styles = StyleSheet.create({
     },
     backButton: {
         position: 'absolute',
-        top: 16,
+        top: 10,
         left: 16,
     },
     backImage: {
@@ -180,7 +179,6 @@ const styles = StyleSheet.create({
         fontWeight: "200",
         fontFamily: 'Lexend',
         color: '#fff',
-        paddingTop: 20,
         marginBottom: 20,
     },
     header: {
@@ -316,10 +314,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
     },
-    tabContainer: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-around', 
-        marginBottom: 10 
+    tabContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 10
     },
     button: {
         padding: 10,

@@ -168,9 +168,9 @@ function InnerAuthenticatedLayout() {
           tabBarStyle: {
             backgroundColor: '#1b2c1c',
             borderTopWidth: 0,
-            paddingBottom: isTabBarVisible ? scale(18) : 0,
+            paddingBottom: 0,
             paddingTop: 0,
-            height: isTabBarVisible ? scale(83) : 0, // <-- THE MAGIC
+            height: isTabBarVisible ? scale(65) : 0, // <-- THE MAGIC
           },
           tabBarShowLabel: false,
           tabBarActiveTintColor: '#51ba51',
