@@ -889,15 +889,19 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
                 console.log('No duels found for today for group: ', groupID);
                 return {};
             }
+
+            console.log('duels found for group ', groupID,)
             
             const duels: { [key: string]: { duelID: string, player1: string, player2: string } } = {};
             querySnapshot.forEach(doc => {
+                console.log("we are here in", groupID)
                 const duelData = doc.data();
+                console.log(duelData);
                 const bets = duelData.bets || [];
                 
                 // Check if the user has already placed a bet
                 const hasBet = bets.some((bet: { userID: string; wager: number; betOnUserID: string }) => bet.userID === userID);
-
+                console.log("hasBet, ", hasBet);
                 // Use only the duels that have not been bet on yet by user
                 if (!hasBet) {
                     duels[doc.id] = {

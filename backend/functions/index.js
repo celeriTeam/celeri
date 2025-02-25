@@ -118,7 +118,19 @@ exports.sendNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-exports.sendTestSilentNotif = onSchedule("every day 05:00", async (event) => {
+exports.sendTestSilentNotif = onSchedule("0 2,5,17 * * *", async (event) => {
+  const today = new Date();
+  const hour = today.getHours(); // Get the current hour in 24-hour format
+  if (hour === 5) {
+    console.log("Running at night");
+    // Logic for the morning run
+  } else if (hour === 17) {
+    console.log("Running at morning");
+    // Logic for the evening run
+  } else {
+    console.log("Unexpected execution time:", hour);
+  }
+
   const message = {
     data: {
       "type": "silent",
@@ -496,8 +508,7 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
   return newCycles;
 }
 
-exports.updateWinners = onSchedule("every day 05:00", async (event) => {
-  console.log("updateWinners is running");
+exports.updateWinners = onSchedule("0 5,17 * * *", async (event) => {
   const groupRef = firestore.collection("groups");
   const userRef = firestore.collection("users");
 
@@ -521,6 +532,18 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
     console.log("Group snapshots found: ", groupSnapshots.size);
 
     const today = new Date();
+    const hour = today.getHours(); // Get the current hour in 24-hour format
+    if (hour === 5) {
+      console.log("Running at night");
+      // Logic for the morning run
+    } else if (hour === 17) {
+      console.log("Running at morning");
+      // Logic for the evening run
+    } else {
+      console.log("Unexpected execution time:", hour);
+    }
+
+
     today.setHours(0, 0, 0, 0); // Midnight today
     const startOfYesterday = new Date(today);
     startOfYesterday.setDate(today.getDate() - 1); // Go back one day
@@ -543,7 +566,7 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
       console.log(doc.id, ": gameType: ", data.gameType);
-      if (gameType && gameType == "weekly") {
+      if (gameType && gameType == "weekly" && hour <= 6) {
         // propogate weeklySteps, should be a map
         const weeklySteps = {};
         const users = data.users;
@@ -812,6 +835,294 @@ exports.updateWinners = onSchedule("every day 05:00", async (event) => {
           await resetBatch.commit();
 
           console.log("Batch update completed successfully.");
+        } else {
+          return;
+        }
+      // BI WEEKLY MODEL
+      } else if (gameType && gameType == "biweekly") {
+        // propogate weeklySteps, should be a map
+        const biweeklySteps = {};
+        const weeklySteps = {};
+        const users = data.users;
+
+        // Get all users in the group and their current steps
+        Object.keys(users).forEach((userID) => {
+          const currentSteps = userSteps[userID] || 0;
+
+          // Calculate users weekly steps
+          let weeklyStepsData = userAverageSteps[userID];
+
+          if (weeklyStepsData === undefined || weeklyStepsData.length !== 7) {
+            weeklyStepsData = [0, 0, 0, 0, 0, 0, 0];
+          }
+
+          // Sum the steps from the past three and add the current day's steps
+          const userPastThreeDaysSteps = weeklyStepsData.slice(4).reduce((sum, steps) => sum + steps, 0) + currentSteps;
+          const userWeeklySteps = weeklyStepsData.slice(1).reduce((sum, steps) => sum + steps, 0) + currentSteps;
+          weeklySteps[userID] = userWeeklySteps + currentSteps;
+          biweeklySteps[userID] = userPastThreeDaysSteps + currentSteps;
+          console.log("past three days of steps for user: ", userID, userPastThreeDaysSteps, currentSteps);
+        });
+
+        console.log("biweeklySteps: ", biweeklySteps);
+        console.log("users: ", users);
+
+        const currentDay = new Date().getDay();
+        const resetDayOne = data.resetDay;
+        const resetDayTwo = (resetDayOne + 3) % 7;
+
+        let startOfLastResetDay;
+        if (currentDay == resetDayOne) {
+          startOfLastResetDay = today.getDate() - 4;
+        } else {
+          startOfLastResetDay = today.getDate() - 3;
+        }
+
+        // if it is the correct day of the week
+        if ((currentDay == resetDayOne && hour <= 6) || currentDay == resetDayTwo) {
+          console.log(doc.id, ": currentDay == resetDayOne or resetDayTwo, resetting now.");
+
+          const duelsSnapshot = await duelsRef
+            .where("createdAt", ">=", startOfLastResetDay)
+            .where("createdAt", "<", today)
+            .get();
+
+          if (duelsSnapshot.empty) {
+            console.log(`No active duels found for group ${doc.id} from last half-week.`);
+            return;
+          }
+
+          console.log(`Duels found for group ${doc.id}: `, duelsSnapshot.size);
+
+          // Create a new WriteBatch for this group
+          const batch = firestore.batch();
+
+          for (const duelDoc of duelsSnapshot.docs) {
+            const duelData = duelDoc.data();
+            const player1Id = duelData.player1;
+            const player2Id = duelData.player2;
+            let winner = "none";
+
+            try {
+              const player1BaseSteps = biweeklySteps[player1Id] || 0;
+              const player2BaseSteps = biweeklySteps[player2Id] || 0;
+
+              // Calculate additional steps from powerups
+              const player1PowerupSteps = await calculatePowerupSteps(doc.id, player1Id, duelDoc.id, "biweekly");
+              const player2PowerupSteps = await calculatePowerupSteps(doc.id, player2Id, duelDoc.id, "biweekly");
+
+              // Total steps for each player
+              const player1TotalSteps = player1BaseSteps + player1PowerupSteps;
+              const player2TotalSteps = player2BaseSteps + player2PowerupSteps;
+
+
+              if (player1TotalSteps > player2TotalSteps) {
+                winner = player1Id;
+              } else if (player1TotalSteps === player2TotalSteps) {
+                winner = "draw";
+              } else {
+                winner = player2Id;
+              }
+
+              console.log(`Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
+
+              // now, distribute earnings
+              // if player1 wins, grab the bets
+              let totalWagers = 0;
+              let totalWagersOnWinner = 0;
+
+              // iterate through it once to find out what the total wagers were
+              if (duelData.bets != null) {
+                for (let i = 0; i < duelData.bets.length; i++) {
+                  totalWagers += duelData.bets[i].wager;
+                  if (duelData.bets[i].betOnUserID == winner) {
+                    totalWagersOnWinner += duelData.bets[i].wager;
+                  }
+                }
+              } else {
+                console.log("there were no bets");
+              }
+              console.log("Duel: ", duelDoc.id, " total wagers: " + totalWagers);
+              console.log("totalWagersOnWinner: " + totalWagersOnWinner);
+
+              if (duelData.bets != null) {
+                // iterate through it again now that you have total wagers
+                for (let i = 0; i < duelData.bets.length; i++) {
+                  let amountWon = 0.0;
+                  let percentage = 0.0;
+                  let diamonds = 0;
+                  if (duelData.bets[i].betOnUserID == winner) {
+                  // if they are the winner and there were no bets on them, they get 100%
+                    if (duelData.bets[i].userID === winner && totalWagersOnWinner == 0) {
+                      percentage = 1.0;
+                      amountWon = Math.floor(totalWagers);
+                      diamonds = 1;
+                    } else if (duelData.bets[i].userID === winner) {
+                    // if they are the winner, then they automatically get 50%
+                      percentage = 0.5;
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
+                      diamonds = 1;
+                    } else {
+                    // divided by two because the winner will get 50%
+                      percentage = (duelData.bets[i].wager / totalWagersOnWinner) / 2;
+                      amountWon = Math.floor(percentage * (totalWagers - totalWagersOnWinner));
+                    }
+                    // add the amount won
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                      // this was the issue: you need to subtract by the amount you bet because of the math above
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon),
+                      // no longer doing daily tokens: [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(amountWon + groupDoc.data().dailyTokens),
+                      [`users.${duelData.bets[i].userID}.diamonds`]: FieldValue.increment(diamonds),
+                      [`users.${duelData.bets[i].userID}.todaysBetTokens`]: 0,
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID} by ${amountWon} addded`);
+                      console.log(`Successfully updated diamonds for user ${duelData.bets[i].userID} by ${diamonds} addded`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  } else if (winner == "draw") {
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                    // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens),
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, was a draw`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  } else { // if they lose, they lose what they wagered
+                    groupDocRef.update({
+                      [`users.${duelData.bets[i].userID}.placedBet`]: false,
+                      [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(-duelData.bets[i].wager),
+                    // [`users.${duelData.bets[i].userID}.tokens`]: FieldValue.increment(groupDoc.data().dailyTokens - duelData.bets[i].wager),
+                    }).then(() => {
+                      console.log(`Successfully updated tokens for user ${duelData.bets[i].userID}, lost ${duelData.bets[i].wager}`);
+                    }).catch((error) => {
+                      console.error(`Failed to update tokens for user ${duelData.bets[i].userID}: `, error);
+                    });
+                  }
+                }
+              } else {
+                console.log("no tokens were updated because there were no bets");
+              }
+
+              // Update the 'ended' field to true in the duel document
+              batch.update(duelDoc.ref, {
+                ended: true,
+                winner: winner,
+                playerOneSteps: player1TotalSteps,
+                playerTwoSteps: player2TotalSteps,
+              });
+            } catch (error) {
+              console.error(`Error fetching player steps for duel 
+                ${duelDoc.id}:`, error);
+            }
+          }
+          // Add the batch to the array to commit later
+          allBatches.push(batch.commit());
+
+
+          // Wait for all batches to be committed
+          await Promise.all(allBatches);
+
+          let resetBatch = firestore.batch();
+
+          await resetBatch.commit();
+          resetBatch = firestore.batch();
+
+          // Now do the race distirbution -- but only if its resetDayOne
+          if (currentDay == resetDayOne && hour <= 6 ) {
+            console.log("updateWinners -- race distribution starting now");
+            console.log("Right before race distribution -- Users Value:", users);
+
+            // weeklySteps was declared much earlier
+            let maxSteps = -Infinity; // Start with the lowest possible value
+            let maxUser = null; // To store the key corresponding to the max value
+            for (const [key, value] of Object.entries(weeklySteps)) {
+              if (value > maxSteps) {
+                maxSteps = value;
+                maxUser = key;
+              }
+            }
+
+            console.log("Race distribution -- checkpoint one");
+
+            let totalDecrease = 0; // Track total token decrease
+            // To reset operations count per batch:
+            let operationCount = 1;
+            const MAX_OPERATIONS = 500;
+            const gains = {};
+
+            // Iterate over each user to calculate decreases and updates
+            for (const [userID, userData] of Object.entries(users)) {
+              if (operationCount >= MAX_OPERATIONS) {
+                await resetBatch.commit();
+                resetBatch = firestore.batch();
+                operationCount = 0;
+              }
+
+              // If not the maxUser, calculate and decrease tokens
+              if (userID !== maxUser) {
+                const decrease = Math.floor(userData.tokens * 0.05); // Calculate 5% decrease, rounding down
+                totalDecrease += decrease; // Accumulate total decrease
+                resetBatch.update(groupDocRef, {
+                  [`users.${userID}.tokens`]: FieldValue.increment(-decrease),
+                });
+                operationCount++;
+                gains[userID] = -decrease;
+              }
+            }
+            console.log("Race distribution -- checkpoint two");
+
+            // Add the total decrease to the maxUser's tokens
+            if (users[maxUser]) {
+              resetBatch.update(groupDocRef, {
+                [`users.${maxUser}.tokens`]: FieldValue.increment(totalDecrease),
+              });
+              operationCount++;
+              gains[maxUser] = totalDecrease;
+            }
+
+            // Make a race document for recordkeeping
+            const racesCollectionRef = groupDocRef.collection("races"); // Access the subcollection
+
+            // Add a new document
+            await racesCollectionRef.add({
+              createdAt: FieldValue.serverTimestamp(), // Firestore's server timestamp for consistency
+              winner: maxUser,
+              steps: weeklySteps,
+              gains: gains,
+
+            });
+
+            console.log("updateWinners -- Successfully updated tokens for all users after race.");
+          }
+
+
+          // After recording all winners, reset steps for all users, but only if its the end of the week
+          if (currentDay == resetDayOne && hour <= 6) {
+            userSnapshots.forEach((doc) => {
+              const userData = doc.data();
+              let updatedSteps;
+
+              if (userData.averageSteps && Array.isArray(userData.averageSteps)) {
+                // Remove first number and add 0 to the end
+                updatedSteps = [...userData.averageSteps.slice(1), userData.steps];
+              } else {
+                // Initialize with seven zeros
+                updatedSteps = [0, 0, 0, 0, 0, 0, 0];
+              }
+
+              resetBatch.update(userRef.doc(doc.id), {
+                // steps: 0,
+                averageSteps: updatedSteps,
+              });
+              resetBatch.update(userRef.doc(doc.id), {steps: 0});
+            });
+            await resetBatch.commit();
+
+            console.log("Batch update completed successfully.");
+          }
         } else {
           return;
         }
@@ -1191,7 +1502,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
               currentPlayersInGame: playerCount,
             });
             console.log("checkpoint three");
-          } else if (players > cycleDuels.length) { // cycleDuels.length because when if we did currentPlayersInGame it wouldn't update
+          } else if (playerCount > cycleDuels.length + 1) { // cycleDuels.length because when if we did currentPlayersInGame it wouldn't update
             console.log("More people have joined the game");
             cycleDuels = createCyclesInGame(players, numberOfPlayers, cycleWeek, cycleDuels);
             cycleWeek += 1;

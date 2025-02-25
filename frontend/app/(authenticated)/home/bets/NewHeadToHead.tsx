@@ -132,7 +132,7 @@ const NewHeadToHeadPage: React.FC = () => {
                             profilePic: player1Pic,
                             duelsWon: player1WonDuels,
                             prevSteps: Math.floor(player1Steps),
-                            stepChange: player1StepsFromWeekBefore, // in percentage
+                            stepChange: player1StepsChangeFromWeekBefore, // in percentage
                         },
                         player2: {
                             id: player2ID,
@@ -155,8 +155,9 @@ const NewHeadToHeadPage: React.FC = () => {
 
     const fetchData = async () => {
         try {
+            const isFinishedRecap = true;
             const isItFirstDay = groups[groupID]?.isFirstDay;
-            const isFinishedRecap = groups[groupID]?.isFinishedRecap;
+            //const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
             }
@@ -419,6 +420,7 @@ const NewHeadToHeadPage: React.FC = () => {
     };
 
     const handleSubmit = async () => {
+        console.log("NewHeadToHead -- handleSubmit running");
         setIsProcessing(true);
 
         {
