@@ -877,11 +877,11 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
         if (groupDoc.exists()){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const gameType = groupDoc.data()?.gameType;
-            const groupCurrentCycle = gameType === 'weekly' ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
+            const groupCurrentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             
             // Get snapshot of duels for today
             const duelsCollection = collection(groupDocRef, 'duels');
-            const cycleBlank = gameType === 'weekly' ? 'cycleWeek' : 'cycleDay';
+            const cycleBlank = (gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay';
             const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where(cycleBlank, '==', groupCurrentCycle));
             const querySnapshot = await getDocs(q);
 

@@ -59,7 +59,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
     const loadMoreGains = async () => {
         console.log("Loading more gains");
         let moreGains;
-        if(gameType == "weekly"){
+        if(gameType == "weekly" || gameType == 'biweekly'){
             moreGains = await getWeeklyGainsSummary(groupID, gainsWeeksAgo * 7, groups);
             // multipled by 7 to get days 
         }
@@ -73,7 +73,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             const newGains = Object.entries(moreGains.gains).map(([userID, gainData]) => ({
                 userID,
                 ...gainData,
-                dayIdentifier: gameType == "weekly" ? gainsWeeksAgo : gainsDaysAgo, // Unique identifier for each day
+                dayIdentifier: (gameType == "weekly" || gameType == 'biweekly') ? gainsWeeksAgo : gainsDaysAgo, // Unique identifier for each day
             }));
             console.log('loadMoreGains: newGains', newGains)
             setGainHistory((prevGainHistory) => {
@@ -82,7 +82,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 return updatedGainHistory;
             });
 
-            if(gameType == "weekly"){
+            if(gameType == "weekly" || gameType == 'biweekly'){
                 setGainsWeeksAgo((prevGainsWeeksAgo) => prevGainsWeeksAgo + 1);
             } else {
                 setGainsDaysAgo((prevGainsDaysAgo) => prevGainsDaysAgo + 1); // Increment daysAgo for the next load

@@ -54,6 +54,9 @@ exports.sendEmail = onCall(async (request) => {
 
 // function for sending daily notifs to all users
 exports.sendNotif = onSchedule("every day 05:00", async (event) => {
+  const today = new Date();
+  const hour = today.getHours(); // Get the current hour in 24-hour format
+
   // get the groups
   const groupsRef = firestore.collection("groups");
   const activeGroupsSnapshot = await groupsRef.where("isGameActive", "==", true).get();
@@ -71,10 +74,35 @@ exports.sendNotif = onSchedule("every day 05:00", async (event) => {
     const groupData = groupDoc.data();
     const groupID = groupDoc.id;
 
-    if (groupData.gameType == "weekly") {
+    if (groupData.gameType == "weekly" && hour <= 6) {
       console.log(`${groupID} is weekly.`);
       const today = new Date().getDay();
       if (groupData.resetDay == today) {
+        console.log(`${groupID} resetDay is today.`);
+        message = {
+          notification: {
+            title: `It's bettin' time for ${groupData.groupName}.`,
+            body: "Who's going to win their head to head? " +
+            "You've got a week to make your bet!",
+          },
+          topic: groupID,
+        };
+      } else {
+        console.log(`${groupID} resetDay is not today.`);
+        message = {
+          notification: {
+            title: `You've got a new prop bet for ${groupData.groupName}.`,
+            body: "Ready to make your over-under?" +
+            "You've got 24 hours to win a diamond!",
+          },
+          topic: groupID,
+        };
+      }
+    } else if (groupData.gameType == "biweekly") {
+      console.log(`${groupID} is biweekly.`);
+      const today = new Date().getDay();
+      const secondResetDay = (groupData.resetDay + 3) % 7;
+      if ((groupData.resetDay == today && hour <= 6) || (secondResetDay == today && hour >= 16)) {
         console.log(`${groupID} resetDay is today.`);
         message = {
           notification: {
@@ -879,7 +907,7 @@ exports.updateWinners = onSchedule("0 5,17 * * *", async (event) => {
         }
 
         // if it is the correct day of the week
-        if ((currentDay == resetDayOne && hour <= 6) || currentDay == resetDayTwo) {
+        if ((currentDay == resetDayOne && hour <= 6) || currentDay == resetDayTwo && hour >= 16) {
           console.log(doc.id, ": currentDay == resetDayOne or resetDayTwo, resetting now.");
 
           const duelsSnapshot = await duelsRef
@@ -1290,7 +1318,6 @@ const calculatePowerupSteps = async (groupID, userID, duelID, gameType) => {
 
   try {
     // Get the timestamp for 24 hours ago
-    // Get the timestamp for 24 hours ago
 
     if (gameType == "weekly") {
       const pastSevenDays = new Date();
@@ -1299,6 +1326,35 @@ const calculatePowerupSteps = async (groupID, userID, duelID, gameType) => {
 
       const powerupsSnapshot = await powerupsCollectionRef
         .where("createdAt", ">=", pastSevenDays)
+        .where("duelID", "==", duelID)
+        .where("targetUserID", "==", userID)
+        .get();
+
+      if (powerupsSnapshot.empty) {
+        console.log(`No powerups found for user ${userID} in group ${groupID} for duel ${duelID}`);
+        return 0; // No steps to add
+      }
+
+      // Calculate total steps added from 'secondWind' powerups
+      let totalAddedSteps = 0;
+      powerupsSnapshot.forEach((doc) => {
+        const powerup = doc.data();
+        if (powerup.type === "secondWind") {
+          totalAddedSteps += 200; // Each secondWind adds 200 steps
+        }
+      });
+
+      console.log(`Total added steps for user ${userID}: ${totalAddedSteps}`);
+      return totalAddedSteps;
+    } else if (gameType == "biweekly") {
+      const pastTime = new Date();
+      pastTime.setDate(pastTime.getDate() - 3); // Subtract 3 days
+      pastTime.setHours(pastTime.getHours() - 12); // Subtract 12 hours
+
+      console.log("calculatePowerups, should be 3 days and 12 hours ago", pastTime);
+
+      const powerupsSnapshot = await powerupsCollectionRef
+        .where("createdAt", ">=", pastTime)
         .where("duelID", "==", duelID)
         .where("targetUserID", "==", userID)
         .get();
@@ -1438,7 +1494,7 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
 });
 
 
-exports.createDuels = onSchedule("every day 05:00", async (event) =>{
+exports.createDuels = onSchedule("0 5,17 * * *", async (event) => {
   console.log("createDuels is running");
   const groupRef = firestore.collection("groups");
 
@@ -1453,6 +1509,18 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
     console.log("Group snapshots found:", groupSnapshots.size);
 
     // const allBatches = [];
+    const today = new Date();
+    const hour = today.getHours(); // Get the current hour in 24-hour format
+    if (hour === 5) {
+      console.log("Running at night");
+      // Logic for the morning run
+    } else if (hour === 17) {
+      console.log("Running at morning");
+      // Logic for the evening run
+    } else {
+      console.log("Unexpected execution time:", hour);
+    }
+
 
     const groupBatch = firestore.batch();
     console.log("checkpoint one");
@@ -1462,7 +1530,7 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
       // Check if gameType exists and is valid
       const gameType = data.gameType;
-      if (gameType && gameType == "weekly") {
+      if (gameType && gameType == "weekly" && hour <= 6) {
         console.log(`gameType is weekly for group ID: ${doc.id}`);
 
         const currentDay = new Date().getDay();
@@ -1470,6 +1538,170 @@ exports.createDuels = onSchedule("every day 05:00", async (event) =>{
 
         // if it is the correct day of the week
         if (currentDay == resetDay) {
+          let cycleWeek = data.cycleWeek;
+          let cycleCount = data.cycleCount;
+          let cycleDuels = data.cycleDuels;
+          const players = data.order;
+          const numberOfPlayers = data.currentPlayersInGame;
+
+          const playerCount = players.reduce((count, playerId) => {
+            return playerId ? count + 1 : count;
+          }, 0);
+          console.log("playercount: ", playerCount);
+
+          console.log("checkpoint two");
+
+          //  make sure that when people are adde to the group, it wont mess up recap (which relies on previousplayersInGame)
+          if (cycleWeek == 1) {
+            //  maybe also add a check where cycleCount is greater than 1 but prolly doesnt matter
+            groupBatch.update(groupDocRef, {
+              previousPlayersInGame: numberOfPlayers,
+            });
+          }
+
+          if (cycleWeek >= numberOfPlayers-1) {
+            cycleWeek = 1;
+            cycleCount += 1;
+            console.log(`Updating cycleWeek to 1 and increasing 
+              cycleCount to ${cycleCount} for group: ${doc.id}`);
+
+            cycleDuels = createCycle(players);
+            groupBatch.update(groupDocRef, {
+              currentPlayersInGame: playerCount,
+            });
+            console.log("checkpoint three");
+          } else if (playerCount > cycleDuels.length + 1) { // cycleDuels.length because when if we did currentPlayersInGame it wouldn't update
+            console.log("More people have joined the game");
+            cycleDuels = createCyclesInGame(players, numberOfPlayers, cycleWeek, cycleDuels);
+            cycleWeek += 1;
+          } else {
+            cycleWeek += 1;
+            console.log(`Incrementing cycleDay to ${cycleWeek} for group ${doc.id}`);
+            console.log("checkpoint four");
+          }
+
+          console.log("cycleDuels:", JSON.stringify(cycleDuels));
+
+          if (cycleCount > data.totalCycles) {
+            // end the game
+            groupBatch.update(groupDocRef, {
+              isGameActive: false,
+              cycleWeek: 0,
+              cycleCount: 0,
+              currentPlayersInGame: admin.firestore.FieldValue.delete(),
+              cycleDuels: admin.firestore.FieldValue.delete(),
+              dailyTokens: admin.firestore.FieldValue.delete(),
+              totalCycles: admin.firestore.FieldValue.delete(),
+              finishedBetting: admin.firestore.FieldValue.delete(),
+              finishedRecap: admin.firestore.FieldValue.delete(),
+              finishedTutorial: admin.firestore.FieldValue.delete(),
+              startingTokens: admin.firestore.FieldValue.delete(),
+            });
+            // reset the tokens for each player
+            const usersUpdate = {};
+            players.forEach((playerID) => {
+              usersUpdate[`users.${playerID}`] = {
+                placedBet: false,
+                tokens: 0,
+                todaysBetTokens: 0,
+              };
+            });
+            groupBatch.update(groupDocRef, usersUpdate);
+            console.log("Game has ended");
+          } else {
+            // create new duels
+            const duelsForToday = cycleDuels[cycleWeek - 1]; // 0-based index
+            if (!duelsForToday || typeof duelsForToday !== "object") {
+              console.error(`duelsForToday is undefined or
+                not an object for cycleDay: ${cycleWeek}`);
+              return; // Exit early if no duels are available
+            }
+            console.log("checkpoint five");
+            console.log(duelsForToday);
+            console.log(cycleWeek - 1);
+
+            const usersInDuels = [];
+
+            // Create new duel documents for each matchup in duelsForToday
+            Object.entries(duelsForToday).forEach(([key, duel]) => {
+              console.log("checkpoint 5.5");
+              console.log(duel.player1);
+              console.log(duel.player2);
+              usersInDuels.push(duel.player1);
+              usersInDuels.push(duel.player2);
+              if (!duel.player1 || !duel.player2) {
+                console.error(`Invalid duel entry: ${duel} for key: ${key}`);
+                return;
+                // Skip this iteration if player1 or player2 is undefined
+              }
+
+              const player1Bet = {
+                userID: duel.player1,
+                wager: 0,
+                // wager: data.defaultBetOnSelf,
+                betOnUserID: duel.player1,
+              };
+
+              const player2Bet = {
+                userID: duel.player2,
+                wager: 0,
+                // wager: data.defaultBetOnSelf,
+                betOnUserID: duel.player2,
+              };
+
+              const duelData = {
+                player1: duel.player1,
+                player2: duel.player2,
+                cycleWeek: cycleWeek,
+                cycleCount: cycleCount,
+                createdAt:
+                admin.firestore.FieldValue.serverTimestamp(), // Update this
+                ended: false,
+                winner: "empty",
+                bets: [player1Bet, player2Bet],
+              };
+              // Add a new duel document inside the `duels` subcollection
+              // Auto-generate a new document ID
+              const duelDocRef = groupDocRef.collection("duels").doc();
+              groupBatch.set(duelDocRef, duelData);
+              console.log("checkpoint six");
+            });
+
+            groupBatch.update(groupDocRef, {
+              cycleWeek: cycleWeek,
+              cycleCount: cycleCount,
+              cycleDuels: cycleDuels,
+              finishedBetting: admin.firestore.FieldValue.delete(),
+              finishedRecap: admin.firestore.FieldValue.delete(),
+            });
+
+            // update the bet tokens for each player
+            const usersUpdate = {};
+            players.forEach((playerID) => {
+              const currentUserData = data.users[playerID];
+              usersUpdate[`users.${playerID}.placedBet`] = false;
+              usersUpdate[`users.${playerID}.tokens`] = currentUserData ? currentUserData.tokens : 0;
+              usersUpdate[`users.${playerID}.todaysBetTokens`] = 0; // usersInDuels.includes(playerID) ? data.defaultBetOnSelf : 0;
+            });
+            groupBatch.update(groupDocRef, usersUpdate);
+          }
+          // Add the batch to the array to commit later
+          // allBatches.push(groupBatch.commit());
+        } else {
+          return; // not the correct day to be creating new duels
+        }
+      // BI WEEKLY MODEL
+      } else if (gameType && gameType == "biweekly") {
+        console.log(`gameType is biweekly for group ID: ${doc.id}`);
+
+        const currentDay = new Date().getDay();
+        const resetDayOne = data.resetDay;
+        const resetDayTwo = (resetDayOne + 3) % 7;
+
+        // if it is the correct day of the week
+        if ((currentDay == resetDayOne && hour <= 6) || (currentDay == resetDayTwo && hour >= 16) ) {
+          console.log(doc.id, ": currentDay == resetDayOne or resetDayTwo, creating duels now.");
+
           let cycleWeek = data.cycleWeek;
           let cycleCount = data.cycleCount;
           let cycleDuels = data.cycleDuels;

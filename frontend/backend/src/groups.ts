@@ -140,7 +140,7 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()){
             const gameType = groupDoc.data()?.gameType;
-            const currentCycle = gameType === 'weekly' ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
+            const currentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             const isFirstDay = groupDoc.data()?.cycleCount == 1 && currentCycle == 1;
             console.log("getGroupIsFirstDay - response: ", isFirstDay);
             return isFirstDay;
@@ -270,7 +270,7 @@ export const getCycle = async (groupID: string): Promise<number | undefined> => 
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()) {
             const gameType = groupDoc.data()?.gameType;
-            const field = gameType === 'weekly' ? 'cycleWeek' : 'cycleDay';
+            const field = (gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay';
             const value = groupDoc.data()?.[field];
             
             console.log(`getCycle - response: ${value}`);
@@ -654,7 +654,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
         // set it 
 
         // if the game is weekly
-        if(gameType == "weekly"){
+        if(gameType == "weekly" || gameType == 'biweekly'){
             await updateDoc(groupDocRef, {
                 isGameActive: true,
                 currentPlayersInGame: numberOfPlayers,
@@ -715,7 +715,7 @@ export const startGame = async (groupID: string, totalCycles: number, dailyToken
                     betOnUserID: duel.player2,
                 };
                 let duelData = {};
-                if(gameType == "weekly"){
+                if(gameType == "weekly" || gameType == 'biweekly'){
                     duelData = {
                         player1: duel.player1,
                         player2: duel.player2,

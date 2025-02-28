@@ -54,7 +54,7 @@ const HeadToHeadTutorialPage: React.FC = () => {
 		setBetAmount(((+betAmount || 0) + amount).toString());
 	}
 
-	const isWeekly = groups[groupID]?.gameType == "weekly";
+	const isWeekly = groups[groupID]?.gameType == "weekly" || groups[groupID]?.gameType == 'biweekly';
 
 	const calculateTimeLeft = () => {
 		const timeLeft = (groups[groupID]?.currentPlayersInGame ?? 0) - 1 - (groups[groupID]?.cycle ?? 0) + ((groups[groupID]?.totalCycles ?? 0) - (groups[groupID]?.cycleCount ?? 0)) * (Object.keys(groups[groupID]?.userList ?? []).length - 1);

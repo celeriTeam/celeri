@@ -9,8 +9,9 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
-import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay } from '@/backend/src/groups';
+import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
+    getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -154,18 +155,26 @@ const BetSummaryPage: React.FC = () => {
                     let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; betOnTokens: number | undefined; diamonds: number | undefined; steps: number | undefined, todaysSteps: number | undefined, averageSteps: number[] | undefined }[] = [];
                     if (userList) {
                         await Promise.all(userList.map(async (selectedUserID) => {
-                            const [profilePic, username, steps, weeklySteps, averageSteps, tokens, betOnTokens, diamonds] = await Promise.all([
+                            const [profilePic, username, steps, weeklySteps, biweeklySteps, averageSteps, tokens, betOnTokens, diamonds] = await Promise.all([
                                 getProfilePic(selectedUserID),
                                 getUserName(selectedUserID),
                                 getSteps(selectedUserID),
                                 getWeeklySteps(groupID, selectedUserID),
+                                getBiweeklySteps(groupID, selectedUserID),
                                 getAverageSteps(selectedUserID),
                                 getUserTokens(selectedUserID, groupID),
                                 getTodaysBetTokens(selectedUserID, groupID),
                                 getUserDiamonds(selectedUserID, groupID)
                             ]);
 
-                            const newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
+                            let newSteps;
+                            if( gameType === "weekly") {
+                                newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
+                            } else if (gameType === "biweekly") {
+                                newSteps = Math.round(gameType === "biweekly" ? biweeklySteps : steps);
+                            } else {
+                                newSteps = steps;
+                            }
 
                             users[selectedUserID] = {
                                 profilePic,
@@ -203,15 +212,66 @@ const BetSummaryPage: React.FC = () => {
                     setGroups(currentGroups);
 
                     // Set # of days/weeks left in the game
+                    const currentDay = new Date().getDay();
+                    const safeResetDay = resetDay ?? 0; // Default to Sunday if undefined
                     const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
                     if (gameType == "weekly") {
-                        console.log("weeksLeft -- ", timeLeft);
                         if (timeLeft == 1) {
-                            setGameTimeLeft(`${timeLeft} week`)
+                            const daysLeft = (safeResetDay - currentDay + 7) % 7;
+                            if (daysLeft == 1) {
+                                setGameTimeLeft(`${daysLeft} day`)
+                            } else {
+                                setGameTimeLeft(`${daysLeft} days`)
+                            }
                         } else {
                             setGameTimeLeft(`${timeLeft} weeks`)
                         }
-                    } else {
+                    } else if (gameType == "biweekly") {
+                        if (timeLeft == 1) {
+                            const firstResetDay = safeResetDay; // e.g., Sunday (0)
+                            const secondResetDay = (safeResetDay + 3) % 7; // e.g., Wednesday (3 days after Sunday)
+                            const currentHour = new Date().getHours();
+
+                            // Define reset times (in 24-hour format)
+                            const firstResetHour = 0;  // 12 AM
+                            const secondResetHour = 12; // 12 PM
+
+                            // Determine how far the next reset is
+                            let daysUntilReset;
+                            let resetHour;
+                            // also in users.ts, getBiweekly stems
+                            if (
+                                (currentDay < secondResetDay && currentDay >= firstResetDay) ||
+                                (secondResetDay < firstResetDay && (currentDay >= firstResetDay || currentDay < secondResetDay)) // Handles cases where second reset is earlier in the week
+                            ) {
+                                // The next reset is the second reset
+                                daysUntilReset = (secondResetDay - currentDay + 7) % 7;
+                                if (daysUntilReset == 1) {
+                                    setGameTimeLeft(`${daysUntilReset} day`)
+                                } else {
+                                    setGameTimeLeft(`${daysUntilReset} days`)
+                                }
+                            } else if (currentDay === secondResetDay && currentHour < secondResetHour) {
+                                resetHour = secondResetHour
+                                const hoursLeft = resetHour - currentHour;
+                                if (hoursLeft == 1) {
+                                    setGameTimeLeft(`${hoursLeft} hour`)
+                                } else {
+                                    setGameTimeLeft(`${hoursLeft} hours`)
+                                }
+                            } else {
+                                // The next reset is the first reset of the next cycle
+                                daysUntilReset = (firstResetDay - currentDay + 7) % 7;
+                                if (daysUntilReset == 1) {
+                                    setGameTimeLeft(`${daysUntilReset} day`)
+                                } else {
+                                    setGameTimeLeft(`${daysUntilReset} days`)
+                                }
+                            }
+                        } else {
+                            setGameTimeLeft(`${timeLeft / 2} weeks`);
+                        }
+                    } else { // DAILY
                         if (timeLeft == 1) {
                             setGameTimeLeft(`${timeLeft} day`)
                         } else {
@@ -221,16 +281,61 @@ const BetSummaryPage: React.FC = () => {
 
                     // If weekly, get # of days left in the week
                     if (resetDay !== undefined) {
-                        const today = new Date();
-                        const currentDay = today.getDay();
-                        if (currentDay === resetDay) {
-                            setBetTimeLeft("7 days");
-                        } else if (currentDay > resetDay) {
-                            const daysLeft = 7 - (currentDay - resetDay);
-                            setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
-                        } else {
-                            const daysLeft = resetDay - currentDay;
-                            setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                        if (gameType == "weekly") {
+                            const today = new Date();
+                            const currentDay = today.getDay();
+                            if (currentDay === resetDay) {
+                                setBetTimeLeft("7 days");
+                            } else if (currentDay > resetDay) {
+                                const daysLeft = 7 - (currentDay - resetDay);
+                                setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                            } else {
+                                const daysLeft = resetDay - currentDay;
+                                setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                            }
+                        } else if (gameType == "biweekly") {
+                            console.log("biweekly -- setting days left for bet");
+                            const firstResetDay = resetDay; // e.g., Sunday (0)
+                            const secondResetDay = (resetDay + 3) % 7; // e.g., Wednesday (3 days after Sunday)
+                            const currentHour = new Date().getHours();
+
+                            // Define reset times (in 24-hour format)
+                            const firstResetHour = 0;  // 12 AM
+                            const secondResetHour = 12; // 12 PM
+
+                            // Determine how far the next reset is
+                            let daysUntilReset;
+                            let resetHour;
+
+                            if (
+                                (currentDay < secondResetDay && currentDay >= firstResetDay) || 
+                                (secondResetDay < firstResetDay && (currentDay >= firstResetDay || currentDay < secondResetDay)) // Handles cases where second reset is earlier in the week
+                            ) {
+                                // The next reset is the second reset
+                                daysUntilReset = (secondResetDay - currentDay + 7) % 7;
+                                if(daysUntilReset == 1){
+                                    setBetTimeLeft(`${daysUntilReset} day`)
+                                } else {
+                                    setBetTimeLeft(`${daysUntilReset} days`)
+                                }
+                            } else if (currentDay === secondResetDay && currentHour < secondResetHour){
+                                resetHour = secondResetHour
+                                const hoursLeft = resetHour - currentHour;
+                                if(hoursLeft == 1){
+                                    setBetTimeLeft(`${hoursLeft} hour`)
+                                } else {
+                                    setBetTimeLeft(`${hoursLeft} hours`)
+                                }
+                            } else {
+                                // The next reset is the first reset of the next cycle
+                                daysUntilReset = (firstResetDay - currentDay + 7) % 7;
+                                if(daysUntilReset == 1){
+                                    setBetTimeLeft(`${daysUntilReset} day`)
+                                } else {
+                                    setBetTimeLeft(`${daysUntilReset} days`)
+                                }
+                                console.log("bet time left: ", betTimeLeft);
+                            }
                         }
                     }
 
@@ -252,7 +357,7 @@ const BetSummaryPage: React.FC = () => {
                     setPropBetPlayer([{ id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0 }]);
 
                     // So it opens up immediately if you haven't made a prop bet yet
-                    if (!isFinishedPropBet && gameType === 'weekly') {
+                    if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
                         // Add a small delay to ensure other states are properly set
                         const timer = setTimeout(() => {
                             setPropBetModalVisible(true);
@@ -261,7 +366,7 @@ const BetSummaryPage: React.FC = () => {
                     }
 
                     // Set up a listener for today's duels
-                    console.log('starting duel listener..');
+                    console.log('starting duel listener!....');
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const startDate = new Date(today);
@@ -271,18 +376,33 @@ const BetSummaryPage: React.FC = () => {
                         // Start date is 7 days ago
                         startDate.setDate(startDate.getDate() - 7);
                         endDate.setDate(endDate.getDate() + 1);
+                    } else if (gameType === 'biweekly') {
+                        startDate.setDate(startDate.getDate() - 4);
+                        endDate.setDate(endDate.getDate() + 1);
                     } else {
                         // Start date is today, end date is tomorrow
                         endDate.setDate(endDate.getDate() + 1);
                     }
 
+                    console.log("the test continues", startDate, endDate);
+
                     const duelsCollection = collection(groupDocRef, 'duels');
+                    console.log("checkpoint four");
+                    console.log("Firestore Query Parameters:");
+                    console.log("gameType:", gameType);
+                    console.log("cycleCount:", cycleCount);
+                    console.log("cycle:", cycle);
+                    console.log("startDate:", startDate, "endDate:", endDate);
+                    console.log("duelsCollection:", duelsCollection);
+
                     const duelsQuery = query(duelsCollection,
                         where('cycleCount', '==', cycleCount),
-                        where(gameType === 'weekly' ? 'cycleWeek' : 'cycleDay', '==', cycle),
+                        where((gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay', '==', cycle),
                         where('createdAt', '>=', Timestamp.fromDate(startDate)),
                         where('createdAt', '<', Timestamp.fromDate(endDate))
                     );
+                    console.log("checkpoint five");
+                    console.log("duelsQuery", duelsQuery);
 
                     // Clean up previous duels listener if exists
                     if (unsubscribeFunctions.length > 0) {
@@ -583,7 +703,7 @@ const BetSummaryPage: React.FC = () => {
                                 />
                                 <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
                                 <Text style={styles.timeLeftText}> left in game</Text>
-                                {groups[groupID]?.gameType === 'weekly' && (
+                                {groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly' && (
                                     <>
                                         <Text style={styles.timeLeftText}> | </Text>
                                         <Text style={styles.timeLeft}>{betTimeLeft}</Text>
@@ -597,7 +717,7 @@ const BetSummaryPage: React.FC = () => {
                     {/* Stats Container */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), paddingTop: scale(15), }}>
                         <Text style={styles.sectionTitle}>Your Total Stats</Text>
-                        {groups[groupID]?.gameType === 'weekly' && (
+                        {groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly' && (
                             <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
                                 <Text style={styles.propBetButton}>Today's Prop Bet</Text>
                             </TouchableOpacity>
@@ -752,110 +872,110 @@ const BetSummaryPage: React.FC = () => {
                         </View>
                         {/* Line for showing selected tab */}
                         <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
-                            selectedTab === 'Steps' ? 
-                                { alignSelf: 'flex-end', right: scale(10) } :
-                                { alignSelf: 'flex-start', left: scale(10), }]}
+                        selectedTab === 'Steps' ?
+                            { alignSelf: 'flex-end', right: scale(10) } :
+                            { alignSelf: 'flex-start', left: scale(10), }]}
                         />
                         {selectedTab === 'Tokens' ? (
-                        <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(40), }]}>
-                            <ScrollView showsVerticalScrollIndicator={false}>
-                                <View style={styles.leaderboardTop}>
-                                    <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
-                                        <Image
-                                            source={currentGroupUsersArray[1]?.pfp ?
-                                                { uri: currentGroupUsersArray[1]?.pfp } :
-                                                require('@components/blank-profile-picture.png')
-                                            }
-                                            style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                        />
-                                        <View style={styles.leaderboardTopCircle} >
-                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>2</Text>
-                                        </View>
-                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
-                                        <View style={styles.leaderboardTopTokens}>
+                            <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(40), }]}>
+                                <ScrollView showsVerticalScrollIndicator={false}>
+                                    <View style={styles.leaderboardTop}>
+                                        <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
                                             <Image
-                                                source={require('@assets/icons/tokensWhite.png')}
-                                                style={styles.tokensWhiteIcon}
-                                            />
-                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
-                                        <View style={{
-                                            shadowColor: '#51ba51',
-                                            shadowOffset: { width: 0, height: 0 },
-                                            shadowOpacity: 0.7,
-                                            shadowRadius: moderateScale(7),
-                                            elevation: 10,
-                                        }}>
-                                            <Image
-                                                source={currentGroupUsersArray[0]?.pfp ?
-                                                    { uri: currentGroupUsersArray[0]?.pfp } :
+                                                source={currentGroupUsersArray[1]?.pfp ?
+                                                    { uri: currentGroupUsersArray[1]?.pfp } :
                                                     require('@components/blank-profile-picture.png')
                                                 }
-                                                style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                                style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
                                             />
-                                        </View>
-                                        <View style={styles.leaderboardTopCircle} >
-                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
-                                        </View>
-                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
-                                        <View style={styles.leaderboardTopTokens}>
-                                            <Image
-                                                source={require('@assets/icons/tokensWhite.png')}
-                                                style={styles.tokensWhiteIcon}
-                                            />
-                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
-                                        <Image
-                                            source={currentGroupUsersArray[2]?.pfp ?
-                                                { uri: currentGroupUsersArray[2]?.pfp } :
-                                                require('@components/blank-profile-picture.png')
-                                            }
-                                            style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                        />
-                                        <View style={styles.leaderboardTopCircle} >
-                                            <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>3</Text>
-                                        </View>
-                                        <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
-                                        <View style={styles.leaderboardTopTokens}>
-                                            <Image
-                                                source={require('@assets/icons/tokensWhite.png')}
-                                                style={styles.tokensWhiteIcon}
-                                            />
-                                            <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                </View>
-                                {currentGroupUsersArray.slice(3).map((user, index) => (
-                                    <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
-                                        <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
-                                            <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
-                                            <Image
-                                                source={user.pfp ?
-                                                    { uri: user.pfp } :
-                                                    require('@components/blank-profile-picture.png')
-                                                }
-                                                style={[styles.leaderboardImage, { marginRight: scale(10), }]}
-                                            />
-                                            <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
-                                            <View style={styles.leaderboardTokensNumTokens}>
+                                            <View style={styles.leaderboardTopCircle} >
+                                                <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>2</Text>
+                                            </View>
+                                            <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[1]?.name ?? '', 7)}</Text>
+                                            <View style={styles.leaderboardTopTokens}>
                                                 <Image
                                                     source={require('@assets/icons/tokensWhite.png')}
                                                     style={styles.tokensWhiteIcon}
                                                 />
-                                                <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
+                                                <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[1]?.tokens}</Text>
                                             </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-                            ) : (
-                                <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
-                                    <ScrollView showsVerticalScrollIndicator={false}>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
+                                            <View style={{
+                                                shadowColor: '#51ba51',
+                                                shadowOffset: { width: 0, height: 0 },
+                                                shadowOpacity: 0.7,
+                                                shadowRadius: moderateScale(7),
+                                                elevation: 10,
+                                            }}>
+                                                <Image
+                                                    source={currentGroupUsersArray[0]?.pfp ?
+                                                        { uri: currentGroupUsersArray[0]?.pfp } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                                />
+                                            </View>
+                                            <View style={styles.leaderboardTopCircle} >
+                                                <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
+                                            </View>
+                                            <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{currentGroupUsersArray[0]?.name}</Text>
+                                            <View style={styles.leaderboardTopTokens}>
+                                                <Image
+                                                    source={require('@assets/icons/tokensWhite.png')}
+                                                    style={styles.tokensWhiteIcon}
+                                                />
+                                                <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[0]?.tokens}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[2]?.id)} activeOpacity={0.8}>
+                                            <Image
+                                                source={currentGroupUsersArray[2]?.pfp ?
+                                                    { uri: currentGroupUsersArray[2]?.pfp } :
+                                                    require('@components/blank-profile-picture.png')
+                                                }
+                                                style={{ width: scale(37), height: scale(37), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                            />
+                                            <View style={styles.leaderboardTopCircle} >
+                                                <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>3</Text>
+                                            </View>
+                                            <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{truncateString(currentGroupUsersArray[2]?.name ?? '', 7)}</Text>
+                                            <View style={styles.leaderboardTopTokens}>
+                                                <Image
+                                                    source={require('@assets/icons/tokensWhite.png')}
+                                                    style={styles.tokensWhiteIcon}
+                                                />
+                                                <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {currentGroupUsersArray[2]?.tokens}</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    </View>
+                                    {currentGroupUsersArray.slice(3).map((user, index) => (
+                                        <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                                            <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
+                                                <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
+                                                <Image
+                                                    source={user.pfp ?
+                                                        { uri: user.pfp } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[styles.leaderboardImage, { marginRight: scale(10), }]}
+                                                />
+                                                <Text style={[styles.leaderboardTokensText, { color: '#fff', }]}>{user.name}</Text>
+                                                <View style={styles.leaderboardTokensNumTokens}>
+                                                    <Image
+                                                        source={require('@assets/icons/tokensWhite.png')}
+                                                        style={styles.tokensWhiteIcon}
+                                                    />
+                                                    <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        ) : (
+                            <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
+                                <ScrollView showsVerticalScrollIndicator={false}>
                                     <View style={styles.grayLine} />
                                     {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                         <View key={user.id} style={styles.leaderboardRow}>
@@ -888,9 +1008,9 @@ const BetSummaryPage: React.FC = () => {
                                             </View>
                                         </View>
                                     ))}
-                                    </ScrollView>
-                                </View>
-                            )}
+                                </ScrollView>
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -954,7 +1074,8 @@ const BetSummaryPage: React.FC = () => {
                             </TouchableOpacity>
 
                             {/* BetRecapPage as the modal content */}
-                            {groups[groupID]?.gameType === "weekly" ? (
+                            {groups[groupID]?.gameType === "weekly"
+                            || groups[groupID]?.gameType === 'biweekly' ? (
                                 <WeeklyBetHistoryPage groupID={groupID} />
                             ) : (
                                 <BetHistoryPage groupID={groupID} gameType={groups[groupID]?.gameType} />

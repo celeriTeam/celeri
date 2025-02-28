@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
-import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getWeeklySteps, getSteps } from '@backend/src/users';
+import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps } from '@backend/src/users';
 import { useUser } from '../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
@@ -99,15 +99,23 @@ const InvitePage: React.FC = () => {
                 let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined }[] = [];
                 if (userList) {
                     await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, averageSteps, weeklySteps, steps] = await Promise.all([
+                        const [profilePic, username, averageSteps, weeklySteps, biweeklySteps, steps] = await Promise.all([
                             getProfilePic(selectedUserID),
                             getUserName(selectedUserID),
                             getAverageSteps(selectedUserID),
                             getWeeklySteps(resolvedGroupID, selectedUserID),
+                            getBiweeklySteps(resolvedGroupID, selectedUserID),
                             getSteps(selectedUserID),
                         ]);
 
-                        const newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
+                        let newSteps;
+                        if( gameType === "weekly") {
+                            newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
+                        } else if (gameType === "biweekly") {
+                            newSteps = Math.round(gameType === "biweekly" ? biweeklySteps : steps);
+                        } else {
+                            newSteps = steps;
+                        }
 
                         users[selectedUserID] = {
                             profilePic,

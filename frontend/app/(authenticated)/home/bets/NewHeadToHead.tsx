@@ -169,14 +169,68 @@ const NewHeadToHeadPage: React.FC = () => {
             const cycleCount = groups[groupID]?.cycleCount;
             const totalCycles = groups[groupID]?.totalCycles;
             const userList = groups[groupID]?.userList;
+            const resetDay = groups[groupID]?.resetDay; 
+            const currentDay = new Date().getDay(); 
             const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
             if (gameType == "weekly") {
                 console.log("weeksLeft -- ", timeLeft);
                 if (timeLeft == 1) {
-                    setGameTimeLeft(`${timeLeft} week`)
+                    const daysLeft = (resetDay - currentDay + 7) % 7;
+                    if(daysLeft == 1){
+                        setGameTimeLeft(`${daysLeft} day`)
+                    } else {
+                        setGameTimeLeft(`${daysLeft} days`)
+                    }
                 } else {
                     setGameTimeLeft(`${timeLeft} weeks`)
                 }
+            } else if (gameType == "biweekly"){
+                console.log("weeksLeft -- ", timeLeft / 2);
+                if(timeLeft == 1) {
+                    const firstResetDay = resetDay; // e.g., Sunday (0)
+                    const secondResetDay = (resetDay + 3) % 7; // e.g., Wednesday (3 days after Sunday)
+                    const currentHour = new Date().getHours();
+
+                    // Define reset times (in 24-hour format)
+                    const firstResetHour = 0;  // 12 AM
+                    const secondResetHour = 12; // 12 PM
+
+                    // Determine how far the next reset is
+                    let daysUntilReset;
+                    let resetHour;
+
+                    if (
+                        (currentDay < secondResetDay && currentDay >= firstResetDay) || 
+                        (secondResetDay < firstResetDay && (currentDay >= firstResetDay || currentDay < secondResetDay)) // Handles cases where second reset is earlier in the week
+                    ) {
+                        // The next reset is the second reset
+                        daysUntilReset = (secondResetDay - currentDay + 7) % 7;
+                        if(daysUntilReset == 1){
+                            setGameTimeLeft(`${daysUntilReset} day`)
+                        } else {
+                            setGameTimeLeft(`${daysUntilReset} days`)
+                        }
+                    } else if (currentDay === secondResetDay && currentHour < secondResetHour){
+                        resetHour = secondResetHour
+                        const hoursLeft = resetHour - currentHour;
+                        if(hoursLeft == 1){
+                            setGameTimeLeft(`${hoursLeft} hour`)
+                        } else {
+                            setGameTimeLeft(`${hoursLeft} hours`)
+                        }
+                    } else {
+                        // The next reset is the first reset of the next cycle
+                        daysUntilReset = (firstResetDay - currentDay + 7) % 7;
+                        if(daysUntilReset == 1){
+                            setGameTimeLeft(`${daysUntilReset} day`)
+                        } else {
+                            setGameTimeLeft(`${daysUntilReset} days`)
+                        }
+                    }
+                } else {
+                    setGameTimeLeft(`${timeLeft/2} weeks`);
+                }
+
             } else {
                 if (timeLeft == 1) {
                     setGameTimeLeft(`${timeLeft} day`)
@@ -582,7 +636,8 @@ const NewHeadToHeadPage: React.FC = () => {
 
                                 {/* BetRecapPage as the modal content */}
                                 {
-                                    groups?.[groupID]?.gameType === "weekly" ? (
+                                    groups?.[groupID]?.gameType === "weekly" 
+                                    || groups?.[groupID].gameType === 'biweekly' ? (
                                         <WeeklyBetRecapPage />
                                     ) : (
                                         <BetRecapPage />

@@ -143,7 +143,7 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
             for (const groupID of groupIDs) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 //console.log("Group Document data:", groupDoc.data());
-                if(groupDoc.data()?.gameType == "weekly"){
+                if(groupDoc.data()?.gameType == "weekly" || groupDoc.data()?.gameType == 'biweekly'){
                     isWeekly = true; 
                 }
             }
@@ -312,6 +312,68 @@ export const getSteps = async (id: string): Promise<number> => {
         }
     } catch (error) {
         console.error("getSteps - Error fetching user document:", error);
+        return 0;
+    }
+}
+
+// GET biweekly steps
+export const getBiweeklySteps = async(groupID: string, userID: string): Promise<number> => {
+    console.log("getBiweekluySteps -- running");
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        const userDoc = await getDoc(doc(db, "users", userID));
+
+        const groupData = groupDoc.data();
+        const userData = userDoc.data();
+        const resetDay = groupData?.resetDay || 0;
+
+
+        const firstResetDay = resetDay;
+        const secondResetDay = (resetDay + 3) % 7; 
+        const currentDay = new Date().getDay();
+
+        const currentHour = new Date().getHours();
+
+        // Define reset times (in 24-hour format)
+        const firstResetHour = 0;  // 12 AM
+        const secondResetHour = 12; // 12 PM
+
+        const weeklyStepsTemp = userData?.averageSteps; 
+
+        if (weeklyStepsTemp === undefined || weeklyStepsTemp.length !== 7) {
+            console.error("getWeeklySteps - error: Invalid averageSteps data");
+            return 0;
+        }
+
+        let daysSinceReset;
+
+        // figure out if you should count from first or second resetDay, also in bet summary
+        if (
+            (currentDay < secondResetDay && currentDay >= firstResetDay) ||
+            (secondResetDay < firstResetDay && (currentDay >= firstResetDay || currentDay < secondResetDay) ||
+            currentDay === secondResetDay && currentHour < secondResetHour) // Handles cases where second reset is earlier in the week
+        ) {
+            // the next reset is the secondReset, the previous reset is the firstReset
+            daysSinceReset = (currentDay - firstResetDay + 7) & 7;
+            const totalStepsSinceReset = daysSinceReset != 0 ? weeklyStepsTemp.slice(-daysSinceReset).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
+
+            const currentDaySteps = await getSteps(userID) || 0;
+            const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
+            console.log("totalBiweeklySteps: ", totalBiweeklySteps);
+
+            return totalBiweeklySteps;
+        } else {
+            // the next reset is the firstReset, the previous reset is the secondReset
+            daysSinceReset = (currentDay - secondResetDay + 7) & 7;
+            const totalStepsSinceReset = daysSinceReset != 0 ? weeklyStepsTemp.slice(-daysSinceReset).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
+            const currentDaySteps = await getSteps(userID) || 0;
+            const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
+            console.log("totalBiweeklySteps: ", totalBiweeklySteps);
+
+            return totalBiweeklySteps;
+        }
+    } catch (error) {
+        console.error("getBiweeklySteps - Error fetching user document:", error);
         return 0;
     }
 }

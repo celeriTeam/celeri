@@ -139,7 +139,7 @@ export const findDuelID = async (groupID: string, targetUserID: string, gameType
         // Get the timestamp for 24 hours ago
         const now = new Date();
         let time;
-        if(gameType == "weekly"){
+        if(gameType == "weekly" || gameType == 'biweekly'){
             time = Timestamp.fromDate(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
 
         } else {
