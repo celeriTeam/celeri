@@ -417,6 +417,28 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
     }
 }
 
+// GET last login
+export const getLastLogin = async (userID: string, groupID: string): Promise<Date | undefined> => {
+    try {
+        // get groups[groupID].users[userID].loginTime[1]
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const users = groupDoc.data()?.users;
+            const user = users[userID];
+            const loginTime = user.loginTime;
+            const lastLogin = loginTime ? loginTime[1] : undefined;
+            console.log("getLastLogin - response: ", lastLogin);
+            return lastLogin;
+        } else{
+            console.error("getLastLogin - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getLastLogin - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
@@ -526,6 +548,33 @@ export const addPropBet = async (groupID: string, userID: string, betOnUserID: s
     } catch (error) {
         console.error('addPropBet - Error adding prop bet:', error);
         return null;
+    }
+}
+
+// SET login
+export const setLogin = async (userID: string, groupID: string, time: Date) => {
+    try {
+        // groups[groupID].users[userID].loginTime will be a list [lastlogin, currentlogin]
+        // if loginTime doesnt exist, create it with lastlogin = currentlogin
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            const loginTime = groupDoc.data()?.users[userID]?.loginTime;
+            if (loginTime) {
+                await updateDoc(groupDocRef, {
+                    [`users.${userID}.loginTime`]: [loginTime[1], time],
+                });
+            } else {
+                await updateDoc(groupDocRef, {
+                    [`users.${userID}.loginTime`]: [time, time],
+                });
+            }
+            console.log('setLogin - response: Login time set');
+        } else {
+            console.error('setLogin - error: No such document!');
+        }
+    } catch (error) {
+        console.error('setLogin - Error updating last login:', error);
     }
 }
 

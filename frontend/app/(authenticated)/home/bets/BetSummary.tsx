@@ -10,8 +10,7 @@ import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
-    getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -23,6 +22,7 @@ import { group } from 'console';
 import PropBetPage from './PropBet';
 import EditGroupPage from './EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NewsPage from './News';
 
 const db = getFirestore(app);
 
@@ -43,6 +43,8 @@ const BetSummaryPage: React.FC = () => {
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
+    const [propBetQueued, setPropBetQueued] = useState(false);
+    const [isNewsModalVisible, setNewsModalVisible] = useState(false);
     const [isBetHistoryModalVisible, setBetHistoryModalVisible] = useState(false);
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [isLiveDuelModalVisible, setLiveDuelModalVisible] = useState(false);
@@ -76,6 +78,7 @@ const BetSummaryPage: React.FC = () => {
 
         const initialize = async () => {
             try {
+                await setLogin(userID, groupID, new Date());
                 cleanup = await fetchGroupData(userID);
                 await fetchPowerups();
             } catch (error) {
@@ -372,15 +375,15 @@ const BetSummaryPage: React.FC = () => {
                     const startDate = new Date(today);
                     const endDate = new Date(today);
 
-                    if (gameType === 'weekly') {
-                        // Start date is 7 days ago
-                        startDate.setDate(startDate.getDate() - 7);
+                    if (gameType === 'daily') {
+                        // Start date is today, end date is tomorrow
                         endDate.setDate(endDate.getDate() + 1);
                     } else if (gameType === 'biweekly') {
                         startDate.setDate(startDate.getDate() - 4);
                         endDate.setDate(endDate.getDate() + 1);
                     } else {
-                        // Start date is today, end date is tomorrow
+                        // Start date is 7 days ago
+                        startDate.setDate(startDate.getDate() - 7);
                         endDate.setDate(endDate.getDate() + 1);
                     }
 
@@ -497,6 +500,11 @@ const BetSummaryPage: React.FC = () => {
                 }
                 setIsLoading(false);
             });
+
+            // Grab news data (dont need onSnapshot)
+            const newsDocRef = doc(groupDocRef, 'news');
+            const lastLogin = groups[groupID]?.lastLogin;
+
         }
         return () => {
             unsubscribeFunctions.forEach(unsubscribe => {
@@ -1144,17 +1152,39 @@ const BetSummaryPage: React.FC = () => {
                     </View>
                 </Modal>
 
+                {/* News Modal */}
+                <Modal
+                    transparent={true}
+                    visible={isNewsModalVisible}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.moneyModalContainer, { height: '41%', top: '30%' }]}>
+                            {/* Close button */}
+                            {finishedPropBet && (
+                                <TouchableOpacity style={styles.closeButton} onPress={() => setNewsModalVisible(false)}>
+                                    <Image
+                                        source={require('@assets/icons/x.png')}
+                                        style={styles.closeButtonIcon}
+                                    />
+                                </TouchableOpacity>
+                            )}
+
+                            <NewsPage
+                                groupID={groupID}
+                                userID={userID}
+                                setNewsModalVisible={setNewsModalVisible}
+                            />
+                        </View>
+                    </View>
+                </Modal>
+
                 {/* Prop Bet Modal */}
                 <Modal
                     transparent={true}
                     visible={isPropBetModalVisible}
                 >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setPropBetModalVisible(false)} // Close dropdown when overlay is pressed
-                    >
-                        <View style={[styles.moneyModalContainer, { height: '41%', }]}>
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.moneyModalContainer, { height: '41%', top: '30%' }]}>
                             {/* Close button */}
                             {finishedPropBet && (
                                 <TouchableOpacity style={styles.closeButton} onPress={() => { setPropBetModalVisible(false); setSelectedPropBet(null); }}>
@@ -1176,7 +1206,7 @@ const BetSummaryPage: React.FC = () => {
                                 setPropBetModalVisible={setPropBetModalVisible}
                             />
                         </View>
-                    </TouchableOpacity>
+                    </View>
                 </Modal>
 
                 {/* Edit Group Modal */}
@@ -1189,7 +1219,7 @@ const BetSummaryPage: React.FC = () => {
                         style={styles.modalOverlay}
                         activeOpacity={1}
                         onPress={() => setEditGroupModalVisible(false)} // Close dropdown when overlay is pressed
-                    >
+                    />
                         <View style={styles.editGroupModalContainer}>
                             <EditGroupPage
                                 groupID={groupID}
@@ -1203,7 +1233,6 @@ const BetSummaryPage: React.FC = () => {
                                 }}
                             />
                         </View>
-                    </TouchableOpacity>
                 </Modal>
 
                 {/* Info Modals */}
@@ -1216,8 +1245,8 @@ const BetSummaryPage: React.FC = () => {
                         style={styles.modalOverlay}
                         activeOpacity={1}
                         onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
-                    >
-                        <View style={[styles.moneyModalContainer, { height: '25%', }]}>
+                    />
+                        <View style={[styles.moneyModalContainer, { height: '25%', top: '37%' }]}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
                                 <Image
@@ -1231,7 +1260,6 @@ const BetSummaryPage: React.FC = () => {
                                 </View>
                             </View>
                         </View>
-                    </TouchableOpacity>
                 </Modal>
                 <Modal
                     transparent={true}
@@ -1242,8 +1270,8 @@ const BetSummaryPage: React.FC = () => {
                         style={styles.modalOverlay}
                         activeOpacity={1}
                         onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
-                    >
-                        <View style={[styles.moneyModalContainer, { height: '13%', }]}>
+                    />
+                        <View style={[styles.moneyModalContainer, { height: '13%', top: '44%' }]}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
                                 <Image
@@ -1257,7 +1285,6 @@ const BetSummaryPage: React.FC = () => {
                                 </View>
                             </View>
                         </View>
-                    </TouchableOpacity>
                 </Modal>
                 <Modal
                     transparent={true}
@@ -1268,8 +1295,8 @@ const BetSummaryPage: React.FC = () => {
                         style={styles.modalOverlay}
                         activeOpacity={1}
                         onPress={() => setDiamondsModalVisible(false)} // Close dropdown when overlay is pressed
-                    >
-                        <View style={[styles.moneyModalContainer, { height: '20%', }]}>
+                    />
+                        <View style={[styles.moneyModalContainer, { height: '20%', top: '40%' }]}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
                                 <Image
@@ -1283,7 +1310,6 @@ const BetSummaryPage: React.FC = () => {
                                 </View>
                             </View>
                         </View>
-                    </TouchableOpacity>
                 </Modal>
             </SafeAreaView>
         </LinearGradient>
@@ -1679,7 +1705,12 @@ const styles = StyleSheet.create({
     },
     // MODAL
     modalOverlay: {
-        flex: 1,
+        // flex: 1,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
@@ -1702,12 +1733,14 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(15),
     },
     moneyModalContainer: {
+        position: 'absolute',
+        left: '5%',
         width: '90%',
         backgroundColor: 'black',
-        position: 'relative',
         borderWidth: moderateScale(1),
         borderColor: '#4A4A4A',
         borderRadius: moderateScale(15),
+        zIndex: 1,
     },
     editGroupModalContainer: {
         height: '88%',
