@@ -520,3 +520,34 @@ export const getStepsFromWeekBefore = async(userID: string): Promise<number> => 
         return 0;
     }
 }
+
+// GET steps last updated
+export const getStepsLastUpdate = async (id: string): Promise<Date | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists()) {
+            const stepsLastUpdate = userDoc.data()?.stepsLastUpdate.toDate() ?? new Date();
+            console.log("getStepsLastUpdate - response: ", stepsLastUpdate);
+            return stepsLastUpdate;
+        } else {
+            console.error("getStepsLastUpdate - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getStepsLastUpdate - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+// SET steps last updated
+export const setStepsLastUpdate = async (id: string, date: Date): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', id);
+        await updateDoc(userDocRef, {
+            stepsLastUpdate: date,
+        });
+        console.log('setStepsLastUpdate - response: ', date);
+    } catch (error) {
+        console.error('setStepsLastUpdate - Error updating steps last updated:', error);
+    }
+}

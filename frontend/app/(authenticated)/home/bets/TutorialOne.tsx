@@ -582,10 +582,10 @@ const TutorialOne: React.FC = () => {
 
                                 {/* BetRecapPage as the modal content */}
                                 {
-                                    groups?.[groupID]?.gameType === "weekly" ? (
-                                        <WeeklyBetRecapPage />
-                                    ) : (
+                                    groups?.[groupID]?.gameType === "daily" ? (
                                         <BetRecapPage />
+                                    ) : (
+                                        <WeeklyBetRecapPage />
                                     )
                                 }
                             </View>
