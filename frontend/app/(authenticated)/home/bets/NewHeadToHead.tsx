@@ -14,6 +14,7 @@ import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 import { useTabBar } from '../../../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NewHeadToHeadTutorial from './NewHeadToHeadTutorial';
 
 
 const { width, height } = Dimensions.get('window');
@@ -30,7 +31,7 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 const NewHeadToHeadPage: React.FC = () => {
     const { userID, groups, loading } = useUser();
     const route = useRouter();
-    const { groupIDTemp } = useLocalSearchParams();
+    const { groupIDTemp, showTutorialTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [matchups, setMatchups] = useState<{
         duelID: string,
@@ -63,6 +64,8 @@ const NewHeadToHeadPage: React.FC = () => {
     const [isModalVisible, setModalVisible] = useState(true);
     // const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [isSubmittedModalVisible, setSubmittedModalVisible] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(1);
+    const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 50, 100, 250];
@@ -530,6 +533,24 @@ const NewHeadToHeadPage: React.FC = () => {
             >
                 <SafeAreaView style={styles.safeView} edges={['top']}>
                     <View style={styles.container}>
+
+                        {/* Tutorial Modal */}
+                        {showTutorial && (
+                            <View style={styles.tutorialOverlay}>
+                                {/* Tutorial content */}
+                                <View style={[
+                                    styles.tutorialContent,
+                                    // getModalStyle() as StyleProp<ViewStyle>
+                                ]}>
+                                    <NewHeadToHeadTutorial
+                                        tutorialStep={tutorialStep}
+                                        setTutorialStep={setTutorialStep}
+                                        setShowTutorial={setShowTutorial}
+                                    />
+                                </View>
+                            </View>
+                        )}
+
                         <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                             <Image
                                 source={require('@assets/icons/timeLeft.png')}
@@ -538,7 +559,7 @@ const NewHeadToHeadPage: React.FC = () => {
                             <Text style={styles.timeLeft}> {gameTimeLeft} left in game</Text>
                         </View>
 
-                        <Text style={styles.question}>Who will walk more steps{'\n'}this week?</Text>
+                        <Text style={[styles.question, (tutorialStep === 1) && {zIndex: 200},]}>Who will walk more steps{'\n'}this week?</Text>
 
                         {/* dividing line */}
                         <View style={styles.dividingLine} />
@@ -693,6 +714,7 @@ const NewHeadToHeadPage: React.FC = () => {
                             </View>
                         </View>
                     </Modal>
+
                 </SafeAreaView>
             </LinearGradient>
         </TouchableWithoutFeedback>
@@ -706,6 +728,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
+        position: 'relative',
     },
     timeLeftIcon: {
         width: scale(13),
@@ -902,6 +925,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+        zIndex: 100,
     },
     modalContainer: {
         width: '90%',
@@ -988,6 +1012,16 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#fff',
     },
+    tutorialOverlay: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		zIndex: 100,
+		backgroundColor: 'rgba(0, 0, 0, 0.6)',
+	},
+	tutorialContent: {
+        
+	},
 });
 
 export default NewHeadToHeadPage;

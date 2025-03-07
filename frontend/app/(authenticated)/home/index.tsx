@@ -214,14 +214,14 @@ const HomeTab: React.FC = () => {
             const groupIDTemp = groupID;
             if (!isFinishedTutorial) {
                 router.push({
-                    pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                    params: { groupIDTemp },
+                    pathname: '/(authenticated)/home/bets/NewHeadToHead',
+                    params: { groupIDTemp, showTutorialTemp: String(!isFinishedTutorial) },
                 });
             }
             else if (!isFinishedBetting) {
                 router.push({
                     pathname: '/(authenticated)/home/bets/NewHeadToHead',
-                    params: { groupIDTemp },
+                    params: { groupIDTemp, showTutorialTemp: String(!isFinishedTutorial) },
                 });
             } else {
                 router.push({
