@@ -636,8 +636,8 @@ const NewHeadToHeadPage: React.FC = () => {
 
                                 {/* BetRecapPage as the modal content */}
                                 {
-                                    groups?.[groupID]?.gameType === "weekly" 
-                                    || groups?.[groupID].gameType === 'biweekly' ? (
+                                    groups[groupID]?.gameType === "weekly" 
+                                    || groups[groupID]?.gameType === 'biweekly' ? (
                                         <WeeklyBetRecapPage />
                                     ) : (
                                         <BetRecapPage />
