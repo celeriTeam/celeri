@@ -40,7 +40,7 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const HomeTab: React.FC = () => {
-    const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData, isLoading } = useHealthData();
+    const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData, isLoading, hasPermissions } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
     console.log("printing steps!!!");
@@ -237,6 +237,17 @@ const HomeTab: React.FC = () => {
             });
             //navigation.navigate('InviteGroup', { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: false });
         }
+    }
+
+    if (!hasPermissions) {
+        return (
+            <SafeAreaView style={styles.safeView} edges={['top']}>
+                <View style={styles.container}>
+                    <Text>Health data permissions are required to use this app.</Text>
+                    <Text>Go to Settings to enable this.</Text>
+                </View>
+            </SafeAreaView>
+        );
     }
 
     if (isLoading || isLoadingHome) {
