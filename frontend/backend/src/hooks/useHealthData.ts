@@ -36,6 +36,7 @@ const useHealthData = () => {
     const [distance, setDistance] = useState(0);
     const [loadingStepsFromWeekBefore, setLoadingStepsFromWeekBefore] = useState(false);
     const [hasPermissions, setHasPermissions] = useState(false);
+    const [isLoading, setLoading] = useState(true);
 
     const getDailySteps = async (): Promise<number> => {
         console.log("getDailySteps -- start");
@@ -222,6 +223,7 @@ const useHealthData = () => {
     // Grabbing all health data
     const fetchAllHealthData = async (userID: string) => {
         try {
+            setLoading(true);
             // Get previous data from Firebase
             const prevSteps = await getSteps(userID);
             const prevAverageSteps = await getAverageSteps(userID);
@@ -249,6 +251,8 @@ const useHealthData = () => {
         } catch (error) {
             console.error("Error fetching health data:", error);
             return null;
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -260,26 +264,35 @@ const useHealthData = () => {
 
         const healthData = await fetchAllHealthData(userID);
         if (healthData) {
-            // Update Firebase and news
-            await setStepsFirebase(
-                userID,
-                healthData.currentData.dailySteps,
-                healthData.currentData.weeklyAverageSteps,
-                healthData.currentData.stepsFromWeekBefore
-            );
+            try {
+                setLoading(true);
 
-            console.log("UPDATING NEWS");
-            await newsFunctions(
-                userID,
-                healthData.prevData.prevSteps,
-                healthData.prevData.prevAverageSteps,
-                healthData.prevData.fiveHoursSteps,
-                healthData.prevData.stepsLastUpdate
-            );
+                // Update Firebase and news
+                await setStepsFirebase(
+                    userID,
+                    healthData.currentData.dailySteps,
+                    healthData.currentData.weeklyAverageSteps,
+                    healthData.currentData.stepsFromWeekBefore
+                );
+    
+                console.log("UPDATING NEWS");
+                await newsFunctions(
+                    userID,
+                    healthData.prevData.prevSteps,
+                    healthData.prevData.prevAverageSteps,
+                    healthData.prevData.fiveHoursSteps,
+                    healthData.prevData.stepsLastUpdate
+                );
+    
+                await setStepsLastUpdate(userID, new Date());
 
-            await setStepsLastUpdate(userID, new Date());
+            } catch (error) {
+                console.error("Error updating Firebase and news:", error);
+            } finally {
+                setLoading(false);
+            }
         }
-    }, []);
+    }, [setLoading, setSteps, setAverageSteps, setStepsFromWeekBefore]);
 
     // For background updates
     const fetchHealthDataBackground = async () => {
@@ -384,159 +397,11 @@ const useHealthData = () => {
         };
 
         setupHealthKit();
-    }, []);
-      
-
-    // const fetchHealthData =  useCallback(async ()  => {
-    //     // Before starting, grab the current data
-    //     const auth = getAuth();
-    //     const user = auth.currentUser;
-    //     const userID = user ? user.uid : "unknown_user";
-    //     const prevSteps = await getSteps(userID);
-    //     const prevAverageSteps = await getAverageSteps(userID);
-    //     const stepsLastUpdate = await getStepsLastUpdate(userID); // timestamp of last update, today if it doesn't exist
-
-    //     //if (!hasPermissions) return;
-    //     console.log("fetchhealthData -- start");
-    //     getDailySteps();
-    //     const fiveHoursSteps = await getStepsFiveHoursAgo(stepsLastUpdate ?? new Date());
-    //     //getWeeklySteps();
-    //     getWeeklyAverageOfSteps();
-    //     getStepsFromWeekBefore();
-
-    //     // finally, update the news
-    //     await newsFunctions(userID, prevSteps, prevAverageSteps, fiveHoursSteps, stepsLastUpdate ?? new Date());
-    // }, []);
-
-    // useEffect(() => {
-    //     if (hasPermissions) {
-    //         console.log("hasPermissions -- fetchHealthData");
-    //         fetchHealthData();
-    //     }
-    // }, [hasPermissions]);
-    
-
-    // if(hasPermissions){
-    //     console.log("hasPermissions -- fetchHealthData");
-    //     fetchHealthData();
-    // }
-    
-    // useEffect(() => {
-    //     console.log("inside useHealthData, useEFfect");
-
-    //     AppleHealthKit.initHealthKit(permissions, (err) => {
-    //         if (err) {
-    //             console.log('Error getting permissions', err);
-    //             return;
-    //         }
-    //         console.log('Apple Health Data: Permissions received!');
-    //         setHasPermissions(true);
-
-    //         // Only register observers after permissions are confirmed
-    //         console.log("Setting up observers...");
-
-    //         const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
-    //         healthKitEventEmitter.addListener('healthKit:StepCount:setup:success', () => {
-    //             console.log('StepCount Observer Setup Success');
-    //         });
-    //         healthKitEventEmitter.addListener('healthKit:StepCount:setup:failure', () => {
-    //             console.log('StepCount Observer Setup Failure');
-    //         });
-    //         healthKitEventEmitter.addListener('healthKit:StepCount:new', () => {
-    //             console.log('StepCount Observer Triggered');
-    //         });
-
-    //         // Firebase Messaging Handlers
-    //         const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
-    //             console.log("Silent push notification received in foreground:", remoteMessage);
-
-    //             if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-    //                 console.log("Fetching HealthKit data from silent notification (foreground)...");
-    //                 fetchHealthData();
-
-    //             }
-    //         });
-
-    //         messaging().setBackgroundMessageHandler(async (remoteMessage) => {
-    //             console.log("Silent push notification received in background:", remoteMessage);
-
-    //             if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-    //                 console.log("Fetching HealthKit data from silent notification (background)...");
-    //                 console.log("Has permissions: ", hasPermissions);
-
-    //                 const permissionsGranted = await checkPermissions();
-    //                 if (!permissionsGranted) {
-    //                     console.log("Permissions not granted. Exiting.");
-    //                     return;
-    //                 }
-
-    //                 console.log("Permissions are granted. Fetching data...");
-    //                 const healthData = await fetchHealthDataBackground();
-
-    //                 if (healthData) {
-    //                     const auth = getAuth();
-    //                     const user = auth.currentUser;
-    //                     const userID = user ? user.uid : "unknown_user";
-            
-    //                     console.log("Fetched HealthKit data:", healthData);
-    //                     setStepsFirebase(userID, healthData.dailySteps, healthData.weeklyAverageSteps, healthData.stepsFromWeekBefore);
-    //                 }
-    //             }
-    //         });
-
-    //         return () => {
-    //             unsubscribeForeground();
-    //         };
-    //     });
-    // }, []);
-
-
-
-    // const fetchHealthDataBackground = async () => {
-    //     try {
-    //         const auth = getAuth();
-    //         const user = auth.currentUser;
-    //         const userID = user ? user.uid : "unknown_user";
-    //         const dailySteps = await getDailySteps();
-    //         //const weeklySteps = await getWeeklySteps();
-    //         const stepsLastUpdate = await getStepsLastUpdate(userID); // timestamp of last update, today if it doesn't exist
-    //         const stepsFiveHoursAgo = await getStepsFiveHoursAgo(stepsLastUpdate ?? new Date());
-    //         const avgSteps = await getWeeklyAverageOfSteps();
-    //         const stepsFromWeekBefore = await getStepsFromWeekBefore();
-    
-    //         console.log("Fetched data: ", { dailySteps, avgSteps, stepsFromWeekBefore });
-    
-    //         // Update state explicitly after fetching
-    //         setSteps(dailySteps);
-    //         //setWeeklySteps(weeklySteps);
-    //         setAverageSteps(avgSteps);
-    //         setStepsFromWeekBefore(stepsFromWeekBefore);
-    
-    //         return { dailySteps, avgSteps, stepsFromWeekBefore };
-    //     } catch (error) {
-    //         console.error("Error fetching health data in background:", error);
-    //         return null;
-    //     }
-    // };
-    
-
-    // const checkPermissions = async () => {
-    //     return new Promise((resolve, reject) => {
-    //         AppleHealthKit.initHealthKit(permissions, (err) => {
-    //             if (err) {
-    //                 console.log('Error checking permissions:', err);
-    //                 resolve(false); // Permissions not granted
-    //             } else {
-    //                 console.log('Permissions are valid.');
-    //                 resolve(true); // Permissions granted
-    //             }
-    //         });
-    //     });
-    // };
+    }, [setLoading, setSteps, setAverageSteps, setStepsFromWeekBefore, fetchHealthData]);
     
 
 
-    return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData };
+    return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData, isLoading };
 };
 
 export default useHealthData;
