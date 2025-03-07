@@ -40,7 +40,7 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const HomeTab: React.FC = () => {
-    const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData } = useHealthData();
+    const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData, isLoading, hasPermissions } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
     console.log("printing steps!!!");
@@ -54,7 +54,7 @@ const HomeTab: React.FC = () => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [groupsState, setGroupsState] = useState({});
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [hasInitialized, setHasInitialized] = useState(false);
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
@@ -62,7 +62,7 @@ const HomeTab: React.FC = () => {
 
     // Getting data because its the first page
     useEffect(() => {
-        setIsLoading(true);
+        setIsLoadingHome(true);
         let unsubscribeUser: any;
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
@@ -73,7 +73,7 @@ const HomeTab: React.FC = () => {
                 console.log('No user signed in');
             }
         });
-        setIsLoading(false);
+        setIsLoadingHome(false);
 
         return () => {
             unsubscribe(); // Cleanup the auth state listener
@@ -86,6 +86,7 @@ const HomeTab: React.FC = () => {
 
     useEffect(() => {
         console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
+        setIsLoadingHome(true);
         if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
@@ -98,12 +99,14 @@ const HomeTab: React.FC = () => {
             console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
             setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore);
         }
+        setIsLoadingHome(false);
     }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
 
     useEffect(() => {
         if (hasInitialized) {
             console.log("HomeTab -- already initialized");
             //getStepsSinceMidnight();
+            setIsLoadingHome(true);
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);
 
@@ -119,6 +122,7 @@ const HomeTab: React.FC = () => {
 
                 //getStepsSinceMidnight();
             }, 300000); // 5 minutes in milliseconds
+            setIsLoadingHome(false);
 
             // Clean up the interval when the component unmounts
             return () => {
@@ -134,14 +138,14 @@ const HomeTab: React.FC = () => {
         const getGroupID: { [groupName: string]: any } = {};
         const loadingGroups = new Set(userGroups);
         if (userGroups) {
-            setIsLoading(true);
+            setIsLoadingHome(true);
             await Promise.all(userGroups.map(async (groupName) => {
                 const groupID = await getGroupIDFromGroupName(groupName);
                 const groupsRef = collection(db, "groups");
                 const groupDocRef = doc(groupsRef, groupID);
 
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
-                    setIsLoading(true);
+                    setIsLoadingHome(true);
                     if (docSnapshot.exists() && groupID) {
                         const [groupImageUrl, groupName, isGameActive, isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
                             getGroupProfilePic(groupID),
@@ -171,11 +175,11 @@ const HomeTab: React.FC = () => {
                     setGetGroupID({ ...getGroupID });
                     setGroups({ ...groups });
 
-                    setIsLoading(false);
+                    setIsLoadingHome(false);
                 });
                 return unsubscribeGroup;
             }));
-            setIsLoading(false);
+            setIsLoadingHome(false);
         }
         setGetGroupID(getGroupID);
         setGroups(groups);
@@ -235,7 +239,18 @@ const HomeTab: React.FC = () => {
         }
     }
 
-    if (isLoading) {
+    if (!hasPermissions) {
+        return (
+            <SafeAreaView style={styles.safeView} edges={['top']}>
+                <View style={styles.container}>
+                    <Text>Health data permissions are required to use this app.</Text>
+                    <Text>Go to Settings to enable this.</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (isLoading || isLoadingHome) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />

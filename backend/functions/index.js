@@ -1613,7 +1613,7 @@ exports.createDuels = onSchedule("0 5,17 * * *", async (event) => {
 
       // Check if gameType exists and is valid
       const gameType = data.gameType;
-      if (gameType && gameType == "weekly" && hour <= 6) {
+      if (gameType && gameType == "weekly") {
         console.log(`gameType is weekly for group ID: ${doc.id}`);
 
         const currentDay = new Date().getDay();
