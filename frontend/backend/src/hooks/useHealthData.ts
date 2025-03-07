@@ -401,7 +401,7 @@ const useHealthData = () => {
     
 
 
-    return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData, isLoading };
+    return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData, isLoading, hasPermissions };
 };
 
 export default useHealthData;
