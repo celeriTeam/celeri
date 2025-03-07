@@ -86,6 +86,7 @@ const HomeTab: React.FC = () => {
 
     useEffect(() => {
         console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
+        setIsLoading(true);
         if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
             // Update backend the first time valid steps are retrieved
             console.log("First-time backend update with steps:", steps);
@@ -98,12 +99,14 @@ const HomeTab: React.FC = () => {
             console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
             setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore);
         }
+        setIsLoading(false);
     }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
 
     useEffect(() => {
         if (hasInitialized) {
             console.log("HomeTab -- already initialized");
             //getStepsSinceMidnight();
+            setIsLoading(true);
             const intervalId = setInterval(() => {
                 console.log("Regular backend update with steps:", steps);
 
@@ -119,6 +122,7 @@ const HomeTab: React.FC = () => {
 
                 //getStepsSinceMidnight();
             }, 300000); // 5 minutes in milliseconds
+            setIsLoading(false);
 
             // Clean up the interval when the component unmounts
             return () => {

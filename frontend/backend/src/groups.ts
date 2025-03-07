@@ -420,13 +420,10 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
 // GET last login
 export const getLastLogin = async (userID: string, groupID: string): Promise<Date | undefined> => {
     try {
-        // get groups[groupID].users[userID].loginTime[1]
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
-            const users = groupDoc.data()?.users;
-            const user = users[userID];
-            const loginTime = user.loginTime;
-            const lastLogin = loginTime ? loginTime[1] : undefined;
+            const loginTime = groupDoc.data()?.users[userID]?.loginTime;
+            const lastLogin = loginTime ? loginTime[0] : undefined;
             console.log("getLastLogin - response: ", lastLogin);
             return lastLogin;
         } else{
@@ -561,13 +558,23 @@ export const setLogin = async (userID: string, groupID: string, time: Date) => {
         if (groupDoc.exists()) {
             const loginTime = groupDoc.data()?.users[userID]?.loginTime;
             if (loginTime) {
-                await updateDoc(groupDocRef, {
+                const lastLogin = loginTime[1].toDate();
+                const timeDifference = time.getTime() - lastLogin.getTime();
+                const oneMinuteInMs = 60 * 1000;
+        
+                if (timeDifference >= oneMinuteInMs) {
+                  await updateDoc(groupDocRef, {
                     [`users.${userID}.loginTime`]: [loginTime[1], time],
-                });
+                  });
+                  console.log('setLogin - response: Login time updated');
+                } else {
+                  console.log('setLogin - response: Login time not updated (within 1 minute of last login)');
+                }
             } else {
                 await updateDoc(groupDocRef, {
                     [`users.${userID}.loginTime`]: [time, time],
                 });
+                console.log('setLogin - response: Initial login time set');
             }
             console.log('setLogin - response: Login time set');
         } else {

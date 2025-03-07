@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
 import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { Image } from 'expo-image';
 import { useUser } from '../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,8 +55,40 @@ const BetSummaryPage: React.FC = () => {
     const [isHistoryDropdownVisible, setHistoryDropdownVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
-    const [currentBets, setCurrentBets] = useState<{ duelID: string, player1: string, player2: string, player1Pfp: string, player2Pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], player1Steps: number, player2Steps: number }[]>([]);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; tokens: number | undefined; betOnTokens: number | undefined; diamonds: number | undefined; steps: number | undefined, todaysSteps: number | undefined, averageSteps: number[] | undefined }[]>([]);
+    const [currentBets, setCurrentBets] = useState<{ 
+        duelID: string, 
+        player1: string, 
+        player2: string, 
+        player1Pfp: string, 
+        player2Pfp: string, 
+        player1Bets: { user: string, wager: number }[], 
+        player2Bets: { user: string, wager: number }[], 
+        player1Steps: number, 
+        player2Steps: number 
+    }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ 
+        id: string; 
+        name: string | undefined; 
+        pfp: string | undefined; 
+        tokens: number | undefined; 
+        betOnTokens: number | undefined; 
+        diamonds: number | undefined; 
+        steps: number | undefined, 
+        todaysSteps: number | undefined, 
+        averageSteps: number[] | undefined 
+    }[]>([]);
+    const [currentNewsArray, setCurrentNewsArray] = useState<{
+        type: string;
+        username: string;
+        pfp: string;
+        opponentUsername: string | undefined;
+        opponentPfp: string | undefined;
+        record: number | undefined;
+        place: number | undefined;
+        steps: number | undefined;
+        betters: string[] | undefined;
+        nonBetters: string[] | undefined;
+    }[]>([]);
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [betTimeLeft, setBetTimeLeft] = useState("");
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
@@ -368,6 +400,60 @@ const BetSummaryPage: React.FC = () => {
                         return () => clearTimeout(timer);
                     }
 
+                    // Grab news data (dont need onSnapshot)
+                    console.log('grabbing news...');
+                    const newsCollectionRef = collection(groupDocRef, 'news');
+                    const lastLogin = groups[groupID]?.users[userID]?.lastLogin;
+                    const newsQuery = query(newsCollectionRef, where('createdAt', '>', lastLogin));
+                    // const newsQuery = query(newsCollectionRef);
+                    const newsSnapshot = await getDocs(newsQuery);
+                    const currentNews: { [key: string]: any } = {};
+                    newsSnapshot.forEach((newsDoc: any) => {
+                        const newsData = newsDoc.data();
+                        // get all lists IF IT EXISTS (priority0, priority1, priority2, priority3), and put it all together into one list
+                        const priority0 = newsData.priority0 ?? [];
+                        const priority1 = newsData.priority1 ?? [];
+                        const priority2 = newsData.priority2 ?? [];
+                        const priority3 = newsData.priority3 ?? [];
+                        const allPriority = priority0.concat(priority1, priority2, priority3);
+                        // if userID is not in list, then continue
+                        if (!allPriority.includes(userID)) {
+                            return;
+                        }
+
+                        const newsUsername = users[newsData.userID]?.username;
+                        const newsPfp = users[newsData.userID]?.profilePic;
+                        const newsOpponentUsername = users[newsData.opponentID]?.username ?? undefined;
+                        const newsOpponentPfp = users[newsData.opponentID]?.profilePic ?? undefined;
+                        const newsBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority2 : undefined;
+                        const newsNonBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority3 : undefined;
+                        const newsOpponentWalkingUsername = newsData.type === 'headToHeadOpponentWalking' ? newsData.priority2[0] : undefined;
+                        currentNews[newsData.id] = {
+                            type: newsData.type,
+                            username: newsUsername,
+                            pfp: newsPfp,
+                            opponentUsername: newsData.type === 'headToHeadOpponentWalking' ? newsOpponentWalkingUsername : newsOpponentUsername,
+                            opponentPfp: newsOpponentPfp,
+                            record: newsData.record ?? undefined,
+                            place: newsData.place ?? undefined,
+                            steps: newsData.steps ?? undefined,
+                            betters: newsBetters,
+                            nonBetters: newsNonBetters
+                        };
+                    });
+                    const newsArray = Object.values(currentNews);
+                    console.log("NEWS ARRAY: ", newsArray);
+                    if (Object.values(currentNews).length > 0) {
+                        console.log("NEWS IS HERE: ", currentNews);
+                        if (isPropBetModalVisible) {
+                            console.log('prop bet modal is being queued');
+                            setPropBetQueued(true);
+                            setPropBetModalVisible(false);
+                        }
+                        setNewsModalVisible(true);
+                    }
+                    setCurrentNewsArray(Object.values(currentNews));
+
                     // Set up a listener for today's duels
                     console.log('starting duel listener!....');
                     const today = new Date();
@@ -500,11 +586,6 @@ const BetSummaryPage: React.FC = () => {
                 }
                 setIsLoading(false);
             });
-
-            // Grab news data (dont need onSnapshot)
-            const newsDocRef = doc(groupDocRef, 'news');
-            const lastLogin = groups[groupID]?.lastLogin;
-
         }
         return () => {
             unsubscribeFunctions.forEach(unsubscribe => {
@@ -1159,20 +1240,13 @@ const BetSummaryPage: React.FC = () => {
                 >
                     <View style={styles.modalOverlay}>
                         <View style={[styles.moneyModalContainer, { height: '41%', top: '30%' }]}>
-                            {/* Close button */}
-                            {finishedPropBet && (
-                                <TouchableOpacity style={styles.closeButton} onPress={() => setNewsModalVisible(false)}>
-                                    <Image
-                                        source={require('@assets/icons/x.png')}
-                                        style={styles.closeButtonIcon}
-                                    />
-                                </TouchableOpacity>
-                            )}
 
                             <NewsPage
                                 groupID={groupID}
                                 userID={userID}
+                                newsList={currentNewsArray}
                                 setNewsModalVisible={setNewsModalVisible}
+                                setPropBetModalVisible={setPropBetModalVisible}
                             />
                         </View>
                     </View>
