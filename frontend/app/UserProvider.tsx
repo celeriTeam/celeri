@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -114,7 +114,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, 
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
-                        isFinishedTutorial, gameType, createdAt] = await Promise.all([
+                        isFinishedTutorial, gameType, createdAt, resetDay] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -138,7 +138,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             checkFinishedRecap(groupID, uid),
                             checkFinishedTutorial(groupID, uid),
                             getGameType(groupID),
-                            getGroupCreatedAt(groupID)
+                            getGroupCreatedAt(groupID),
+                            getResetDay(groupID)
                         ]);
 
                         const userList = await getUsersInGroup(groupID); // userIDs
@@ -206,6 +207,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isFinishedTutorial,
                             gameType,
                             createdAt,
+                            resetDay,
                             userList,
                             users
                         };

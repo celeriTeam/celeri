@@ -270,8 +270,7 @@ export const getCycle = async (groupID: string): Promise<number | undefined> => 
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()) {
             const gameType = groupDoc.data()?.gameType;
-            const field = (gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay';
-            const value = groupDoc.data()?.[field];
+            const value = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             
             console.log(`getCycle - response: ${value}`);
             return value;
