@@ -217,6 +217,89 @@ exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) =
   }
 });
 
+exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), async (event) => {
+  console.log("sendNotifOnNews is running");
+
+  const snapshot = event.data;
+  if (!snapshot) {
+      console.log("No data associated with the event");
+      return;
+  }
+
+  const data = snapshot.data();
+  const newsType = data.type;
+
+  // check what priority the notif is
+
+  // if priority zero notif, then send notif no matter what 
+  if (data.priority0 !== undefined) {
+    console.log("priority0 exists:", data.priority0);
+    const priority0users = data.priority0;
+    for (const userID in priority0users){
+      try {
+
+        // the user who completed the challenge (who the notif is about)
+        const targetUserID = data.userID;
+        const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
+        const targetUserData = targetUserDoc.data();
+
+        const targetUsername = targetUserData.username;
+
+
+        const userDoc = await firestore.collection("users").doc(userID).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const userTokens = userData && userData.tokens;
+
+          if (userTokens && userTokens.length > 0) {
+            for (const token of userTokens) {
+              if(newsType == "recordSetter"){
+
+                const message = {
+                  token: token,
+                  notification: {
+                    title: `A legend is born.`,
+                    body: `${targetUsername} just broke a record and hit ${steps} this week!`,
+                  },
+                }
+              } else {
+
+                const message = {
+                  token: token,
+                  notification: {
+                    title: `A legend is born.`,
+                    body: `${targetUsername} just broke a record.`,
+                  },
+                }
+
+              }
+
+              // send the message
+              try {
+                const response = await admin.messaging().send(message);
+                console.log("Notification sent successfully:", response);
+              } catch (error) {
+                console.error("Error sending notification:", error);
+              }
+
+            }
+          }
+        }
+      } catch {
+        console.error("Error with priority 0 notif:", error);
+      }
+    }
+
+  } else {
+    console.log("priority0 does not exist");
+}
+
+
+  // query the news subcollection inside the groupID document for any documents that were created in the past twelve hours and have an array called priority0, and inside that array have the userID 
+
+
+}
+
 exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", async (event) => {
   console.log("sendNotifOnBet is running");
   const newValue = event.data.after.data();
