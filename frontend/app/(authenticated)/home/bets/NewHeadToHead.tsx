@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView, StyleProp, ViewStyle } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -534,23 +534,6 @@ const NewHeadToHeadPage: React.FC = () => {
                 <SafeAreaView style={styles.safeView} edges={['top']}>
                     <View style={styles.container}>
 
-                        {/* Tutorial Modal */}
-                        {showTutorial && (
-                            <View style={styles.tutorialOverlay}>
-                                {/* Tutorial content */}
-                                <View style={[
-                                    styles.tutorialContent,
-                                    // getModalStyle() as StyleProp<ViewStyle>
-                                ]}>
-                                    <NewHeadToHeadTutorial
-                                        tutorialStep={tutorialStep}
-                                        setTutorialStep={setTutorialStep}
-                                        setShowTutorial={setShowTutorial}
-                                    />
-                                </View>
-                            </View>
-                        )}
-
                         <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                             <Image
                                 source={require('@assets/icons/timeLeft.png')}
@@ -715,6 +698,27 @@ const NewHeadToHeadPage: React.FC = () => {
                         </View>
                     </Modal>
 
+                    {/* Tutorial Modal */}
+                    {showTutorial && (
+                        <Modal
+                        transparent={true}
+                        visible={showTutorial}
+                    >
+                        <View style={styles.tutorialOverlay}>
+                            {/* Tutorial content */}
+                            <View style={[
+                                styles.tutorialContent,
+                            ]}>
+                                <NewHeadToHeadTutorial
+                                    tutorialStep={tutorialStep}
+                                    setTutorialStep={setTutorialStep}
+                                    setShowTutorial={setShowTutorial}
+                                />
+                            </View>
+                        </View>
+                        </Modal>
+                    )}
+
                 </SafeAreaView>
             </LinearGradient>
         </TouchableWithoutFeedback>
@@ -738,6 +742,7 @@ const styles = StyleSheet.create({
         color: '#74FF6D',
         fontFamily: 'Lexend',
         fontSize: moderateScale(11),
+        // zIndex: 1,
     },
     question: {
         fontFamily: 'Lexend',
@@ -1014,10 +1019,8 @@ const styles = StyleSheet.create({
     },
     tutorialOverlay: {
 		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-		zIndex: 100,
 		backgroundColor: 'rgba(0, 0, 0, 0.6)',
+		zIndex: 100,
 	},
 	tutorialContent: {
         

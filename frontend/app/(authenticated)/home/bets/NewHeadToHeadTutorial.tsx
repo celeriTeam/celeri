@@ -8,6 +8,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import NewHeadToHeadPage from './NewHeadToHead';
 
+type ModalStyle = {
+    width?: string | number;
+    height?: string | number;
+    position?: 'absolute' | 'relative';
+    top?: string | number;
+    left?: number;
+    bottom?: number;
+};
+
 const NewHeadToHeadTutorial: React.FC<{
     tutorialStep: number,
     setTutorialStep: (step: number) => void;
@@ -26,7 +35,7 @@ const NewHeadToHeadTutorial: React.FC<{
         }
     };
 
-    const getOverlayStyle = () => {
+    const getOverlayStyle = (): ModalStyle => {
         switch (tutorialStep) {
             case 1:
                 return { top: 100, width: 200, height: 100 };
@@ -44,8 +53,8 @@ const NewHeadToHeadTutorial: React.FC<{
     };
 
     return (
-        <View style={styles.overlayContainer}>
-            <View style={[styles.overlay, getOverlayStyle()]}>
+        <View style={[styles.overlayContainer]}>
+            <View style={[styles.overlay, getOverlayStyle() as StyleProp<ViewStyle>]}>
                 <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
                 <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
                     <Text style={styles.nextButtonText}>Next</Text>
@@ -57,9 +66,9 @@ const NewHeadToHeadTutorial: React.FC<{
 
 const styles = StyleSheet.create({
     overlayContainer: {
-        flex: 1,
+        // flex: 1,
         // backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
+        // justifyContent: 'center',
         alignItems: 'center',
     },
     overlay: {
