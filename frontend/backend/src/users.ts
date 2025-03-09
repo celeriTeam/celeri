@@ -69,7 +69,7 @@ export const getUserEmail = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.email) {
-            console.log("getUserEmail - response:", userDoc.data()?.email);
+            // console.log("getUserEmail - response:", userDoc.data()?.email);
             return userDoc.data()?.email;
         } else {
             console.error("getUserEmail - error: No such document!");
@@ -93,7 +93,7 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
                 //console.log("Group Document data:", groupDoc.data());
                 groups.push(groupDoc.data()?.groupName);
             }
-            console.log("getUserGroups - response: ", groups);
+            // console.log("getUserGroups - response: ", groups);
             return groups;
         } else {
             console.error("getUserGroups - error: No such document!");
@@ -115,11 +115,11 @@ export const getActiveUserGroupIDs = async (id: string): Promise<string[] | unde
             for (const groupID of groupIDs) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if(groupDoc.data()?.isGameActive){
-                    console.log("Group Document isGameActive: true");
+                    // console.log("Group Document isGameActive: true");
                     groups.push(groupID);
                 }
             }
-            console.log("getActiveUserGroupIDs - response: ", groups);
+            // console.log("getActiveUserGroupIDs - response: ", groups);
             return groups;
         } else {
             console.error("getActiveUserGroupIDs - error: No such document!");
@@ -158,11 +158,11 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
 // GET weekly duels won
 export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promise<number> =>{
     try {
-        console.log("getWeeklyDuelsWon starting");
+        // console.log("getWeeklyDuelsWon starting");
         const duelsRef = collection(db, `groups/${groupID}/duels`);
         const q = query(duelsRef, where("winner", "==", userID));
         const querySnapshot = await getDocs(q);
-        console.log("getWeeklyDuelsWon snapshotSize", querySnapshot.size);
+        // console.log("getWeeklyDuelsWon snapshotSize", querySnapshot.size);
         return querySnapshot.size ?? 0;
     } catch (error) {
         console.error("getWeeklyDuelsWon - Error fetching duels won:", error);
@@ -284,7 +284,7 @@ export const addGroupToUser = async (userID: string, groupID: string): Promise<s
 export const setStepsFirebase = async(userID: string, steps: number, averageSteps: number[], stepsFromWeekBefore: number) => {
     try {
         const userDocRef = doc(db, 'users', userID);
-        console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
+        // console.log('setSteps - averageSteps before being put in the doc: ', averageSteps)
         await updateDoc(userDocRef, {
             steps: steps,
             averageSteps: averageSteps,
@@ -318,7 +318,6 @@ export const getSteps = async (id: string): Promise<number> => {
 
 // GET biweekly steps
 export const getBiweeklySteps = async(groupID: string, userID: string): Promise<number> => {
-    console.log("getBiweekluySteps -- running");
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         const userDoc = await getDoc(doc(db, "users", userID));
@@ -359,7 +358,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
 
             const currentDaySteps = await getSteps(userID) || 0;
             const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
-            console.log("totalBiweeklySteps: ", totalBiweeklySteps);
+            console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
 
             return totalBiweeklySteps;
         } else {
@@ -368,7 +367,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
             const totalStepsSinceReset = daysSinceReset != 0 ? weeklyStepsTemp.slice(-daysSinceReset).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
             const currentDaySteps = await getSteps(userID) || 0;
             const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
-            console.log("totalBiweeklySteps: ", totalBiweeklySteps);
+            console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
 
             return totalBiweeklySteps;
         }
@@ -380,7 +379,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
 
 // GET weekly steps
 export const getWeeklySteps = async (groupID: string, userID: string): Promise<number> => {
-    console.log("getWeeklySteps -- running");
+    // console.log("getWeeklySteps -- running");
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         const userDoc = await getDoc(doc(db, "users", userID));
@@ -399,12 +398,12 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 
         // Calculate how many days to include (from resetDay to yesterday)        
         const daysPast = (todayIndex - resetDay) % 7;
-        console.log('today index: ', todayIndex, ' resetDay: ', resetDay, ' daysPast: ', daysPast);
+        // console.log('today index: ', todayIndex, ' resetDay: ', resetDay, ' daysPast: ', daysPast);
         const totalStepsSinceReset = daysPast != 0 ? weeklyStepsTemp.slice(-daysPast).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
 
         const currentDaySteps = await getSteps(userID) || 0;
         const totalWeeklySteps = totalStepsSinceReset + currentDaySteps;
-        console.log("totalWeeklySteps: ", totalWeeklySteps);
+        console.log("getWeeklySteps - totalWeeklySteps: ", totalWeeklySteps);
 
         return totalWeeklySteps;
     } catch (error) {
@@ -420,7 +419,7 @@ export const getAverageSteps = async (id: string): Promise<number[]> => {
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
             const averageSteps = userDoc.data()?.averageSteps;
-            console.log("getAverageSteps - response:", id, averageSteps);
+            // console.log("getAverageSteps - response:", id, averageSteps);
             return averageSteps;
         } else {
             console.error("getAverageSteps - error: No such document!", id);
@@ -494,14 +493,13 @@ export const getLastWeekSteps = async (userID: string, groupID: string): Promise
 
         return 0; // Return 0 if the group document does not exist
     } catch (error) {
-        console.error("Error fetching last week's steps:", error);
+        console.error("getLastWeekSteps - Error fetching last week's steps:", error);
         return 0; // Return 0 in case of an error
     }
 }
 
 // GET stepsFromWeekBefore
 export const getStepsFromWeekBefore = async(userID: string): Promise<number> => {
-    console.log("getStepsFromWeekBefore function running");
     try {
         const userDocRef = doc(db, `users/${userID}`)
         const userDocSnap = await getDoc(userDocRef);
@@ -509,14 +507,14 @@ export const getStepsFromWeekBefore = async(userID: string): Promise<number> => 
         if (userDocSnap.exists()) {
             const data = userDocSnap.data();
             const stepsFromWeekBefore = data.stepsFromWeekBefore ?? 0; // Fallback to 0 if field is missing
-            console.log(stepsFromWeekBefore, "here stepsFromWeekBefore");
+            console.log(`getStepsFromWeekBefore - ${stepsFromWeekBefore} here stepsFromWeekBefore`);
             return stepsFromWeekBefore;
         } else {
-            console.error(`User document for ${userID} not found`);
+            console.error(`getStepsFromWeekBefore - User document for ${userID} not found`);
             return 0;
         }
     } catch (error) {
-        console.error("Error fetching stepsFromWeekBefore:", error);
+        console.error("getStepsFromWeekBefore - Error fetching stepsFromWeekBefore:", error);
         return 0;
     }
 }
@@ -527,7 +525,7 @@ export const getStepsLastUpdate = async (id: string): Promise<Date | undefined> 
         const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists()) {
             const stepsLastUpdate = userDoc.data()?.stepsLastUpdate.toDate() ?? new Date();
-            console.log("getStepsLastUpdate - response: ", stepsLastUpdate);
+            // console.log("getStepsLastUpdate - response: ", stepsLastUpdate);
             return stepsLastUpdate;
         } else {
             console.error("getStepsLastUpdate - error: No such document!");
