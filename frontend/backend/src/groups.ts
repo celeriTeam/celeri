@@ -55,7 +55,7 @@ export const getGroupFromCode = async (groupCode: string): Promise<string | unde
         const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
-            console.log("getGroupFromCode - response: ", doc.id);
+            // console.log("getGroupFromCode - response: ", doc.id);
             return doc.id; // Return the document ID
         } else {
             console.error("getGroupFromCode - error: No matching documents found.");
@@ -72,7 +72,7 @@ export const getGroupName = async (groupID: string): Promise<string | undefined>
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.groupName){
-            console.log("getGroupName - response: ", groupDoc.data()?.groupName);
+            // console.log("getGroupName - response: ", groupDoc.data()?.groupName);
             return groupDoc.data()?.groupName;
         } else{
             console.error("getGroupName - error: No such document!");
@@ -89,7 +89,7 @@ export const getGroupCode = async (groupID: string): Promise<string | undefined>
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.groupCode){
-            console.log("getGroupCode - response: ", groupDoc.data()?.groupCode);
+            // console.log("getGroupCode - response: ", groupDoc.data()?.groupCode);
             return groupDoc.data()?.groupCode;
         } else{
             console.error("getGroupCode - error: No such document!");
@@ -105,7 +105,7 @@ export const getGroupCreatedAt = async (groupID: string): Promise<string | undef
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.createdAt){
-            console.log("getGroupCreatedAt - response: ", groupDoc.data()?.createdAt);
+            // console.log("getGroupCreatedAt - response: ", groupDoc.data()?.createdAt);
             return groupDoc.data()?.createdAt;
         } else{
             console.error("getGroupCreatedAt - error: No such document!");
@@ -122,7 +122,7 @@ export const getGroupIsGameActive = async (groupID: string): Promise<boolean | u
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data().hasOwnProperty('isGameActive')){
-            console.log("getGroupIsGameActive - response: ", groupDoc.data()?.isGameActive);
+            // console.log("getGroupIsGameActive - response: ", groupDoc.data()?.isGameActive);
             return groupDoc.data()?.isGameActive;
         } else{
             console.error("getGroupIsGameActive - error: No such document!");
@@ -142,7 +142,7 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
             const gameType = groupDoc.data()?.gameType;
             const currentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             const isFirstDay = groupDoc.data()?.cycleCount == 1 && currentCycle == 1;
-            console.log("getGroupIsFirstDay - response: ", isFirstDay);
+            // console.log("getGroupIsFirstDay - response: ", isFirstDay);
             return isFirstDay;
         } else{
             console.error("getGroupIsFirstDay - error: No such document!");
@@ -162,7 +162,7 @@ export const getGroupCreator = async (groupID: string): Promise<string | undefin
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.order;
             const creator = users[0];
-            console.log("getGroupCreator - response: ", creator);
+            // console.log("getGroupCreator - response: ", creator);
             return creator;
         } else{
             console.error("getGroupCreator - error: No such document!");
@@ -182,7 +182,7 @@ export const getUserTokens = async (userID: string, groupID: string): Promise<nu
             const users = groupDoc.data()?.users;
             const user = users[userID];
             const tokens = user.tokens; // - user.todaysBetTokens; removing this bc it makes more sense imo
-            console.log("getUserTokens - response: ", tokens);
+            // console.log("getUserTokens - response: ", tokens);
             return tokens;
         } else{
             console.error("getUserTokens - error: No such document!");
@@ -199,7 +199,7 @@ export const getDefaultBetOnSelf = async (groupID: string): Promise<number | und
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.defaultBetOnSelf){
-            console.log("getDefaultBetOnSelf - response: ", groupDoc.data()?.defaultBetOnSelf);
+            // console.log("getDefaultBetOnSelf - response: ", groupDoc.data()?.defaultBetOnSelf);
             return groupDoc.data()?.defaultBetOnSelf;
         } else{
             console.error("getDefaultBetOnSelf - error: No such document!");
@@ -218,7 +218,7 @@ export const getTodaysBetTokens = async (userID: string, groupID: string): Promi
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            console.log("getTodaysBetTokens - response: ", user.todaysBetTokens);
+            // console.log("getTodaysBetTokens - response: ", user.todaysBetTokens);
             return user.todaysBetTokens;
         } else{
             console.error("getTodaysBetTokens - error: No such document!");
@@ -252,7 +252,7 @@ export const getTotalCycles = async (groupID: string): Promise<number | undefine
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.totalCycles){
-            console.log("getTotalCycles - response: ", groupDoc.data()?.totalCycles);
+            // console.log("getTotalCycles - response: ", groupDoc.data()?.totalCycles);
             return groupDoc.data()?.totalCycles;
         } else{
             console.error("getTotalCycles - error: No such document!");
@@ -272,7 +272,7 @@ export const getCycle = async (groupID: string): Promise<number | undefined> => 
             const gameType = groupDoc.data()?.gameType;
             const value = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             
-            console.log(`getCycle - response: ${value}`);
+            // console.log(`getCycle - response: ${value}`);
             return value;
         } else {
             console.error("getCycle - error: No such document!");
@@ -289,7 +289,7 @@ export const getCycleCount = async (groupID: string): Promise<number | undefined
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.cycleCount){
-            console.log("getCycleCount - response: ", groupDoc.data()?.cycleCount);
+            // console.log("getCycleCount - response: ", groupDoc.data()?.cycleCount);
             return groupDoc.data()?.cycleCount;
         } else{
             console.error("getCycleCount - error: No such document!");
@@ -306,7 +306,7 @@ export const getCurrentPlayersInGame = async (groupID: string): Promise<number |
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.currentPlayersInGame){
-            console.log("getCurrentPlayersInGame - response: ", groupDoc.data()?.currentPlayersInGame);
+            // console.log("getCurrentPlayersInGame - response: ", groupDoc.data()?.currentPlayersInGame);
             return groupDoc.data()?.currentPlayersInGame;
         } else{
             console.error("getCurrentPlayersInGame - error: No such document!");
@@ -326,7 +326,7 @@ export const getUserDiamonds = async (userID: string, groupID: string): Promise<
             const users = groupDoc.data()?.users;
             const user = users[userID];
             const diamonds = user?.diamonds ?? 0;
-            console.log("getDiamonds - response: ", diamonds);
+            // console.log("getDiamonds - response: ", diamonds);
             return diamonds;
         } else{
             console.error("getDiamonds - error: No such document!");
@@ -343,7 +343,7 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
     try {
         const groupDoc = await getDoc(doc(db, "groups", id));
         if (groupDoc.exists() && groupDoc.data()?.groupImageUrl) {
-            console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
+            // console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
             return groupDoc.data()?.groupImageUrl;
         } else {
             console.error("getGroupPic - error: No such document!");
@@ -360,7 +360,7 @@ export const getResetDay = async (groupID: string): Promise<number | undefined> 
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && (groupDoc.data()?.resetDay !== undefined)){
-            console.log("getResetDay - response: ", groupDoc.data()?.resetDay);
+            // console.log("getResetDay - response: ", groupDoc.data()?.resetDay);
             return groupDoc.data()?.resetDay;
         } else{
             console.error("getResetDay - error: No such document!");
@@ -377,7 +377,7 @@ export const getGameType = async (groupID: string): Promise<string | undefined> 
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.gameType){
-            console.log("getGameType - response: ", groupDoc.data()?.gameType);
+            // console.log("getGameType - response: ", groupDoc.data()?.gameType);
             return groupDoc.data()?.gameType;
         } else{
             console.error("getGameType - error: No such document!");
@@ -402,7 +402,7 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
                         averageStepCount: propBet.averageStepCount,
                         overUnder: propBet.overUnder,
                     };
-                    console.log("getPropBet - response: ", currentBet);
+                    // console.log("getPropBet - response: ", currentBet);
                     return currentBet;
                 }
             }
@@ -422,8 +422,9 @@ export const getLastLogin = async (userID: string, groupID: string): Promise<Dat
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
             const loginTime = groupDoc.data()?.users[userID]?.loginTime;
-            const lastLogin = loginTime ? loginTime[0] : undefined;
-            console.log("getLastLogin - response: ", lastLogin);
+            const today = new Date();
+            const lastLogin = loginTime ? loginTime[0] : today;
+            // console.log(`getLastLogin - response for ${userID}: ${loginTime}`);
             return lastLogin;
         } else{
             console.error("getLastLogin - error: No such document!");
@@ -558,10 +559,11 @@ export const setLogin = async (userID: string, groupID: string, time: Date) => {
             const loginTime = groupDoc.data()?.users[userID]?.loginTime;
             if (loginTime) {
                 const lastLogin = loginTime[1].toDate();
-                const timeDifference = time.getTime() - lastLogin.getTime();
+                const timeDifferenceNow = time.getTime() - lastLogin.getTime();
+                const timeDifference = lastLogin.getTime() - loginTime[0].toDate().getTime();
                 const oneMinuteInMs = 60 * 1000;
         
-                if (timeDifference >= oneMinuteInMs) {
+                if (timeDifferenceNow >= oneMinuteInMs || timeDifference >= oneMinuteInMs) {
                   await updateDoc(groupDocRef, {
                     [`users.${userID}.loginTime`]: [loginTime[1], time],
                   });
