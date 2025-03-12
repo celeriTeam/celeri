@@ -291,8 +291,8 @@ export const setStepsFirebase = async(userID: string, steps: number, averageStep
             stepsFromWeekBefore: stepsFromWeekBefore,
         });
         const userDoc = await getDoc(userDocRef);
-        console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps,
-    ' stepsFromWeekBefore: ', userDoc.data()?.stepsFromWeekBefore);
+        // console.log('setSteps - response: ', userDoc.data()?.steps, ' averageSteps: ', userDoc.data()?.averageSteps,
+    // ' stepsFromWeekBefore: ', userDoc.data()?.stepsFromWeekBefore);
     } catch (error) {
         console.error('setSteps - Error updating username', error);
         return null;
@@ -340,7 +340,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
         const weeklyStepsTemp = userData?.averageSteps; 
 
         if (weeklyStepsTemp === undefined || weeklyStepsTemp.length !== 7) {
-            console.error("getWeeklySteps - error: Invalid averageSteps data");
+            console.error("getBiweeklySteps - error: Invalid averageSteps data");
             return 0;
         }
 
@@ -358,7 +358,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
 
             const currentDaySteps = await getSteps(userID) || 0;
             const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
-            console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
+            // console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
 
             return totalBiweeklySteps;
         } else {
@@ -367,7 +367,7 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
             const totalStepsSinceReset = daysSinceReset != 0 ? weeklyStepsTemp.slice(-daysSinceReset).reduce((sum: number, steps: number) => sum + steps, 0) : 0;
             const currentDaySteps = await getSteps(userID) || 0;
             const totalBiweeklySteps = totalStepsSinceReset + currentDaySteps;
-            console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
+            // console.log("getBiweekluySteps - totalBiweeklySteps: ", totalBiweeklySteps);
 
             return totalBiweeklySteps;
         }
@@ -403,7 +403,7 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 
         const currentDaySteps = await getSteps(userID) || 0;
         const totalWeeklySteps = totalStepsSinceReset + currentDaySteps;
-        console.log("getWeeklySteps - totalWeeklySteps: ", totalWeeklySteps);
+        // console.log("getWeeklySteps - totalWeeklySteps: ", totalWeeklySteps);
 
         return totalWeeklySteps;
     } catch (error) {
@@ -507,7 +507,7 @@ export const getStepsFromWeekBefore = async(userID: string): Promise<number> => 
         if (userDocSnap.exists()) {
             const data = userDocSnap.data();
             const stepsFromWeekBefore = data.stepsFromWeekBefore ?? 0; // Fallback to 0 if field is missing
-            console.log(`getStepsFromWeekBefore - ${stepsFromWeekBefore} here stepsFromWeekBefore`);
+            // console.log(`getStepsFromWeekBefore - ${stepsFromWeekBefore} here stepsFromWeekBefore`);
             return stepsFromWeekBefore;
         } else {
             console.error(`getStepsFromWeekBefore - User document for ${userID} not found`);
