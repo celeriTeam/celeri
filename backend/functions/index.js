@@ -226,8 +226,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       return;
   }
 
-  const data = snapshot.data();
-  const newsType = data.type;
+  const newNewsData = snapshot.data();
+  const newsType = newNewsData.type;
 
   const groupID = event.params.groupID; // Extract group ID from event params
   const newsRef = firestore.collection(`groups/${groupID}/news`);
@@ -237,14 +237,14 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
   // check what priority the notif is
 
   // if priority zero notif, then send notif no matter what 
-  if (data.priority0 !== undefined) {
-    console.log("priority0 exists:", data.priority0);
-    const priority0users = data.priority0;
+  if (newNewsData.priority0 !== undefined) {
+    console.log("priority0 exists:", newNewsData.priority0);
+    const priority0users = newNewsData.priority0;
     for (const userID in priority0users){
       try {
 
         // the user who completed the challenge (who the notif is about)
-        const targetUserID = data.userID;
+        const targetUserID = newNewsData.userID;
         const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
         const targetUserData = targetUserDoc.data();
 
@@ -258,9 +258,10 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
           if (userTokens && userTokens.length > 0) {
             for (const token of userTokens) {
+              let message;
               if(newsType == "recordSetter"){
 
-                const message = {
+                message = {
                   token: token,
                   notification: {
                     title: `A legend is born.`,
@@ -269,7 +270,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                 }
               } else {
 
-                const message = {
+                message = {
                   token: token,
                   notification: {
                     title: `A legend is born.`,
@@ -295,7 +296,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       }
     }
 
-  } else if (data.priority1 !== undefined) {
+  } else if (newNewsData.priority1 !== undefined) {
 
     const twelveHoursAgo = new Date();
     twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
@@ -306,7 +307,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       .where("createdAt", ">=", twelveHoursAgo)
       .get();
 
-    console.log("priority1 exists: ", data.priority1);
+    console.log("priority1 exists: ", newNewsData.priority1);
 
     if (!newsSnapshot.empty) {
       console.log("There is a priority 1 news document in the last 12 hours");
@@ -324,10 +325,10 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
 
       // Filter out users in priority1 who are in alreadyNotifiedUserIDs
-      const updatedPriority1 = (data.priority1 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+      const updatedPriority1 = (newNewsData.priority1 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
 
       // If priority1 has changed, update the new document
-      if (updatedPriority1.length !== data.priority1.length) {
+      if (updatedPriority1.length !== newNewsData.priority1.length) {
         await newsDocRef.update({ priority1: updatedPriority1 });
         console.log("Updated priority1 in new news document:", updatedPriority1);
       }
@@ -342,13 +343,58 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
             const userTokens = userData.tokens || [];
 
             for (const token of userTokens) {
-              const message = {
-                token: token,
-                notification: {
-                  title: "New Priority 1 News",
-                  body: "You have an important update!",
-                },
-              };
+
+              let message; 
+
+              if(newsType == "racePullAheadTopThree"){
+
+                // get information according to the newsType
+                const place = newNewsData.place;
+
+                // the user who pulled ahead 
+                const targetUserID = newNewsData.userID;
+                const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
+                const targetUserData = targetUserDoc.data();
+
+                const targetUsername = targetUserData.username;
+
+                if(place == 3){
+
+                  message = {
+                    token: token,
+                    notification: {
+                      title: "A new challenger approaches.",
+                      body: `${targetUsername} just barrelled into 3rd place!`,
+                    },
+                  };
+                } else if (place == 2){
+                  message = {
+                    token: token,
+                    notification: {
+                      title: "Damn, this race is close!",
+                      body: `${targetUsername} just pulled ahead into 2nd place!`,
+                    },
+                  };
+                } else if (place == 1){
+                  message = {
+                    token: token,
+                    notification: {
+                      title: `All hail ${targetUsername}!`,
+                      body: `${targetUsername} is your new race leader in 1st place!`,
+                    },
+                  };
+                }
+              } else if(newsType == "headToHeadPullAhead"){
+
+              } else {
+                message = {
+                  token: token,
+                  notification: {
+                    title: "New Priority 1 News",
+                    body: "You have an important update!",
+                  },
+                };
+              }
 
               try {
                 const response = await admin.messaging().send(message);
