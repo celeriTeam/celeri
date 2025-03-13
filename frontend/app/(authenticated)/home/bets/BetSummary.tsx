@@ -10,7 +10,7 @@ import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -133,7 +133,7 @@ const BetSummaryPage: React.FC = () => {
         try {
             const powerupsData = await getPowerups(groupID);
             setPowerups(powerupsData);
-            console.log("powerups received", powerups);
+            // console.log("powerups received", powerups);
         } catch (error) {
             console.error("Failed to fetch powerups:", error);
         }
@@ -169,7 +169,7 @@ const BetSummaryPage: React.FC = () => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
@@ -182,7 +182,8 @@ const BetSummaryPage: React.FC = () => {
                         getTotalCycles(groupID),
                         getResetDay(groupID),
                         getGameType(groupID),
-                        checkFinishedPropBet(groupID, uid)
+                        checkFinishedPropBet(groupID, uid),
+                        getLastLogin(uid, groupID)
                     ]);
 
                     const userList = await getUsersInGroup(groupID); // userIDs
@@ -215,7 +216,8 @@ const BetSummaryPage: React.FC = () => {
                                 profilePic,
                                 username,
                                 newSteps,
-                                tokens
+                                tokens,
+                                lastLogin
                             };
                             groupUsersArray.push({
                                 id: selectedUserID,
@@ -242,7 +244,8 @@ const BetSummaryPage: React.FC = () => {
                         todaysBetTokens,
                         userDiamonds,
                         currentPlayersInGame,
-                        gameType
+                        gameType,
+                        users
                     };
                     setGroups(currentGroups);
 
@@ -329,7 +332,7 @@ const BetSummaryPage: React.FC = () => {
                                 setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                             }
                         } else if (gameType == "biweekly") {
-                            console.log("biweekly -- setting days left for bet");
+                            // console.log("biweekly -- setting days left for bet");
                             const firstResetDay = resetDay; // e.g., Sunday (0)
                             const secondResetDay = (resetDay + 3) % 7; // e.g., Wednesday (3 days after Sunday)
                             const currentHour = new Date().getHours();
@@ -369,7 +372,7 @@ const BetSummaryPage: React.FC = () => {
                                 } else {
                                     setBetTimeLeft(`${daysUntilReset} days`)
                                 }
-                                console.log("bet time left: ", betTimeLeft);
+                                // console.log("bet time left: ", betTimeLeft);
                             }
                         }
                     }
@@ -383,79 +386,16 @@ const BetSummaryPage: React.FC = () => {
                     const propBetPlayerID = setPropBetPlayerLogic(userList ?? [], cycle ?? 0, cycleCount ?? 0);
                     const propBetPlayerInfo = groupUsersArray.find(user => user.id === propBetPlayerID);
 
-                    console.log("propBetPlayerInfo:", propBetPlayerInfo);
-                    console.log("propBetPlayerInfo average steps:", propBetPlayerInfo?.averageSteps);
+                    // console.log("propBetPlayerInfo:", propBetPlayerInfo);
+                    // console.log("propBetPlayerInfo average steps:", propBetPlayerInfo?.averageSteps);
 
                     const sum = (propBetPlayerInfo?.averageSteps ?? []).reduce((a, b) => a + b, 0);
                     const stepsLength = (propBetPlayerInfo?.averageSteps ?? []).length;
                     const averageStepCount: number = sum == 0 ? 0 : Number((sum / stepsLength).toFixed(0));
                     setPropBetPlayer([{ id: propBetPlayerID, name: propBetPlayerInfo?.name ?? '', averageStepCount: averageStepCount ?? 0 }]);
 
-                    // So it opens up immediately if you haven't made a prop bet yet
-                    if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
-                        // Add a small delay to ensure other states are properly set
-                        const timer = setTimeout(() => {
-                            setPropBetModalVisible(true);
-                        }, 100);
-                        return () => clearTimeout(timer);
-                    }
-
-                    // Grab news data (dont need onSnapshot)
-                    console.log('grabbing news...');
-                    const newsCollectionRef = collection(groupDocRef, 'news');
-                    const lastLogin = groups[groupID]?.users[userID]?.lastLogin;
-                    const newsQuery = query(newsCollectionRef, where('createdAt', '>', lastLogin));
-                    // const newsQuery = query(newsCollectionRef);
-                    const newsSnapshot = await getDocs(newsQuery);
-                    const currentNews: { [key: string]: any } = {};
-                    newsSnapshot.forEach((newsDoc: any) => {
-                        const newsData = newsDoc.data();
-                        // get all lists IF IT EXISTS (priority0, priority1, priority2, priority3), and put it all together into one list
-                        const priority0 = newsData.priority0 ?? [];
-                        const priority1 = newsData.priority1 ?? [];
-                        const priority2 = newsData.priority2 ?? [];
-                        const priority3 = newsData.priority3 ?? [];
-                        const allPriority = priority0.concat(priority1, priority2, priority3);
-                        // if userID is not in list, then continue
-                        if (!allPriority.includes(userID)) {
-                            return;
-                        }
-
-                        const newsUsername = users[newsData.userID]?.username;
-                        const newsPfp = users[newsData.userID]?.profilePic;
-                        const newsOpponentUsername = users[newsData.opponentID]?.username ?? undefined;
-                        const newsOpponentPfp = users[newsData.opponentID]?.profilePic ?? undefined;
-                        const newsBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority2 : undefined;
-                        const newsNonBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority3 : undefined;
-                        const newsOpponentWalkingUsername = newsData.type === 'headToHeadOpponentWalking' ? newsData.priority2[0] : undefined;
-                        currentNews[newsData.id] = {
-                            type: newsData.type,
-                            username: newsUsername,
-                            pfp: newsPfp,
-                            opponentUsername: newsData.type === 'headToHeadOpponentWalking' ? newsOpponentWalkingUsername : newsOpponentUsername,
-                            opponentPfp: newsOpponentPfp,
-                            record: newsData.record ?? undefined,
-                            place: newsData.place ?? undefined,
-                            steps: newsData.steps ?? undefined,
-                            betters: newsBetters,
-                            nonBetters: newsNonBetters
-                        };
-                    });
-                    const newsArray = Object.values(currentNews);
-                    console.log("NEWS ARRAY: ", newsArray);
-                    if (Object.values(currentNews).length > 0) {
-                        console.log("NEWS IS HERE: ", currentNews);
-                        if (isPropBetModalVisible) {
-                            console.log('prop bet modal is being queued');
-                            setPropBetQueued(true);
-                            setPropBetModalVisible(false);
-                        }
-                        setNewsModalVisible(true);
-                    }
-                    setCurrentNewsArray(Object.values(currentNews));
-
                     // Set up a listener for today's duels
-                    console.log('starting duel listener!....');
+                    // console.log('starting duel listener!....');
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     const startDate = new Date(today);
@@ -473,16 +413,9 @@ const BetSummaryPage: React.FC = () => {
                         endDate.setDate(endDate.getDate() + 1);
                     }
 
-                    console.log("the test continues", startDate, endDate);
+                    // console.log("the test continues", startDate, endDate);
 
                     const duelsCollection = collection(groupDocRef, 'duels');
-                    console.log("checkpoint four");
-                    console.log("Firestore Query Parameters:");
-                    console.log("gameType:", gameType);
-                    console.log("cycleCount:", cycleCount);
-                    console.log("cycle:", cycle);
-                    console.log("startDate:", startDate, "endDate:", endDate);
-                    console.log("duelsCollection:", duelsCollection);
 
                     const duelsQuery = query(duelsCollection,
                         where('cycleCount', '==', cycleCount),
@@ -528,8 +461,8 @@ const BetSummaryPage: React.FC = () => {
                             const player2Pfp = users[bet.player2]?.profilePic ?? 'default_image_url';
 
                             if (bet.bets[0]?.wager == null || (bet.bets.length === 0)) {
-                                console.log("thisis running!!");
-                                console.log(bet.bets.length);
+                                // console.log("thisis running!!");
+                                // console.log(bet.bets.length);
                                 return {
                                     duelID: bet.duelID,
                                     player1,
@@ -575,12 +508,79 @@ const BetSummaryPage: React.FC = () => {
                             todaysDuels
                         };
 
-                        console.log(`Duels for group ${groupID} updated`);
-                        console.log('Updated currentGroups: ', currentGroups);
+                        // console.log(`Duels for group ${groupID} updated`);
+                        // console.log('Updated currentGroups: ', currentGroups);
                         console.log('current Bets', currBets);
                         setCurrentBets(currBets);
                         setIsLoading(false);
                     });
+
+                    // Grab news data (dont need onSnapshot)
+                    console.log('grabbing news...');
+                    const newsCollectionRef = collection(groupDocRef, 'news');
+                    // const lastLogin = groups[groupID]?.lastLogin;
+                    const newsQuery = query(newsCollectionRef, where('createdAt', '>', lastLogin));
+                    // const newsQuery = query(newsCollectionRef);
+                    const newsSnapshot = await getDocs(newsQuery);
+                    // log length of newsSnapshot
+                    console.log('newsSnapshot length: ', newsSnapshot.size);
+                    const currentNews: { [key: string]: any } = {};
+                    newsSnapshot.forEach((newsDoc: any) => {
+                        const newsData = newsDoc.data();
+                        // get all lists IF IT EXISTS (priority0, priority1, priority2, priority3), and put it all together into one list
+                        const priority0 = newsData.priority0 ?? [];
+                        const priority1 = newsData.priority1 ?? [];
+                        const priority2 = newsData.priority2 ?? [];
+                        const priority3 = newsData.priority3 ?? [];
+                        const allPriority = priority0.concat(priority1, priority2, priority3);
+                        // if userID is not in list, then continue
+                        if (!allPriority.includes(userID)) {
+                            return;
+                        }
+
+                        console.log('adding news ', newsDoc.id);
+                        const newsUsername = users[newsData.userID]?.username;
+                        const newsPfp = users[newsData.userID]?.profilePic;
+                        const newsOpponentUsername = users[newsData.opponentID]?.username ?? undefined;
+                        const newsOpponentPfp = users[newsData.opponentID]?.profilePic ?? undefined;
+                        const newsBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority2 : undefined;
+                        const newsNonBetters = newsData.type === 'headToHeadPullAhead' ? newsData.priority3 : undefined;
+                        const newsOpponentWalkingUsername = newsData.type === 'headToHeadOpponentWalking' ? newsData.priority2[0] : undefined;
+                        currentNews[newsDoc.id] = {
+                            type: newsData.type,
+                            username: newsUsername,
+                            pfp: newsPfp,
+                            opponentUsername: newsData.type === 'headToHeadOpponentWalking' ? newsOpponentWalkingUsername : newsOpponentUsername,
+                            opponentPfp: newsOpponentPfp,
+                            record: newsData.record ?? undefined,
+                            place: newsData.place ?? undefined,
+                            steps: Math.floor(newsData.steps) ?? undefined,
+                            betters: newsBetters,
+                            nonBetters: newsNonBetters
+                        };
+                    });
+                    const newsArray = Object.values(currentNews);
+                    setCurrentNewsArray(Object.values(currentNews));
+                    // console.log("NEWS ARRAY: ", newsArray);
+
+                    // Putting setModalVisible together for prop bet and news
+                    if (Object.values(currentNews).length > 0) {
+                        console.log("NEWS IS HERE: ", Object.values(currentNews));
+                        const timer = setTimeout(() => {
+                            if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
+                                console.log('prop bet modal is being queued');
+                                setPropBetQueued(true);
+                            }
+                            setNewsModalVisible(true);
+                        }, 100);
+                        return () => clearTimeout(timer);
+                    } else if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
+                        // no news, so just show prop bet
+                        const timer = setTimeout(() => {
+                            setPropBetModalVisible(true);
+                        }, 100);
+                        return () => clearTimeout(timer);
+                    }
 
                     unsubscribeFunctions.push(unsubscribeGroup, unsubscribeDuels);
                 }
@@ -666,12 +666,12 @@ const BetSummaryPage: React.FC = () => {
         // Filter powerups for player1 and player2
         const player1Powerups = powerups
             .filter(([type, targetID, targetUserName, userID, duelID]) => {
-                console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
+                // console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player1}`);
                 return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player1;
             });
 
         const player2Powerups = powerups.filter(([type, targetID, targetUserName, userID, duelID]) => {
-            console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player2}`);
+            // console.log(`Checking: ${duelID} === ${currentBets[currentBetIndex]?.duelID} && ${targetUserName} === ${currentBets[currentBetIndex]?.player2}`);
             return duelID === currentBets[currentBetIndex]?.duelID && targetUserName === currentBets[currentBetIndex]?.player2;
         });
 
@@ -792,7 +792,7 @@ const BetSummaryPage: React.FC = () => {
                                 />
                                 <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
                                 <Text style={styles.timeLeftText}> left in game</Text>
-                                {groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly' && (
+                                {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && (
                                     <>
                                         <Text style={styles.timeLeftText}> | </Text>
                                         <Text style={styles.timeLeft}>{betTimeLeft}</Text>
@@ -806,7 +806,7 @@ const BetSummaryPage: React.FC = () => {
                     {/* Stats Container */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), paddingTop: scale(15), }}>
                         <Text style={styles.sectionTitle}>Your Total Stats</Text>
-                        {groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly' && (
+                        {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && (
                             <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
                                 <Text style={styles.propBetButton}>Today's Prop Bet</Text>
                             </TouchableOpacity>
@@ -1239,14 +1239,17 @@ const BetSummaryPage: React.FC = () => {
                     visible={isNewsModalVisible}
                 >
                     <View style={styles.modalOverlay}>
-                        <View style={[styles.moneyModalContainer, { height: '41%', top: '30%' }]}>
+                        <View style={[styles.moneyModalContainer]}>
 
                             <NewsPage
                                 groupID={groupID}
                                 userID={userID}
+                                username={groups[groupID]?.users[userID]?.username}
                                 newsList={currentNewsArray}
                                 setNewsModalVisible={setNewsModalVisible}
                                 setPropBetModalVisible={setPropBetModalVisible}
+                                setPropBetQueued={setPropBetQueued}
+                                propBetQueued={propBetQueued}
                             />
                         </View>
                     </View>

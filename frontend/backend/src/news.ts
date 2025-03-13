@@ -222,7 +222,7 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
                     });
 
                     if (results.length === 0) {
-                        console.log('No duels found for today for group: ', groupID);
+                        console.log('headToHeadPullAhead - No duels found for today for group: ', groupID);
                         continue;
                     }
 

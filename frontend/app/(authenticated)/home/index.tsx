@@ -43,12 +43,8 @@ const HomeTab: React.FC = () => {
     const { steps, averageSteps, stepsFromWeekBefore, distance, flights, fetchHealthData, isLoading, hasPermissions } = useHealthData();
     const [stepsSinceMidnight, setStepsSinceMidnight] = useState<number | null>(null); // important for reupdating ui based on steps
     const [needsUpdate, setNeedsUpdate] = useState<Boolean>(true);
-    console.log("printing steps!!!");
-    console.log(steps);
-    console.log("printing average steps!!!");
     const sum = averageSteps.reduce((a: number, b: number) => a + b, 0);
     const averageStepsCount = sum / averageSteps.length;
-    console.log(averageStepsCount);
     const [userID, setUserID] = useState<string>('');
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
@@ -104,11 +100,11 @@ const HomeTab: React.FC = () => {
 
     useEffect(() => {
         if (hasInitialized) {
-            console.log("HomeTab -- already initialized");
+            // console.log("HomeTab -- already initialized");
             //getStepsSinceMidnight();
             setIsLoadingHome(true);
             const intervalId = setInterval(() => {
-                console.log("Regular backend update with steps:", steps);
+                // console.log("Regular backend update with steps:", steps);
 
                 fetchHealthData();
 
@@ -201,11 +197,11 @@ const HomeTab: React.FC = () => {
         // get groupID and number of users in group;
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
-        console.log('groupusers: ', GroupUsers);
+        // console.log('groupusers: ', GroupUsers);
         const isGameActive = groups[groupID]?.isGameActive;
-        console.log(isGameActive);
+        // console.log(isGameActive);
         if (GroupUsers === null || GroupUsers === undefined) {
-            console.log('Failed to fetch group data');
+            console.log('HOMETAB - Failed to fetch group data');
             return;
         } else if (isGameActive) {
             const isFinishedBetting = groups[groupID]?.isFinishedBetting;
@@ -214,14 +210,14 @@ const HomeTab: React.FC = () => {
             const groupIDTemp = groupID;
             if (!isFinishedTutorial) {
                 router.push({
-                    pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                    params: { groupIDTemp },
+                    pathname: '/(authenticated)/home/bets/NewHeadToHead',
+                    params: { groupIDTemp, showTutorialTemp: String(!isFinishedTutorial) },
                 });
             }
             else if (!isFinishedBetting) {
                 router.push({
                     pathname: '/(authenticated)/home/bets/NewHeadToHead',
-                    params: { groupIDTemp },
+                    params: { groupIDTemp, showTutorialTemp: String(!isFinishedTutorial) },
                 });
             } else {
                 router.push({
@@ -230,7 +226,7 @@ const HomeTab: React.FC = () => {
                 });
             }
         } else {
-            console.log('navigating to invite group page');
+            // console.log('navigating to invite group page');
             router.push({
                 pathname: '/(authenticated)/home/groups/InviteGroup',
                 params: { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: 'false' },
@@ -255,6 +251,7 @@ const HomeTab: React.FC = () => {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                 <ActivityIndicator size="large" />
                 <Text>Loading...</Text>
+                {isLoading && <Text>Grabbing health data...</Text>}
             </View>
         );
     }

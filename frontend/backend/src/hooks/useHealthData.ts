@@ -39,7 +39,7 @@ const useHealthData = () => {
     const [isLoading, setLoading] = useState(true);
 
     const getDailySteps = async (): Promise<number> => {
-        console.log("getDailySteps -- start");
+        // console.log("getDailySteps -- start");
         return new Promise((resolve, reject) => {
             const today = new Date();
             const options: HealthInputOptions = {
@@ -52,7 +52,7 @@ const useHealthData = () => {
                     reject(err);
                     return;
                 }
-                console.log("getDailySteps succeeded -- getStepCount: ", results.value);
+                // console.log("getDailySteps succeeded -- getStepCount: ", results.value);
                 setSteps(results.value);
                 resolve(results.value);
             });
@@ -60,7 +60,7 @@ const useHealthData = () => {
     };
 
     const getStepsFiveHoursAgo = async (stepsLastUpdate: Date): Promise<number> => {
-        console.log("getStepsFiveHoursAgo -- start");
+        // console.log("getStepsFiveHoursAgo -- start");
 
         const currentDate = new Date();
 
@@ -78,7 +78,7 @@ const useHealthData = () => {
                     return;
                 }
 
-                console.log("Step samples received:", results);
+                // console.log("Step samples received:", results);
 
                 // We need to manually check for 5-hour periods with 5k+ steps
                 let maxStepsIn5Hours = 0;
@@ -122,7 +122,7 @@ const useHealthData = () => {
     };
 
     const getWeeklyAverageOfSteps = async (): Promise<number[]> => {
-        console.log("getWeeklyAverageOfSteps -- start");
+        // console.log("getWeeklyAverageOfSteps -- start");
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         yesterday.setHours(23, 59, 59, 999); // End of yesterday
@@ -167,7 +167,7 @@ const useHealthData = () => {
     const getStepsFromWeekBefore = async(): Promise<number> => {
 
         if (loadingStepsFromWeekBefore) {
-            console.log('Already loading steps from week before, skipping this call');
+            // console.log('Already loading steps from week before, skipping this call');
             return stepsFromWeekBefore;
         }
     
@@ -188,8 +188,8 @@ const useHealthData = () => {
                 date: currentDate.toISOString(),
             };
 
-            console.log("before everyuthing", stepsFromWeekBeforeTemp);
-            console.log("currentDate: ", currentDate);
+            // console.log("before everyuthing", stepsFromWeekBeforeTemp);
+            // console.log("currentDate: ", currentDate);
     
             try {
                 const result = await new Promise<number>((resolve, reject) => {
@@ -202,10 +202,10 @@ const useHealthData = () => {
                     });
                 });
 
-                console.log("stepsFromWeeksBefore day: ", result);
+                // console.log("stepsFromWeeksBefore day: ", result);
     
                 stepsFromWeekBeforeTemp += result;
-                console.log("stepsFromWeeksBefore after added: ", stepsFromWeekBeforeTemp);
+                // console.log("stepsFromWeeksBefore after added: ", stepsFromWeekBeforeTemp);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
             }
@@ -214,7 +214,7 @@ const useHealthData = () => {
         }
 
         setStepsFromWeekBefore(stepsFromWeekBeforeTemp); // Update state
-        console.log("StepsFromWeekBefore: ", stepsFromWeekBeforeTemp);
+        // console.log("StepsFromWeekBefore: ", stepsFromWeekBeforeTemp);
 
         setLoadingStepsFromWeekBefore(false);
         return stepsFromWeekBeforeTemp; // Return the calculated value
