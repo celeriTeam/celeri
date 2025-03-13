@@ -53,7 +53,7 @@ exports.sendEmail = onCall(async (request) => {
 });
 
 // function for sending daily notifs to all users
-exports.sendNotif = onSchedule("every day 05:00", async (event) => {
+exports.sendNotif = onSchedule("every day 04:00", async (event) => {
   const today = new Date();
   const hour = today.getHours(); // Get the current hour in 24-hour format
 
@@ -146,7 +146,7 @@ exports.sendNotif = onSchedule("every day 05:00", async (event) => {
   }
 });
 
-exports.sendTestSilentNotif = onSchedule("0 2,5,17 * * *", async (event) => {
+exports.sendTestSilentNotif = onSchedule("0 1,4,16 * * *", async (event) => {
   const today = new Date();
   const hour = today.getHours(); // Get the current hour in 24-hour format
   if (hour === 5) {
@@ -619,7 +619,7 @@ function createCyclesInGame(players, numberOfOldPlayers, roundsSoFar, currentRou
   return newCycles;
 }
 
-exports.updateWinners = onSchedule("0 5,17 * * *", async (event) => {
+exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
   const groupRef = firestore.collection("groups");
   const userRef = firestore.collection("users");
 
@@ -1493,7 +1493,7 @@ const calculatePowerupSteps = async (groupID, userID, duelID, gameType) => {
   }
 };
 
-exports.managePropBets = onSchedule("every day 05:00", async (event) => {
+exports.managePropBets = onSchedule("every day 04:00", async (event) => {
   console.log("managePropBets -- START");
   const groupRef = firestore.collection("groups");
   try {
@@ -1577,7 +1577,7 @@ exports.managePropBets = onSchedule("every day 05:00", async (event) => {
 });
 
 
-exports.createDuels = onSchedule("0 5,17 * * *", async (event) => {
+exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
   console.log("createDuels is running");
   const groupRef = firestore.collection("groups");
 
