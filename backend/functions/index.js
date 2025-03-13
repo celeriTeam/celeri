@@ -229,6 +229,11 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
   const data = snapshot.data();
   const newsType = data.type;
 
+  const groupID = event.params.groupID; // Extract group ID from event params
+  const newsRef = firestore.collection(`groups/${groupID}/news`);
+  const newsDocRef = firestore.doc(`groups/${groupID}/news/${event.params.newsID}`);
+
+
   // check what priority the notif is
 
   // if priority zero notif, then send notif no matter what 
@@ -290,9 +295,78 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       }
     }
 
-  } else {
-    console.log("priority0 does not exist");
-}
+  } else if (data.priority1 !== undefined) {
+
+    const twelveHoursAgo = new Date();
+    twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
+
+
+    const newsSnapshot = await newsRef
+      .where("priority1", "==", true)
+      .where("createdAt", ">=", twelveHoursAgo)
+      .get();
+
+    console.log("priority1 exists: ", data.priority1);
+
+    if (!newsSnapshot.empty) {
+      console.log("There is a priority 1 news document in the last 12 hours");
+      // make sure to not send notifs to the users in the priority 1 
+      const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
+      const potentialUserIDs = new Set(data.priority1); // Convert priority1 array in new document to Set for quick lookup
+
+      newsSnapshot.forEach((doc) => {
+        const previousData = doc.data();
+        if (previousData.priority1 && Array.isArray(previousData.priority1)) {
+          previousData.priority1.forEach((userID) => alreadyNotifiedUserIDs.add(userID)); // Track notified users
+        }
+      });
+
+      console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
+
+      // Filter out users in priority1 who are in alreadyNotifiedUserIDs
+      const updatedPriority1 = (data.priority1 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+
+      // If priority1 has changed, update the new document
+      if (updatedPriority1.length !== data.priority1.length) {
+        await newsDocRef.update({ priority1: updatedPriority1 });
+        console.log("Updated priority1 in new news document:", updatedPriority1);
+      }
+
+
+      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+      for (const userID of updatedPriority1) {
+        try {
+          const userDoc = await firestore.collection("users").doc(userID).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            const userTokens = userData.tokens || [];
+
+            for (const token of userTokens) {
+              const message = {
+                token: token,
+                notification: {
+                  title: "New Priority 1 News",
+                  body: "You have an important update!",
+                },
+              };
+
+              try {
+                const response = await admin.messaging().send(message);
+                console.log("Notification sent successfully to", userID, ":", response);
+              } catch (error) {
+                console.error("Error sending notification to", userID, ":", error);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user document for", userID, ":", error);
+        }
+      }
+    } else {
+      console.log("No priority 1 news found in the last 12 hours");
+    }
+
+  }
 
 
   // query the news subcollection inside the groupID document for any documents that were created in the past twelve hours and have an array called priority0, and inside that array have the userID 
