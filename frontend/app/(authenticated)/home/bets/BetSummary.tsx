@@ -566,20 +566,18 @@ const BetSummaryPage: React.FC = () => {
                     // Putting setModalVisible together for prop bet and news
                     if (Object.values(currentNews).length > 0) {
                         console.log("NEWS IS HERE: ", Object.values(currentNews));
-                        const timer = setTimeout(() => {
+                        setTimeout(() => {
                             if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
                                 console.log('prop bet modal is being queued');
                                 setPropBetQueued(true);
                             }
                             setNewsModalVisible(true);
                         }, 100);
-                        return () => clearTimeout(timer);
                     } else if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
                         // no news, so just show prop bet
-                        const timer = setTimeout(() => {
+                        setTimeout(() => {
                             setPropBetModalVisible(true);
                         }, 100);
-                        return () => clearTimeout(timer);
                     }
 
                     unsubscribeFunctions.push(unsubscribeGroup, unsubscribeDuels);
@@ -1699,6 +1697,7 @@ const styles = StyleSheet.create({
         marginTop: verticalScale(8),
         borderTopLeftRadius: moderateScale(20),
         borderTopRightRadius: moderateScale(20),
+        height: '97%',
     },
     grayLine: {
         position: 'absolute',
