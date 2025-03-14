@@ -45,6 +45,7 @@ const PropBetPage: React.FC< {
 } > = ({ groupID, userID, propBetPlayer, finishedPropBet, currentPropBet, overUnder, setFinishedPropBet, setPropBetModalVisible }) => {
     const [selectedPropBet, setSelectedPropBet] = useState<selectedPropBet>(null);
     const isCurrentOver = currentPropBet?.overUnder === 'over';
+    const propBetAmount = (stepCount: number) =>  { return (stepCount < 100) ? 100 : stepCount; }
 
     return (
         <View style={styles.container}>
@@ -90,28 +91,27 @@ const PropBetPage: React.FC< {
                                     onPress={() => setSelectedPropBet('over')}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Over</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
+                                    <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Over</Text> {propBetAmount(player.averageStepCount)}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={selectedPropBet === 'under' ? styles.overUnderButtonTouched : styles.overUnderButtonTouchable}
                                     onPress={() => setSelectedPropBet('under')}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Under</Text> {(player.averageStepCount < 100) ? 100 : player.averageStepCount}</Text>
+                                    <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Under</Text> {propBetAmount(player.averageStepCount)}</Text>
                                 </TouchableOpacity>
                             </View>
                             <TouchableOpacity
                                 style={[styles.submitButton, { backgroundColor: selectedPropBet === null ? "#656565" : "#fff", }]}
                                 onPress={() => {
                                     addToFinishedPropBet(groupID, userID);
-                                    addPropBet(groupID, userID, player.id, (player.averageStepCount < 100) ? 100 : player.averageStepCount, selectedPropBet === 'over' ? 'over' : 'under');
+                                    addPropBet(groupID, userID, player.id, propBetAmount(player.averageStepCount), selectedPropBet === 'over' ? 'over' : 'under');
                                     overUnder(selectedPropBet);
                                     setFinishedPropBet(true);
                                     setPropBetModalVisible(false);
-                                    const timer = setTimeout(() => {
+                                    setTimeout(() => {
                                         setPropBetModalVisible(true);
                                     }, 100);
-                                    return () => clearTimeout(timer);
                                 }}
                                 disabled={selectedPropBet === null}
                                 activeOpacity={0.8}
