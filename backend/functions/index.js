@@ -434,24 +434,49 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
     const twentyFourHoursAgo = new Date();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-    const newsSnapshot = await newsRef
-      .where("priority2", "==", true)
+    // grabs any priority 1 from the past 24 hours 
+
+    const priority1Query = newsRef
+      .where("priority1", ">=", false)
       .where("createdAt", ">=", twentyFourHoursAgo)
       .get();
 
+    // grabs any priority 2 from the past 24 hours 
+
+    const priority2Query = await newsRef
+      .where("priority2", ">=", false)
+      .where("createdAt", ">=", twentyFourHoursAgo)
+      .get();
+
+    
     console.log("priority2 exists: ", newNewsData.priority2);
 
-    if(!newsSnapshot.empty){
-      console.log("There is a priority 2 news document in the last 24 hours");
-      const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
-      const potentialUserIDs = new Set(newNewsData.priority2); // Convert priority1 array in new document to Set for quick lookup
+    // now merge the snapshots
 
-      newsSnapshot.forEach((doc) => {
-        const previousData = doc.data();
+    const [priority1Snapshot, priority2Snapshot] = await Promise.all([
+      priority1Query,
+      priority2Query,
+    ]);
+    
+    // Merge results, avoiding duplicates
+    const newsSet = new Map();
+    
+    priority1Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+    priority2Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+    
+    const mergedNews = Array.from(newsSet.values());
+    
+    console.log("merged news, ", mergedNews);
+
+    if(mergedNews.length > 0){
+      console.log("There is a priority 1 or priority 2 news document in the last 24 hours");
+      const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
+
+      mergedNews.forEach((previousData) => {
         if (previousData.priority2 && Array.isArray(previousData.priority2)) {
           previousData.priority2.forEach((userID) => alreadyNotifiedUserIDs.add(userID)); // Track notified users
         }
-      })
+      });
 
       console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
       // Filter out users in priority2 who are in alreadyNotifiedUserIDs
@@ -464,7 +489,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       }
 
       // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
-      for (const userID of updatedPriority1) {
+      for (const userID of updatedPriority2) {
         try {
           const userDoc = await firestore.collection("users").doc(userID).get();
           if (userDoc.exists) {
@@ -475,18 +500,162 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
               let message; 
 
+              if(newsType == "headToHeadPullAhead"){
+
+                // the person you bet on's opponent
+
+                const opponentUserID = newNewsData.opponentID;
+                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+                const opponentUserData = opponentUserDoc.data();
+
+                const opponentUsername = opponentUserData.username;
+
+                // the person you bet on
+
+                const betOnUserID = newNewsData.userID;
+                const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
+                const betOnUserData = betOnUserDoc.data();
+
+                const betOnUsername = betOnUserData.username;
+
+                // this targets anyone who's betting on you 
+
+                message = {
+                  token: token,
+                  notification: {
+                    title: `Shucks, you're losing your bet!`,
+                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head`
+                  },
+                }
+              } else if(newsType == "racePullAheadOfYou"){
+
+                // the person who pulled ahea of you
+
+                const opponentUserID = newNewsData.userID;
+                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+                const opponentUserData = opponentUserDoc.data();
+
+                const opponentUsername = opponentUserData.username;
+
+                message = {
+                  token: token,
+                  notification: {
+                    title: `Don't be left behind!`,
+                    body: `${opponentUsername} just overtook you in steps! Are you just gonna sit back and let that happen?`
+                  },
+                }
+
+              } else if(newsType == "headToHeadOpponentWalking"){
+                const opponentUserID = newNewsData.userID;
+                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+                const opponentUserData = opponentUserDoc.data();
+
+                const opponentUsername = opponentUserData.username;
+
+                const steps = newNewsData.steps;
+
+                message = {
+                  token: token,
+                  notification: {
+                    title: `Pick up the pace!`,
+                    body: `Your head-to-head opponent, ${opponentUsername} just walked ${steps} in five hours. What are you up to?`,
+                  },
+                };
+              }
+
             }
           }
-        } catch {
+        } catch (error) {
+          console.error("Error fetching user document for", userID, ":", error);
+        }
+      }
+    } else {
+      console.log("No priority 2 news found in the last 12 hours");
+    }
+  }
+
+  if (newNewsData.priority3 !== undefined){
+    const thirtySixHoursAgo = new Date();
+    thirtySixHoursAgo.setHours(thirtySixHoursAgo.getHours() - 36);
+    
+    // grabs any priority 1 from the past 36 hours 
+
+    const priority1Query = newsRef
+      .where("priority1", ">=", false)
+      .where("createdAt", ">=", thirtySixHoursAgo)
+      .get();
+
+    // grabs any priority 2 from the past 36 hours 
+
+    const priority2Query = await newsRef
+      .where("priority2", ">=", false)
+      .where("createdAt", ">=", thirtySixHoursAgo)
+      .get();
+
+      // grabs any priority 3 from the past 36 hours 
+
+    const priority3Query = await newsRef
+      .where("priority3", ">=", false)
+      .where("createdAt", ">=", thirtySixHoursAgo)
+      .get();
+
+    console.log("priority3 exists: ", newNewsData.priority3);
+
+     // now merge the snapshots
+
+     const [priority1Snapshot, priority2Snapshot, priority3Snapshot] = await Promise.all([
+      priority1Query,
+      priority2Query,
+      priority3Query,
+    ]);
+
+    // Merge results, avoiding duplicates
+    const newsSet = new Map();
+
+    priority1Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+    priority2Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+    priority3Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+
+    const mergedNews = Array.from(newsSet.values());
+
+    console.log("merged news, ", mergedNews)
+
+    if(mergedNews.length > 9){
+      console.log("There is a priority 3 news document in the last 36 hours");
+      const alreadyNotifiedUserIDs = new Set();
+
+      mergedNews.forEach((previousData) => {
+        if (previousData.priority3 && Array.isArray(previousData.priority3)) {
+          previousData.priority3.forEach((userID) => alreadyNotifiedUserIDs.add(userID)); // Track notified users
+        }
+      });
+
+      console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
+
+      // Filter out users in priority2 who are in alreadyNotifiedUserIDs
+      const updatedPriority3 = (newNewsData.priority3 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+
+      // If priority3 has changed, update the new document
+      if (updatedPriority3.length !== newNewsData.priority3.length) {
+        await newsDocRef.update({ priority2: updatedPriority3 });
+        console.log("Updated priority2 in new news document:", updatedPriority3);
+      }
+
+      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+      for (const userID of updatedPriority3) {
+        try {
+          const userDoc = await firestore.collection("users").doc(userID).get();
+          if(userDoc.exists) {
+            const userData = userDoc.data();
+            const userTokens = userData.tokens || [];
+          }
+        } catch (error) {
 
         }
       }
     }
+
   }
-
-
-  // query the news subcollection inside the groupID document for any documents that were created in the past twelve hours and have an array called priority0, and inside that array have the userID 
-
 
 }
 
