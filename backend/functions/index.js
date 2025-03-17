@@ -296,7 +296,11 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       }
     }
 
-  } else if (newNewsData.priority1 !== undefined) {
+  } 
+
+  // no need for else, can check each individually 
+  
+  if (newNewsData.priority1 !== undefined) {
 
     const twelveHoursAgo = new Date();
     twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
@@ -313,7 +317,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       console.log("There is a priority 1 news document in the last 12 hours");
       // make sure to not send notifs to the users in the priority 1 
       const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
-      const potentialUserIDs = new Set(data.priority1); // Convert priority1 array in new document to Set for quick lookup
+      const potentialUserIDs = new Set(newNewsData.priority1); // Convert priority1 array in new document to Set for quick lookup
 
       newsSnapshot.forEach((doc) => {
         const previousData = doc.data();
@@ -385,7 +389,19 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                   };
                 }
               } else if(newsType == "headToHeadPullAhead"){
+                const targetUserID = newNewsData.opponentID;
+                const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
+                const targetUserData = targetUserDoc.data();
 
+                const targetUsername = targetUserData.username;
+
+                message = {
+                  token: token,
+                  notification: {
+                    title: `You've gotta lock in.`,
+                    body: `${targetUsername} just surpassed you in steps in your head to head!`,
+                  },
+                };
               } else {
                 message = {
                   token: token,
@@ -412,6 +428,60 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       console.log("No priority 1 news found in the last 12 hours");
     }
 
+  }
+
+  if (newNewsData.priority2 !== undefined){
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    const newsSnapshot = await newsRef
+      .where("priority2", "==", true)
+      .where("createdAt", ">=", twentyFourHoursAgo)
+      .get();
+
+    console.log("priority2 exists: ", newNewsData.priority2);
+
+    if(!newsSnapshot.empty){
+      console.log("There is a priority 2 news document in the last 24 hours");
+      const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
+      const potentialUserIDs = new Set(newNewsData.priority2); // Convert priority1 array in new document to Set for quick lookup
+
+      newsSnapshot.forEach((doc) => {
+        const previousData = doc.data();
+        if (previousData.priority2 && Array.isArray(previousData.priority2)) {
+          previousData.priority2.forEach((userID) => alreadyNotifiedUserIDs.add(userID)); // Track notified users
+        }
+      })
+
+      console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
+      // Filter out users in priority2 who are in alreadyNotifiedUserIDs
+      const updatedPriority2 = (newNewsData.priority2 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+
+      // If priority2 has changed, update the new document
+      if (updatedPriority2.length !== newNewsData.priority2.length) {
+        await newsDocRef.update({ priority2: updatedPriority2 });
+        console.log("Updated priority2 in new news document:", updatedPriority2);
+      }
+
+      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+      for (const userID of updatedPriority1) {
+        try {
+          const userDoc = await firestore.collection("users").doc(userID).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            const userTokens = userData.tokens || [];
+
+            for (const token of userTokens) {
+
+              let message; 
+
+            }
+          }
+        } catch {
+
+        }
+      }
+    }
   }
 
 
