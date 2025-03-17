@@ -1,9 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, StyleSheet as RNStyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, StyleSheet as RNStyleSheet, Dimensions } from 'react-native';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const NewHeadToHeadTutorial: React.FC<{
     tutorialStep: number,
@@ -16,7 +27,7 @@ const NewHeadToHeadTutorial: React.FC<{
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
 
     const handleNextStep = () => {
-        if (tutorialStep < 10) {
+        if (tutorialStep < 11) {
             setTutorialStep(tutorialStep + 1);
         } else {
             setShowTutorial(false);
@@ -27,25 +38,27 @@ const NewHeadToHeadTutorial: React.FC<{
     const getModalStyle = (): StyleProp<ViewStyle> => {
         switch (tutorialStep) {
             case 1:
-                return { top: 100, width: 200, height: 100 };
+                return { top: verticalScale(100), width: scale(200), height: verticalScale(100) };
             case 2:
-                return { top: 0, right: 170, width: 200, height: 100 };
+                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
             case 3:
-                return { top: 300, width: 200, height: 100 };
+                return { top: verticalScale(300), width: scale(200), height: verticalScale(100) };
             case 4:
-                return { top: 100, width: 200, height: 100 };
+                return { top: verticalScale(100), width: scale(200), height: verticalScale(100) };
             case 5:
-                return { top: 0, right: 170, width: 200, height: 100 };
+                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
             case 6:
-                return { top: 0, width: 200, height: 90 };
+                return { top: verticalScale(0), width: scale(200), height: verticalScale(90) };
             case 7:
-                return { top: 90, left: 170, width: 200, height: 90 };
+                return { top: verticalScale(90), left: scale(170), width: scale(200), height: verticalScale(90) };
             case 8:
-                return { top: 300, width: 200, height: 100 };
+                return { top: verticalScale(0), width: scale(200), height: verticalScale(100) };
             case 9:
-                return { bottom: 20, width: 200, height: 100 };
+                return { top: verticalScale(300), width: scale(200), height: verticalScale(100) };
             case 10:
-                return { bottom: 100, right: 30, width: 200, height: 100 };
+                return { bottom: verticalScale(90), width: scale(200), height: verticalScale(100) };
+            case 11:
+                return { bottom: verticalScale(64), width: scale(200), height: verticalScale(100) };
             default:
                 return {};
         }
@@ -55,13 +68,9 @@ const NewHeadToHeadTutorial: React.FC<{
         <View style={styles.overlayContainer}>
             <View style={[styles.overlay, getModalStyle()]}>
                 <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
-                {![6, 7].includes(tutorialStep) && (
+                {![6, 7, 8, 11].includes(tutorialStep) && (
                     <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
-                        {tutorialStep === 10 ? (
-                            <Text style={styles.nextButtonText}>Start Betting</Text>
-                        ) : (
-                            <Text style={styles.nextButtonText}>Next</Text>
-                        )}
+                        <Text style={styles.nextButtonText}>Next</Text>
                     </TouchableOpacity>
                 )}
             </View>

@@ -4,7 +4,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useUser } from '../../../UserProvider';
-import { addToFinishedBetting, addToFinishedRecap, createBet, getUnbetDuels } from '@/backend/src/bets';
+import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, createBet, getUnbetDuels } from '@/backend/src/bets';
 import BetRecapPage from './Recap';
 import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -83,8 +83,8 @@ const NewHeadToHeadPage: React.FC = () => {
     const screenWidth = Dimensions.get('window').width;
     const scrollViewRef = useRef<ScrollView>(null);
     
-    const insideScrollTutorialSteps = [2, 5, 6, 7, 9];
-    const notInsideScrollTutorialSteps = [1, 3, 4, 8, 10];
+    const insideScrollTutorialSteps = [2, 5, 6, 7];
+    const notInsideScrollTutorialSteps = [1, 3, 4, 8, 9, 10, 11];
 
     const closeModal = async () => {
         setModalVisible(false);
@@ -320,7 +320,7 @@ const NewHeadToHeadPage: React.FC = () => {
             newArray[index] = playerPfp;
             return newArray;
         });
-        if (showTutorial) {
+        if (showTutorial && tutorialStep === 6) {
             setTutorialStep(tutorialStep + 1);
         }
     };
@@ -342,13 +342,27 @@ const NewHeadToHeadPage: React.FC = () => {
             newArray[index] = (+amount).toString();
             return newArray;
         });
-        if (showTutorial) {
+        if (showTutorial && tutorialStep === 7) {
             setTutorialStep(tutorialStep + 1);
         }
     };
 
     const truncateString = (str: string, maxLength: number) => {
         return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
+    };
+
+    const shouldShowSubmit = () => {
+        let errorText = '';
+        // should show submit if neither chosenPlayers nor betAmounts have empty strings
+        const isBettingComplete = chosenPlayer.every((player) => player !== '') && betAmount.every((amount) => amount !== '');
+        const isBetsNotZero = betAmount.every((amount) => +amount > 0);
+        const isBetsValid = totalBetTokens() <= currentUserTokens;
+        if (isBettingComplete && !isBetsNotZero) {
+            errorText = 'Bets should be greater than 0';
+        } else if (!isBetsValid) {
+            errorText = 'Bets should not exceed your total tokens';
+        }
+        return { isValid: isBettingComplete && isBetsValid && isBetsNotZero, errorText: errorText };
     };
 
     // const handleInfoButton = () => {
@@ -470,39 +484,41 @@ const NewHeadToHeadPage: React.FC = () => {
         };
     }, []);
 
-    const shouldShowSubmit = () => {
-        let errorText = '';
-        // should show submit if neither chosenPlayers nor betAmounts have empty strings
-        const isBettingComplete = chosenPlayer.every((player) => player !== '') && betAmount.every((amount) => amount !== '');
-        const isBetsNotZero = betAmount.every((amount) => +amount > 0);
-        const isBetsValid = totalBetTokens() <= currentUserTokens;
-        if (isBettingComplete && !isBetsNotZero) {
-            errorText = 'Bets should be greater than 0';
-        } else if (!isBetsValid) {
-            errorText = 'Bets should not exceed your total tokens';
+    useEffect(() => {
+        if (tutorialStep === 8 && shouldShowSubmit().isValid) {
+            setTutorialStep(tutorialStep + 1);
         }
-        return { isValid: isBettingComplete && isBetsValid && isBetsNotZero, errorText: errorText };
-    };
+    }, [tutorialStep, chosenPlayer, betAmount, currentUserTokens]);
 
     const handleSubmit = async () => {
-        // console.log("NewHeadToHead -- handleSubmit running");
         setIsProcessing(true);
 
-        {
-            matchups.map(async (matchup, index) => {
+        try {
+            // Use Promise.all to wait for all async operations to complete
+            await Promise.all(matchups.map(async (matchup, index) => {
                 const submittedPlayer = chosenPlayer[index];
                 const submittedBet = +(betAmount[index]);
                 console.log('you bet on: ', submittedPlayer);
                 console.log('you bet: ', submittedBet);
-                // console.log('duelid: ', matchup.duelID);
                 await createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
+            }));
 
-            })
-        };
-        await addToFinishedBetting(groupID, userID);
-        await setTodaysBetTokens(userID, groupID, totalBetTokens());
+            await addToFinishedBetting(groupID, userID);
+            await setTodaysBetTokens(userID, groupID, totalBetTokens());
 
-        setSubmittedModalVisible(true);
+            if (showTutorial) {
+                await addToFinishedTutorial(groupID, userID);
+                setShowTutorial(false);
+            }
+
+            // Use setTimeout to ensure state updates have been processed
+            setTimeout(() => {
+                setSubmittedModalVisible(true);
+            }, 100);
+        } catch (error) {
+            console.error("Error submitting bets:", error);
+            // Handle error appropriately
+        }
     };
 
     const handleSummaryPageNavigation = () => {
@@ -572,7 +588,10 @@ const NewHeadToHeadPage: React.FC = () => {
                     {/* dividing line */}
                     <View style={styles.dividingLine} />
 
-                    <View style={[styles.scrollAndDotsContainer, insideScrollTutorialSteps.includes(tutorialStep) && { zIndex: 200 }]}>
+                    <View style={[styles.scrollAndDotsContainer, 
+                        insideScrollTutorialSteps.includes(tutorialStep) && { zIndex: 200 },
+                        tutorialStep === 8 && { zIndex: 400 },
+                    ]}>
 
                         {/* swipeable cards */}
                         {/* <View style={ insideScrollTutorialSteps.includes(tutorialStep) && { zIndex: 200 } }> */}
@@ -584,12 +603,14 @@ const NewHeadToHeadPage: React.FC = () => {
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.scrollContainer}
                             onScroll={handleScroll}
-                            scrollEnabled={!showTutorial}
+                            scrollEnabled={!showTutorial || tutorialStep === 8}
                         >
                             {matchups.map((matchup, index) => (
-                                <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }]}>
+                                <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }, 
+                                    tutorialStep === 8 && { zIndex: 400, }
+                                ]}>
                                     {showTutorial && insideScrollTutorialSteps.includes(tutorialStep) && (
-                                        <View style={[styles.tutorialOverlay, {zIndex: 300,}]}>
+                                        <View style={styles.tutorialOverlay2}>
                                             <NewHeadToHeadTutorial
                                                 tutorialStep={tutorialStep}
                                                 setTutorialStep={setTutorialStep}
@@ -637,31 +658,33 @@ const NewHeadToHeadPage: React.FC = () => {
                                 </View>
                             ))}
                         </ScrollView>
-                        {/* </View> */}
-
-                        {/* dots for completion indication */}
-                        <View style={[styles.dotRow, tutorialStep === 9 && { zIndex: 400 }]}>
-                            {matchups.map((_, index) => (
-                                <TouchableOpacity
-                                    style={{
-                                        width: scale(10),
-                                        height: scale(10),
-                                        borderRadius: moderateScale(5),
-                                        borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
-                                        borderWidth: 1,
-                                        backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
-                                        marginHorizontal: scale(3),
-                                    }}
-                                    onPress={() => scrollToIndex(index)}
-                                    activeOpacity={1}
-                                    disabled={showTutorial}
-                                />
-                            ))}
-                        </View>
-                        <TouchableOpacity style={[styles.submitButton, { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' }]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
-                            <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
-                        </TouchableOpacity>
                     </View>
+
+                    {/* dots for completion indication */}
+                    <View style={[styles.dotRow, tutorialStep === 10 && { zIndex: 400 }]}>
+                        {matchups.map((_, index) => (
+                            <TouchableOpacity
+                                style={{
+                                    width: scale(10),
+                                    height: scale(10),
+                                    borderRadius: moderateScale(5),
+                                    borderColor: (currentMatchupIndex === index) ? '#74FF6D' : '#fff',
+                                    borderWidth: 1,
+                                    backgroundColor: (chosenPlayer[index] === '' || betAmount[index] === '') ? 'transparent' : '#fff',
+                                    marginHorizontal: scale(3),
+                                }}
+                                onPress={() => scrollToIndex(index)}
+                                activeOpacity={1}
+                                disabled={showTutorial && tutorialStep !== 10}
+                            />
+                        ))}
+                    </View>
+                    <TouchableOpacity style={[styles.submitButton, 
+                        { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' },
+                        tutorialStep === 11 && { zIndex: 400 },
+                    ]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
+                        <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
+                    </TouchableOpacity>
                 </KeyboardAvoidingView>
 
                 {/* Modal */}
@@ -861,7 +884,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     scrollAndDotsContainer: {
-        height: '84%',
+        height: '77%',
         justifyContent: 'flex-end',
     },
     dotRow: {
@@ -1042,6 +1065,11 @@ const styles = StyleSheet.create({
     tutorialOverlay: {
         ...StyleSheet.absoluteFillObject,
 		zIndex: 100,
+		backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    tutorialOverlay2: {
+        ...StyleSheet.absoluteFillObject,
+		zIndex: 300,
 		backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     tutorialContent: {
