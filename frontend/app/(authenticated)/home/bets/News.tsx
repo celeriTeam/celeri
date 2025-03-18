@@ -89,13 +89,13 @@ const NewsPage: React.FC< {
                                     news.place === 2 ? 'nd' : 
                                     news.place === 3 ? 'rd' : 'th'
                                     }</Text>
-                                    <Text style={styles.text}> place</Text>
+                                    <Text style={styles.text}> place in the steps race.</Text>
                                 </>
                             )}
                             {news.type === 'headToHeadPullAhead' && (
                                 <>
                                     {username === news.username ? (
-                                        <Text style={styles.text}>You</Text>
+                                        <Text style={styles.username}>You</Text>
                                     ) : (
                                         <>
                                             <Image
@@ -107,7 +107,7 @@ const NewsPage: React.FC< {
                                     )}
                                     <Text style={styles.text}> surpassed </Text>
                                     {username === news.opponentUsername ? (
-                                            <Text style={styles.text}>you</Text>
+                                            <Text style={styles.username}>you</Text>
                                     ) : (
                                         <>
                                             <Image
@@ -117,7 +117,7 @@ const NewsPage: React.FC< {
                                             <Text style={styles.username}>{news.opponentUsername}</Text>
                                         </>
                                     )}
-                                    <Text style={styles.text}> in their head to head.</Text>
+                                    <Text style={styles.text}> in {[news.opponentUsername, news.username].includes(username) ? 'your' : 'their'} head to head.</Text>
                                     {news.betters?.includes(userID) && (
                                         <Text style={styles.text}> Give your friend a cookie</Text>
                                     )}

@@ -208,10 +208,15 @@ const HomeTab: React.FC = () => {
             const isFirstDay = groups[groupID]?.isFirstDay;
             const isFinishedTutorial = groups[groupID]?.isFinishedTutorial;
             const groupIDTemp = groupID;
-            if (!isFinishedBetting) {
+            if (!isFinishedTutorial) {
+                router.push({
+                    pathname: '/(authenticated)/home/bets/Welcome',
+                    params: { groupIDTemp },
+                });
+            } else if (!isFinishedBetting) {
                 router.push({
                     pathname: '/(authenticated)/home/bets/NewHeadToHead',
-                    params: { groupIDTemp, showTutorialTemp: String(!isFinishedTutorial) },
+                    params: { groupIDTemp, showTutorialTemp: 'false' },
                 });
             } else {
                 router.push({
@@ -311,11 +316,6 @@ const HomeTab: React.FC = () => {
                             <>
                                 <Text style={styles.subTitle}>Your Groups:</Text>
                                 <ScrollView style={styles.scrollContainer}>
-
-                                    {/* testing headtohead tutorial */}
-                                    {/* <TouchableOpacity onPress={() => { router.push({ pathname: '/(authenticated)/home/bets/HeadToHeadTutorial', params: { groupIDTemp: 'h8MNidtUi653BlZbR6nU' }, }) }}>
-                                        <Text style={[styles.buttonText, {color: 'blue'}]}>Head To Head Tutorial</Text>
-                                    </TouchableOpacity> */}
 
                                     {Object.entries(groups).map(([groupID, group]) => (
                                         <TouchableOpacity

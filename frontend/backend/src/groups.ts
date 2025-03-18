@@ -436,6 +436,41 @@ export const getLastLogin = async (userID: string, groupID: string): Promise<Dat
     }
 }
 
+// GET starting tokens
+export const getStartingTokens = async (groupID: string): Promise<number | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.startingTokens){
+            // console.log("getStartingTokens - response: ", groupDoc.data()?.startingTokens);
+            return groupDoc.data()?.startingTokens;
+        } else{
+            console.error("getStartingTokens - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getStartingTokens - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET latest bet time
+export const getLatestBetTime = async (userID: string, groupID: string): Promise<Date | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const latestBetTime = groupDoc.data()?.users[userID]?.latestBetTime;
+            // console.log(`getLatestBetTime - response for ${userID}: ${latestBetTime}`);
+            return latestBetTime;
+        } else{
+            console.error("getLatestBetTime - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getLatestBetTime - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
@@ -583,6 +618,24 @@ export const setLogin = async (userID: string, groupID: string, time: Date) => {
         }
     } catch (error) {
         console.error('setLogin - Error updating last login:', error);
+    }
+}
+
+export const setLatestBetTime = async (userID: string, groupID: string, time: Date) => {
+    // add current time to groups[groupID].users[userID].latestBetTime
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            await updateDoc(groupDocRef, {
+                [`users.${userID}.latestBetTime`]: time,
+            });
+            console.log('setLatestBetTime - response: Latest bet time set');
+        } else {
+            console.error('setLatestBetTime - error: No such document!');
+        }
+    } catch (error) {
+        console.error('setLatestBetTime - Error setting latest bet time:', error);
     }
 }
 

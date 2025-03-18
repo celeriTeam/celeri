@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
+import { View, TextInput, StyleSheet as RNStyleSheet, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -9,12 +9,13 @@ import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
-import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps } from '@backend/src/users';
+import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps, getName } from '@backend/src/users';
 import { useUser } from '../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const db = getFirestore(app);
@@ -39,7 +40,7 @@ const InvitePage: React.FC = () => {
     const isFromCreate = fromCreate === 'true';
     const resolvedLeaderID = Array.isArray(leaderID) ? leaderID[0] : leaderID;
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; name: string | undefined; pfp: string | undefined; }[]>([]);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[]>([]);
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setModalVisible] = useState(false);
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
@@ -96,12 +97,13 @@ const InvitePage: React.FC = () => {
                 
                 const userList = await getUsersInGroup(resolvedGroupID); // userIDs
                 const users: { [userID: string]: any } = {};
-                let groupUsersArray: { id: string; name: string | undefined; pfp: string | undefined }[] = [];
+                let groupUsersArray: { id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[] = [];
                 if (userList) {
                     await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, averageSteps, weeklySteps, biweeklySteps, steps] = await Promise.all([
+                        const [profilePic, username, name, averageSteps, weeklySteps, biweeklySteps, steps] = await Promise.all([
                             getProfilePic(selectedUserID),
                             getUserName(selectedUserID),
+                            getName(selectedUserID),
                             getAverageSteps(selectedUserID),
                             getWeeklySteps(resolvedGroupID, selectedUserID),
                             getBiweeklySteps(resolvedGroupID, selectedUserID),
@@ -123,7 +125,7 @@ const InvitePage: React.FC = () => {
                             averageSteps,
                             steps: newSteps,
                         };
-                        groupUsersArray.push({ id: selectedUserID, name: username, pfp: profilePic });
+                        groupUsersArray.push({ id: selectedUserID, username: username, pfp: profilePic, name: name });
                     }));
                     setCurrentGroupUsersArray(groupUsersArray);
                 }
@@ -157,7 +159,7 @@ const InvitePage: React.FC = () => {
     useEffect(() => {
         if (groups && groupID && groups[resolvedGroupID]?.isGameActive) {
             router.replace({
-                pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+                pathname: '/(authenticated)/home/bets/Welcome',
                 params: { groupIDTemp: resolvedGroupID },
             });
         }
@@ -221,7 +223,7 @@ const InvitePage: React.FC = () => {
         // navigation.navigate('GroupDetails', { groupID: groupID });
 
         router.replace({
-            pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
+            pathname: '/(authenticated)/home/bets/Welcome',
             params: { groupIDTemp: groupID },
         });
     };
@@ -352,17 +354,22 @@ const InvitePage: React.FC = () => {
                     <Text style={[styles.text, { marginBottom: verticalScale(10) }]}>
                         Group Members ({groups[resolvedGroupID]?.userList.length}):
                     </Text>
-                    <ScrollView
-                        style={styles.scrollContainer}
-                    >
+                    <ScrollView style={styles.scrollContainer}>
                         {currentGroupUsersArray ? (
                             currentGroupUsersArray.map((user) => (
-                                <TouchableOpacity key={user.id} style={styles.row} onPress={() => createMemberButtonHandle(user.id)}>
-                                    <Image
-                                        source={{ uri: user.pfp }}
-                                        style={styles.profileImage}
-                                    />
-                                    <Text key={user.id} style={styles.username}>{user.name}</Text>
+                                <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
+                                    <View style={styles.row}>
+                                        <Image
+                                            source={
+                                                user.pfp ? 
+                                                { uri: user?.pfp }
+                                                : require('@components/blank-profile-picture.png')
+                                            }
+                                            style={styles.profilePic}
+                                        />
+                                        <Text style={styles.memberName}>{user?.name}</Text>
+                                    </View>
+                                    <Text style={styles.memberUserName}>@{user?.username}</Text>
                                 </TouchableOpacity>
                             ))
                         ) : (
@@ -532,7 +539,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     dropdownContainer: {
-        marginVertical: verticalScale(10),
+        marginVertical: 10,
         width: '100%',
     },
     dropdownStyle: {
@@ -542,25 +549,25 @@ const styles = StyleSheet.create({
     },
     container: {
         height: '100%',
-        paddingTop: verticalScale(10),
+        paddingTop: 10,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: scale(20),
-        marginBottom: verticalScale(5),
+        paddingHorizontal: 20,
+        marginBottom: 5,
     },
     backImage: {
-        width: scale(40),
-        height: scale(40),
+        width: 40,
+        height: 40,
     },
     groupNameCreated: {
-        fontSize: moderateScale(20),
+        fontSize: 20,
         fontFamily: 'Lexend',
     },
     groupName: {
-        fontSize: moderateScale(24),
+        fontSize: 24,
         fontFamily: 'Lexend',
         color: '#fff',
     },
@@ -571,17 +578,17 @@ const styles = StyleSheet.create({
     },
     groupNameStandalone: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(30),
+        fontSize: 30,
         color: '#fff',
     },
     groupImageContainer: {
         alignItems: 'center',
     },
     groupImage: {
-        width: scale(120),
-        height: scale(120),
-        borderRadius: moderateScale(60),
-        marginVertical: verticalScale(10),
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        marginVertical: 10,
         borderWidth: 2,
         borderColor: '#74FF6D'
     },
@@ -594,72 +601,87 @@ const styles = StyleSheet.create({
         color: '#74FF6D',
     },
     backButton: {
-        left: scale(20),
+        left: 20,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: moderateScale(5),
+        elevation: 5,
     },
     button: {
-        marginTop: verticalScale(10),
-        padding: moderateScale(10),
-        borderRadius: moderateScale(10),
+        marginTop: 10,
+        padding: 10,
+        borderRadius: 10,
         alignSelf: 'center',
         backgroundColor: '#f24646',
+    },
+    memberItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 10,
+        paddingHorizontal: 20,
+        backgroundColor: '#00000080',
+        marginVertical: 3,
+        borderRadius: 10,
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(10),
-        marginLeft: scale(20),
     },
-    profileImage: {
-        width: scale(40),
-        height: scale(40),
-        borderRadius: moderateScale(20),
-        borderWidth: moderateScale(1),
-        borderColor: '#74FF6D',
-        marginRight: scale(10),
+    profilePic: {
+        width: 26,
+        height: 26,
+        borderRadius: 20,
+        borderColor: '#fff',
+        borderWidth: 1,
+    },
+    memberName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#fff',
+        marginLeft: 10,
+    },
+    memberUserName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#74FF6D',
     },
     scrollContainer: {
-        backgroundColor: '#5BE35C32',
-        borderRadius: moderateScale(5),
-        marginHorizontal: scale(10),
-        paddingVertical: verticalScale(10),
+        marginHorizontal: 10,
         maxHeight: '27%',
-        flexGrow: 0,
-        borderWidth: 1,
-        borderColor: '#00000032',
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#5BE35C32',
     },
     text: {
-        fontSize: moderateScale(18),
-        marginTop: verticalScale(20),
-        marginHorizontal: scale(20),
+        fontSize: 18,
+        marginTop: 20,
+        marginHorizontal: 20,
         fontFamily: 'Lexend',
         color: '#fff',
     },
     bold_text: {
-        fontSize: moderateScale(18),
-        marginTop: verticalScale(20),
-        marginBottom: verticalScale(40),
-        marginHorizontal: scale(20),
+        fontSize: 18,
+        marginTop: 20,
+        marginBottom: 40,
+        marginHorizontal: 20,
         fontFamily: 'Lexend-Bold',
         textAlign: 'center',
         alignSelf: 'center',
         color: '#fff',
     },
     username: {
-        fontSize: moderateScale(16),
+        fontSize: 16,
         fontFamily: 'Lexend',
         color: '#fff',
     },
     closeButton: {
         position: 'absolute',
-        top: verticalScale(10),
-        right: scale(10),
+        top: 10,
+        right: 10,
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: moderateScale(18),
+        fontSize: 18,
         fontWeight: 'bold',
         color: 'black',
     },
@@ -667,36 +689,36 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: moderateScale(10),
+        padding: 10,
     },
     groupCode: {
-        fontSize: moderateScale(45),
+        fontSize: 45,
         color: '#0F1108',
         backgroundColor: '#1E90FF',
         fontWeight: 'bold',
-        padding: scale(15),
-        borderRadius: moderateScale(5),
+        padding: 15,
+        borderRadius: 5,
     },
     clipboardIcon: {
-        marginLeft: scale(10),
+        marginLeft: 10,
     },
     startButton: {
-        borderRadius: moderateScale(30),
+        borderRadius: 30,
         flexDirection: 'row',
-        padding: moderateScale(18),
+        padding: 18,
         justifyContent: 'center',
         backgroundColor: '#1976d2',
         alignSelf: 'center',
     },
     startButtonText: {
         textAlign: 'center',
-        fontSize: moderateScale(15),
+        fontSize: 15,
         color: '#fff',
         fontFamily: 'Lexend',
     },
     // Modal styles
     dismissOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...RNStyleSheet.absoluteFillObject,
         zIndex: 1,
     },
     modalOverlay: {
@@ -707,44 +729,44 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         backgroundColor: '#fff',
-        padding: moderateScale(20),
-        borderRadius: moderateScale(10),
+        padding: 20,
+        borderRadius: 10,
         width: '80%',
     },
     modalTitle: {
         textAlign: 'center',
         fontFamily: 'Lexend-Bold',
-        fontSize: moderateScale(20),
-        marginBottom: verticalScale(20),
+        fontSize: 20,
+        marginBottom: 20,
     },
     input: {
-        borderWidth: moderateScale(1),
+        borderWidth: 1,
         borderColor: '#ccc',
-        padding: moderateScale(10),
-        marginVertical: verticalScale(10),
-        borderRadius: moderateScale(5),
+        padding: 10,
+        marginVertical: 10,
+        borderRadius: 5,
         fontFamily: 'Lexend',
     },
     confirmButton: {
         backgroundColor: '#28a745',
-        padding: moderateScale(10),
-        borderRadius: moderateScale(10),
+        padding: 10,
+        borderRadius: 10,
         alignItems: 'center',
-        marginTop: verticalScale(20),
+        marginTop: 20,
     },
     confirmButtonText: {
         color: '#fff',
-        fontSize: moderateScale(16),
+        fontSize: 16,
         fontWeight: 'bold',
     },
     cancelButton: {
-        marginTop: verticalScale(10),
-        padding: moderateScale(10),
+        marginTop: 10,
+        padding: 10,
         alignItems: 'center',
     },
     cancelButtonText: {
         color: '#ff0000',
-        fontSize: moderateScale(16),
+        fontSize: 16,
         fontWeight: 'bold',
     },
 });
