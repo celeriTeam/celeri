@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView, StyleProp, ViewStyle, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet as RNStyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView, StyleProp, ViewStyle, KeyboardAvoidingView } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -8,12 +8,13 @@ import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, create
 import BetRecapPage from './Recap';
 import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
+import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setLatestBetTime, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 import { useTabBar } from '../../../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 import NewHeadToHeadTutorial from './NewHeadToHeadTutorial';
 
 
@@ -66,6 +67,7 @@ const NewHeadToHeadPage: React.FC = () => {
     const [isSubmittedModalVisible, setSubmittedModalVisible] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(1);
     const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
+    const [shouldShowNext, setShouldShowNext] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 50, 100, 250];
@@ -83,8 +85,8 @@ const NewHeadToHeadPage: React.FC = () => {
     const screenWidth = Dimensions.get('window').width;
     const scrollViewRef = useRef<ScrollView>(null);
     
-    const insideScrollTutorialSteps = [2, 5, 6, 7];
-    const notInsideScrollTutorialSteps = [1, 3, 4, 8, 9, 10, 11];
+    const insideScrollTutorialSteps = [2, 3, 4];
+    const notInsideScrollTutorialSteps = [1, 5, 6, 7, 8];
 
     const closeModal = async () => {
         setModalVisible(false);
@@ -180,9 +182,21 @@ const NewHeadToHeadPage: React.FC = () => {
             if (gameType === "weekly") {
                 // console.log("weeksLeft -- ", timeLeft);
                 if (timeLeft === 1) {
-                    const daysLeft = (resetDay - currentDay + 7) % 7;
+                    const daysLeft = (resetDay - currentDay + 6) % 7 + 1;
+                    // console.log("daysLeft -- ", daysLeft);
                     if (daysLeft == 1) {
-                        setGameTimeLeft(`${daysLeft} day`);
+                        const now = new Date();
+                        const nextResetDate = new Date();
+                        nextResetDate.setDate(now.getDate() + daysLeft);
+                        nextResetDate.setHours(0, 0, 0, 0); // Assume reset is at midnight
+
+                        const hoursLeft = Math.max((nextResetDate.getTime() - now.getTime()) / (1000 * 60 * 60), 0);
+
+                        if (hoursLeft < 1) {
+                            setGameTimeLeft("<1 hour");
+                        } else {
+                            setGameTimeLeft(`${Math.floor(hoursLeft)} hours`);
+                        }
                     } else {
                         setGameTimeLeft(`${daysLeft} days`);
                     }
@@ -320,8 +334,8 @@ const NewHeadToHeadPage: React.FC = () => {
             newArray[index] = playerPfp;
             return newArray;
         });
-        if (showTutorial && tutorialStep === 6) {
-            setTutorialStep(tutorialStep + 1);
+        if (showTutorial && tutorialStep === 3) {
+            setShouldShowNext(true);
         }
     };
 
@@ -342,8 +356,8 @@ const NewHeadToHeadPage: React.FC = () => {
             newArray[index] = (+amount).toString();
             return newArray;
         });
-        if (showTutorial && tutorialStep === 7) {
-            setTutorialStep(tutorialStep + 1);
+        if (showTutorial && tutorialStep === 4) {
+            setShouldShowNext(true);
         }
     };
 
@@ -364,42 +378,6 @@ const NewHeadToHeadPage: React.FC = () => {
         }
         return { isValid: isBettingComplete && isBetsValid && isBetsNotZero, errorText: errorText };
     };
-
-    // const handleInfoButton = () => {
-    //     router.replace({
-    //         pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-    //         params: { groupIDTemp: groupID },
-    //     });
-    // };
-
-    // const InfoModal = () => (
-    //     <Modal
-    //         animationType="fade"
-    //         transparent={true}
-    //         visible={infoModalVisible}
-    //         onRequestClose={() => setInfoModalVisible(false)}
-    //     >
-    //         <TouchableOpacity 
-    //             style={styles.modalOverlay}
-    //             activeOpacity={1}
-    //             onPress={() => setInfoModalVisible(false)}
-    //         >
-    //             <View style={styles.modalContent}>
-    //                 <Text style={styles.modalTitle}>How to Place a Bet</Text>
-    //                 <View style={styles.instructionContainer}>
-    //                     <Text style={styles.instructionText}>1. Click on which friend you want to bet on!</Text>
-    //                     <Text style={styles.instructionText}>2. Type in your desired bet into the box, and continue.</Text>
-    //                 </View>
-    //                 <TouchableOpacity 
-    //                     style={styles.closeButton}
-    //                     onPress={() => setInfoModalVisible(false)}
-    //                 >
-    //                     <Text style={styles.closeButtonText}>Got it!</Text>
-    //                 </TouchableOpacity>
-    //             </View>
-    //         </TouchableOpacity>
-    //     </Modal>
-    // );
 
     const playerCard = (player: { id: string, username: string, profilePic: string, duelsWon: number, prevSteps: number, stepChange: number }, color: string, playerNum: string) => (
         <TouchableOpacity style={styles.playerContainer} onPress={() => updateChosenPlayer(currentMatchupIndex, player.id, player.profilePic)} activeOpacity={1}>
@@ -485,8 +463,8 @@ const NewHeadToHeadPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (tutorialStep === 8 && shouldShowSubmit().isValid) {
-            setTutorialStep(tutorialStep + 1);
+        if (tutorialStep === 5 && shouldShowSubmit().isValid) {
+            setShouldShowNext(true);
         }
     }, [tutorialStep, chosenPlayer, betAmount, currentUserTokens]);
 
@@ -498,12 +476,12 @@ const NewHeadToHeadPage: React.FC = () => {
             await Promise.all(matchups.map(async (matchup, index) => {
                 const submittedPlayer = chosenPlayer[index];
                 const submittedBet = +(betAmount[index]);
-                console.log('you bet on: ', submittedPlayer);
-                console.log('you bet: ', submittedBet);
-                await createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
+                console.log(`you bet on ${submittedPlayer} with ${submittedBet} tokens.`);
+                createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
             }));
 
             await addToFinishedBetting(groupID, userID);
+            await setLatestBetTime(groupID, userID, new Date());
             await setTodaysBetTokens(userID, groupID, totalBetTokens());
 
             if (showTutorial) {
@@ -526,7 +504,7 @@ const NewHeadToHeadPage: React.FC = () => {
         setTimeout(() => {
             router.replace({
                 pathname: '/(authenticated)/home/bets/BetSummary',
-                params: { groupIDTemp: groupID },
+                params: { groupIDTemp: groupID, showTutorialTemp: showTutorialTemp },
             });
         }, 0); // Ensures the route updates in order
     };
@@ -568,13 +546,15 @@ const NewHeadToHeadPage: React.FC = () => {
                                     tutorialStep={tutorialStep}
                                     setTutorialStep={setTutorialStep}
                                     setShowTutorial={setShowTutorial}
+                                    showNext={shouldShowNext}
+                                    setShowNext={setShouldShowNext}
                                 />
                             )}
                         </View>
                     )}
 
                     <View style={[{ flexDirection: 'row', alignItems: 'center' },
-                        ([1,4].includes(tutorialStep)) && { zIndex: 200 }
+                        (tutorialStep === 1) && { zIndex: 200 }
                     ]}>
                         <Image
                             source={require('@assets/icons/timeLeft.png')}
@@ -583,14 +563,14 @@ const NewHeadToHeadPage: React.FC = () => {
                         <Text style={styles.timeLeft}> {gameTimeLeft} left in game</Text>
                     </View>
 
-                    <Text style={[styles.question, ([1,4].includes(tutorialStep)) && { zIndex: 200 },]}>Who will walk more steps{'\n'}this week?</Text>
+                    <Text style={[styles.question, (tutorialStep === 1) && { zIndex: 200 },]}>Who will walk more steps{'\n'}this week?</Text>
 
                     {/* dividing line */}
                     <View style={styles.dividingLine} />
 
                     <View style={[styles.scrollAndDotsContainer, 
                         insideScrollTutorialSteps.includes(tutorialStep) && { zIndex: 200 },
-                        tutorialStep === 8 && { zIndex: 400 },
+                        tutorialStep === 5 && { zIndex: 400 },
                     ]}>
 
                         {/* swipeable cards */}
@@ -603,11 +583,11 @@ const NewHeadToHeadPage: React.FC = () => {
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.scrollContainer}
                             onScroll={handleScroll}
-                            scrollEnabled={!showTutorial || tutorialStep === 8}
+                            scrollEnabled={!showTutorial || tutorialStep === 5}
                         >
                             {matchups.map((matchup, index) => (
                                 <View key={matchup.duelID} style={[styles.cardContainer, { width: screenWidth }, 
-                                    tutorialStep === 8 && { zIndex: 400, }
+                                    tutorialStep === 5 && { zIndex: 400, }
                                 ]}>
                                     {showTutorial && insideScrollTutorialSteps.includes(tutorialStep) && (
                                         <View style={styles.tutorialOverlay2}>
@@ -615,15 +595,17 @@ const NewHeadToHeadPage: React.FC = () => {
                                                 tutorialStep={tutorialStep}
                                                 setTutorialStep={setTutorialStep}
                                                 setShowTutorial={setShowTutorial}
+                                                showNext={shouldShowNext}
+                                                setShowNext={setShouldShowNext}
                                             />
                                         </View>
                                     )}
-                                    <View style={[styles.row, ([2,5].includes(tutorialStep)) && { zIndex: 400 }]}>
-                                        <Text style={styles.betTitle}>Place Your Bet</Text>
+                                    <View style={[styles.row, (tutorialStep === 2) && { zIndex: 400 }]}>
+                                        <Text style={[styles.betTitle, tutorialStep === 2 && { color: '#000' }]}>Place Your Bet</Text>
                                         <Text style={styles.tokenInfo}><Text style={{ color: (totalBetTokens() > currentUserTokens) ? 'red' : '#74FF6D' }}>{totalBetTokens()}</Text> bet so far (of {currentUserTokens} total)</Text>
                                     </View>
                                     {/* bet container */}
-                                    <View style={[styles.betContainer, tutorialStep === 7 && { zIndex: 400, }]}>
+                                    <View style={[styles.betContainer, tutorialStep === 4 && { zIndex: 400, }]}>
                                         <Image
                                             source={require('@assets/icons/tokens.png')}
                                             style={styles.tokensIcon}
@@ -648,7 +630,7 @@ const NewHeadToHeadPage: React.FC = () => {
                                     </View>
 
                                     {/* player 1 */}
-                                    <View style={[{alignItems: 'center',}, (tutorialStep === 6) && { zIndex: 400 }]}>
+                                    <View style={[{alignItems: 'center',}, (tutorialStep === 3) && { zIndex: 400 }]}>
                                         {matchup.player1 && playerCard(matchup.player1, '#FF6060', 'player1')}
                                         <View style={styles.versusContainer}>
                                             <Text style={styles.versusText}>VS</Text>
@@ -661,7 +643,7 @@ const NewHeadToHeadPage: React.FC = () => {
                     </View>
 
                     {/* dots for completion indication */}
-                    <View style={[styles.dotRow, tutorialStep === 10 && { zIndex: 400 }]}>
+                    <View style={[styles.dotRow, tutorialStep === 7 && { zIndex: 400 }]}>
                         {matchups.map((_, index) => (
                             <TouchableOpacity
                                 style={{
@@ -675,13 +657,13 @@ const NewHeadToHeadPage: React.FC = () => {
                                 }}
                                 onPress={() => scrollToIndex(index)}
                                 activeOpacity={1}
-                                disabled={showTutorial && tutorialStep !== 10}
+                                disabled={showTutorial && tutorialStep !== 7}
                             />
                         ))}
                     </View>
                     <TouchableOpacity style={[styles.submitButton, 
                         { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' },
-                        tutorialStep === 11 && { zIndex: 400 },
+                        tutorialStep === 8 && { zIndex: 400 },
                     ]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
                         <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
                     </TouchableOpacity>
@@ -776,31 +758,31 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     dismissOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...RNStyleSheet.absoluteFillObject,
         zIndex: 1000,
     },
     timeLeftIcon: {
-        width: scale(13),
-        height: scale(13),
+        width: 13,
+        height: 13,
     },
     timeLeft: {
         color: '#74FF6D',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
         // zIndex: 1,
     },
     question: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(22),
+        fontSize: 22,
         color: '#fff',
         textAlign: 'center',
-        marginTop: verticalScale(10),
+        marginTop: 10,
     },
     dividingLine: {
         width: '90%',
         height: 1,
         backgroundColor: '#ffffff80',
-        marginVertical: verticalScale(15),
+        marginVertical: 15,
     },
     scrollContainer: {
         alignItems: 'center',
@@ -814,16 +796,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '90%',
-        paddingHorizontal: scale(5),
+        paddingHorizontal: 5,
     },
     betTitle: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(16),
+        fontSize: 16,
         color: '#fff',
     },
     tokenInfo: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
         color: '#74FF6D',
     },
     betContainer: {
@@ -831,56 +813,56 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         backgroundColor: '#65656580',
         width: '90%',
-        paddingHorizontal: scale(15),
-        borderRadius: moderateScale(20),
-        padding: scale(10),
-        marginVertical: scale(5),
-        marginBottom: verticalScale(15),
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        padding: 10,
+        marginVertical: 5,
+        marginBottom: 15,
         alignItems: 'center',
     },
     tokensIcon: {
-        width: scale(20),
-        height: scale(20),
-        marginRight: scale(10),
+        width: 20,
+        height: 20,
+        marginRight: 10,
     },
     betItem: {
         justifyContent: 'center',
         alignItems: 'center',
         borderColor: '#fff',
         borderWidth: 1,
-        borderRadius: moderateScale(10),
-        width: scale(44),
-        height: verticalScale(34),
+        borderRadius: 10,
+        width: 44,
+        height: 34,
     },
     betNumber: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(12),
+        fontSize: 12,
         textAlign: 'center',
     },
     input: {
         backgroundColor: '#00000080',
-        borderRadius: moderateScale(10),
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: scale(5),
-        width: scale(82),
-        height: verticalScale(34),
+        paddingHorizontal: 5,
+        width: 82,
+        height: 34,
         textAlign: 'center',
         color: '#FFF',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(12),
+        fontSize: 12,
     },
     versusContainer: {
-        marginVertical: -verticalScale(25),
-        paddingHorizontal: scale(35),
-        paddingVertical: scale(13),
+        marginVertical: -25,
+        paddingHorizontal: 35,
+        paddingVertical: 13,
         backgroundColor: '#023404',
         zIndex: 1,
-        borderRadius: moderateScale(30),
+        borderRadius: 30,
     },
     versusText: {
         fontFamily: 'Lexend-Bold',
-        fontSize: moderateScale(25),
+        fontSize: 25,
         color: '#fff',
     },
     scrollAndDotsContainer: {
@@ -894,7 +876,7 @@ const styles = StyleSheet.create({
     },
     playerContainer: {
         width: '90%',
-        // padding: scale(10),
+        // padding: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
@@ -903,71 +885,71 @@ const styles = StyleSheet.create({
         // left: 0,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: scale(15),
-        // marginTop: verticalScale(10),
+        paddingVertical: 15,
+        // marginTop: 10,
     },
     profileImage: {
-        width: scale(51),
-        height: scale(51),
-        borderRadius: scale(30),
+        width: 51,
+        height: 51,
+        borderRadius: 30,
         borderWidth: 2,
-        marginRight: scale(10),
+        marginRight: 10,
     },
     playerUsername: {
         fontFamily: 'Lexend-Bold',
-        fontSize: moderateScale(30),
+        fontSize: 30,
     },
     playerInfoContainerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        paddingVertical: scale(10),
-        // marginTop: verticalScale(85),
+        paddingVertical: 10,
+        // marginTop: 85,
     },
     playerInfoContainer: {
         width: '31%',
-        height: verticalScale(80),
+        height: 80,
         justifyContent: 'flex-end', // Move to bottom
-        paddingLeft: scale(8),
-        paddingBottom: scale(8),
+        paddingLeft: 8,
+        paddingBottom: 8,
         borderWidth: 1,
-        borderRadius: moderateScale(8),
+        borderRadius: 8,
     },
     playerInfoRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     trophyIcon: {
-        width: scale(16),
-        height: scale(16),
-        marginRight: scale(5),
+        width: 16,
+        height: 16,
+        marginRight: 5,
     },
     upArrowIcon: {
-        width: scale(22),
-        height: scale(22),
-        margin: -scale(3),
-        marginRight: scale(2),
+        width: 22,
+        height: 22,
+        margin: -3,
+        marginRight: 2,
     },
     playerInfoNumber: {
         fontFamily: 'Lexend-Bold',
-        fontSize: moderateScale(15),
+        fontSize: 15,
     },
     playerInfoText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(9),
-        paddingTop: scale(5),
+        fontSize: 9,
+        paddingTop: 5,
     },
     submitButton: {
-        borderRadius: moderateScale(20),
-        padding: scale(10),
-        width: scale(100),
+        borderRadius: 20,
+        padding: 10,
+        width: 100,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: verticalScale(10),
+        marginTop: 10,
         alignSelf: 'center',
     },
     submitButtonText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(13),
+        fontSize: 13,
     },
     // MODAL
     modalOverlay: {
@@ -982,93 +964,93 @@ const styles = StyleSheet.create({
         backgroundColor: '#000',
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: moderateScale(25),
-        padding: scale(20),
+        borderRadius: 25,
+        padding: 20,
         position: 'relative',
     },
     modalTitle: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(13),
+        fontSize: 13,
         color: '#fff',
-        marginBottom: verticalScale(15),
+        marginBottom: 15,
         textAlign: 'center',
     },
     summaryOKButton: {
         position: 'absolute',
-        top: scale(18),
-        right: scale(18),
+        top: 18,
+        right: 18,
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: moderateScale(20),
-        padding: scale(8),
-        paddingHorizontal: scale(18),
+        borderRadius: 20,
+        padding: 8,
+        paddingHorizontal: 18,
         zIndex: 1,
     },
     SummaryOKText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(13),
+        fontSize: 13,
         color: '#fff',
     },
     modalSubmitted: {
         fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: moderateScale(18),
+        fontSize: 18,
         textAlign: 'center',
-        margin: scale(10),
+        margin: 10,
     },
     submissionContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: moderateScale(15),
+        borderRadius: 15,
         backgroundColor: '#5BE35C32',
-        padding: scale(10),
+        padding: 10,
     },
     submissionRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: '#00000080',
-        borderRadius: moderateScale(10),
-        padding: scale(10),
-        margin: scale(3),
+        borderRadius: 10,
+        padding: 10,
+        margin: 3,
         width: '100%',
     },
     submissionProfileImage: {
-        width: scale(26),
-        height: scale(26),
+        width: 26,
+        height: 26,
         borderWidth: 1,
         borderColor: '#fff',
-        borderRadius: scale(20),
-        marginRight: scale(10),
+        borderRadius: 20,
+        marginRight: 10,
     },
     submittedPlayerName: {
         fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     submissionTokenNumber: {
         fontFamily: 'Lexend',
         color: '#74FF6D',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     closeButton: {
         position: 'absolute',
-        top: scale(10),
-        right: scale(10),
+        top: 10,
+        right: 10,
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: moderateScale(18),
+        fontSize: 18,
         fontWeight: 'bold',
         color: '#fff',
     },
     tutorialOverlay: {
-        ...StyleSheet.absoluteFillObject,
+        ...RNStyleSheet.absoluteFillObject,
 		zIndex: 100,
 		backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
     tutorialOverlay2: {
-        ...StyleSheet.absoluteFillObject,
+        ...RNStyleSheet.absoluteFillObject,
 		zIndex: 300,
 		backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },

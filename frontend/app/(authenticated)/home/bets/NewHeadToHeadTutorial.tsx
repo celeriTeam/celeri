@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, StyleSheet as RNStyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
 import { useUser } from '../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
+import { setUserFinishedTutorial } from '@/backend/src/users';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,18 +21,35 @@ const NewHeadToHeadTutorial: React.FC<{
     tutorialStep: number,
     setTutorialStep: (step: number) => void;
     setShowTutorial: (show: boolean) => void;
-}> = ({ tutorialStep, setTutorialStep, setShowTutorial }) => {
+    showNext: boolean;
+    setShowNext: (show: boolean) => void;
+}> = ({ tutorialStep, setTutorialStep, setShowTutorial, showNext, setShowNext }) => {
     const { userID, groups, loading } = useUser();
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
 
-    const handleNextStep = () => {
-        if (tutorialStep < 11) {
+    const shouldShowNext = [3, 4, 5];
+
+    const handleNextStep = async () => {
+        if (tutorialStep < 8) {
+            if (shouldShowNext.includes(tutorialStep + 1)) {
+                setShowNext(false);
+            }
             setTutorialStep(tutorialStep + 1);
         } else {
             setShowTutorial(false);
-            addToFinishedTutorial(groupID, userID);
+            await setUserFinishedTutorial(userID);
+            await addToFinishedTutorial(groupID, userID);
+        }
+    };
+
+    const handlePrevStep = () => {
+        if (tutorialStep > 1) {
+            if (shouldShowNext.includes(tutorialStep)) {
+                setShowNext(true);
+            }
+            setTutorialStep(tutorialStep - 1);
         }
     };
 
@@ -42,22 +60,16 @@ const NewHeadToHeadTutorial: React.FC<{
             case 2:
                 return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
             case 3:
-                return { top: verticalScale(300), width: scale(200), height: verticalScale(100) };
-            case 4:
-                return { top: verticalScale(100), width: scale(200), height: verticalScale(100) };
-            case 5:
-                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
-            case 6:
                 return { top: verticalScale(0), width: scale(200), height: verticalScale(90) };
-            case 7:
+            case 4:
                 return { top: verticalScale(90), left: scale(170), width: scale(200), height: verticalScale(90) };
-            case 8:
+            case 5:
                 return { top: verticalScale(0), width: scale(200), height: verticalScale(100) };
-            case 9:
+            case 6:
                 return { top: verticalScale(300), width: scale(200), height: verticalScale(100) };
-            case 10:
+            case 7:
                 return { bottom: verticalScale(90), width: scale(200), height: verticalScale(100) };
-            case 11:
+            case 8:
                 return { bottom: verticalScale(64), width: scale(200), height: verticalScale(100) };
             default:
                 return {};
@@ -67,12 +79,26 @@ const NewHeadToHeadTutorial: React.FC<{
     return (
         <View style={styles.overlayContainer}>
             <View style={[styles.overlay, getModalStyle()]}>
+                <View style={styles.arrowContainer}>
+                    <TouchableOpacity style={[styles.circle, tutorialStep === 1 && { borderColor: '#656565' }]} onPress={handlePrevStep} disabled={tutorialStep === 1}>
+                        <Image
+                            source={require('@assets/icons/leftArrow.png')}
+                            style={[styles.arrow, tutorialStep === 1 && { tintColor: '#656565' } ]}
+                        />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.circle, (!showNext || tutorialStep >= 8) && { borderColor: '#656565' }]} onPress={handleNextStep} disabled={!showNext || tutorialStep >= 8}>
+                        <Image
+                            source={require('@assets/icons/rightArrow.png')}
+                            style={[styles.arrow, (!showNext || tutorialStep >= 8) && { tintColor: '#656565' }]}
+                        />
+                    </TouchableOpacity>
+                </View>
                 <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
-                {![6, 7, 8, 11].includes(tutorialStep) && (
+                {/* {![3, 4, 5, 8].includes(tutorialStep) && (
                     <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
                         <Text style={styles.nextButtonText}>Next</Text>
                     </TouchableOpacity>
-                )}
+                )} */}
             </View>
         </View>
     );
@@ -81,19 +107,41 @@ const NewHeadToHeadTutorial: React.FC<{
 const styles = StyleSheet.create({
     overlayContainer: {
         flex: 1,
-        // backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        // justifyContent: 'center',
         alignItems: 'center',
     },
     overlay: {
         position: 'absolute',
-        backgroundColor: '#fff',
+        backgroundColor: '#000',
+        borderWidth: 1,
+        borderColor: '#fff',
         padding: 20,
         borderRadius: 10,
+    },
+    arrowContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 10,
+    },
+    circle: {
+        width: 21,
+        height: 21,
+        borderRadius: 15,
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+        borderColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 5,
+    },
+    arrow: {
+        width: 11,
+        height: 11,
+        tintColor: '#fff',
     },
     tutorialText: {
         fontSize: 16,
         marginBottom: 10,
+        color: '#fff',
     },
     nextButton: {
         backgroundColor: '#007bff',

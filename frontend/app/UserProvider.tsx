@@ -3,8 +3,9 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
-    getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay } from '@/backend/src/groups';
+    getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
+    getUserFinishedTutorial} from '@/backend/src/users';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -114,7 +115,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, 
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
-                        isFinishedTutorial, gameType, createdAt, resetDay] = await Promise.all([
+                        isFinishedTutorial, gameType, createdAt, resetDay,
+                        startingTokens, userFinishedTutorial] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -139,7 +141,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             checkFinishedTutorial(groupID, uid),
                             getGameType(groupID),
                             getGroupCreatedAt(groupID),
-                            getResetDay(groupID)
+                            getResetDay(groupID),
+                            getStartingTokens(groupID),
+                            getUserFinishedTutorial(uid)
                         ]);
 
                         const userList = await getUsersInGroup(groupID); // userIDs
@@ -193,6 +197,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             defaultBetOnSelf,
                             todaysBetTokens,
                             dailyTokens,
+                            startingTokens,
                             currentPlayersInGame,
                             cycle,
                             cycleCount,
@@ -205,6 +210,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isFinishedBetting,
                             isFinishedRecap,
                             isFinishedTutorial,
+                            userFinishedTutorial,
                             gameType,
                             createdAt,
                             resetDay,

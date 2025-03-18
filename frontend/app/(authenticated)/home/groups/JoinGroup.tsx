@@ -29,33 +29,15 @@ const JoinGroupPage: React.FC= () => {
                 console.log('isgameactive: ', isGameActive);
                 if (groupInUserResponse === 'Group added successfully!') {
                     if (isGameActive) {
-
-                        // Navigate to 'InviteGroup' with parameters
                         router.replace({
-                            pathname: '/(authenticated)/home/bets/HeadToHeadTutorial',
-                            params: { groupID, fromCreate: "true" },
+                            pathname: '/(authenticated)/home/bets/Welcome',
+                            params: { groupIDTemp: groupID },
                         });
-
-                        // navigation.reset({
-                        //     index: 1,
-                        //     routes: [
-                        //         { name: 'HomeTab' },
-                        //         { name: 'HeadToHeadTutorialPage', params: { groupID: groupID } }
-                        //     ],
-                        // });
                     } else {
-                        // Navigate to 'InviteGroup' with parameters
                         router.replace({
                             pathname: '/(authenticated)/home/groups/InviteGroup',
                             params: { groupID, fromCreate: "true" },
                         });
-                        // navigation.reset({
-                        //     index: 1,
-                        //     routes: [
-                        //         { name: 'HomeTab' },
-                        //         { name: 'InviteGroup', params: { groupID: groupID, fromCreate: false } }
-                        //     ],
-                        // });
                     }
                 };
                 setCurrentGroupInUserResponse(groupInUserResponse);

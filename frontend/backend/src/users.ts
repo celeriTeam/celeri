@@ -133,7 +133,6 @@ export const getActiveUserGroupIDs = async (id: string): Promise<string[] | unde
 
 
 // GET if user is in a weekly group
-
 export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
@@ -167,6 +166,22 @@ export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promis
     } catch (error) {
         console.error("getWeeklyDuelsWon - Error fetching duels won:", error);
         return 0;
+    }
+}
+
+// GET user finished tutorial
+export const getUserFinishedTutorial = async (userID: string): Promise<boolean> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userID));
+        if (userDoc.exists() && userDoc.data()?.finishedTutorial) {
+            return userDoc.data()?.finishedTutorial;
+        } else {
+            console.error("getUserFinishedTutorial - error: No such document!");
+            return false;
+        }
+    } catch (error) {
+        console.error("getUserFinishedTutorial - Error fetching user document:", error);
+        return false;
     }
 }
 
@@ -246,6 +261,19 @@ export const editPassword = async(userID: string, newPassword: string) => {
     } catch (error) {
         console.error('editPassword - Error updating password', error);
         return null;
+    }
+}
+
+// SET user finished tutorial
+export const setUserFinishedTutorial = async (userID: string): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            finishedTutorial: true,
+        });
+        console.log('setUserFinishedTutorial - response: ', true);
+    } catch (error) {
+        console.error('setUserFinishedTutorial - Error updating finished tutorial:', error);
     }
 }
 

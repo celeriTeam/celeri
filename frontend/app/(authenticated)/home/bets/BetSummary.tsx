@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -8,20 +8,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
-import Svg, { Circle, G } from 'react-native-svg';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin, getLatestBetTime } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
-import { ClientRequest } from 'http';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './LiveDuel';
-import { group } from 'console';
 import PropBetPage from './PropBet';
 import EditGroupPage from './EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native-size-scaling';
 import NewsPage from './News';
 
 const db = getFirestore(app);
@@ -39,9 +37,10 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 
 const BetSummaryPage: React.FC = () => {
     const { userID, loading } = useUser();
-    const { groupIDTemp } = useLocalSearchParams();
-    const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
+    const { groupIDTemp, showTutorialTemp } = useLocalSearchParams();
+    const groupID = groupIDTemp ? String(groupIDTemp) : '';
+    const showTutorial = showTutorialTemp === 'true' ? true : false;
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [propBetQueued, setPropBetQueued] = useState(false);
     const [isNewsModalVisible, setNewsModalVisible] = useState(false);
@@ -169,7 +168,7 @@ const BetSummaryPage: React.FC = () => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin, latestBetTime] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
@@ -183,7 +182,8 @@ const BetSummaryPage: React.FC = () => {
                         getResetDay(groupID),
                         getGameType(groupID),
                         checkFinishedPropBet(groupID, uid),
-                        getLastLogin(uid, groupID)
+                        getLastLogin(uid, groupID),
+                        getLatestBetTime(uid, groupID)
                     ]);
 
                     const userList = await getUsersInGroup(groupID); // userIDs
@@ -245,6 +245,7 @@ const BetSummaryPage: React.FC = () => {
                         userDiamonds,
                         currentPlayersInGame,
                         gameType,
+                        latestBetTime,
                         users
                     };
                     setGroups(currentGroups);
@@ -1400,7 +1401,7 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     infoModalContainer: {
-        padding: moderateScale(30),
+        padding: 30,
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
@@ -1409,26 +1410,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: scale(20),
-        marginBottom: verticalScale(5),
+        paddingHorizontal: 20,
+        marginBottom: 5,
     },
     rightIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: scale(10),
+        gap: 10,
     },
     backIcon: {
-        width: scale(19),
-        height: scale(19),
+        width: 19,
+        height: 19,
     },
     historyIcon: {
-        width: scale(27),
-        height: scale(27),
+        width: 27,
+        height: 27,
     },
     dropdownOverlay: {
         position: 'absolute',
         flex: 1,
-        top: verticalScale(60),
+        top: 60,
         left: 0,
         width: '100%',
         height: '100%',
@@ -1436,29 +1437,29 @@ const styles = StyleSheet.create({
     },
     dropdownMenu: {
         position: 'absolute',
-        top: verticalScale(20),
-        right: scale(50),
-        width: scale(100),
+        top: 20,
+        right: 50,
+        width: 100,
         backgroundColor: '#000',
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#fff',
         shadowColor: '#000',
-        shadowOffset: { width: scale(0), height: verticalScale(2) },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
-        shadowRadius: moderateScale(4),
-        elevation: moderateScale(5),
+        shadowRadius: 4,
+        elevation: 5,
     },
     dropdownText: {
         color: '#fff',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(16),
-        paddingVertical: verticalScale(10),
-        paddingHorizontal: scale(10),
+        fontSize: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
     },
     storeIcon: {
-        width: scale(21),
-        height: scale(21),
+        width: 21,
+        height: 21,
     },
     propBetButton: {
         fontFamily: 'Lexend',
@@ -1467,105 +1468,105 @@ const styles = StyleSheet.create({
     },
     groupInfo: {
         flexDirection: 'row',
-        paddingHorizontal: scale(20),
+        paddingHorizontal: 20,
         alignItems: 'center',
     },
     groupImage: {
-        width: scale(70),
-        height: scale(70),
-        borderRadius: moderateScale(35),
+        width: 70,
+        height: 70,
+        borderRadius: 35,
         borderWidth: 2,
         borderColor: '#74FF6D',
     },
     groupNameContainer: {
-        marginLeft: scale(20),
+        marginLeft: 20,
         justifyContent: 'center',
     },
     groupName: {
         color: '#fff',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(28),
-        marginRight: scale(5),
+        fontSize: 28,
+        marginRight: 5,
     },
     editIcon: {
-        width: scale(16),
-        height: scale(16),
+        width: 16,
+        height: 16,
     },
     timeLeftIcon: {
-        width: scale(13),
-        height: scale(13),
+        width: 13,
+        height: 13,
     },
     timeLeft: {
         color: '#74FF6D',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     timeLeftText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
         color: '#fff',
     },
     statsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         backgroundColor: '#65656580',
-        paddingHorizontal: scale(20),
-        borderRadius: moderateScale(15),
-        padding: moderateScale(10),
-        marginHorizontal: scale(20),
-        marginBottom: verticalScale(5),
+        paddingHorizontal: 20,
+        borderRadius: 15,
+        padding: 10,
+        marginHorizontal: 20,
+        marginBottom: 5,
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#00000080',
-        borderRadius: moderateScale(15),
-        padding: moderateScale(10),
+        borderRadius: 15,
+        padding: 10,
         width: '30%',
     },
     statValue: {
         color: '#fff',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(13),
+        fontSize: 13,
     },
     tokensIcon: {
-        width: scale(16),
-        height: scale(16),
+        width: 16,
+        height: 16,
     },
     betTokensIcon: {
-        width: scale(15),
-        height: scale(15),
+        width: 15,
+        height: 15,
     },
     diamondsIcon: {
-        width: scale(14),
-        height: scale(12),
+        width: 14,
+        height: 12,
     },
     sectionTitle: {
         color: '#fff',
-        fontSize: moderateScale(16),
+        fontSize: 16,
         fontFamily: 'Lexend',
-        marginBottom: verticalScale(5),
+        marginBottom: 5,
     },
     duelRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: scale(20),
+        paddingHorizontal: 20,
     },
     duelCardTouchable: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: verticalScale(10),
+        marginVertical: 10,
     },
     duelCard: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: moderateScale(15),
-        padding: moderateScale(20),
+        borderRadius: 15,
+        padding: 20,
     },
     duelNavigation: {
         position: 'absolute',
@@ -1577,8 +1578,8 @@ const styles = StyleSheet.create({
         zIndex: 1
     },
     arrowIcon: {
-        width: scale(15),
-        height: scale(15),
+        width: 15,
+        height: 15,
     },
     playerInfo: {
         alignItems: 'center',
@@ -1586,123 +1587,123 @@ const styles = StyleSheet.create({
         width: '38%',
     },
     playerImage: {
-        width: scale(50),
-        height: scale(50),
-        borderRadius: moderateScale(25),
-        borderWidth: moderateScale(2),
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
     },
     playerName: {
         color: '#fff',
-        fontSize: moderateScale(14),
+        fontSize: 14,
         fontFamily: 'Lexend-Bold',
-        marginVertical: verticalScale(5),
+        marginVertical: 5,
     },
     playerSteps: {
         color: '#BEFFBB',
-        fontSize: moderateScale(11),
+        fontSize: 11,
         fontFamily: 'Lexend',
     },
     tokensWhiteIcon: {
-        width: scale(10),
-        height: scale(10),
+        width: 10,
+        height: 10,
     },
     playerTokens: {
         color: '#BEFFBB',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     duelInfo: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: verticalScale(10),
+        paddingVertical: 10,
         width: '20%',
     },
     liveContainer: {
         position: 'absolute',
-        top: verticalScale(-30),
-        padding: moderateScale(5),
+        top: -30,
+        padding: 5,
         backgroundColor: '#fff',
-        borderRadius: moderateScale(20),
-        marginTop: verticalScale(5),
+        borderRadius: 20,
+        marginTop: 5,
     },
     liveTag: {
         color: '#000',
-        fontSize: moderateScale(12),
+        fontSize: 12,
         fontWeight: 'bold',
         textAlign: 'center',
     },
     versus: {
         color: '#fff',
         fontFamily: 'Lexend-Bold',
-        fontSize: moderateScale(28),
+        fontSize: 28,
     },
     youBetText: {
         position: 'absolute',
-        bottom: verticalScale(-30),
+        bottom: -30,
         color: '#fff',
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     betAmount: {
         position: 'absolute',
         flexDirection: 'row',
         alignItems: 'center',
-        bottom: verticalScale(-20),
+        bottom: -20,
         alignSelf: 'center',
         backgroundColor: '#fff',
-        paddingHorizontal: scale(20),
-        paddingVertical: verticalScale(10),
-        borderRadius: moderateScale(20),
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 20,
     },
     tokensBlackIcon: {
-        width: scale(15),
-        height: scale(14.3),
+        width: 15,
+        height: 14.3,
     },
     betText: {
         color: '#000',
-        fontSize: moderateScale(15),
+        fontSize: 15,
         fontFamily: 'Lexend',
     },
     leaderboardContainer: {
         flex: 1,
-        padding: moderateScale(20),
-        // marginTop: verticalScale(10),
+        padding: 20,
+        // marginTop: 10,
     },
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: '#65656580',
-        borderRadius: moderateScale(10),
+        borderRadius: 10,
     },
     tab: {
         flex: 1,
-        padding: moderateScale(10),
+        padding: 10,
         alignItems: 'center',
-        borderRadius: moderateScale(15),
+        borderRadius: 15,
     },
     tabText: {
         color: '#fff',
-        fontSize: moderateScale(13),
+        fontSize: 13,
         fontFamily: 'Lexend',
     },
     leaderboard: {
         flex: 1,
         backgroundColor: '#65656580',
-        borderRadius: moderateScale(20),
-        paddingHorizontal: moderateScale(10),
-        marginTop: verticalScale(8),
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        marginTop: 8,
     },
     leaderboardStepsContainer: {
         // flex: 1,
         backgroundColor: '#65656580',
-        paddingHorizontal: moderateScale(10),
-        marginTop: verticalScale(8),
-        borderTopLeftRadius: moderateScale(20),
-        borderTopRightRadius: moderateScale(20),
+        paddingHorizontal: 10,
+        marginTop: 8,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
         height: '97%',
     },
     grayLine: {
         position: 'absolute',
-        left: scale(36),
-        width: scale(1.5),
+        left: 36,
+        width: 1.5,
         height: '100%',
         backgroundColor: '#fff',
         zIndex: 1,
@@ -1711,21 +1712,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'flex-end',
-        marginBottom: verticalScale(15),
+        marginBottom: 15,
     },
     leaderboardTopStyles: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: scale(20),
+        marginHorizontal: 20,
     },
     leaderboardTopCircle: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: verticalScale(-7),
-        marginBottom: verticalScale(5),
-        width: scale(17),
-        height: scale(17),
-        borderRadius: moderateScale(9),
+        marginTop: -7,
+        marginBottom: 5,
+        width: 17,
+        height: 17,
+        borderRadius: 9,
         backgroundColor: '#74FF6D',
     },
     leaderboardTopTokens: {
@@ -1735,48 +1736,48 @@ const styles = StyleSheet.create({
     leaderboardTokensRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(5),
-        padding: moderateScale(10),
-        borderRadius: moderateScale(10),
+        marginBottom: 5,
+        padding: 10,
+        borderRadius: 10,
     },
     leaderboardRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: verticalScale(10),
+        marginBottom: 10,
     },
     leaderboardTokensText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
+        fontSize: 11,
     },
     leaderboardTokensNumberText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(11),
-        marginHorizontal: scale(10),
+        fontSize: 11,
+        marginHorizontal: 10,
     },
     leaderboardTokensNumTokens: {
         flexDirection: 'row',
         alignItems: 'center',
         // align to right
         position: 'absolute',
-        right: scale(15),
+        right: 15,
     },
     leaderboardImage: {
-        width: scale(26),
-        height: scale(26),
-        borderRadius: moderateScale(15),
-        marginRight: scale(10),
-        borderWidth: moderateScale(1.5),
+        width: 26,
+        height: 26,
+        borderRadius: 15,
+        marginRight: 10,
+        borderWidth: 1.5,
         borderColor: '#fff',
     },
     leaderboardSteps: {
         color: '#fff',
-        fontSize: moderateScale(11),
+        fontSize: 11,
         fontFamily: 'Lexend',
-        marginLeft: scale(10),
+        marginLeft: 10,
     },
     tokenText: {
         fontFamily: 'Lexend',
-        fontSize: moderateScale(15),
+        fontSize: 15,
         color: 'white',
     },
     // MODAL
@@ -1795,8 +1796,8 @@ const styles = StyleSheet.create({
         width: '90%',
         height: '90%',
         backgroundColor: 'white',
-        borderRadius: moderateScale(10),
-        padding: moderateScale(20),
+        borderRadius: 10,
+        padding: 20,
         position: 'relative',
     },
     liveDuelModalContainer: {
@@ -1804,18 +1805,18 @@ const styles = StyleSheet.create({
         height: '80%',
         backgroundColor: 'black',
         position: 'relative',
-        borderWidth: moderateScale(1),
+        borderWidth: 1,
         borderColor: '#4A4A4A',
-        borderRadius: moderateScale(15),
+        borderRadius: 15,
     },
     moneyModalContainer: {
         position: 'absolute',
         left: '5%',
         width: '90%',
         backgroundColor: 'black',
-        borderWidth: moderateScale(1),
+        borderWidth: 1,
         borderColor: '#4A4A4A',
-        borderRadius: moderateScale(15),
+        borderRadius: 15,
         zIndex: 1,
     },
     editGroupModalContainer: {
@@ -1824,26 +1825,26 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         backgroundColor: '#000',
-        borderTopLeftRadius: moderateScale(20),
-        borderTopRightRadius: moderateScale(20),
-        borderWidth: moderateScale(1),
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        borderWidth: 1,
         borderBottomWidth: 0, // No border on the bottom
         borderColor: '#fff',
     },
     closeButton: {
         position: 'absolute',
-        top: verticalScale(10),
-        right: scale(10),
+        top: 10,
+        right: 10,
         zIndex: 1,
     },
     closeButtonText: {
-        fontSize: moderateScale(18),
+        fontSize: 18,
         fontWeight: 'bold',
         color: 'black',
     },
     closeButtonIcon: {
-        width: scale(20),
-        height: scale(20),
+        width: 20,
+        height: 20,
     },
 });
 
