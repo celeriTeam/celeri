@@ -32,7 +32,7 @@ const NewHeadToHeadTutorial: React.FC<{
     const shouldShowNext = [3, 4, 5];
 
     const handleNextStep = async () => {
-        if (tutorialStep < 8) {
+        if (tutorialStep < 6) {
             if (shouldShowNext.includes(tutorialStep + 1)) {
                 setShowNext(false);
             }
@@ -66,10 +66,6 @@ const NewHeadToHeadTutorial: React.FC<{
             case 5:
                 return { top: verticalScale(0), width: scale(200), height: verticalScale(100) };
             case 6:
-                return { top: verticalScale(300), width: scale(200), height: verticalScale(100) };
-            case 7:
-                return { bottom: verticalScale(90), width: scale(200), height: verticalScale(100) };
-            case 8:
                 return { bottom: verticalScale(64), width: scale(200), height: verticalScale(100) };
             default:
                 return {};
@@ -86,19 +82,14 @@ const NewHeadToHeadTutorial: React.FC<{
                             style={[styles.arrow, tutorialStep === 1 && { tintColor: '#656565' } ]}
                         />
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.circle, (!showNext || tutorialStep >= 8) && { borderColor: '#656565' }]} onPress={handleNextStep} disabled={!showNext || tutorialStep >= 8}>
+                    <TouchableOpacity style={[styles.circle, (!showNext || tutorialStep >= 6) && { borderColor: '#656565' }]} onPress={handleNextStep} disabled={!showNext || tutorialStep >= 6}>
                         <Image
                             source={require('@assets/icons/rightArrow.png')}
-                            style={[styles.arrow, (!showNext || tutorialStep >= 8) && { tintColor: '#656565' }]}
+                            style={[styles.arrow, (!showNext || tutorialStep >= 6) && { tintColor: '#656565' }]}
                         />
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
-                {/* {![3, 4, 5, 8].includes(tutorialStep) && (
-                    <TouchableOpacity onPress={handleNextStep} style={styles.nextButton}>
-                        <Text style={styles.nextButtonText}>Next</Text>
-                    </TouchableOpacity>
-                )} */}
             </View>
         </View>
     );
