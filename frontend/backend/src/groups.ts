@@ -460,7 +460,7 @@ export const getLatestBetTime = async (userID: string, groupID: string): Promise
         if (groupDoc.exists() && groupDoc.data()?.users){
             const latestBetTime = groupDoc.data()?.users[userID]?.latestBetTime;
             // console.log(`getLatestBetTime - response for ${userID}: ${latestBetTime}`);
-            return latestBetTime;
+            return latestBetTime ? latestBetTime.toDate() : undefined;
         } else{
             console.error("getLatestBetTime - error: No such document!");
             return undefined;
@@ -621,8 +621,7 @@ export const setLogin = async (userID: string, groupID: string, time: Date) => {
     }
 }
 
-export const setLatestBetTime = async (userID: string, groupID: string, time: Date) => {
-    // add current time to groups[groupID].users[userID].latestBetTime
+export const setLatestBetTime = async (userID: string, groupID: string, time: Date): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -631,11 +630,14 @@ export const setLatestBetTime = async (userID: string, groupID: string, time: Da
                 [`users.${userID}.latestBetTime`]: time,
             });
             console.log('setLatestBetTime - response: Latest bet time set');
+            return;
         } else {
             console.error('setLatestBetTime - error: No such document!');
+            return;
         }
     } catch (error) {
         console.error('setLatestBetTime - Error setting latest bet time:', error);
+        return;
     }
 }
 

@@ -86,7 +86,7 @@ const NewHeadToHeadPage: React.FC = () => {
     const scrollViewRef = useRef<ScrollView>(null);
     
     const insideScrollTutorialSteps = [2, 3, 4];
-    const notInsideScrollTutorialSteps = [1, 5, 6, 7, 8];
+    const notInsideScrollTutorialSteps = [1, 5, 6];
 
     const closeModal = async () => {
         setModalVisible(false);
@@ -481,7 +481,7 @@ const NewHeadToHeadPage: React.FC = () => {
             }));
 
             await addToFinishedBetting(groupID, userID);
-            await setLatestBetTime(groupID, userID, new Date());
+            await setLatestBetTime(userID, groupID, new Date());
             await setTodaysBetTokens(userID, groupID, totalBetTokens());
 
             if (showTutorial) {
@@ -643,7 +643,7 @@ const NewHeadToHeadPage: React.FC = () => {
                     </View>
 
                     {/* dots for completion indication */}
-                    <View style={[styles.dotRow, tutorialStep === 7 && { zIndex: 400 }]}>
+                    <View style={styles.dotRow}>
                         {matchups.map((_, index) => (
                             <TouchableOpacity
                                 style={{
@@ -657,13 +657,13 @@ const NewHeadToHeadPage: React.FC = () => {
                                 }}
                                 onPress={() => scrollToIndex(index)}
                                 activeOpacity={1}
-                                disabled={showTutorial && tutorialStep !== 7}
+                                disabled={showTutorial}
                             />
                         ))}
                     </View>
                     <TouchableOpacity style={[styles.submitButton, 
                         { backgroundColor: shouldShowSubmit().isValid ? '#fff' : '#656565' },
-                        tutorialStep === 8 && { zIndex: 400 },
+                        tutorialStep === 6 && { zIndex: 400 },
                     ]} onPress={handleSubmit} disabled={!shouldShowSubmit().isValid || isProcessing}>
                         <Text style={[styles.submitButtonText, { color: shouldShowSubmit().isValid ? '#000' : '#fff' }]}>Submit</Text>
                     </TouchableOpacity>
