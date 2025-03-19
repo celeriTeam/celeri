@@ -524,7 +524,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                   token: token,
                   notification: {
                     title: `Shucks, you're losing your bet!`,
-                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head`
+                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head!`
                   },
                 }
               } else if(newsType == "racePullAheadOfYou"){
@@ -648,6 +648,60 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
           if(userDoc.exists) {
             const userData = userDoc.data();
             const userTokens = userData.tokens || [];
+
+            for (const token of userTokens) {
+
+              let message;
+
+              if(newsType == "headToHeadOpponentWalking"){
+                const opponentUserID = newNewsData.userID;
+                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+                const opponentUserData = opponentUserDoc.data();
+
+                const opponentUsername = opponentUserData.username;
+
+                const steps = newNewsData.steps;
+
+                message = {
+                  token: token,
+                  notification: {
+                    title: `${opponentUsername}'s on a roll!`,
+                    body: `They just walked ${steps}. What are you doing?`,
+                  },
+                };
+              } else if(newsType == "headToHeadPullAhead"){
+
+                // the person you bet on's opponent
+
+                const opponentUserID = newNewsData.userID;
+                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+                const opponentUserData = opponentUserDoc.data();
+
+                const opponentUsername = opponentUserData.username;
+
+                // the person you bet on
+
+                const betOnUserID = newNewsData.opponentID;
+                const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
+                const betOnUserData = betOnUserDoc.data();
+
+                const betOnUsername = betOnUserData.username;
+
+                // this targets anyone who bet on the opponent 
+                message = {
+                  token: token,
+                  notification: {
+                    title: `Good news!`,
+                    body: `You're winning your bet! ${betOnUsername} just surpassed ${opponentUsername} in steps in their head to head!`
+                  },
+                }
+
+              } 
+
+              // steps behind in race, steps in head to head, and diamond count 
+              // waiting on frontend
+            }
+
           }
         } catch (error) {
 
