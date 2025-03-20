@@ -1,22 +1,7 @@
-// The Cloud Functions for Firebase SDK to create Cloud Functions and triggers.
-// const {logger} = require("firebase-functions");
-// const {functions} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {onDocumentUpdated, onDocumentCreated} = require("firebase-functions/v2/firestore");
-// const {onRequest, onCall, HttpsError} =
-// require("firebase-functions/v2/https");
-// const {onDocumentCreated,
-//       Change,
-//       FirestoreEvent} = require("firebase-functions/v2/firestore");
-
-// The Firebase Admin SDK to access Firestore.
 const {initializeApp} = require("firebase-admin/app");
 const {getFirestore, FieldValue} = require("firebase-admin/firestore");
-// const {getFirestore,
-//   doc,
-//   updateDoc} = require("firebase-admin/firestore");
-// const {getMessaging} = require("firebase-admin/messaging");
-// const {getDatabase} = require("firebase-admin/database");
 const admin = require("firebase-admin");
 
 initializeApp();
@@ -222,8 +207,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
   const snapshot = event.data;
   if (!snapshot) {
-      console.log("No data associated with the event");
-      return;
+    console.log("No data associated with the event");
+    return;
   }
 
   const newNewsData = snapshot.data();
@@ -236,13 +221,12 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
   // check what priority the notif is
 
-  // if priority zero notif, then send notif no matter what 
+  // if priority zero notif, then send notif no matter what
   if (newNewsData.priority0 !== undefined) {
     console.log("priority0 exists:", newNewsData.priority0);
-    const priority0users = newNewsData.priority0;
-    for (const userID in priority0users){
+    const priority0UserIDs = Object.keys(newNewsData.priority0);
+    for (const userID of priority0UserIDs) {
       try {
-
         // the user who completed the challenge (who the notif is about)
         const targetUserID = newNewsData.userID;
         const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
@@ -259,25 +243,23 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
           if (userTokens && userTokens.length > 0) {
             for (const token of userTokens) {
               let message;
-              if(newsType == "recordSetter"){
-
+              if (newsType == "recordSetter") {
+                const steps = newNewsData.steps;
                 message = {
                   token: token,
                   notification: {
                     title: `A legend is born.`,
-                    body: `${targetUsername} just broke a record and hit ${steps} this week!`,
+                    body: `${targetUsername} just broke a record -- they're the first person to hit ${steps} this week!`,
                   },
-                }
+                };
               } else {
-
                 message = {
                   token: token,
                   notification: {
                     title: `A legend is born.`,
                     body: `${targetUsername} just broke a record.`,
                   },
-                }
-
+                };
               }
 
               // send the message
@@ -287,21 +269,18 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
               } catch (error) {
                 console.error("Error sending notification:", error);
               }
-
             }
           }
         }
-      } catch {
+      } catch (error) {
         console.error("Error with priority 0 notif:", error);
       }
     }
+  }
 
-  } 
+  // no need for else, can check each individually
 
-  // no need for else, can check each individually 
-  
   if (newNewsData.priority1 !== undefined) {
-
     const twelveHoursAgo = new Date();
     twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
 
@@ -315,9 +294,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
     if (!newsSnapshot.empty) {
       console.log("There is a priority 1 news document in the last 12 hours");
-      // make sure to not send notifs to the users in the priority 1 
+      // make sure to not send notifs to the users in the priority 1
       const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
-      const potentialUserIDs = new Set(newNewsData.priority1); // Convert priority1 array in new document to Set for quick lookup
 
       newsSnapshot.forEach((doc) => {
         const previousData = doc.data();
@@ -329,11 +307,11 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
 
       // Filter out users in priority1 who are in alreadyNotifiedUserIDs
-      const updatedPriority1 = (newNewsData.priority1 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+      const updatedPriority1 = (newNewsData.priority1 || []).filter((userID) => !alreadyNotifiedUserIDs.has(userID));
 
       // If priority1 has changed, update the new document
       if (updatedPriority1.length !== newNewsData.priority1.length) {
-        await newsDocRef.update({ priority1: updatedPriority1 });
+        await newsDocRef.update({priority1: updatedPriority1});
         console.log("Updated priority1 in new news document:", updatedPriority1);
       }
 
@@ -347,23 +325,20 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
             const userTokens = userData.tokens || [];
 
             for (const token of userTokens) {
+              let message;
 
-              let message; 
-
-              if(newsType == "racePullAheadTopThree"){
-
+              if (newsType == "racePullAheadTopThree") {
                 // get information according to the newsType
                 const place = newNewsData.place;
 
-                // the user who pulled ahead 
+                // the user who pulled ahead
                 const targetUserID = newNewsData.userID;
                 const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
                 const targetUserData = targetUserDoc.data();
 
                 const targetUsername = targetUserData.username;
 
-                if(place == 3){
-
+                if (place == 3) {
                   message = {
                     token: token,
                     notification: {
@@ -371,7 +346,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                       body: `${targetUsername} just barrelled into 3rd place!`,
                     },
                   };
-                } else if (place == 2){
+                } else if (place == 2) {
                   message = {
                     token: token,
                     notification: {
@@ -379,7 +354,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                       body: `${targetUsername} just pulled ahead into 2nd place!`,
                     },
                   };
-                } else if (place == 1){
+                } else if (place == 1) {
                   message = {
                     token: token,
                     notification: {
@@ -388,7 +363,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                     },
                   };
                 }
-              } else if(newsType == "headToHeadPullAhead"){
+              } else if (newsType == "headToHeadPullAhead") {
                 const targetUserID = newNewsData.opponentID;
                 const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
                 const targetUserData = targetUserDoc.data();
@@ -427,28 +402,27 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
     } else {
       console.log("No priority 1 news found in the last 12 hours");
     }
-
   }
 
-  if (newNewsData.priority2 !== undefined){
+  if (newNewsData.priority2 !== undefined) {
     const twentyFourHoursAgo = new Date();
     twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
-    // grabs any priority 1 from the past 24 hours 
+    // grabs any priority 1 from the past 24 hours
 
     const priority1Query = newsRef
       .where("priority1", ">=", false)
       .where("createdAt", ">=", twentyFourHoursAgo)
       .get();
 
-    // grabs any priority 2 from the past 24 hours 
+    // grabs any priority 2 from the past 24 hours
 
     const priority2Query = await newsRef
       .where("priority2", ">=", false)
       .where("createdAt", ">=", twentyFourHoursAgo)
       .get();
 
-    
+
     console.log("priority2 exists: ", newNewsData.priority2);
 
     // now merge the snapshots
@@ -457,18 +431,18 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       priority1Query,
       priority2Query,
     ]);
-    
+
     // Merge results, avoiding duplicates
     const newsSet = new Map();
-    
-    priority1Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
-    priority2Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
-    
+
+    priority1Snapshot.forEach((doc) => newsSet.set(doc.id, doc.data()));
+    priority2Snapshot.forEach((doc) => newsSet.set(doc.id, doc.data()));
+
     const mergedNews = Array.from(newsSet.values());
-    
+
     console.log("merged news, ", mergedNews);
 
-    if(mergedNews.length > 0){
+    if (mergedNews.length > 0) {
       console.log("There is a priority 1 or priority 2 news document in the last 24 hours");
       const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
 
@@ -480,11 +454,11 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
       console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
       // Filter out users in priority2 who are in alreadyNotifiedUserIDs
-      const updatedPriority2 = (newNewsData.priority2 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+      const updatedPriority2 = (newNewsData.priority2 || []).filter((userID) => !alreadyNotifiedUserIDs.has(userID));
 
       // If priority2 has changed, update the new document
       if (updatedPriority2.length !== newNewsData.priority2.length) {
-        await newsDocRef.update({ priority2: updatedPriority2 });
+        await newsDocRef.update({priority2: updatedPriority2});
         console.log("Updated priority2 in new news document:", updatedPriority2);
       }
 
@@ -497,11 +471,9 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
             const userTokens = userData.tokens || [];
 
             for (const token of userTokens) {
+              let message;
 
-              let message; 
-
-              if(newsType == "headToHeadPullAhead"){
-
+              if (newsType == "headToHeadPullAhead") {
                 // the person you bet on's opponent
 
                 const opponentUserID = newNewsData.opponentID;
@@ -518,17 +490,16 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
                 const betOnUsername = betOnUserData.username;
 
-                // this targets anyone who's betting on you 
+                // this targets anyone who's betting on you
 
                 message = {
                   token: token,
                   notification: {
                     title: `Shucks, you're losing your bet!`,
-                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head!`
+                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head!`,
                   },
-                }
-              } else if(newsType == "racePullAheadOfYou"){
-
+                };
+              } else if (newsType == "racePullAheadOfYou") {
                 // the person who pulled ahea of you
 
                 const opponentUserID = newNewsData.userID;
@@ -541,11 +512,10 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                   token: token,
                   notification: {
                     title: `Don't be left behind!`,
-                    body: `${opponentUsername} just overtook you in steps! Are you just gonna sit back and let that happen?`
+                    body: `${opponentUsername} just overtook you in steps! Are you just gonna sit back and let that happen?`,
                   },
-                }
-
-              } else if(newsType == "headToHeadOpponentWalking"){
+                };
+              } else if (newsType == "headToHeadOpponentWalking") {
                 const opponentUserID = newNewsData.userID;
                 const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
                 const opponentUserData = opponentUserDoc.data();
@@ -562,7 +532,12 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                   },
                 };
               }
-
+              try {
+                const response = await admin.messaging().send(message);
+                console.log("Notification sent successfully to", userID, ":", response);
+              } catch (error) {
+                console.error("Error sending notification to", userID, ":", error);
+              }
             }
           }
         } catch (error) {
@@ -574,25 +549,25 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
     }
   }
 
-  if (newNewsData.priority3 !== undefined){
+  if (newNewsData.priority3 !== undefined) {
     const thirtySixHoursAgo = new Date();
     thirtySixHoursAgo.setHours(thirtySixHoursAgo.getHours() - 36);
-    
-    // grabs any priority 1 from the past 36 hours 
+
+    // grabs any priority 1 from the past 36 hours
 
     const priority1Query = newsRef
       .where("priority1", ">=", false)
       .where("createdAt", ">=", thirtySixHoursAgo)
       .get();
 
-    // grabs any priority 2 from the past 36 hours 
+    // grabs any priority 2 from the past 36 hours
 
     const priority2Query = await newsRef
       .where("priority2", ">=", false)
       .where("createdAt", ">=", thirtySixHoursAgo)
       .get();
 
-      // grabs any priority 3 from the past 36 hours 
+    // grabs any priority 3 from the past 36 hours
 
     const priority3Query = await newsRef
       .where("priority3", ">=", false)
@@ -601,9 +576,9 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
     console.log("priority3 exists: ", newNewsData.priority3);
 
-     // now merge the snapshots
+    // now merge the snapshots
 
-     const [priority1Snapshot, priority2Snapshot, priority3Snapshot] = await Promise.all([
+    const [priority1Snapshot, priority2Snapshot, priority3Snapshot] = await Promise.all([
       priority1Query,
       priority2Query,
       priority3Query,
@@ -612,15 +587,15 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
     // Merge results, avoiding duplicates
     const newsSet = new Map();
 
-    priority1Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
-    priority2Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
-    priority3Snapshot.forEach(doc => newsSet.set(doc.id, doc.data()));
+    priority1Snapshot.forEach((doc) => newsSet.set(doc.id, doc.data()));
+    priority2Snapshot.forEach((doc) => newsSet.set(doc.id, doc.data()));
+    priority3Snapshot.forEach((doc) => newsSet.set(doc.id, doc.data()));
 
     const mergedNews = Array.from(newsSet.values());
 
-    console.log("merged news, ", mergedNews)
+    console.log("merged news, ", mergedNews);
 
-    if(mergedNews.length > 9){
+    if (mergedNews.length > 9) {
       console.log("There is a priority 3 news document in the last 36 hours");
       const alreadyNotifiedUserIDs = new Set();
 
@@ -633,11 +608,11 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       console.log("Already notified user IDs:", Array.from(alreadyNotifiedUserIDs));
 
       // Filter out users in priority2 who are in alreadyNotifiedUserIDs
-      const updatedPriority3 = (newNewsData.priority3 || []).filter(userID => !alreadyNotifiedUserIDs.has(userID));
+      const updatedPriority3 = (newNewsData.priority3 || []).filter((userID) => !alreadyNotifiedUserIDs.has(userID));
 
       // If priority3 has changed, update the new document
       if (updatedPriority3.length !== newNewsData.priority3.length) {
-        await newsDocRef.update({ priority2: updatedPriority3 });
+        await newsDocRef.update({priority2: updatedPriority3});
         console.log("Updated priority2 in new news document:", updatedPriority3);
       }
 
@@ -645,15 +620,14 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       for (const userID of updatedPriority3) {
         try {
           const userDoc = await firestore.collection("users").doc(userID).get();
-          if(userDoc.exists) {
+          if (userDoc.exists) {
             const userData = userDoc.data();
             const userTokens = userData.tokens || [];
 
             for (const token of userTokens) {
-
               let message;
 
-              if(newsType == "headToHeadOpponentWalking"){
+              if (newsType == "headToHeadOpponentWalking") {
                 const opponentUserID = newNewsData.userID;
                 const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
                 const opponentUserData = opponentUserDoc.data();
@@ -669,8 +643,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
                     body: `They just walked ${steps}. What are you doing?`,
                   },
                 };
-              } else if(newsType == "headToHeadPullAhead"){
-
+              } else if (newsType == "headToHeadPullAhead") {
                 // the person you bet on's opponent
 
                 const opponentUserID = newNewsData.userID;
@@ -687,31 +660,34 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
                 const betOnUsername = betOnUserData.username;
 
-                // this targets anyone who bet on the opponent 
+                // this targets anyone who bet on the opponent
                 message = {
                   token: token,
                   notification: {
                     title: `Good news!`,
-                    body: `You're winning your bet! ${betOnUsername} just surpassed ${opponentUsername} in steps in their head to head!`
+                    body: `You're winning your bet! ${betOnUsername} just surpassed ${opponentUsername} in steps in their head to head!`,
                   },
-                }
+                };
+              }
 
-              } 
-
-              // steps behind in race, steps in head to head, and diamond count 
+              // steps behind in race, steps in head to head, and diamond count
               // waiting on frontend
-            }
 
+              try {
+                const response = await admin.messaging().send(message);
+                console.log("Notification sent successfully to", userID, ":", response);
+              } catch (error) {
+                console.error("Error sending notification to", userID, ":", error);
+              }
+            }
           }
         } catch (error) {
-
+          console.error("Error fetching user document for", userID, ":", error);
         }
       }
     }
-
   }
-
-}
+};
 
 exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", async (event) => {
   console.log("sendNotifOnBet is running");
@@ -2006,11 +1982,11 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
 
     // const allBatches = [];
     const today = new Date();
-    const hour = today.getHours(); // Get the current hour in 24-hour format
-    if (hour === 5) {
+    const hour = today.getUTCHours(); // Get the current hour in 24-hour format
+    if (hour === 4) {
       console.log("Running at night");
       // Logic for the morning run
-    } else if (hour === 17) {
+    } else if (hour === 16) {
       console.log("Running at morning");
       // Logic for the evening run
     } else {
@@ -2033,7 +2009,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
         const resetDay = data.resetDay;
 
         // if it is the correct day of the week
-        if (currentDay == resetDay) {
+        if (currentDay == resetDay && hour <= 6) {
           let cycleWeek = data.cycleWeek;
           let cycleCount = data.cycleCount;
           let cycleDuels = data.cycleDuels;
