@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
@@ -298,10 +299,18 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-            </View>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 

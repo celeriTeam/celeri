@@ -221,7 +221,7 @@ const HomeTab: React.FC = () => {
             } else {
                 router.push({
                     pathname: '/(authenticated)/home/bets/BetSummary',
-                    params: { groupIDTemp },
+                    params: { groupIDTemp, showTutorialTemp: 'false' },
                 });
             }
         } else {
@@ -247,34 +247,58 @@ const HomeTab: React.FC = () => {
 
     if (isLoading || isLoadingHome) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-                {isLoading && <Text>Grabbing health data...</Text>}
-            </View>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                    {isLoading && <Text style={{ color: '#fff' }}>Grabbing health data...</Text>}
+                </View>
+            </LinearGradient>
         );
     }
 
     if (groups === null || groups === undefined) {
         return (
-            <SafeAreaView style={styles.safeView} edges={['top']}>
-                <View style={styles.container}>
-                    <Text>Failed to fetch user groups</Text>
-                </View>
-            </SafeAreaView>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <SafeAreaView style={styles.safeView} edges={['top']}>
+                    <View style={styles.container}>
+                        <Text>Failed to fetch user groups</Text>
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
         );
     } else if (Object.keys(groups).length === 0) {
         return (
-            <SafeAreaView style={styles.safeView} edges={['top']}>
-                <View style={[styles.container, { justifyContent: 'center' }]}>
-                    <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
-                        <Text style={styles.buttonText}>Create Group</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
-                        <Text style={styles.buttonText}>Join Existing Group</Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <SafeAreaView style={styles.safeView} edges={['top']}>
+                    <View style={[styles.container, { justifyContent: 'center' }]}>
+                        <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
+                            <Text style={styles.buttonText}>Create Group</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
+                            <Text style={styles.buttonText}>Join Existing Group</Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </LinearGradient>
         );
     } else {
         return (

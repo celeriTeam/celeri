@@ -221,10 +221,18 @@ const PersonalProfilePage: React.FC = () => {
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-            </View>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 
@@ -410,6 +418,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 20,
         textAlign: 'center',
+        color: '#fff',
     },
     buttonText: {
         marginTop: 25,

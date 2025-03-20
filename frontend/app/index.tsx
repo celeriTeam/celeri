@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<"/(authenticated)/home" | "/onboarding" | null>(null);
@@ -49,10 +50,19 @@ const App: React.FC = () => {
 
     if (isLoading || !fontsLoaded || initialRoute === null) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-            </View>
+            
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 

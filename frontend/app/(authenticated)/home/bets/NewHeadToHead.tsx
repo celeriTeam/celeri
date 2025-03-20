@@ -265,7 +265,7 @@ const NewHeadToHeadPage: React.FC = () => {
                 setTimeout(() => {
                     router.replace({
                         pathname: '/(authenticated)/home/bets/BetSummary',
-                        params: { groupIDTemp: groupID },
+                        params: { groupIDTemp: groupID, showTutorialTemp: showTutorialTemp },
                     });
                 }, 0); // Ensures the route updates in order
             }
@@ -511,9 +511,18 @@ const NewHeadToHeadPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <View>
-                <Text>Loading...</Text>
-            </View>
+            
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 
