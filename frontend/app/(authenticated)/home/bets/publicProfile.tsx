@@ -334,6 +334,7 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 18,
         marginBottom: 20,
+        color: '#fff',
     },
     characterCountContainer: {
         position: 'absolute',
