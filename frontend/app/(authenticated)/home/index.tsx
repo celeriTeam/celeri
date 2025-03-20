@@ -221,7 +221,7 @@ const HomeTab: React.FC = () => {
             } else {
                 router.push({
                     pathname: '/(authenticated)/home/bets/BetSummary',
-                    params: { groupIDTemp },
+                    params: { groupIDTemp, showTutorialTemp: 'false' },
                 });
             }
         } else {
@@ -256,8 +256,8 @@ const HomeTab: React.FC = () => {
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" />
-                    <Text>Loading...</Text>
-                    {isLoading && <Text>Grabbing health data...</Text>}
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                    {isLoading && <Text style={{ color: '#fff' }}>Grabbing health data...</Text>}
                 </View>
             </LinearGradient>
         );

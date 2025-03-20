@@ -230,7 +230,7 @@ const PersonalProfilePage: React.FC = () => {
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" />
-                    <Text>Loading...</Text>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
                 </View>
             </LinearGradient>
         );
@@ -418,6 +418,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         marginBottom: 20,
         textAlign: 'center',
+        color: '#fff',
     },
     buttonText: {
         marginTop: 25,

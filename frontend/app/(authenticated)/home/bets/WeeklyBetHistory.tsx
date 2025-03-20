@@ -308,7 +308,7 @@ const WeeklyBetHistoryPage: React.FC< {groupID: string}> = ({ groupID }) => {
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" />
-                    <Text>Loading...</Text>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
                 </View>
             </LinearGradient>
         );

@@ -289,7 +289,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             >
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" />
-                    <Text>Loading...</Text>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
                 </View>
             </LinearGradient>
         );
