@@ -292,10 +292,18 @@ const InvitePage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-            </View>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 

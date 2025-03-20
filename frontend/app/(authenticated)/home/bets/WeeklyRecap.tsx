@@ -8,6 +8,7 @@ import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const WeeklyBetRecapPage: React.FC = () => {
     console.log("in weeklyBetRecapPage");
@@ -151,10 +152,18 @@ const WeeklyBetRecapPage: React.FC = () => {
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" />
-                <Text>Loading...</Text>
-            </View>
+            <LinearGradient
+                colors={['#000000', '#024405']}
+                style={{
+                    flex: 1,
+                    width: '100%',
+                }}
+            >
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" />
+                    <Text>Loading...</Text>
+                </View>
+            </LinearGradient>
         );
     }
 
