@@ -155,7 +155,7 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
 }
 
 // GET weekly duels won
-export const getWeeklyDuelsWon = async (userID: string, groupID: string): Promise<number> =>{
+export const getWeeklyDuelsWon = async (groupID: string, userID: string): Promise<number> =>{
     try {
         // console.log("getWeeklyDuelsWon starting");
         const duelsRef = collection(db, `groups/${groupID}/duels`);
@@ -280,7 +280,7 @@ export const setUserFinishedTutorial = async (userID: string): Promise<void> => 
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD group to user
-export const addGroupToUser = async (userID: string, groupID: string): Promise<string | undefined> => {
+export const addGroupToUser = async (groupID: string, userID: string): Promise<string | undefined> => {
     try {
         const userDocRef = doc(db, 'users', userID);
         const userDoc = await getDoc(userDocRef);
@@ -461,7 +461,7 @@ export const getAverageSteps = async (id: string): Promise<number[]> => {
 
 // GET last week's steps; different from getWeeklySteps because it's looking at the past cycle's week, not the past week 
 // so if today is weds and reset day is sunday it would look for the past sunday-sunday, not weds-weds 
-export const getLastWeekSteps = async (userID: string, groupID: string): Promise<number> => {
+export const getLastWeekSteps = async (groupID: string, userID: string): Promise<number> => {
 
     try {
         const groupDocRef = doc(db, `groups/${groupID}`);

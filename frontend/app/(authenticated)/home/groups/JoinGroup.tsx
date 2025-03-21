@@ -23,8 +23,8 @@ const JoinGroupPage: React.FC= () => {
             const groupID = await getGroupFromCode(groupCode);
 
             if(groupID) {
-                await addUserToGroup( userID, groupID );
-                const groupInUserResponse = await addGroupToUser( userID, groupID );
+                await addUserToGroup(groupID, userID);
+                const groupInUserResponse = await addGroupToUser(groupID, userID);
                 const isGameActive = await getGroupIsGameActive(groupID);
                 console.log('isgameactive: ', isGameActive);
                 if (groupInUserResponse === 'Group added successfully!') {

@@ -481,8 +481,8 @@ const NewHeadToHeadPage: React.FC = () => {
             }));
 
             await addToFinishedBetting(groupID, userID);
-            await setLatestBetTime(userID, groupID, new Date());
-            await setTodaysBetTokens(userID, groupID, totalBetTokens());
+            await setLatestBetTime(groupID, userID, new Date());
+            await setTodaysBetTokens(groupID, userID, totalBetTokens());
 
             if (showTutorial) {
                 await addToFinishedTutorial(groupID, userID);

@@ -35,7 +35,7 @@ const CreateGroupPage: React.FC = () => {
         const groupCode = await generateGroupCode();
         const groupID: any = await createGroup(userID, groupName || '', groupCode);
         await addGroupImage(groupID, groupImage || '');
-        await addGroupToUser(userID, groupID);
+        await addGroupToUser(groupID, userID);
 
         // Navigate to 'InviteGroup' with parameters
         router.replace({
