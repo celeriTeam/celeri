@@ -218,7 +218,7 @@ export const getTodaysBetTokens = async (groupID: string, userID: string): Promi
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            // console.log("getTodaysBetTokens - response: ", user.todaysBetTokens);
+            console.log(`getTodaysBetTokens - response for ${userID}: ${user.todaysBetTokens}`);
             return user.todaysBetTokens;
         } else{
             console.error("getTodaysBetTokens - error: No such document!");
@@ -474,30 +474,30 @@ export const getLatestBetTime = async (groupID: string, userID: string): Promise
 // GET tutorial status
 export const getTutorialStatus = async (groupID: string, userID: string): Promise<
     {
-        propBet: boolean,
-        liveDuels: boolean,
-        store: boolean,
-        gainsHistory: boolean,
-        betsHistory: boolean,
-        raceHistory: boolean,
-        tokens: boolean,
-        betTokens: boolean,
-        diamonds: boolean
-    }[] | undefined
+        propBet?: boolean,
+        liveDuels?: boolean,
+        store?: boolean,
+        gainsHistory?: boolean,
+        betsHistory?: boolean,
+        raceHistory?: boolean,
+        tokens?: boolean,
+        betTokens?: boolean,
+        diamonds?: boolean
+    }
 > => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
             const tutorialStatus = groupDoc.data()?.users[userID]?.tutorials;
-            console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus}`);
-            return tutorialStatus;
+            console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus ?? {}}`);
+            return tutorialStatus ?? {};
         } else{
             console.error("getLatestBetTime - error: No such document!");
-            return undefined;
+            return {};
         }
     } catch (error) {
          console.error("getLatestBetTime - Error fetching user document: ", error);
-         return undefined;
+         return {};
     }
 }
 
@@ -667,6 +667,26 @@ export const setLatestBetTime = async (groupID: string, userID: string, time: Da
         }
     } catch (error) {
         console.error('setLatestBetTime - Error setting latest bet time:', error);
+        return;
+    }
+}
+
+export const setTutorialStatus = async (groupID: string, userID: string, tutorial: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            await updateDoc(groupDocRef, {
+                [`users.${userID}.tutorials.${tutorial}`]: true,
+            });
+            console.log('setTutorialStatus - response: Latest bet time set');
+            return;
+        } else {
+            console.error('setTutorialStatus - error: No such document!');
+            return;
+        }
+    } catch (error) {
+        console.error(`setTutorialStatus - Error setting ${tutorial} tutorial status: ${error}`);
         return;
     }
 }

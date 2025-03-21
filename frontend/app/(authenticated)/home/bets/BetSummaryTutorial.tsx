@@ -70,7 +70,11 @@ const BetSummaryTutorial: React.FC<{
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.circle} onPress={handleNextStep}>
                         <Image
-                            source={require('@assets/icons/rightArrow.png')}
+                            source={
+                                tutorialStep === 4 ?
+                                require('@assets/icons/x.png') :
+                                require('@assets/icons/rightArrow.png')
+                            }
                             style={styles.arrow}
                         />
                     </TouchableOpacity>

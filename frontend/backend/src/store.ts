@@ -54,7 +54,7 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
 /*********************************************** BUY FUNCTIONS ********************************************/
 
 
-export const buyPowerup = async (userID: string, groupID: string, targetUserID: string, powerup: string, gameType: string, targetUserName?: string,): Promise<boolean> => {
+export const buyPowerup = async (groupID: string, userID: string, targetUserID: string, powerup: string, gameType: string, targetUserName?: string,): Promise<boolean> => {
     const groupDocRef = doc(db, 'groups', groupID);
     console.log("buyPowerup - powerup number: ", powerup);
     let powerupName = "none";

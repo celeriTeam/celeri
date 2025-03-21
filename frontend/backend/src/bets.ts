@@ -1005,7 +1005,7 @@ export const checkFinishedPropBet = async (groupID: string, userID: string): Pro
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
 //CREATE bet
-export const createBet = async (userID: string, groupID: string, duelID: string, wager: number, betOnUserID: string): Promise<undefined> => {
+export const createBet = async (groupID: string, userID: string, duelID: string, wager: number, betOnUserID: string): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const duelDocRef = doc(groupDocRef, 'duels', duelID);
