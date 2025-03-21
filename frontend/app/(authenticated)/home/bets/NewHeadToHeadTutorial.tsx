@@ -55,18 +55,18 @@ const NewHeadToHeadTutorial: React.FC<{
 
     const getModalStyle = (): StyleProp<ViewStyle> => {
         switch (tutorialStep) {
-            case 1:
-                return { top: verticalScale(100), width: scale(200), height: verticalScale(100) };
-            case 2:
+            case 1: // about weekly bets
+                return { top: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+            case 2: // bets + number of tokens
                 return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
-            case 3:
-                return { top: verticalScale(0), width: scale(200), height: verticalScale(90) };
-            case 4:
-                return { top: verticalScale(90), left: scale(170), width: scale(200), height: verticalScale(90) };
-            case 5:
-                return { top: verticalScale(0), width: scale(200), height: verticalScale(100) };
-            case 6:
-                return { bottom: verticalScale(64), width: scale(200), height: verticalScale(100) };
+            case 3: // choose desired player
+                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
+            case 4: // choose desired bet amount
+                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
+            case 5: // wait for all bets to be placed
+                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+            case 6: // submit
+                return { bottom: verticalScale(64), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             default:
                 return {};
         }
