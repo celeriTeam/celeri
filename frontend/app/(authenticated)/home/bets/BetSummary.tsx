@@ -112,7 +112,7 @@ const BetSummaryPage: React.FC = () => {
 
         const initialize = async () => {
             try {
-                await setLogin(userID, groupID, new Date());
+                await setLogin(groupID, userID, new Date());
                 cleanup = await fetchGroupData(userID);
                 await fetchPowerups();
             } catch (error) {
@@ -175,9 +175,9 @@ const BetSummaryPage: React.FC = () => {
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
-                        getUserTokens(uid, groupID),
-                        getTodaysBetTokens(uid, groupID),
-                        getUserDiamonds(uid, groupID),
+                        getUserTokens(groupID, uid),
+                        getTodaysBetTokens(groupID, uid),
+                        getUserDiamonds(groupID, uid),
                         getCurrentPlayersInGame(groupID),
                         getCycle(groupID),
                         getCycleCount(groupID),
@@ -185,8 +185,8 @@ const BetSummaryPage: React.FC = () => {
                         getResetDay(groupID),
                         getGameType(groupID),
                         checkFinishedPropBet(groupID, uid),
-                        getLastLogin(uid, groupID),
-                        getLatestBetTime(uid, groupID)
+                        getLastLogin(groupID, uid),
+                        getLatestBetTime(groupID, uid)
                     ]);
 
                     const userList = await getUsersInGroup(groupID); // userIDs
@@ -201,9 +201,9 @@ const BetSummaryPage: React.FC = () => {
                                 getWeeklySteps(groupID, selectedUserID),
                                 getBiweeklySteps(groupID, selectedUserID),
                                 getAverageSteps(selectedUserID),
-                                getUserTokens(selectedUserID, groupID),
-                                getTodaysBetTokens(selectedUserID, groupID),
-                                getUserDiamonds(selectedUserID, groupID)
+                                getUserTokens(groupID, selectedUserID),
+                                getTodaysBetTokens(groupID, selectedUserID),
+                                getUserDiamonds(groupID, selectedUserID)
                             ]);
 
                             let newSteps;

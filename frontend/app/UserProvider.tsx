@@ -5,7 +5,7 @@ import { getFirestore, doc, collection, query, where, onSnapshot } from "firebas
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
     getUserFinishedTutorial} from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -116,16 +116,16 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
                         isFinishedTutorial, gameType, createdAt, resetDay,
-                        startingTokens, userFinishedTutorial] = await Promise.all([
+                        startingTokens, userFinishedTutorial, tutorialStatus] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
                             getGroupIsFirstDay(groupID),
                             getGroupCreator(groupID),
-                            getUserTokens(uid, groupID),
+                            getUserTokens(groupID, uid),
                             getDefaultBetOnSelf(groupID),
-                            getTodaysBetTokens(uid, groupID),
+                            getTodaysBetTokens(groupID, uid),
                             getDailyTokens(groupID),
                             getCurrentPlayersInGame(groupID),
                             getCycle(groupID),
@@ -143,7 +143,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGroupCreatedAt(groupID),
                             getResetDay(groupID),
                             getStartingTokens(groupID),
-                            getUserFinishedTutorial(uid)
+                            getUserFinishedTutorial(uid),
+                            getTutorialStatus(groupID, uid)
                         ]);
 
                         const userList = await getUsersInGroup(groupID); // userIDs
@@ -157,13 +158,13 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                     getWeeklySteps(groupID, selectedUserID), // the steps that are being counted for the game week by week
                                     getAverageSteps(selectedUserID), // average amount of steps over the past seven days 
                                     getStepsFromWeekBefore(selectedUserID), // from the week before the past reset day to one week before that. 7 days before the one below.
-                                    getLastWeekSteps(selectedUserID, groupID), // from the past reset day to 7 days behind that
-                                    getWeeklyDuelsWon(selectedUserID, groupID),
-                                    getUserTokens(selectedUserID, groupID),
-                                    getTodaysBetTokens(selectedUserID, groupID),
-                                    getUserDiamonds(selectedUserID, groupID),
+                                    getLastWeekSteps(groupID, selectedUserID), // from the past reset day to 7 days behind that
+                                    getWeeklyDuelsWon(groupID, selectedUserID),
+                                    getUserTokens(groupID, selectedUserID),
+                                    getTodaysBetTokens(groupID, selectedUserID),
+                                    getUserDiamonds(groupID, selectedUserID),
                                     getName(selectedUserID),
-                                    getLastLogin(selectedUserID, groupID)
+                                    getLastLogin(groupID, selectedUserID)
                                 ]);
                         
                                 users[selectedUserID] = {
@@ -211,6 +212,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isFinishedRecap,
                             isFinishedTutorial,
                             userFinishedTutorial,
+                            tutorialStatus,
                             gameType,
                             createdAt,
                             resetDay,
