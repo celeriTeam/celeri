@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -21,6 +21,7 @@ import EditGroupPage from './EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import NewsPage from './News';
+import BetSummaryTutorial from './BetSummaryTutorial';
 
 const db = getFirestore(app);
 
@@ -40,7 +41,6 @@ const BetSummaryPage: React.FC = () => {
     const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
     const { groupIDTemp, showTutorialTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
-    const showTutorial = showTutorialTemp === 'true' ? true : false;
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [propBetQueued, setPropBetQueued] = useState(false);
     const [isNewsModalVisible, setNewsModalVisible] = useState(false);
@@ -100,6 +100,8 @@ const BetSummaryPage: React.FC = () => {
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
     const [selectedTab, setSelectedTab] = useState('Tokens');
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(1);
+    const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
     const router = useRouter();
     const maxNameLength = 16;
     const screenWidth = Dimensions.get('window').width * 0.8;
@@ -656,6 +658,15 @@ const BetSummaryPage: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        // Change tab based on tutorial step
+        if (tutorialStep === 3) {
+            setSelectedTab('Tokens');
+        } else if (tutorialStep === 4) {
+            setSelectedTab('Steps');
+        }
+    }, [tutorialStep]);
+
     if (isLoading) {
         return (
             <LinearGradient
@@ -741,6 +752,19 @@ const BetSummaryPage: React.FC = () => {
         >
             <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
+
+
+                    {/* Tutorial Modal */}
+                    {showTutorial && (
+                        <View style={[1,2].includes(tutorialStep) ? styles.tutorialOverlay : styles.tutorialOverlay2}>
+                                <BetSummaryTutorial
+                                    tutorialStep={tutorialStep}
+                                    setTutorialStep={setTutorialStep}
+                                    setShowTutorial={setShowTutorial}
+                                />
+                        </View>
+                    )}
+
                     {/* Header Section */}
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()}>
@@ -1865,6 +1889,20 @@ const styles = StyleSheet.create({
     closeButtonIcon: {
         width: 20,
         height: 20,
+    },
+    tutorialOverlay: {
+        ...RNStyleSheet.absoluteFillObject,
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    tutorialOverlay2: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '57.5%',
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
 });
 
