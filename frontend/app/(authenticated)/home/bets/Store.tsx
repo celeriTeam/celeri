@@ -72,7 +72,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
     
             try {
                 if (selectedItemId) {
-                    success = await buyPowerup(userID, groupID, targetUserID, selectedItemId, gameType, targetUserName);
+                    success = await buyPowerup(groupID, userID, targetUserID, selectedItemId, gameType, targetUserName);
                 }
             } catch (error) {
                 console.error("Error purchasing item:", error);
