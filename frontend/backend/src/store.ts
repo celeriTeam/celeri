@@ -92,9 +92,9 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
             console.log("currentDiamonds: " + currentDiamonds);
 
             // Check if diamonds are greater than 0
-            if (currentDiamonds > 0) {
+            if (currentDiamonds >= 3) {
                 // Update the values
-                userData.diamonds = currentDiamonds - 1;
+                userData.diamonds = currentDiamonds - 3;
                 //userData.secondWind = currentSecondWind + 1;
 
                 // Write the updated data back to Firestore

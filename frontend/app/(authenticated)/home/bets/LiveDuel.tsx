@@ -59,7 +59,8 @@ const LiveDuelPage: React.FC< {
     userID: string,
     groupID: string,
     onNavigate: (id: string) => void;
-} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate }) => {
+    showwTutorial: Boolean;
+} > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate, showwTutorial }) => {
 
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
     const yourName = yourUser?.name;
