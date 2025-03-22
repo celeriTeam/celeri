@@ -477,12 +477,12 @@ const NewHeadToHeadPage: React.FC = () => {
                 const submittedPlayer = chosenPlayer[index];
                 const submittedBet = +(betAmount[index]);
                 console.log(`you bet on ${submittedPlayer} with ${submittedBet} tokens.`);
-                createBet(userID, groupID, matchup.duelID, submittedBet, submittedPlayer);
+                createBet(groupID, userID, matchup.duelID, submittedBet, submittedPlayer);
             }));
 
             await addToFinishedBetting(groupID, userID);
-            await setLatestBetTime(userID, groupID, new Date());
-            await setTodaysBetTokens(userID, groupID, totalBetTokens());
+            await setLatestBetTime(groupID, userID, new Date());
+            await setTodaysBetTokens(groupID, userID, totalBetTokens());
 
             if (showTutorial) {
                 await addToFinishedTutorial(groupID, userID);

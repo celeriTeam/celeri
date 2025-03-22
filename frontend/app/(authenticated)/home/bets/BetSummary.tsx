@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -9,7 +9,7 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin, getLatestBetTime } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin, getLatestBetTime, getTutorialStatus } from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -21,6 +21,7 @@ import EditGroupPage from './EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import NewsPage from './News';
+import BetSummaryTutorial from './BetSummaryTutorial';
 
 const db = getFirestore(app);
 
@@ -40,7 +41,6 @@ const BetSummaryPage: React.FC = () => {
     const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
     const { groupIDTemp, showTutorialTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
-    const showTutorial = showTutorialTemp === 'true' ? true : false;
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
     const [propBetQueued, setPropBetQueued] = useState(false);
     const [isNewsModalVisible, setNewsModalVisible] = useState(false);
@@ -100,6 +100,8 @@ const BetSummaryPage: React.FC = () => {
     const [powerups, setPowerups] = useState<Array<Array<string>>>([]);
     const [selectedTab, setSelectedTab] = useState('Tokens');
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(1);
+    const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
     const router = useRouter();
     const maxNameLength = 16;
     const screenWidth = Dimensions.get('window').width * 0.8;
@@ -110,7 +112,7 @@ const BetSummaryPage: React.FC = () => {
 
         const initialize = async () => {
             try {
-                await setLogin(userID, groupID, new Date());
+                await setLogin(groupID, userID, new Date());
                 cleanup = await fetchGroupData(userID);
                 await fetchPowerups();
             } catch (error) {
@@ -169,13 +171,14 @@ const BetSummaryPage: React.FC = () => {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
-                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin, latestBetTime] = await Promise.all([
+                    const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, 
+                        cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin, latestBetTime, tutorialStatus] = await Promise.all([
                         getGroupProfilePic(groupID),
                         getGroupName(groupID),
                         getGroupIsFirstDay(groupID),
-                        getUserTokens(uid, groupID),
-                        getTodaysBetTokens(uid, groupID),
-                        getUserDiamonds(uid, groupID),
+                        getUserTokens(groupID, uid),
+                        getTodaysBetTokens(groupID, uid),
+                        getUserDiamonds(groupID, uid),
                         getCurrentPlayersInGame(groupID),
                         getCycle(groupID),
                         getCycleCount(groupID),
@@ -183,8 +186,9 @@ const BetSummaryPage: React.FC = () => {
                         getResetDay(groupID),
                         getGameType(groupID),
                         checkFinishedPropBet(groupID, uid),
-                        getLastLogin(uid, groupID),
-                        getLatestBetTime(uid, groupID)
+                        getLastLogin(groupID, uid),
+                        getLatestBetTime(groupID, uid),
+                        getTutorialStatus(groupID, uid),
                     ]);
 
                     const userList = await getUsersInGroup(groupID); // userIDs
@@ -199,9 +203,9 @@ const BetSummaryPage: React.FC = () => {
                                 getWeeklySteps(groupID, selectedUserID),
                                 getBiweeklySteps(groupID, selectedUserID),
                                 getAverageSteps(selectedUserID),
-                                getUserTokens(selectedUserID, groupID),
-                                getTodaysBetTokens(selectedUserID, groupID),
-                                getUserDiamonds(selectedUserID, groupID)
+                                getUserTokens(groupID, selectedUserID),
+                                getTodaysBetTokens(groupID, selectedUserID),
+                                getUserDiamonds(groupID, selectedUserID)
                             ]);
 
                             let newSteps;
@@ -247,8 +251,10 @@ const BetSummaryPage: React.FC = () => {
                         currentPlayersInGame,
                         gameType,
                         latestBetTime,
+                        tutorialStatus,
                         users
                     };
+                    console.log('tutorialstatys: ', tutorialStatus);
                     setGroups(currentGroups);
 
                     // Set # of days/weeks left in the game
@@ -526,16 +532,12 @@ const BetSummaryPage: React.FC = () => {
                     });
 
                     // Grab news data (dont need onSnapshot)
-                    console.log('showintromodals: ', showIntroModals);
                     if (showIntroModals) {
-                        console.log('grabbing news...');
                         const newsCollectionRef = collection(groupDocRef, 'news');
                         // const lastLogin = groups[groupID]?.lastLogin;
                         const newsQuery = query(newsCollectionRef, where('createdAt', '>', lastLogin));
                         // const newsQuery = query(newsCollectionRef);
                         const newsSnapshot = await getDocs(newsQuery);
-                        // log length of newsSnapshot
-                        console.log('newsSnapshot length: ', newsSnapshot.size);
                         const currentNews: { [key: string]: any } = {};
                         newsSnapshot.forEach((newsDoc: any) => {
                             const newsData = newsDoc.data();
@@ -550,7 +552,6 @@ const BetSummaryPage: React.FC = () => {
                                 return;
                             }
 
-                            console.log('adding news ', newsDoc.id);
                             const newsUsername = users[newsData.userID]?.username;
                             const newsPfp = users[newsData.userID]?.profilePic;
                             const newsOpponentUsername = users[newsData.opponentID]?.username ?? undefined;
@@ -656,6 +657,15 @@ const BetSummaryPage: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        // Change tab based on tutorial step
+        if (tutorialStep === 3) {
+            setSelectedTab('Tokens');
+        } else if (tutorialStep === 4) {
+            setSelectedTab('Steps');
+        }
+    }, [tutorialStep]);
+
     if (isLoading) {
         return (
             <LinearGradient
@@ -741,6 +751,19 @@ const BetSummaryPage: React.FC = () => {
         >
             <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
+
+
+                    {/* Tutorial Modal */}
+                    {showTutorial && (
+                        <View style={[1,2].includes(tutorialStep) ? styles.tutorialOverlay : styles.tutorialOverlay2}>
+                                <BetSummaryTutorial
+                                    tutorialStep={tutorialStep}
+                                    setTutorialStep={setTutorialStep}
+                                    setShowTutorial={setShowTutorial}
+                                />
+                        </View>
+                    )}
+
                     {/* Header Section */}
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()}>
@@ -752,6 +775,9 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.rightIcons}>
                             <View>
                                 <TouchableOpacity onPress={() => { setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
+                                    {!(groups[groupID]?.tutorialStatus.gainsHistory && groups[groupID]?.tutorialStatus.betsHistory && groups[groupID]?.tutorialStatus.raceHistory) &&
+                                        <View style={[styles.tutorialIndicator, { top: 3, marginBottom: -6, }]}/>
+                                    }
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -759,6 +785,9 @@ const BetSummaryPage: React.FC = () => {
                                 </TouchableOpacity>
                             </View>
                             <TouchableOpacity onPress={() => setStoreModalVisible(true)}>
+                                {!groups[groupID]?.tutorialStatus.store &&
+                                    <View style={[styles.tutorialIndicator, { left: 2, top: 2, marginBottom: -3, }]}/>
+                                }
                                 <Image
                                     source={require('@assets/icons/store.png')}
                                     style={styles.storeIcon}
@@ -838,6 +867,9 @@ const BetSummaryPage: React.FC = () => {
                                 style={styles.tokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userTokens}</Text>
+                            {!groups[groupID]?.tutorialStatus.tokens &&
+                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 26, marginLeft: -7, }]} />
+                            }
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.statItem} onPress={() => setTokensUsedModalVisible(true)} activeOpacity={0.8}>
                             <Image
@@ -845,6 +877,9 @@ const BetSummaryPage: React.FC = () => {
                                 style={styles.betTokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.todaysBetTokens}</Text>
+                            {!groups[groupID]?.tutorialStatus.betTokens &&
+                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 26, marginLeft: -7, }]} />
+                            }
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.statItem} onPress={() => setDiamondsModalVisible(true)} activeOpacity={0.8}>
                             <Image
@@ -852,12 +887,18 @@ const BetSummaryPage: React.FC = () => {
                                 style={styles.diamondsIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
+                            {!groups[groupID]?.tutorialStatus.diamonds &&
+                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 34, marginLeft: -9, }]} />
+                            }
                         </TouchableOpacity>
                     </View>
 
                     {/* Live Duel Section */}
                     <View>
                         <Text style={[styles.sectionTitle, { paddingHorizontal: scale(20), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
+                        {!groups[groupID]?.tutorialStatus.liveDuels &&
+                            <View style={[styles.tutorialIndicator, { bottom: 0, right: 21, marginBottom: -7, zIndex: 5, }]} />
+                        }
                         <View style={styles.duelRow}>
                             <LinearGradient
                                 colors={['#74ff6db3', '#2fffe3b3']}
@@ -1141,6 +1182,9 @@ const BetSummaryPage: React.FC = () => {
                                 }}
                             >
                                 <Text style={styles.dropdownText}>Gains</Text>
+                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
+                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 38, marginBottom: -10, }]}/>
+                                }
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1152,6 +1196,9 @@ const BetSummaryPage: React.FC = () => {
                                 }}
                             >
                                 <Text style={styles.dropdownText}>Bets</Text>
+                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
+                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 46, marginBottom: -10, }]}/>
+                                }
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1163,6 +1210,9 @@ const BetSummaryPage: React.FC = () => {
                                 }}
                             >
                                 <Text style={styles.dropdownText}>Races</Text>
+                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
+                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 34, marginBottom: -10, }]}/>
+                                }
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -1457,7 +1507,7 @@ const styles = StyleSheet.create({
     },
     dropdownMenu: {
         position: 'absolute',
-        top: 20,
+        top: 32,
         right: 50,
         width: 100,
         backgroundColor: '#000',
@@ -1865,6 +1915,29 @@ const styles = StyleSheet.create({
     closeButtonIcon: {
         width: 20,
         height: 20,
+    },
+    tutorialIndicator: {
+        width: 7,
+        height: 7,
+        borderRadius: 7,
+        alignSelf: 'flex-end',
+        backgroundColor: '#f6fa05',
+        borderWidth: 1,
+        borderColor: '#fff'
+    },
+    tutorialOverlay: {
+        ...RNStyleSheet.absoluteFillObject,
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    tutorialOverlay2: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '57.5%',
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
 });
 

@@ -23,7 +23,7 @@ exports.sendEmail = onCall(async (request) => {
 
   const msg = {
     to: data.to,
-    from: "lukaschin000@gmail.com",
+    from: "appceleri@gmail.com",
     subject: data.subject,
     text: data.text,
   };

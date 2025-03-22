@@ -175,7 +175,7 @@ export const getGroupCreator = async (groupID: string): Promise<string | undefin
 }
 
 // GET user tokens (based on group)
-export const getUserTokens = async (userID: string, groupID: string): Promise<number | undefined> => {
+export const getUserTokens = async (groupID: string, userID: string): Promise<number | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
@@ -212,13 +212,13 @@ export const getDefaultBetOnSelf = async (groupID: string): Promise<number | und
 }
 
 // GET todaysBetTokens
-export const getTodaysBetTokens = async (userID: string, groupID: string): Promise<number> => {
+export const getTodaysBetTokens = async (groupID: string, userID: string): Promise<number> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            // console.log("getTodaysBetTokens - response: ", user.todaysBetTokens);
+            console.log(`getTodaysBetTokens - response for ${userID}: ${user.todaysBetTokens}`);
             return user.todaysBetTokens;
         } else{
             console.error("getTodaysBetTokens - error: No such document!");
@@ -319,7 +319,7 @@ export const getCurrentPlayersInGame = async (groupID: string): Promise<number |
 }
 
 // GET diamonds
-export const getUserDiamonds = async (userID: string, groupID: string): Promise<number> => {
+export const getUserDiamonds = async (groupID: string, userID: string): Promise<number> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
@@ -417,7 +417,7 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
 }
 
 // GET last login
-export const getLastLogin = async (userID: string, groupID: string): Promise<Date | undefined> => {
+export const getLastLogin = async (groupID: string, userID: string): Promise<Date | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
@@ -454,7 +454,7 @@ export const getStartingTokens = async (groupID: string): Promise<number | undef
 }
 
 // GET latest bet time
-export const getLatestBetTime = async (userID: string, groupID: string): Promise<Date | undefined> => {
+export const getLatestBetTime = async (groupID: string, userID: string): Promise<Date | undefined> => {
     try {
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
@@ -471,10 +471,40 @@ export const getLatestBetTime = async (userID: string, groupID: string): Promise
     }
 }
 
+// GET tutorial status
+export const getTutorialStatus = async (groupID: string, userID: string): Promise<
+    {
+        propBet?: boolean,
+        liveDuels?: boolean,
+        store?: boolean,
+        gainsHistory?: boolean,
+        betsHistory?: boolean,
+        raceHistory?: boolean,
+        tokens?: boolean,
+        betTokens?: boolean,
+        diamonds?: boolean
+    }
+> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.users){
+            const tutorialStatus = groupDoc.data()?.users[userID]?.tutorials;
+            console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus ?? {}}`);
+            return tutorialStatus ?? {};
+        } else{
+            console.error("getLatestBetTime - error: No such document!");
+            return {};
+        }
+    } catch (error) {
+         console.error("getLatestBetTime - Error fetching user document: ", error);
+         return {};
+    }
+}
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
-export const addUserToGroup = async (userID: string, groupID: string): Promise<undefined> => {
+export const addUserToGroup = async (groupID: string, userID: string): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -584,7 +614,7 @@ export const addPropBet = async (groupID: string, userID: string, betOnUserID: s
 }
 
 // SET login
-export const setLogin = async (userID: string, groupID: string, time: Date) => {
+export const setLogin = async (groupID: string, userID: string, time: Date) => {
     try {
         // groups[groupID].users[userID].loginTime will be a list [lastlogin, currentlogin]
         // if loginTime doesnt exist, create it with lastlogin = currentlogin
@@ -621,7 +651,7 @@ export const setLogin = async (userID: string, groupID: string, time: Date) => {
     }
 }
 
-export const setLatestBetTime = async (userID: string, groupID: string, time: Date): Promise<undefined> => {
+export const setLatestBetTime = async (groupID: string, userID: string, time: Date): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
@@ -637,6 +667,26 @@ export const setLatestBetTime = async (userID: string, groupID: string, time: Da
         }
     } catch (error) {
         console.error('setLatestBetTime - Error setting latest bet time:', error);
+        return;
+    }
+}
+
+export const setTutorialStatus = async (groupID: string, userID: string, tutorial: string): Promise<undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            await updateDoc(groupDocRef, {
+                [`users.${userID}.tutorials.${tutorial}`]: true,
+            });
+            console.log('setTutorialStatus - response: Latest bet time set');
+            return;
+        } else {
+            console.error('setTutorialStatus - error: No such document!');
+            return;
+        }
+    } catch (error) {
+        console.error(`setTutorialStatus - Error setting ${tutorial} tutorial status: ${error}`);
         return;
     }
 }
@@ -914,7 +964,7 @@ function createCycle(players: Array<string>): Array<{ [duelKey: string]: { playe
 };
 
 // SET todaysBetTokens
-export const setTodaysBetTokens = async (userID: string, groupID: string, todaysBetTokens: number): Promise<undefined> => {
+export const setTodaysBetTokens = async (groupID: string, userID: string, todaysBetTokens: number): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
