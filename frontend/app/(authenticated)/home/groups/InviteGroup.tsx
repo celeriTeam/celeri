@@ -216,10 +216,18 @@ const InvitePage: React.FC = () => {
 
     const isFormValid = cycles !== '' && dailyTokens !== '' && startingTokens !== '' && defaultBetOnSelf !== '';
 
+    const handleGameSettings = () => {
+        console.log("Start button pressed -- handleGameSettings")
+        router.push({
+            pathname: "/(authenticated)/home/groups/GameSettings",
+            params: { groupID: resolvedGroupID }
+        });
+    };
+
     const handleStartPress = async () => {
         console.log('Start game button pressed');
         setModalVisible(false);
-        await startGame(resolvedGroupID, +cycles, +dailyTokens, +startingTokens, +defaultBetOnSelf, gameType, resetDay);
+        await startGame(resolvedGroupID, +cycles, +startingTokens, gameType, resetDay);
         // navigation.navigate('GroupDetails', { groupID: groupID });
 
         router.replace({
@@ -320,7 +328,7 @@ const InvitePage: React.FC = () => {
                     <View style={styles.header}>
                         <TouchableOpacity style={{ position: 'absolute', left: 0, padding: 16 }} onPress={() => router.back()}>
                             <Image
-                                source={require('@components/back-icon.png')}
+                                source={require('../../../../assets/icons/back.png')}
                                 style={styles.backImage}
                             />
                         </TouchableOpacity>
@@ -394,10 +402,10 @@ const InvitePage: React.FC = () => {
                     {currentGroupUsersArray.length >= userStartRequirement && (
                         groups[resolvedGroupID]?.groupCreator === userID ? (
                             <TouchableOpacity
-                                onPress={() => {setModalVisible(true);}}
+                                onPress={handleGameSettings}
                                 style={styles.startButton}
                             >
-                                <Text style={styles.startButtonText}>Start</Text>
+                                <Text style={styles.startButtonText}>Start Game</Text>
                             </TouchableOpacity>
                         ) : (
                             <TouchableOpacity
@@ -567,8 +575,8 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     backImage: {
-        width: 40,
-        height: 40,
+        width: 19,
+        height: 19,
     },
     groupNameCreated: {
         fontSize: 20,

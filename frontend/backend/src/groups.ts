@@ -742,7 +742,7 @@ export const leaveGroup = async (groupID: string, userID: string) => {
 /*********************************************** SET FUNCTIONS ********************************************/
 
 // START Game
-export const startGame = async (groupID: string, totalCycles: number, dailyTokens: number, startingTokens: number, defaultBetOnSelf: number, gameType: string, resetDay: number): Promise<undefined> => {
+export const startGame = async (groupID: string, totalCycles: number, startingTokens: number, gameType: string, resetDay: number): Promise<undefined> => {
     try {
         const groupDocRef = doc(db, 'groups', groupID);
 
