@@ -78,7 +78,7 @@ const PropBetPage: React.FC< {
                             <View style={styles.overUnderContainer}>
                                 <Text style={styles.overUnderSteps}>
                                     <Text style={styles.overUnderText}>{isCurrentOver ? 'Over' : 'Under'} </Text>
-                                    {currentPropBet?.averageStepCount}
+                                    {propBetAmount(player.averageStepCount) ?? currentPropBet?.averageStepCount}
                                 </Text>
                             </View>
                         </View>
@@ -108,10 +108,6 @@ const PropBetPage: React.FC< {
                                     addPropBet(groupID, userID, player.id, propBetAmount(player.averageStepCount), selectedPropBet === 'over' ? 'over' : 'under');
                                     overUnder(selectedPropBet);
                                     setFinishedPropBet(true);
-                                    setPropBetModalVisible(false);
-                                    setTimeout(() => {
-                                        setPropBetModalVisible(true);
-                                    }, 100);
                                 }}
                                 disabled={selectedPropBet === null}
                                 activeOpacity={0.8}

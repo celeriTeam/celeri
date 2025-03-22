@@ -1181,10 +1181,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
-                                <Text style={styles.dropdownText}>Gains</Text>
                                 {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 38, marginBottom: -10, }]}/>
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 38, marginTop: -4 }]}/>
                                 }
+                                <Text style={styles.dropdownText}>Gains</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1195,10 +1195,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
-                                <Text style={styles.dropdownText}>Bets</Text>
                                 {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 46, marginBottom: -10, }]}/>
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 46, marginTop: -11 }]}/>
                                 }
+                                <Text style={styles.dropdownText}>Bets</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1209,10 +1209,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
-                                <Text style={styles.dropdownText}>Races</Text>
                                 {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 34, marginBottom: -10, }]}/>
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
                                 }
+                                <Text style={styles.dropdownText}>Races</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -1272,6 +1272,7 @@ const BetSummaryPage: React.FC = () => {
                                         createMemberButtonHandle(id);
                                     }, 100);
                                 }}
+                                showwTutorial={groups[groupID]?.tutorialStatus.liveDuels}
                             />
                         </View>
                     </View>
