@@ -202,7 +202,7 @@ exports.sendNotifOnNudge = onDocumentCreated("nudges/{nudgeId}", async (event) =
   }
 });
 
-exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), async (event) => {
+exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", async (event) => {
   console.log("sendNotifOnNews is running");
 
   const snapshot = event.data;
@@ -224,9 +224,10 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
   // if priority zero notif, then send notif no matter what
   if (newNewsData.priority0 !== undefined) {
     console.log("priority0 exists:", newNewsData.priority0);
-    const priority0UserIDs = Object.keys(newNewsData.priority0);
+    const priority0UserIDs = newNewsData.priority0;
     for (const userID of priority0UserIDs) {
       try {
+        console.log("priority 0 -- iterating through", userID);
         // the user who completed the challenge (who the notif is about)
         const targetUserID = newNewsData.userID;
         const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
@@ -237,6 +238,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
 
         const userDoc = await firestore.collection("users").doc(userID).get();
         if (userDoc.exists) {
+          console.log("user exists in priority 0", targetUserID, targetUsername);
           const userData = userDoc.data();
           const userTokens = userData && userData.tokens;
 
@@ -244,7 +246,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
             for (const token of userTokens) {
               let message;
               if (newsType == "recordSetter") {
-                const steps = newNewsData.steps;
+                console.log("recordSetter detected, will try to send message to ", targetUsername);
+                const steps = newNewsData.record;
                 message = {
                   token: token,
                   notification: {
@@ -687,7 +690,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}"), a
       }
     }
   }
-};
+});
 
 exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", async (event) => {
   console.log("sendNotifOnBet is running");
