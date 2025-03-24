@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '../../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
@@ -17,13 +17,11 @@ const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
-const NewHeadToHeadTutorial: React.FC<{
+const BetSummaryTutorial: React.FC<{
     tutorialStep: number,
     setTutorialStep: (step: number) => void;
     setShowTutorial: (show: boolean) => void;
-    showNext: boolean;
-    setShowNext: (show: boolean) => void;
-}> = ({ tutorialStep, setTutorialStep, setShowTutorial, showNext, setShowNext }) => {
+}> = ({ tutorialStep, setTutorialStep, setShowTutorial }) => {
     const { userID, groups, loading } = useUser();
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
@@ -32,41 +30,30 @@ const NewHeadToHeadTutorial: React.FC<{
     const shouldShowNext = [3, 4, 5];
 
     const handleNextStep = async () => {
-        if (tutorialStep < 6) {
-            if (shouldShowNext.includes(tutorialStep + 1)) {
-                setShowNext(false);
-            }
+        if (tutorialStep < 4) {
             setTutorialStep(tutorialStep + 1);
         } else {
+            setTutorialStep(1);
             setShowTutorial(false);
-            await setUserFinishedTutorial(userID);
-            await addToFinishedTutorial(groupID, userID);
         }
     };
 
     const handlePrevStep = () => {
         if (tutorialStep > 1) {
-            if (shouldShowNext.includes(tutorialStep)) {
-                setShowNext(true);
-            }
             setTutorialStep(tutorialStep - 1);
         }
     };
 
     const getModalStyle = (): StyleProp<ViewStyle> => {
         switch (tutorialStep) {
-            case 1: // about weekly bets
-                return { top: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
-            case 2: // bets + number of tokens
-                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(100) };
-            case 3: // choose desired player
-                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
-            case 4: // choose desired bet amount
-                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
-            case 5: // wait for all bets to be placed
-                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
-            case 6: // submit
-                return { bottom: verticalScale(64), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+            case 1: // "nice job making those bets"
+                return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
+            case 2: // about weekly races
+                return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
+            case 3: // tokens leaderboard
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+            case 4: // steps leaderboard
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             default:
                 return {};
         }
@@ -82,10 +69,14 @@ const NewHeadToHeadTutorial: React.FC<{
                             style={[styles.arrow, tutorialStep === 1 && { tintColor: '#656565' } ]}
                         />
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.circle, (!showNext || tutorialStep >= 6) && { borderColor: '#656565' }]} onPress={handleNextStep} disabled={!showNext || tutorialStep >= 6}>
+                    <TouchableOpacity style={styles.circle} onPress={handleNextStep}>
                         <Image
-                            source={require('@assets/icons/rightArrow.png')}
-                            style={[styles.arrow, (!showNext || tutorialStep >= 6) && { tintColor: '#656565' }]}
+                            source={
+                                tutorialStep === 4 ?
+                                require('@assets/icons/x.png') :
+                                require('@assets/icons/rightArrow.png')
+                            }
+                            style={styles.arrow}
                         />
                     </TouchableOpacity>
                 </View>
@@ -99,6 +90,8 @@ const styles = StyleSheet.create({
     overlayContainer: {
         flex: 1,
         alignItems: 'center',
+        // center
+        justifyContent: 'center',
     },
     overlay: {
         position: 'absolute',
@@ -145,4 +138,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default NewHeadToHeadTutorial;
+export default BetSummaryTutorial;

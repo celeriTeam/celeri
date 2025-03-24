@@ -218,7 +218,7 @@ export const getTodaysBetTokens = async (groupID: string, userID: string): Promi
         if (groupDoc.exists() && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
-            console.log(`getTodaysBetTokens - response for ${userID}: ${user.todaysBetTokens}`);
+            // console.log(`getTodaysBetTokens - response for ${userID}: ${user.todaysBetTokens}`);
             return user.todaysBetTokens;
         } else{
             console.error("getTodaysBetTokens - error: No such document!");
@@ -489,7 +489,7 @@ export const getTutorialStatus = async (groupID: string, userID: string): Promis
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists() && groupDoc.data()?.users){
             const tutorialStatus = groupDoc.data()?.users[userID]?.tutorials;
-            console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus ?? {}}`);
+            // console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus ?? {}}`);
             return tutorialStatus ?? {};
         } else{
             console.error("getLatestBetTime - error: No such document!");
@@ -688,6 +688,24 @@ export const setTutorialStatus = async (groupID: string, userID: string, tutoria
     } catch (error) {
         console.error(`setTutorialStatus - Error setting ${tutorial} tutorial status: ${error}`);
         return;
+    }
+}
+
+export const addDiamonds = async (groupID: string, userID: string, diamonds: number) => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()) {
+            const userDiamonds = groupDoc.data()?.users[userID]?.diamonds ?? 0;
+            await updateDoc(groupDocRef, {
+                [`users.${userID}.diamonds`]: userDiamonds + diamonds,
+            });
+            console.log('addDiamonds - response: Diamonds added');
+        } else {
+            console.error('addDiamonds - error: No such document!');
+        }
+    } catch (error) {
+        console.error('addDiamonds - Error adding diamonds:', error);
     }
 }
 

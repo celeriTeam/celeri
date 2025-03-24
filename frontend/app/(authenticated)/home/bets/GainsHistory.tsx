@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Timestamp } from "firebase/firestore";
 import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
@@ -10,6 +10,7 @@ import { useUser } from '../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
+import GainsHistoryTutorial from './tutorials/GainsHistoryTutorial';
 
 
 const GainsHistoryPage: React.FC = () => {
@@ -19,6 +20,7 @@ const GainsHistoryPage: React.FC = () => {
     const [gainHistory, setGainHistory] = useState<any[]>([]); // Holds all fetched gains
     const [weeksAgo, setWeeksAgo] = useState(2); // Initial daysAgo for yesterday's duels
     const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
+    const [tutorialVisible, setTutorialVisible] = useState(false);
 
     const router = useRouter();
     const screenWidth = Dimensions.get('window').width;
@@ -136,6 +138,17 @@ const GainsHistoryPage: React.FC = () => {
                 width: '100%',
             }}
         >
+            <Modal
+                transparent={true}
+                visible={tutorialVisible}
+            >
+
+                <View style={styles.tutorialOverlay}>
+                    <GainsHistoryTutorial
+                        setTutorialVisible={setTutorialVisible}
+                    />
+                </View>
+            </Modal>
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
@@ -242,6 +255,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center'
+    },
+    tutorialOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '100%',
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
 });
 
