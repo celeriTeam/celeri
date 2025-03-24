@@ -50,9 +50,9 @@ const BetSummaryTutorial: React.FC<{
             case 2: // about weekly races
                 return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
             case 3: // tokens leaderboard
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
             case 4: // steps leaderboard
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
             default:
                 return {};
         }
@@ -79,7 +79,28 @@ const BetSummaryTutorial: React.FC<{
                         />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
+                <Text style={styles.tutorialText}>
+                    {tutorialStep === 1 && (
+                        <Text style={styles.tutorialText}>
+                            Welcome to your group's home page! Here, you can track bets, steps, tokens, and much more.
+                        </Text>
+                    )}
+                    {tutorialStep === 2 && (
+                        <Text style={styles.tutorialText}>
+                            At the top, you can check how much longer the game will run, as well as how long until new head-to-head bets drop.
+                        </Text>
+                    )}
+                    {tutorialStep === 3 && (
+                        <Text style={styles.tutorialText}>
+                            Below, you can see who has the most tokens. If it's not you, you should act fast!
+                        </Text>
+                    )}
+                    {tutorialStep === 4 && (
+                        <Text style={styles.tutorialText}>
+                            On the steps side of the leaderboard, you can see who has the most steps. Keep in mind -- this resets with every new head to head bet!
+                        </Text>
+                    )}
+                </Text>
             </View>
         </View>
     );
@@ -125,6 +146,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 10,
         color: '#fff',
+        fontFamily: 'Lexend',
     },
     nextButton: {
         backgroundColor: '#007bff',

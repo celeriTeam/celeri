@@ -134,7 +134,7 @@ const WelcomePage: React.FC = () => {
                     <View style={styles.page}>
                         <View style={styles.content}>
                             <Text style={styles.text}>The goal of the game is to <Text style={styles.highlight}>win the most tokens. </Text>
-                                Every player starts with [{dailyTokens}] tokens, and you can only gain tokens by
+                                Every player starts with {dailyTokens} tokens, and you can only gain tokens by
                                 <Text style={styles.highlight}> stealing them from other players.</Text>
                             </Text>
                             <Text style={styles.text}>These may have been your friends, but right now, they are your <Text style={styles.highlight}>enemies.</Text></Text>
@@ -169,7 +169,7 @@ const WelcomePage: React.FC = () => {
                     <View style={styles.page}>
                         <View style={styles.content}>
                             <Text style={styles.text}>There are three ways to gain tokens:</Text>
-                                <Text style={styles.highlight}>1. Weekly bets</Text>
+                                <Text style={styles.highlight}>1. Head-to-head bets</Text>
                                 <Text style={styles.highlight}>2. Daily prop bets</Text>
                                 <Text style={styles.highlight}>3. Weekly races</Text>
                             <Text style={[styles.text, { marginTop: 10, }]}>Now we'll walk you through each one.</Text>
