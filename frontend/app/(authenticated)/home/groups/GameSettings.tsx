@@ -15,35 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const questions = [
-    {
-      id: 0,
-      text: "How often do you want group-wide bets?",
-      options: [
-        { label: "Twice a week", answer: "biweekly", description: "Faster paced games, more bets." },
-        { label: "Once a week", answer: "weekly", description: "Slower paced game, less bets." }
-      ]
-    },
-    {
-      id: 1,
-      text: "How many tokens should each user start with?",
-      options: [
-        { label: "1000", answer: "1000", description: "Conservative betting, play it safe!" },
-        { label: "2000", answer: "2000", description: "A fair amount of tokens." },
-        { label: "5000", answer: "5000", description: "Go big or go home!" }
-      ]
-    },
-    {
-        id: 2,
-        text: "How many rounds do you want to play?",
-        options: [
-          { label: "One cycle", answer: "1", description: "Each player will have a head-to-head matchup with every other player exactly once." },
-          { label: "Two cycles", answer: "2", description: "Each player will have a head-to-head matchup with every other player exactly twice." }
-        ]
-      },
-    // Add more questions here
-  ];
-
   
 const { width, height } = Dimensions.get('window');
 
@@ -58,9 +29,46 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const GameSettings: React.FC = () => {
     const [chosenAnswer, setChosenAnswer] = useState<string[]>([]);
     const [questionIndex, setCurrentMatchupIndex] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const router = useRouter();
-    const { groupID } = useLocalSearchParams();
+    const { groupID, userCount } = useLocalSearchParams();
     const resolvedGroupID = groupID as string; 
+    const resolvedUserCount = +(userCount as string);
+
+    const oneCycleRounds = resolvedUserCount - 1;
+    const twoCycleRounds = (resolvedUserCount - 1) * 2
+
+
+    const [questions, setQuestions] = useState([
+        {
+          id: 0,
+          text: "How often do you want group-wide bets?",
+          options: [
+            { label: "Twice a week", answer: "biweekly", description: "Faster paced games, more bets." },
+            { label: "Once a week", answer: "weekly", description: "Slower paced game, less bets." }
+          ]
+        },
+        {
+          id: 1,
+          text: "How many tokens should each user start with?",
+          options: [
+            { label: "1000", answer: "1000", description: "Conservative betting, play it safe!" },
+            { label: "2000", answer: "2000", description: "A fair amount of tokens." },
+            { label: "5000", answer: "5000", description: "Go big or go home!" }
+          ]
+        },
+        {
+            id: 2,
+            text: "How many cycles do you want your game to have?",
+            options: [
+              { label: "One cycle", answer: "1", description: "" },
+              { label: "Two cycles", answer: "2", description: "" }
+            ]
+          },
+        // Add more questions here
+    ]);
+    
 
     const screenWidth = Dimensions.get('window').width;
 
@@ -96,6 +104,34 @@ const GameSettings: React.FC = () => {
             return newArray;
         });
 
+        // Dynamically update the description of Question 2 based on Question 0
+        if (index === 0) {
+            const isBiweekly = answer === "biweekly";
+            const roundsTextOne = isBiweekly
+            ? `The game will last ${Math.ceil(oneCycleRounds / 2)} weeks long, with a total of ${oneCycleRounds} rounds.`
+            : `The game will last ${oneCycleRounds} weeks long, with a total of ${oneCycleRounds} rounds.`;
+
+            const roundsTextTwo = isBiweekly
+            ? `The game will last ${Math.ceil(twoCycleRounds / 2)} weeks long, with a total of ${twoCycleRounds} rounds.`
+            : `The game will last ${twoCycleRounds} weeks long, with a total of ${twoCycleRounds} rounds.`;
+
+
+            setQuestions((prevQuestions) => {
+            const updatedQuestions = [...prevQuestions];
+            const originalOptionOne = updatedQuestions[2].options[0];
+            const originalOptionTwo = updatedQuestions[2].options[1];
+            updatedQuestions[2].options[0] = {
+                ...originalOptionOne,
+                description: `Each player will have a head-to-head matchup with every other player exactly once. ${roundsTextOne}`
+            };
+            updatedQuestions[2].options[1] = {
+                ...originalOptionTwo,
+                description: `Each player will have a head-to-head matchup with every other player exactly twice. ${roundsTextTwo}`
+            };
+            return updatedQuestions;
+            });
+        }
+
         // Automatically scroll to the next question if it's not the last one
         if (index < questions.length - 1) {
             setTimeout(() => {
@@ -106,6 +142,9 @@ const GameSettings: React.FC = () => {
 
     const handleStartPress = async (cycles: string, startingTokens: string, gameType: string) => {
         console.log('Start game button pressed');
+        if (isSubmitting) return; // prevent double-clicks
+        setIsSubmitting(true);
+
         const resetDay = new Date().getDay();
         await startGame(resolvedGroupID, +cycles, +startingTokens, gameType, resetDay);
 

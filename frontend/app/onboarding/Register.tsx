@@ -13,7 +13,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-//import db from "@react-native-firebase/firestore";
+import MailchimpSubscribe from 'react-mailchimp-subscribe'
 
 
 const SignUpPage: React.FC = () => {

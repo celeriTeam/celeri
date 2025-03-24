@@ -220,7 +220,7 @@ const InvitePage: React.FC = () => {
         console.log("Start button pressed -- handleGameSettings")
         router.push({
             pathname: "/(authenticated)/home/groups/GameSettings",
-            params: { groupID: resolvedGroupID }
+            params: { groupID: resolvedGroupID, userCount: currentGroupUsersArray.length }
         });
     };
 
