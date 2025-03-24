@@ -372,6 +372,14 @@ export const getBiweeklySteps = async(groupID: string, userID: string): Promise<
             return 0;
         }
 
+        // Check if it's a reset day
+        if ((currentDay === firstResetDay && currentHour >= firstResetHour) || 
+            (currentDay === secondResetDay && currentHour >= secondResetHour)) {
+            // If it's a reset day, only return today's steps
+            const currentDaySteps = await getSteps(userID) || 0;
+            return currentDaySteps;
+        }
+
         let daysSinceReset;
 
         // figure out if you should count from first or second resetDay, also in bet summary
@@ -415,13 +423,22 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
         const groupData = groupDoc.data();
         const userData = userDoc.data();
 
-        const todayIndex = new Date().getDay(); // Get the current day index (0-6)
+        const today = new Date();
+        const todayIndex = today.getDay(); // Get the current day index (0-6)
+        const currentHour = today.getHours();
         const resetDay = groupData?.resetDay || 0;
         const weeklyStepsTemp = userData?.averageSteps; // temp logic for averagesteps revamp (1/25/2024)
 
         if (weeklyStepsTemp === undefined || weeklyStepsTemp.length !== 7) {
             console.error("getWeeklySteps - error: Invalid averageSteps data");
             return 0;
+        }
+
+        // Check if it's the reset day
+        if (todayIndex === resetDay && currentHour >= 0) { // Assuming reset happens at midnight
+            // If it's the reset day, only return today's steps
+            const currentDaySteps = await getSteps(userID) || 0;
+            return currentDaySteps;
         }
 
         // Calculate how many days to include (from resetDay to yesterday)        

@@ -20,7 +20,7 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
             const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
 
             if (groupCycleDay === 1 && groupCycleCount === 1) {
-                console.log('getYesterdaysDuelsSummary - error: No duels found for yesterday');
+                // console.log('getYesterdaysDuelsSummary - error: No duels found for yesterday');
                 return undefined;
             } else if (groupCycleDay === 1) {
                 // console.log('getYesterdayDuelSummary - groupCycleDay === 1');
@@ -56,7 +56,7 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('getYesterdaysDuelsSummary - error: No duels found for today');
+                // console.log('getYesterdaysDuelsSummary - error: No duels found for today');
                 return undefined;
             }
             // console.log('getYesterdayDuelsSummary - Checkpoint One');
@@ -104,7 +104,7 @@ export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: 
             const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
 
             if (groupCycleWeek === 1 && groupCycleCount === 1) {
-                console.log('getLastWeekDuelsSummary - error: No duels found for last week');
+                // console.log('getLastWeekDuelsSummary - error: No duels found for last week');
                 return undefined;
             } else if (groupCycleWeek === 1) {
                 // console.log('getLastWeekDuelSummary - groupCycleWeek === 1');
@@ -151,7 +151,7 @@ export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: 
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('getYesterdaysDuelsSummary - error: No duels found for today');
+                // console.log('getYesterdaysDuelsSummary - error: No duels found for today');
                 return undefined;
             }
             // console.log('getYesterdayDuelsSummary - Checkpoint One');
@@ -365,7 +365,7 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('getLastWeekPropBets - error: No prop bets found for today');
+                // console.log('getLastWeekPropBets - error: No prop bets found for today');
                 return undefined;
             }
 
@@ -842,7 +842,7 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('getTodaysDuelsSummary - No duels found for today');
+                // console.log('getTodaysDuelsSummary - No duels found for today');
                 return undefined;
             }
             
@@ -889,7 +889,7 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
             const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
-                console.log('getUnbetDuels - No duels found for today for group: ', groupID);
+                // console.log('getUnbetDuels - No duels found for today for group: ', groupID);
                 return {};
             }
 
