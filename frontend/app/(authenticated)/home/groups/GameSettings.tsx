@@ -148,10 +148,13 @@ const GameSettings: React.FC = () => {
         const resetDay = new Date().getDay();
         await startGame(resolvedGroupID, +cycles, +startingTokens, gameType, resetDay);
 
-        router.replace({
-            pathname: '/(authenticated)/home/bets/Welcome',
-            params: { groupIDTemp: resolvedGroupID },
-        });
+        router.back();
+        setTimeout(() => {
+            router.replace({
+                pathname: '/(authenticated)/home/bets/Welcome',
+                params: { groupIDTemp: resolvedGroupID },
+            });
+        }, 10);
     };
 
 
