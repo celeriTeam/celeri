@@ -9,7 +9,11 @@ import StorePage from './Store';
 import BetHistoryPage from './BetHistory';
 import WeeklyBetHistoryPage from './WeeklyBetHistory';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, setLogin, getLastLogin, getLatestBetTime, getTutorialStatus } from '@/backend/src/groups';
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
+    getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, 
+    setLogin, getLastLogin, getLatestBetTime, getTutorialStatus, addDiamonds, 
+    setTutorialStatus} 
+from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import useHealthData from '@/backend/src/hooks/useHealthData';
@@ -21,7 +25,9 @@ import EditGroupPage from './EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import NewsPage from './News';
-import BetSummaryTutorial from './BetSummaryTutorial';
+import BetSummaryTutorial from './tutorials/BetSummaryTutorial';
+import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
+import StoreTutorial from './tutorials/StoreTutorial';
 
 const db = getFirestore(app);
 
@@ -102,6 +108,8 @@ const BetSummaryPage: React.FC = () => {
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(1);
     const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
+    const [showStoreTutorial, setShowStoreTutorial] = useState(true);
+    const [showLiveDuelTutorial, setShowLiveDuelTutorial] = useState(true);
     const router = useRouter();
     const maxNameLength = 16;
     const screenWidth = Dimensions.get('window').width * 0.8;
@@ -646,6 +654,16 @@ const BetSummaryPage: React.FC = () => {
         setCurrentBetIndex(newIndex);
     };
 
+    const addDiamond = async (setVisible: (visible: boolean) => void, tutorial: string) => {
+        try {
+            setVisible(false);
+            await setTutorialStatus(groupID, userID, tutorial);
+            await addDiamonds(groupID, userID, 1);
+        } catch (error) {
+            console.error('Error adding diamond:', error);
+        }
+    };
+
     // if it hits 12:00 am, navigate to hometab
     useEffect(() => {
         const interval = setInterval(() => {
@@ -755,12 +773,12 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Tutorial Modal */}
                     {showTutorial && (
-                        <View style={[1,2].includes(tutorialStep) ? styles.tutorialOverlay : styles.tutorialOverlay2}>
-                                <BetSummaryTutorial
-                                    tutorialStep={tutorialStep}
-                                    setTutorialStep={setTutorialStep}
-                                    setShowTutorial={setShowTutorial}
-                                />
+                        <View style={[1,2].includes(tutorialStep) ? styles.tutorialOverlay : [styles.tutorialOverlayTop, { height: '57.5%', }]}>
+                            <BetSummaryTutorial
+                                tutorialStep={tutorialStep}
+                                setTutorialStep={setTutorialStep}
+                                setShowTutorial={setShowTutorial}
+                            />
                         </View>
                     )}
 
@@ -775,9 +793,9 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.rightIcons}>
                             <View>
                                 <TouchableOpacity onPress={() => { setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
-                                    {!(groups[groupID]?.tutorialStatus.gainsHistory && groups[groupID]?.tutorialStatus.betsHistory && groups[groupID]?.tutorialStatus.raceHistory) &&
+                                    {/* {!(groups[groupID]?.tutorialStatus.gainsHistory && groups[groupID]?.tutorialStatus.betsHistory && groups[groupID]?.tutorialStatus.raceHistory) &&
                                         <View style={[styles.tutorialIndicator, { top: 3, marginBottom: -6, }]}/>
-                                    }
+                                    } */}
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -896,7 +914,7 @@ const BetSummaryPage: React.FC = () => {
                     {/* Live Duel Section */}
                     <View>
                         <Text style={[styles.sectionTitle, { paddingHorizontal: scale(20), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
-                        {!groups[groupID]?.tutorialStatus.liveDuels &&
+                        {!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial &&
                             <View style={[styles.tutorialIndicator, { bottom: 0, right: 21, marginBottom: -7, zIndex: 5, }]} />
                         }
                         <View style={styles.duelRow}>
@@ -924,6 +942,7 @@ const BetSummaryPage: React.FC = () => {
                                             onPress={() => setLiveDuelModalVisible(true)}
                                             activeOpacity={1}
                                             style={[styles.duelCardTouchable, { width: screenWidth, }]}
+                                            disabled={!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4}
                                         >
 
                                             {/* player 1 */}
@@ -1181,10 +1200,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
+                                {/* {!groups[groupID]?.tutorialStatus.gainsHistory &&
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 38, marginTop: -4 }]}/>
+                                } */}
                                 <Text style={styles.dropdownText}>Gains</Text>
-                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 38, marginBottom: -10, }]}/>
-                                }
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1195,10 +1214,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
+                                {/* {!groups[groupID]?.tutorialStatus.betsHistory &&
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 46, marginTop: -11 }]}/>
+                                } */}
                                 <Text style={styles.dropdownText}>Bets</Text>
-                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 46, marginBottom: -10, }]}/>
-                                }
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => {
@@ -1209,10 +1228,10 @@ const BetSummaryPage: React.FC = () => {
                                     });
                                 }}
                             >
+                                {/* {!groups[groupID]?.tutorialStatus.raceHistory &&
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
+                                } */}
                                 <Text style={styles.dropdownText}>Races</Text>
-                                {!groups[groupID]?.tutorialStatus.gainsHistory &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 12, right: 34, marginBottom: -10, }]}/>
-                                }
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -1252,7 +1271,8 @@ const BetSummaryPage: React.FC = () => {
                     <View style={styles.modalOverlay}>
                         <View style={styles.liveDuelModalContainer}>
                             {/* Close button */}
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} activeOpacity={1}>
+                            <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} 
+                            activeOpacity={1} disabled={!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
@@ -1273,9 +1293,41 @@ const BetSummaryPage: React.FC = () => {
                                     }, 100);
                                 }}
                             />
+                            
+                            {/* LiveDuels Tutorial */}
+                            {!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial && (
+                                <>
+                                {tutorialStep === 2 && <View style={ [styles.tutorialOverlayTop, { height: '23%', }] } />}
+                                <View style={[
+                                    tutorialStep === 1 && [styles.tutorialOverlayBottom, { height: '77%', }],
+                                    tutorialStep === 2 && [styles.tutorialOverlayBottom, { height: '38%', }],
+                                    tutorialStep === 3 && [styles.tutorialOverlayTop, { height: '60%', }],
+                                    ]}>
+                                    <LiveDuelTutorial
+                                        tutorialStep={tutorialStep}
+                                        setTutorialStep={setTutorialStep}
+                                        setLiveDuelModalVisible={setLiveDuelModalVisible}
+                                    />
+                                </View>
+                                </>
+                            )}
                         </View>
                     </View>
                 </Modal>
+
+                {/* LiveDuels Tutorial on the outside */}
+                {!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4 && (
+                    <>
+                    <View style={ [styles.tutorialOverlayBottom, { height: '42.5%', }] } />
+                    <View style={[styles.tutorialOverlayTop, { height: '37%', }]}>
+                        <LiveDuelTutorial
+                            tutorialStep={tutorialStep}
+                            setTutorialStep={setTutorialStep}
+                            setLiveDuelModalVisible={setShowLiveDuelTutorial}
+                        />
+                    </View>
+                    </>
+                )}
 
                 {/* Store Modal */}
                 <Modal
@@ -1298,6 +1350,17 @@ const BetSummaryPage: React.FC = () => {
                                 currentGroupUsersArray={currentGroupUsersArray}
                                 setStoreModalVisible={setStoreModalVisible}
                             />
+                            
+                            {/* Store Tutorial */}
+                            {!groups[groupID]?.tutorialStatus.store && showStoreTutorial && (
+                                <View style={styles.tutorialOverlay}>
+                                    <StoreTutorial
+                                        tutorialStep={tutorialStep}
+                                        setTutorialStep={setTutorialStep}
+                                        setShowStoreTutorial={setShowStoreTutorial}
+                                    />
+                                </View>
+                            )}
                         </View>
                     </View>
                 </Modal>
@@ -1392,7 +1455,7 @@ const BetSummaryPage: React.FC = () => {
                         activeOpacity={1}
                         onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
                     />
-                        <View style={[styles.moneyModalContainer, { height: '25%', top: '37%' }]}>
+                        <View style={[styles.moneyModalContainer, { height: '27%', top: '37%' }]}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
                                 <Image
@@ -1402,8 +1465,19 @@ const BetSummaryPage: React.FC = () => {
                             </TouchableOpacity>
                             <View style={styles.infoModalContainer}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={styles.tokenText}>Here are your total tokens. You can earn more by winning your bets or the weekly race!{"\n\n"}The person with the most tokens at the end of your game wins!</Text>
+                                    <Text style={styles.tokenText}>
+                                        Here are your total tokens. You can earn more by winning your bets or the weekly race!
+                                        {"\n\n"}The person with the most tokens at the end of your game wins!</Text>
                                 </View>
+                                {!groups[groupID]?.tutorialStatus.tokens && (
+                                    <TouchableOpacity onPress={() => addDiamond(setTokensModalVisible, 'tokens')} style={styles.diamondsButton}>
+                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
+                                        <Image
+                                            source={require('@assets/icons/diamonds.png')}
+                                            style={styles.diamondsIcon}
+                                        />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                 </Modal>
@@ -1417,7 +1491,7 @@ const BetSummaryPage: React.FC = () => {
                         activeOpacity={1}
                         onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
                     />
-                        <View style={[styles.moneyModalContainer, { height: '13%', top: '44%' }]}>
+                        <View style={[styles.moneyModalContainer, { height: '18%', top: '44%' }]}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
                                 <Image
@@ -1429,6 +1503,15 @@ const BetSummaryPage: React.FC = () => {
                                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
                                     <Text style={styles.tokenText}>Here are the tokens you've bet this week.</Text>
                                 </View>
+                                {!groups[groupID]?.tutorialStatus.betTokens && (
+                                    <TouchableOpacity onPress={() => addDiamond(setTokensUsedModalVisible, 'betTokens')} style={styles.diamondsButton}>
+                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
+                                        <Image
+                                            source={require('@assets/icons/diamonds.png')}
+                                            style={styles.diamondsIcon}
+                                        />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                 </Modal>
@@ -1454,6 +1537,15 @@ const BetSummaryPage: React.FC = () => {
                                 <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
                                     <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
                                 </View>
+                                {!groups[groupID]?.tutorialStatus.diamonds && (
+                                    <TouchableOpacity onPress={() => addDiamond(setDiamondsModalVisible, 'diamonds')} style={styles.diamondsButton}>
+                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
+                                        <Image
+                                            source={require('@assets/icons/diamonds.png')}
+                                            style={styles.diamondsIcon}
+                                        />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
                 </Modal>
@@ -1850,6 +1942,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: 'white',
     },
+    diamondsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        borderRadius: 10,
+        marginTop: 25,
+        borderWidth: 1,
+        borderColor: '#fff',
+        gap: 5,
+    },
     // MODAL
     modalOverlay: {
         // flex: 1,
@@ -1930,15 +2033,32 @@ const styles = StyleSheet.create({
         zIndex: 100,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
-    tutorialOverlay2: {
+    tutorialOverlayTop: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '57.5%',
         zIndex: 100,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
     },
+    tutorialOverlayBottom: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    tutorialOverlayLiveDuels: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        zIndex: 1000,
+        elevation: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    }
 });
 
 export default BetSummaryPage;

@@ -15,7 +15,7 @@ import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
 import { useTabBar } from '../../../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
-import NewHeadToHeadTutorial from './NewHeadToHeadTutorial';
+import NewHeadToHeadTutorial from './tutorials/NewHeadToHeadTutorial';
 
 
 const { width, height } = Dimensions.get('window');

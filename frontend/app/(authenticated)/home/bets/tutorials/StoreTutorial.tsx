@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '../../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import { setUserFinishedTutorial } from '@/backend/src/users';
+import { addDiamonds, setTutorialStatus } from '@/backend/src/groups';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,42 +18,40 @@ const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
-const BetSummaryTutorial: React.FC<{
+const StoreTutorial: React.FC<{
     tutorialStep: number,
     setTutorialStep: (step: number) => void;
-    setShowTutorial: (show: boolean) => void;
-}> = ({ tutorialStep, setTutorialStep, setShowTutorial }) => {
+    setShowStoreTutorial: (show: boolean) => void;
+}> = ({ tutorialStep, setTutorialStep, setShowStoreTutorial }) => {
     const { userID, groups, loading } = useUser();
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
+    const [addedDiamond, setAddedDiamond] = useState(false);
 
     const shouldShowNext = [3, 4, 5];
 
     const handleNextStep = async () => {
-        if (tutorialStep < 4) {
-            setTutorialStep(tutorialStep + 1);
-        } else {
-            setShowTutorial(false);
-        }
+        await setTutorialStatus(groupID, userID, 'store');
+        setShowStoreTutorial(false);
     };
 
     const handlePrevStep = () => {
-        if (tutorialStep > 1) {
-            setTutorialStep(tutorialStep - 1);
+    };
+    
+    const addDiamond = async () => {
+        try {
+            setAddedDiamond(true);
+            await addDiamonds(groupID, userID, 1);
+        } catch (error) {
+            console.error('Error adding diamond:', error);
         }
     };
 
     const getModalStyle = (): StyleProp<ViewStyle> => {
         switch (tutorialStep) {
-            case 1: // "nice job making those bets"
-                return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
-            case 2: // about weekly races
-                return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
-            case 3: // tokens leaderboard
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
-            case 4: // steps leaderboard
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
+            case 1: // "see each player"
+                return { bottom: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
             default:
                 return {};
         }
@@ -70,37 +69,21 @@ const BetSummaryTutorial: React.FC<{
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.circle} onPress={handleNextStep}>
                         <Image
-                            source={
-                                tutorialStep === 4 ?
-                                require('@assets/icons/x.png') :
-                                require('@assets/icons/rightArrow.png')
-                            }
+                            source={require('@assets/icons/x.png')}
                             style={styles.arrow}
                         />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tutorialText}>
-                    {tutorialStep === 1 && (
-                        <Text style={styles.tutorialText}>
-                            Welcome to your group's home page! Here, you can track bets, steps, tokens, and much more.
-                        </Text>
-                    )}
-                    {tutorialStep === 2 && (
-                        <Text style={styles.tutorialText}>
-                            At the top, you can check how much longer the game will run, as well as how long until new head-to-head bets drop.
-                        </Text>
-                    )}
-                    {tutorialStep === 3 && (
-                        <Text style={styles.tutorialText}>
-                            Below, you can see who has the most tokens. If it's not you, you should act fast!
-                        </Text>
-                    )}
-                    {tutorialStep === 4 && (
-                        <Text style={styles.tutorialText}>
-                            On the steps side of the leaderboard, you can see who has the most steps. Keep in mind -- this resets with every new head to head bet!
-                        </Text>
-                    )}
-                </Text>
+                <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
+                <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
+                        <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
+                        <Image
+                            source={require('@assets/icons/diamonds.png')}
+                            style={[styles.diamondsIcon, addedDiamond && { tintColor: '#74FF6D80' }]}
+                        />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );
@@ -146,7 +129,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 10,
         color: '#fff',
-        fontFamily: 'Lexend',
     },
     nextButton: {
         backgroundColor: '#007bff',
@@ -157,6 +139,21 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
     },
+    diamondsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        borderRadius: 10,
+        marginTop: 25,
+        borderWidth: 1,
+        borderColor: '#fff',
+        gap: 5,
+    },
+    diamondsIcon: {
+        width: 14,
+        height: 12,
+    },
 });
 
-export default BetSummaryTutorial;
+export default StoreTutorial;

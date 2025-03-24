@@ -60,6 +60,7 @@ const LiveDuelPage: React.FC< {
     groupID: string,
     onNavigate: (id: string) => void;
 } > = ({ betPlayerInfo, bet, currentGroupUsersArray, userID, groupID, onNavigate }) => {
+    const [tutorialStep, setTutorialStep] = useState(1);
 
     const yourUser = currentGroupUsersArray.find((user) => user.id === userID);
     const yourName = yourUser?.name;
@@ -291,8 +292,6 @@ const LiveDuelPage: React.FC< {
             </View>
         </View>
     );
-
-
 }
 
 const styles = StyleSheet.create({
