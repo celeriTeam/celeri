@@ -68,9 +68,9 @@ const LiveDuelTutorial: React.FC<{
             case 1: // "see each player"
                 return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
             case 2: // bets placed
-                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(120) };
+                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(140) };
             case 3: // powerups used
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
             case 4: // steps leaderboard
                 return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(160) };
             default:
@@ -99,7 +99,21 @@ const LiveDuelTutorial: React.FC<{
                         />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
+                {tutorialStep === 1 && (
+                    <Text style={styles.tutorialText}>
+                        Welcome to the live duel pop-up! Up here, you'll be able to find the two players going head-to-head, their steps so far, and the amount of tokens that people have bet on them.
+                    </Text>
+                )}
+                {tutorialStep === 2 && (
+                    <Text style={styles.tutorialText}>
+                       Under Bets Placed, you'll be able to see who made those bets, and how much they wagered.
+                    </Text>
+                )}
+                {tutorialStep === 3 && (
+                    <Text style={styles.tutorialText}>
+                       Under Powerups Used, you can see if anyone has bought powerups to boost a player. You can buy powerups in the store!
+                    </Text>
+                )}
                 {tutorialStep === 4 && (
                     <View style={{ alignItems: 'center' }}>
                         <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
@@ -156,6 +170,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 10,
         color: '#fff',
+        fontFamily: 'Lexend'
     },
     nextButton: {
         backgroundColor: '#007bff',

@@ -74,7 +74,7 @@ const StoreTutorial: React.FC<{
                         />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tutorialText}>Tutorial Step {tutorialStep}</Text>
+                <Text style={styles.tutorialText}>You can buy powerups here with diamonds! Powerups can be used to influence head to heads.</Text>
                 <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
                         <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 10,
         color: '#fff',
+        fontFamily: 'Lexend',
     },
     nextButton: {
         backgroundColor: '#007bff',
