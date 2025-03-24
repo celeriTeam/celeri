@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "health-bets-app",
-    "slug": "health-bets-app",
+    "name": "Celeri",
+    "slug": "celeri",
     "version": "8.2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/Lettuce.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -20,7 +20,8 @@
         "UIBackgroundModes": [
           "fetch",
           "remote-notification"
-        ]
+        ],
+        "CFBundleDisplayName": "Celeri"
       },
       "buildNumber": "8.2"
     },
