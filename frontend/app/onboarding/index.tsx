@@ -3,6 +3,7 @@ import { View, Text, Button, TouchableOpacity, StatusBar, Platform } from 'react
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 const STATUS_BAR_HEIGHT = Platform.OS === "ios" ? 20 : StatusBar.currentHeight;
@@ -13,23 +14,31 @@ const RegisterPage: React.FC = () => {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#A6D49F', marginBottom: -insets.bottom,
-            marginTop: -insets.top, }}>
-            <StatusBar
-                backgroundColor="#A6D49F"
-                barStyle="dark-content"
-                translucent={true}
-            />
-            <View style={styles.container}>
-                <Text style={styles.text}>FLEXBETS</Text>
-                <TouchableOpacity style={styles.button} onPress={() => router.push('/onboarding/Register')}>
-                    <Text style={styles.buttonText}>Register</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => router.push('/onboarding/Login')}>
-                    <Text style={styles.buttonText}>Login</Text>
-                </TouchableOpacity>
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <View style={{ flex: 1,  marginBottom: -insets.bottom,
+                marginTop: -insets.top, }}>
+                <StatusBar
+                    backgroundColor="#A6D49F"
+                    barStyle="dark-content"
+                    translucent={true}
+                />
+                <View style={styles.container}>
+                    <Text style={styles.text}>Celeri</Text>
+                    <TouchableOpacity style={styles.button} onPress={() => router.push('/onboarding/Register')}>
+                        <Text style={styles.buttonText}>Register</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={() => router.push('/onboarding/Login')}>
+                        <Text style={styles.buttonText}>Login</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </LinearGradient>
     );
 };
 
@@ -38,22 +47,26 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#A6D49F', // Background color
     },
     text: {
-        fontSize: 24,
+        fontSize: 40,
         marginBottom: 20,
+        fontFamily: 'Lexend-Bold',
+        color: '#fff',
     },
     button: {
-        backgroundColor: 'black', // Button color
-        paddingVertical: 10,
-        paddingHorizontal: 30,
-        borderRadius: 25, // Rounded corners
-        marginVertical: 10,
+        marginTop: 20,
+        borderWidth: 1,
+        borderRadius: 25,
+        padding: 10,
+        width: '40%',
+        borderColor: '#fff',
     },
     buttonText: {
-        color: 'white', // Text color
-        fontSize: 18,
+        fontFamily: "Lexend",
+        fontSize: 14,
+        textAlign: 'center',
+        color: '#fff',
     },
 });
 
