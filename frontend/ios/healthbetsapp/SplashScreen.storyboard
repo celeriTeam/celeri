@@ -19,7 +19,7 @@
                                 <rect key="frame" x="0.0" y="0.0" width="100%" height="100%"/>
                             </imageView>
                             <imageView id="EXPO-SplashScreen" userLabel="SplashScreen" image="SplashScreen" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" clipsSubviews="true" userInteractionEnabled="false" translatesAutoresizingMaskIntoConstraints="false">
-                                <rect key="frame" x="0" y="0" width="100%" height="100%"/>
+                                <rect key="frame" x="0" y="0" width="414" height="736"/>
                             </imageView>
                         </subviews>
                         <constraints>
@@ -46,6 +46,6 @@
     </scenes>
     <resources>
         <image name="SplashScreenBackground" width="100%" height="100%"/>
-        <image name="SplashScreen" width="100%" height="100%"/>
+        <image name="SplashScreen" width="414" height="736"/>
     </resources>
 </document>

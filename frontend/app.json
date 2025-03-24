@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Celeri",
-    "slug": "celeri",
+    "slug": "health-bets-app",
     "version": "8.2",
     "orientation": "portrait",
     "icon": "./assets/images/Lettuce.png",
@@ -48,9 +48,7 @@
         "expo-font",
         {
           "fonts": [
-            {
-              "Lexend": "./assets/fonts/Lexend-Regular.ttf"
-            }
+            "./assets/fonts/Lexend-Regular.ttf"
           ]
         }
       ],
