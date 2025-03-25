@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     page: {
-        width,
+        width: width,
         paddingHorizontal: 20,
     },
     content: {
