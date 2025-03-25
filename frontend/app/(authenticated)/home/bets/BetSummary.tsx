@@ -677,9 +677,9 @@ const BetSummaryPage: React.FC = () => {
 
     useEffect(() => {
         // Change tab based on tutorial step
-        if (tutorialStep === 3) {
+        if (tutorialStep === 3 && showTutorial) {
             setSelectedTab('Tokens');
-        } else if (tutorialStep === 4) {
+        } else if (tutorialStep === 4 && showTutorial) {
             setSelectedTab('Steps');
         }
     }, [tutorialStep]);
@@ -2025,8 +2025,6 @@ const styles = StyleSheet.create({
         borderRadius: 7,
         alignSelf: 'flex-end',
         backgroundColor: '#f6fa05',
-        borderWidth: 1,
-        borderColor: '#fff'
     },
     tutorialOverlay: {
         ...RNStyleSheet.absoluteFillObject,
