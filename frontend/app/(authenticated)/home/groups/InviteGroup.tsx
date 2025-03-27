@@ -332,18 +332,10 @@ const InvitePage: React.FC = () => {
                                 style={styles.backImage}
                             />
                         </TouchableOpacity>
-                        {isFromCreate ? (
-                            <Text style={styles.groupNameCreated}>
-                                <Text style={styles.groupName}>{groups[resolvedGroupID]?.groupName}</Text> has been successfully created!
-                            </Text>
-                        ) : (
-                            <View>
-                                <View style={styles.titleContainer}>
-                                    <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
-                                </View>
-                            </View>
-                        )}
-                    </View>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
+                        </View>
+                </View>
                     <View style={styles.groupImageContainer}>
                         {groups[resolvedGroupID]?.groupImageUrl ? (
                             <Image source={{ uri: groups[resolvedGroupID]?.groupImageUrl }} style={styles.groupImage} />
@@ -573,14 +565,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
         marginBottom: 5,
+        position: 'relative',
     },
     backImage: {
         width: 19,
         height: 19,
     },
     groupNameCreated: {
+        textAlign: 'center',
         fontSize: 20,
         fontFamily: 'Lexend',
+        color: '#fff',
     },
     groupName: {
         fontSize: 24,
@@ -588,7 +583,7 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     titleContainer: {
-        // flex: 1,
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },

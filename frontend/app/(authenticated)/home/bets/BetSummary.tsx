@@ -95,6 +95,7 @@ const BetSummaryPage: React.FC = () => {
         nonBetters: string[] | undefined;
     }[]>([]);
     const [gameTimeLeft, setGameTimeLeft] = useState("");
+    const [noMoreBets, setNoMoreBets] = useState(false);
     const [betTimeLeft, setBetTimeLeft] = useState("");
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
@@ -268,10 +269,18 @@ const BetSummaryPage: React.FC = () => {
                     // Set # of days/weeks left in the game
                     const currentDay = new Date().getDay();
                     const safeResetDay = resetDay ?? 0; // Default to Sunday if undefined
-                    const timeLeft = (currentPlayersInGame ?? 0) - 1 - (cycle ?? 0) + ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                    const timeLeft = (currentPlayersInGame ?? 0) - (cycle ?? 0) + 
+                        ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                    console.log("BetSummary -- timeLeft -- ", timeLeft)
+                    console.log("BetSummary -- currentPlayersInGame ", currentPlayersInGame);
+                    console.log("BetSummary -- totalCycles ", totalCycles);
+                    console.log("BetSummary -- cycleCount ", cycleCount); // minus cycleCount by 1 because 
                     if (gameType == "weekly") {
                         if (timeLeft == 1) {
-                            const daysLeft = (safeResetDay - currentDay + 7) % 7;
+                            let daysLeft = (safeResetDay - currentDay + 7) % 7;
+                            if(daysLeft == 0){
+                                daysLeft = 7; // because daysLeft can't be 0.
+                            }
                             if (daysLeft == 1) {
                                 setGameTimeLeft(`${daysLeft} day`)
                             } else {

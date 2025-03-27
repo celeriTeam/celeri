@@ -875,6 +875,7 @@ export const startGame = async (groupID: string, totalCycles: number, startingTo
 
         // Create the duels for cycleDay 1
         const duelsForDay1 = cycles[0]; // Get the first day's duels
+        console.log("startGame -- duelsForDay1", duelsForDay1);
 
         const usersInDuels = [];
         for (const duelKey in duelsForDay1) {
