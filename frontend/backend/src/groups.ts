@@ -1,4 +1,8 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion, deleteDoc, deleteField } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc,
+    increment, arrayUnion, deleteDoc, deleteField, orderBy, limit, startAfter,
+    DocumentSnapshot,
+    Timestamp
+} from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 
@@ -500,6 +504,114 @@ export const getTutorialStatus = async (groupID: string, userID: string): Promis
          return {};
     }
 }
+
+export const getNewsSummary = async (groupID: string, targetDate: Date): Promise<{ news: any[]; nextTargetDate: Date }> => {
+    try {
+        const groupDocRef = doc(db, "groups", groupID);
+        const newsRef = collection(groupDocRef, "news");
+
+        // Calculate day boundaries
+        const startOfDay = new Date(targetDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(targetDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const q = query(
+            newsRef,
+            where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+            where('createdAt', '<=', Timestamp.fromDate(endOfDay)),
+            orderBy('createdAt', 'desc')
+        );
+
+        const querySnapshot = await getDocs(q);
+        const rawNews = await Promise.all(
+            querySnapshot.docs.map(async (newsDoc) => {
+                const newsData = newsDoc.data();
+                const userRef = doc(db, "users", newsData.userID);
+                const userDoc = await getDoc(userRef);
+                const userData = userDoc.data();
+                let userOpponentData = null;
+                if (newsData.opponentID) {
+                    const userOpponentRef = doc(db, "users", newsData.opponentID);
+                    const userOpponentDoc = await getDoc(userOpponentRef);
+                    userOpponentData = userOpponentDoc.data();
+                }
+                let content = "";
+
+                if (newsData.type === 'recordSetter') {
+                    content = `set a new record of ${newsData.record} steps`;
+                } else if (newsData.type === 'racePullAheadTopThree') {
+                    const placeSuffix = newsData.place === 1 ? 'st' : newsData.place === 2 ? 'nd' : newsData.place === 3 ? 'rd' : 'th';
+                    content = `bumped up to ${newsData.place}${placeSuffix} place`;
+                } else if (newsData.type === 'headToHeadPullAhead') {
+                    content = `pulled ahead of ${userOpponentData?.username ?? ''} in their head to head`;
+                }
+
+                return userData ? {
+                    id: newsDoc.id,
+                    type: newsData.type,
+                    userID: newsData.userID,
+                    username: userData.username ?? '',
+                    profilePic: userData.profileImageUrl ?? '',
+                    createdAt: newsData.createdAt.toDate(),
+                    content: content,
+                    place: newsData.place,
+                    opponentID: newsData.opponentID
+                } : null;
+            })
+        );
+
+        // Filter nulls and apply business rules
+        const filteredNews = rawNews.filter(Boolean).reduce((acc, item) => {
+            if (!item) {
+                return acc;
+            }
+            switch(item.type) {
+                case 'recordSetter':
+                    if (!acc.some(i => i.type === 'recordSetter')) {
+                        acc.push(item);
+                    }
+                    break;
+
+                case 'racePullAheadTopThree':
+                    const exists = acc.some(i => 
+                        i.type === 'racePullAheadTopThree' && 
+                        (i.userID === item.userID || 
+                        i.place === item.place)
+                    );
+                    if (!exists) acc.push(item);
+                    break;
+
+                case 'headToHeadPullAhead':
+                    const pair = [item.userID, item.opponentID].sort();
+                    const existsH2H = acc.some(i => 
+                        i.type === 'headToHeadPullAhead' && 
+                        [i.userID, i.opponentID].sort().join() === pair.join()
+                    );
+                    if (!existsH2H) acc.push(item);
+                    break;
+
+                default:
+                    // acc.push(item);
+                    break;
+            }
+            return acc;
+        }, [] as any[]);
+
+        // Get next target date (previous day)
+        const nextDate = new Date(targetDate);
+        nextDate.setDate(nextDate.getDate() - 1);
+
+        return {
+            news: filteredNews,
+            nextTargetDate: nextDate
+        };
+    } catch (error) {
+        console.error('Error fetching news:', error);
+        return { news: [], nextTargetDate: new Date() };
+    }
+};
 
 /*********************************************** ADD FUNCTIONS ********************************************/
 

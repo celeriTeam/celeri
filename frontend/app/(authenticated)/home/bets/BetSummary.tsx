@@ -1204,7 +1204,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/GainsHistory',
+                                        pathname: '/(authenticated)/home/bets/history/GainsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1218,7 +1218,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/BetsHistory',
+                                        pathname: '/(authenticated)/home/bets/history/BetsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1232,7 +1232,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/RaceHistory',
+                                        pathname: '/(authenticated)/home/bets/history/RaceHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1241,6 +1241,20 @@ const BetSummaryPage: React.FC = () => {
                                     <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
                                 } */}
                                 <Text style={styles.dropdownText}>Races</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setHistoryDropdownVisible(false);
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/history/NewsHistory',
+                                        params: { groupIDTemp: groupID },
+                                    });
+                                }}
+                            >
+                                {/* {!groups[groupID]?.tutorialStatus.raceHistory &&
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
+                                } */}
+                                <Text style={styles.dropdownText}>News</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -1325,7 +1339,7 @@ const BetSummaryPage: React.FC = () => {
                 </Modal>
 
                 {/* LiveDuels Tutorial on the outside */}
-                {!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4 && (
+                {!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4 && !showTutorial && (
                     <>
                     <View style={ [styles.tutorialOverlayBottom, { height: '42.5%', }] } />
                     <View style={[styles.tutorialOverlayTop, { height: '37%', }]}>
