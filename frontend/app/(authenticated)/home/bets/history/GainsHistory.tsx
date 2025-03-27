@@ -6,11 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { useUser } from '../../../UserProvider';
+import { useUser } from '../../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import GainsHistoryTutorial from './tutorials/GainsHistoryTutorial';
+import GainsHistoryTutorial from '../tutorials/GainsHistoryTutorial';
 
 
 const GainsHistoryPage: React.FC = () => {

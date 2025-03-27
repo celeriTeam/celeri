@@ -42,40 +42,32 @@ const InvitePage: React.FC = () => {
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[]>([]);
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
-    const [isModalVisible, setModalVisible] = useState(false);
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
-    const [cycles, setCycles] = useState('1');
-    const [dailyTokens, setDailyTokens] = useState('100');
-    const [startingTokens, setStartingTokens] = useState('2000');
-    const [gameType, setGameType] = useState("weekly");
-    const [resetDay, setResetDay] = useState(0);
-    const [defaultBetOnSelf, setDefaultBetOnSelf] = useState('100');
     const [isLoading, setIsLoading] = useState(true);
     const userStartRequirement = 3;
 
     // Direct firebase listener in InviteGroup page
     useEffect(() => {
-            let cleanup: () => void;
-        
-            const initialize = async () => {
-                try {
-                    cleanup = await fetchData(userID);
-                } catch (error) {
-                    console.error('Error fetching user groups:', error);
-                } finally {
-                    setIsLoading(false);
-                }
-            };
-        
-            initialize();
-        
-            return () => {
-                if (cleanup) {
-                    cleanup();
-                }
-            };
-        }, [userID]);
+        let cleanup: () => void;
+
+        const initialize = async () => {
+            try {
+                cleanup = await fetchData(userID);
+            } catch (error) {
+                console.error('Error fetching user groups:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initialize();
+
+        return () => {
+            if (cleanup) {
+                cleanup();
+            }
+        };
+    }, [userID]);
 
     const fetchData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
@@ -94,53 +86,42 @@ const InvitePage: React.FC = () => {
                     getGroupProfilePic(resolvedGroupID),
                     getGroupCreator(resolvedGroupID),
                 ]);
-                
+
                 const userList = await getUsersInGroup(resolvedGroupID); // userIDs
                 const users: { [userID: string]: any } = {};
                 let groupUsersArray: { id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[] = [];
                 if (userList) {
                     await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, name, averageSteps, weeklySteps, biweeklySteps, steps] = await Promise.all([
+                        const [profilePic, username, name, averageSteps, steps] = await Promise.all([
                             getProfilePic(selectedUserID),
                             getUserName(selectedUserID),
                             getName(selectedUserID),
                             getAverageSteps(selectedUserID),
-                            getWeeklySteps(resolvedGroupID, selectedUserID),
-                            getBiweeklySteps(resolvedGroupID, selectedUserID),
                             getSteps(selectedUserID),
                         ]);
-
-                        let newSteps;
-                        if( gameType === "weekly") {
-                            newSteps = Math.round(gameType === "weekly" ? weeklySteps : steps);
-                        } else if (gameType === "biweekly") {
-                            newSteps = Math.round(gameType === "biweekly" ? biweeklySteps : steps);
-                        } else {
-                            newSteps = steps;
-                        }
 
                         users[selectedUserID] = {
                             profilePic,
                             username,
                             averageSteps,
-                            steps: newSteps,
+                            steps,
                         };
                         groupUsersArray.push({ id: selectedUserID, username: username, pfp: profilePic, name: name });
                     }));
                     setCurrentGroupUsersArray(groupUsersArray);
                 }
                 currentGroups[resolvedGroupID] = {
-                    isGameActive, 
-                    groupCode, 
-                    groupName, 
-                    groupImageUrl, 
+                    isGameActive,
+                    groupCode,
+                    groupName,
+                    groupImageUrl,
                     groupCreator,
                     userList,
                     users,
                 };
                 setGroups(currentGroups);
             }
-            
+
             unsubscribeFunctions.push(unsubscribeGroup);
             setIsLoading(false);
         });
@@ -172,67 +153,20 @@ const InvitePage: React.FC = () => {
         console.log('stepstemp: ', groups[resolvedGroupID]?.users[id]?.steps ?? 0);
         router.push({
             pathname: '/(authenticated)/home/bets/publicProfile',
-            params: { 
-                selectedUserIDTemp: id ?? '', 
-                groupIDTemp: resolvedGroupID, 
-                averageStepsTemp: groups[resolvedGroupID]?.users[id]?.averageSteps ?? [], 
-                stepsTemp: groups[resolvedGroupID]?.users[id]?.steps ?? 0, 
+            params: {
+                selectedUserIDTemp: id ?? '',
+                groupIDTemp: resolvedGroupID,
+                averageStepsTemp: groups[resolvedGroupID]?.users[id]?.averageSteps ?? [],
+                stepsTemp: groups[resolvedGroupID]?.users[id]?.steps ?? 0,
             },
         });
     };
-
-    const [gameTypeItems, setGameTypeItems] = useState([
-        { label: 'Weekly', value: 'weekly' },
-        { label: 'Daily', value: 'daily' },
-    ]);
-    const [gameTypeOpen, setGameTypeOpen] = useState(false);
-
-    const [resetDayItems, setResetDayItems] = useState([
-        { label: 'Sunday', value: 0},
-        { label: 'Monday', value: 1},
-        { label: 'Tuesday', value: 2},
-        { label: 'Wednesday', value: 3},
-        { label: 'Thursday', value: 4},
-        { label: 'Friday', value: 5},
-        { label: 'Saturday', value: 6},
-    ])
-    const [resetDayOpen, setResetDayOpen] = useState(false);
-
-    useEffect(() => {
-        // Add listeners to track the keyboard state
-        const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-            setKeyboardVisible(true);
-        });
-        const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-            setKeyboardVisible(false);
-        });
-
-        // Cleanup listeners
-        return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
-        };
-    }, []);
-
-    const isFormValid = cycles !== '' && dailyTokens !== '' && startingTokens !== '' && defaultBetOnSelf !== '';
 
     const handleGameSettings = () => {
         console.log("Start button pressed -- handleGameSettings")
         router.push({
             pathname: "/(authenticated)/home/groups/GameSettings",
             params: { groupID: resolvedGroupID, userCount: currentGroupUsersArray.length }
-        });
-    };
-
-    const handleStartPress = async () => {
-        console.log('Start game button pressed');
-        setModalVisible(false);
-        await startGame(resolvedGroupID, +cycles, +startingTokens, gameType, resetDay);
-        // navigation.navigate('GroupDetails', { groupID: groupID });
-
-        router.replace({
-            pathname: '/(authenticated)/home/bets/Welcome',
-            params: { groupIDTemp: groupID },
         });
     };
 
@@ -265,30 +199,30 @@ const InvitePage: React.FC = () => {
     const pickImage = async () => {
         // Request permission to access the media library
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
         if (permissionResult.granted === false) {
-          Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-          return;
+            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
+            return;
         }
-    
+
         // Launch image picker
         const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.5,
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.5,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const selectedAsset = result.assets[0];
             if (selectedAsset.uri) {
-            // Compress and resize the image
-            const manipulatedImage = await ImageManipulator.manipulateAsync(
-                selectedAsset.uri,
-                [{ resize: { width: scale(800) } }], // Resize to 800px width
-                { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-            );
+                // Compress and resize the image
+                const manipulatedImage = await ImageManipulator.manipulateAsync(
+                    selectedAsset.uri,
+                    [{ resize: { width: scale(800) } }], // Resize to 800px width
+                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+                );
 
-            addGroupImage(resolvedGroupID, manipulatedImage.uri);
+                addGroupImage(resolvedGroupID, manipulatedImage.uri);
             }
         }
     };
@@ -316,14 +250,14 @@ const InvitePage: React.FC = () => {
     }
 
     return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-        <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
                     <View style={styles.header}>
                         <TouchableOpacity style={{ position: 'absolute', left: 0, padding: 16 }} onPress={() => router.back()}>
@@ -369,9 +303,9 @@ const InvitePage: React.FC = () => {
                                     <View style={styles.row}>
                                         <Image
                                             source={
-                                                user.pfp ? 
-                                                { uri: user?.pfp }
-                                                : require('@components/blank-profile-picture.png')
+                                                user.pfp ?
+                                                    { uri: user?.pfp }
+                                                    : require('@components/blank-profile-picture.png')
                                             }
                                             style={styles.profilePic}
                                         />
@@ -409,135 +343,34 @@ const InvitePage: React.FC = () => {
                         )
                     )}
                     {groups[resolvedGroupID]?.groupCreator === userID && (
-                        <TouchableOpacity onPress={() => {setDeleteModalVisible('delete');}} style={styles.cancelButton}>
+                        <TouchableOpacity onPress={() => { setDeleteModalVisible('delete'); }} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Delete Group</Text>
                         </TouchableOpacity>
                     )}
                     {groups[resolvedGroupID]?.groupCreator !== userID && (
-                        <TouchableOpacity onPress={() => {setDeleteModalVisible('leave');}} style={styles.cancelButton}>
+                        <TouchableOpacity onPress={() => { setDeleteModalVisible('leave'); }} style={styles.cancelButton}>
                             <Text style={styles.cancelButtonText}>Leave Group</Text>
                         </TouchableOpacity>
                     )}
-                {/* Settings Modal */}
-                <Modal
-                    transparent={true}
-                    visible={isModalVisible}
-                    animationType="slide"
-                    onRequestClose={() => {setModalVisible(false);}}
-                >
-                    {/* Overlay to dismiss the keyboard */}
-                    {keyboardVisible && (
-                        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                            <View style={styles.dismissOverlay} />
-                        </TouchableWithoutFeedback>
-                    )}
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                            {/* Input fields */}
-                            <Text style={styles.modalTitle}>Game Settings</Text>
-
-                            <Text style={styles.settingText}>Amount of Cycles (Rounds):</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="1"
-                                value={cycles}
-                                onChangeText={setCycles}
-                                keyboardType="numeric"
-                                placeholderTextColor="#888"
-                            />
-
-                            {/* <Text>Amount of Tokens You Get Each Day:</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="100"
-                                value={dailyTokens}
-                                onChangeText={setDailyTokens}
-                                keyboardType="numeric"
-                                placeholderTextColor="#888"
-                            /> */}
-
-                            <Text style={styles.settingText}>Starting Tokens (Minimum 1000):</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="2000"
-                                value={startingTokens}
-                                onChangeText={setStartingTokens}
-                                keyboardType="numeric"
-                                placeholderTextColor="#888"
-                            />
-
-                            {/* <Text>Default Bet on Yourself:</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="100"
-                                value={defaultBetOnSelf}
-                                onChangeText={setDefaultBetOnSelf}
-                                keyboardType="numeric"
-                                placeholderTextColor="#888"
-                            /> */}
-
-                            <Text style={styles.settingText}>Game Type:</Text>
-                            <DropDownPicker
-                                open={gameTypeOpen}
-                                value={gameType}
-                                items={gameTypeItems}
-                                setOpen={setGameTypeOpen}
-                                setValue={setGameType}
-                                setItems={() => {}}
-                                containerStyle={[styles.dropdownContainer, {zIndex: 100}]}
-                                dropDownContainerStyle={styles.dropdownStyle}
-                                textStyle={styles.settingText}
-                                style={{ borderColor: '#ccc', minHeight: scale(40), }}
-                            /> 
-
-                            <Text style={styles.settingText}>Reset Day:</Text>
-                                <DropDownPicker
-                                    open={resetDayOpen}
-                                    value={resetDay}
-                                    items={resetDayItems}
-                                    setOpen={setResetDayOpen}
-                                    setValue={setResetDay}
-                                    setItems={() => {}}
-                                    containerStyle={[styles.dropdownContainer, {zIndex: 99}]}
-                                    dropDownContainerStyle={styles.dropdownStyle}
-                                    textStyle={styles.settingText}
-                                    style={{ borderColor: '#ccc', minHeight: scale(40), }}
-                                /> 
-
-                            {/* Buttons */}
-                            <TouchableOpacity 
-                                onPress={isFormValid ? handleStartPress : undefined} 
-                                style={[styles.confirmButton, { backgroundColor: isFormValid ? '#28a745' : '#d3d3d3' }]}
-                                disabled={!isFormValid}
-                            >
-                                <Text style={styles.confirmButtonText}>Confirm & Start</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={() => {setModalVisible(false);}} style={styles.cancelButton}>
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </TouchableOpacity>
+                    <Modal
+                        transparent={true}
+                        visible={isDeleteModalVisible !== ''}
+                        onRequestClose={() => { setDeleteModalVisible(''); }}
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContainer}>
+                                <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: verticalScale(10) }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
+                                <TouchableOpacity style={styles.button}>
+                                    <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.closeButton} onPress={() => setDeleteModalVisible('')}>
+                                    <Text style={styles.closeButtonText}>X</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
-                </Modal>
-                <Modal
-                    transparent={true}
-                    visible={isDeleteModalVisible !== ''}
-                    onRequestClose={() => {setDeleteModalVisible('');}}
-                >
-                    <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                            <Text style={{ fontFamily: "Lexend", textAlign: 'center', marginTop: verticalScale(10) }}>Are you sure you want to {isDeleteModalVisible} this group?</Text>
-                            <TouchableOpacity style={styles.button}>
-                                <Text style={{ fontFamily: "Lexend", textAlign: 'center', color: 'white', }} onPress={handleDeleteOrLeave}>Yes</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setDeleteModalVisible('')}>
-                                <Text style={styles.closeButtonText}>X</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-            </View>
-        </SafeAreaView>
+                    </Modal>
+                </View>
+            </SafeAreaView>
         </LinearGradient>
     );
 };

@@ -5,7 +5,7 @@ import { getFirestore, doc, collection, query, where, onSnapshot } from "firebas
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
     getUserFinishedTutorial} from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getDefaultBetOnSelf, getDailyTokens, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -112,7 +112,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setLoading(true);
                     if (docSnapshot.exists() && groupID) {
                         const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, 
-                        groupCreator, userTokens, defaultBetOnSelf, todaysBetTokens, dailyTokens, 
+                        groupCreator, userTokens, todaysBetTokens, 
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
                         isFinishedTutorial, gameType, createdAt, resetDay,
@@ -124,9 +124,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGroupIsFirstDay(groupID),
                             getGroupCreator(groupID),
                             getUserTokens(groupID, uid),
-                            getDefaultBetOnSelf(groupID),
                             getTodaysBetTokens(groupID, uid),
-                            getDailyTokens(groupID),
                             getCurrentPlayersInGame(groupID),
                             getCycle(groupID),
                             getCycleCount(groupID),
@@ -195,9 +193,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isFirstDay,
                             groupCreator,
                             userTokens,
-                            defaultBetOnSelf,
                             todaysBetTokens,
-                            dailyTokens,
                             startingTokens,
                             currentPlayersInGame,
                             cycle,
