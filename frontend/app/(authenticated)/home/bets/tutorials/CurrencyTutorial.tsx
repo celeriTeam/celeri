@@ -18,60 +18,32 @@ const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
-const StoreTutorial: React.FC<{
-    tutorialStep: number,
-    setShowStoreTutorial: (show: boolean) => void;
-}> = ({ tutorialStep, setShowStoreTutorial }) => {
+
+const CurrencyTutorial: React.FC<{
+    diamondsTutorialStatus: boolean;
+}> = ({ diamondsTutorialStatus }) => {
     const { userID, groups, loading } = useUser();
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [addedDiamond, setAddedDiamond] = useState(false);
-
-    const handleNextStep = async () => {
-        await setTutorialStatus(groupID, userID, 'store');
-        setShowStoreTutorial(false);
-    };
-
-    const handlePrevStep = () => {
-    };
     
     const addDiamond = async () => {
         try {
             setAddedDiamond(true);
-            await addDiamonds(groupID, userID, 1);
+            // await addDiamonds(groupID, userID, 1);
+            // await setTutorialStatus(groupID, userID, 'currency');
         } catch (error) {
             console.error('Error adding diamond:', error);
         }
     };
 
-    const getModalStyle = (): StyleProp<ViewStyle> => {
-        switch (tutorialStep) {
-            case 1: // "see each player"
-                return { bottom: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
-            default:
-                return {};
-        }
-    };
-
     return (
         <View style={styles.overlayContainer}>
-            <View style={[styles.overlay, getModalStyle()]}>
-                <View style={styles.arrowContainer}>
-                    <TouchableOpacity style={[styles.circle, tutorialStep === 1 && { borderColor: '#656565' }]} onPress={handlePrevStep} disabled={tutorialStep === 1}>
-                        <Image
-                            source={require('@assets/icons/leftArrow.png')}
-                            style={[styles.arrow, tutorialStep === 1 && { tintColor: '#656565' } ]}
-                        />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.circle} onPress={handleNextStep}>
-                        <Image
-                            source={require('@assets/icons/x.png')}
-                            style={styles.arrow}
-                        />
-                    </TouchableOpacity>
-                </View>
-                <Text style={styles.tutorialText}>You can buy powerups here with diamonds! Powerups can be used to influence head to heads.</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
+            </View>
+            {!diamondsTutorialStatus && (
                 <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
                         <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
@@ -81,16 +53,16 @@ const StoreTutorial: React.FC<{
                         />
                     </TouchableOpacity>
                 </View>
-            </View>
+            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     overlayContainer: {
+        padding: 30,
         flex: 1,
         alignItems: 'center',
-        // center
         justifyContent: 'center',
     },
     overlay: {
@@ -126,7 +98,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginBottom: 10,
         color: '#fff',
-        fontFamily: 'Lexend',
     },
     nextButton: {
         backgroundColor: '#007bff',
@@ -152,6 +123,11 @@ const styles = StyleSheet.create({
         width: 14,
         height: 12,
     },
+    tokenText: {
+        fontFamily: 'Lexend',
+        fontSize: 15,
+        color: 'white',
+    },
 });
 
-export default StoreTutorial;
+export default CurrencyTutorial;
