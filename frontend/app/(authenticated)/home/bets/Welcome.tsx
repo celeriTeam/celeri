@@ -220,16 +220,19 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+        width: width,
     },
     page: {
         width: width,
-        paddingHorizontal: 20,
+        alignItems: 'center',
     },
     content: {
         flex: 1,
         width: '100%',
         justifyContent: 'flex-end',
         marginBottom: 70,
+        paddingHorizontal: 20,
+        paddingRight: 45,
     },
     title: {
         fontSize: 30,
