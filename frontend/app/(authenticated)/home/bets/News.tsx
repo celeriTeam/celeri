@@ -47,6 +47,46 @@ const NewsPage: React.FC< {
 
     const uniqueNewsList = [...new Set(newsList.map(item => JSON.stringify(item)))].map(item => JSON.parse(item));
 
+    const filteredNews = uniqueNewsList.reduce((acc: News[], item) => {
+        if (!item) return acc;
+        
+        switch(item.type) {
+            case 'recordSetter':
+                if (!acc.some(i => i.type === 'recordSetter')) {
+                    acc.push(item);
+                }
+                break;
+    
+            case 'racePullAheadTopThree':
+                // Check for existing entries with same username AND place
+                const raceExists = acc.some(i => 
+                    i.type === 'racePullAheadTopThree' && 
+                    (i.username === item.username || 
+                    i.place === item.place)
+                );
+                if (!raceExists) acc.push(item);
+                break;
+    
+            case 'headToHeadPullAhead':
+                // Create sorted pair of usernames
+                if (!item.opponentUsername) break;
+                const pair = [item.username, item.opponentUsername].sort();
+                const h2hExists = acc.some(i => 
+                    i.type === 'headToHeadPullAhead' && 
+                    i.opponentUsername && 
+                    [i.username, i.opponentUsername].sort().join() === pair.join()
+                );
+                if (!h2hExists) acc.push(item);
+                break;
+    
+            default:
+                // Handle other news types or push unconditionally
+                acc.push(item);
+                break;
+        }
+        return acc;
+    }, [] as News[]);
+
     const handleClose = () => {
         setNewsModalVisible(false);
         if (propBetQueued) {
@@ -61,7 +101,7 @@ const NewsPage: React.FC< {
     return (
         <View style={styles.container}>
             <ScrollView style={styles.newsContainer}>
-                {uniqueNewsList.map((news: News) => (
+                {filteredNews.map((news: News) => (
                     <View style={styles.newsItem}>
                         <View style={styles.row}>
                             {news.type === 'recordSetter' && (

@@ -54,6 +54,7 @@ const HomeTab: React.FC = () => {
     const [hasInitialized, setHasInitialized] = useState(false);
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
+    const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const router = useRouter();
 
     // Getting data because its the first page
@@ -99,23 +100,20 @@ const HomeTab: React.FC = () => {
     }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
 
     useEffect(() => {
+      const timer = setTimeout(() => {
+        setShowExtendedMessage(true);
+      }, 5000);
+  
+      return () => clearTimeout(timer);
+    }, []);
+
+    useEffect(() => {
         if (hasInitialized) {
             // console.log("HomeTab -- already initialized");
             //getStepsSinceMidnight();
             setIsLoadingHome(true);
             const intervalId = setInterval(() => {
-                // console.log("Regular backend update with steps:", steps);
-
                 fetchHealthData();
-
-                // Toggle the needsUpdate value, triggering UI rebuild
-                // setNeedsUpdate((prevNeedsUpdate) => {
-                //     const newNeedsUpdate = !prevNeedsUpdate;
-                //     console.log("needsUpdate toggled to: ", newNeedsUpdate);
-                //     return newNeedsUpdate;
-                // });
-
-
                 //getStepsSinceMidnight();
             }, 300000); // 5 minutes in milliseconds
             setIsLoadingHome(false);
@@ -258,6 +256,9 @@ const HomeTab: React.FC = () => {
                     <ActivityIndicator size="large" />
                     <Text style={{ color: '#fff' }}>Loading...</Text>
                     {isLoading && <Text style={{ color: '#fff' }}>Grabbing health data...</Text>}
+                    {showExtendedMessage && (
+                    <Text style={{ color: '#fff' }}>You've walked a lot.. telling all your friends right now</Text>
+                    )}
                 </View>
             </LinearGradient>
         );

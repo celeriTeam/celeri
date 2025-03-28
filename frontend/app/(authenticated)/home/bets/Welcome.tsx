@@ -8,7 +8,7 @@ import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, create
 import BetRecapPage from './Recap';
 import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
+import { getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
@@ -37,7 +37,7 @@ const WelcomePage: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const scrollViewRef = useRef<ScrollView>(null);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<{ id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[]>([]);
-    const [dailyTokens, setDailyTokens] = useState<number | undefined>(0);
+    const [startingTokens, setStartingTokens] = useState<number | undefined>(0);
     const [userFinishedTutorial, setUserFinishedTutorial] = useState<boolean | undefined>(false);
     
     useEffect(() => {    
@@ -76,7 +76,7 @@ const WelcomePage: React.FC = () => {
             });
         } 
         setCurrentGroupUsersArray(groupUsersArray);
-        setDailyTokens(groups[groupID]?.startingTokens);
+        setStartingTokens(groups[groupID]?.startingTokens);
         setUserFinishedTutorial(groups[groupID]?.userFinishedTutorial);
     }
 
@@ -134,7 +134,7 @@ const WelcomePage: React.FC = () => {
                     <View style={styles.page}>
                         <View style={styles.content}>
                             <Text style={styles.text}>The goal of the game is to <Text style={styles.highlight}>win the most tokens. </Text>
-                                Every player starts with {dailyTokens} tokens, and you can only gain tokens by
+                                Every player starts with {startingTokens} tokens, and you can only gain tokens by
                                 <Text style={styles.highlight}> stealing them from other players.</Text>
                             </Text>
                             <Text style={styles.text}>These may have been your friends, but right now, they are your <Text style={styles.highlight}>enemies.</Text></Text>

@@ -30,8 +30,6 @@ const ProfilePage: React.FC = () => {
             : [];
     const steps = stepsTemp ? Number(stepsTemp) : 0;
 
-    console.log('weeklySteps: ', averageSteps);
-
     console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
     const currentName = groups[groupID]?.users[selectedUserID]?.name || '';

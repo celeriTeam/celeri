@@ -28,6 +28,7 @@ import NewsPage from './News';
 import BetSummaryTutorial from './tutorials/BetSummaryTutorial';
 import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
 import StoreTutorial from './tutorials/StoreTutorial';
+import CurrencyTutorial from './tutorials/CurrencyTutorial';
 
 const db = getFirestore(app);
 
@@ -54,9 +55,7 @@ const BetSummaryPage: React.FC = () => {
     const [isStoreModalVisible, setStoreModalVisible] = useState(false);
     const [isLiveDuelModalVisible, setLiveDuelModalVisible] = useState(false);
     const [isEditGroupModalVisible, setEditGroupModalVisible] = useState(false);
-    const [isTokensModalVisible, setTokensModalVisible] = useState(false);
-    const [isTokensUsedModalVisible, setTokensUsedModalVisible] = useState(false);
-    const [isDiamondsModalVisible, setDiamondsModalVisible] = useState(false);
+    const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
     const [isHistoryDropdownVisible, setHistoryDropdownVisible] = useState(false);
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
@@ -94,6 +93,25 @@ const BetSummaryPage: React.FC = () => {
         betters: string[] | undefined;
         nonBetters: string[] | undefined;
     }[]>([]);
+    const [currentTutorialStatus, setCurrentTutorialStatus] = useState<{
+        propBet?: boolean;
+        store?: boolean;
+        liveDuels?: boolean;
+        gainsHistory?: boolean;
+        betsHistory?: boolean;
+        raceHistory?: boolean;
+        newsHistory?: boolean;
+        currency?: boolean;
+    }>({
+        propBet: true,
+        store: true,
+        liveDuels: true,
+        gainsHistory: true,
+        betsHistory: true,
+        raceHistory: true,
+        newsHistory: true,
+        currency: true
+    });
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [noMoreBets, setNoMoreBets] = useState(false);
     const [betTimeLeft, setBetTimeLeft] = useState("");
@@ -176,7 +194,12 @@ const BetSummaryPage: React.FC = () => {
         // Unsubscribe firebase listener functions
         const unsubscribeFunctions: (() => void)[] = [];
         // Set up listener iff modal is not visible
-        if (!isStoreModalVisible && !isPropBetModalVisible) {
+        // if currency tut is false and currency modal is visible, then dont set up listener
+        // if store modal is visible, then dont set up listener
+        // if prop bet modal is visible, then dont set up listener
+        if (!isStoreModalVisible && !isPropBetModalVisible && 
+            (currentTutorialStatus.currency || !isCurrencyModalVisible)
+        ) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
                 if (docSnapshot.exists() && groupID) {
@@ -260,7 +283,6 @@ const BetSummaryPage: React.FC = () => {
                         currentPlayersInGame,
                         gameType,
                         latestBetTime,
-                        tutorialStatus,
                         users
                     };
                     console.log('tutorialstatys: ', tutorialStatus);
@@ -271,10 +293,10 @@ const BetSummaryPage: React.FC = () => {
                     const safeResetDay = resetDay ?? 0; // Default to Sunday if undefined
                     const timeLeft = (currentPlayersInGame ?? 0) - (cycle ?? 0) + 
                         ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
-                    console.log("BetSummary -- timeLeft -- ", timeLeft)
-                    console.log("BetSummary -- currentPlayersInGame ", currentPlayersInGame);
-                    console.log("BetSummary -- totalCycles ", totalCycles);
-                    console.log("BetSummary -- cycleCount ", cycleCount); // minus cycleCount by 1 because 
+                    // console.log("BetSummary -- timeLeft -- ", timeLeft)
+                    // console.log("BetSummary -- currentPlayersInGame ", currentPlayersInGame);
+                    // console.log("BetSummary -- totalCycles ", totalCycles);
+                    // console.log("BetSummary -- cycleCount ", cycleCount); // minus cycleCount by 1 because 
                     if (gameType == "weekly") {
                         if (timeLeft == 1) {
                             let daysLeft = (safeResetDay - currentDay + 7) % 7;
@@ -400,6 +422,11 @@ const BetSummaryPage: React.FC = () => {
                                 // console.log("bet time left: ", betTimeLeft);
                             }
                         }
+                    }
+
+                    // Set tutorial status
+                    if (tutorialStatus) {
+                        setCurrentTutorialStatus(tutorialStatus);
                     }
 
                     // Set the prop bet player
@@ -663,13 +690,16 @@ const BetSummaryPage: React.FC = () => {
         setCurrentBetIndex(newIndex);
     };
 
-    const addDiamond = async (setVisible: (visible: boolean) => void, tutorial: string) => {
-        try {
-            setVisible(false);
-            await setTutorialStatus(groupID, userID, tutorial);
-            await addDiamonds(groupID, userID, 1);
-        } catch (error) {
-            console.error('Error adding diamond:', error);
+    const closeCurrencyModal = async () => {
+        console.log('closing diamonds');
+        setCurrencyModalVisible(false);
+        await addDiamonds(groupID, userID, 1);
+        if (!currentTutorialStatus.currency) {
+            await setTutorialStatus(groupID, userID, 'currency');
+            setCurrentTutorialStatus(prevState => ({
+                ...prevState,
+                currency: true
+            }));
         }
     };
 
@@ -802,7 +832,7 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.rightIcons}>
                             <View>
                                 <TouchableOpacity onPress={() => { setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
-                                    {/* {!(groups[groupID]?.tutorialStatus.gainsHistory && groups[groupID]?.tutorialStatus.betsHistory && groups[groupID]?.tutorialStatus.raceHistory) &&
+                                    {/* {!(currentTutorialStatus.gainsHistory && currentTutorialStatus.betsHistory && currentTutorialStatus.raceHistory) &&
                                         <View style={[styles.tutorialIndicator, { top: 3, marginBottom: -6, }]}/>
                                     } */}
                                     <Image
@@ -812,7 +842,7 @@ const BetSummaryPage: React.FC = () => {
                                 </TouchableOpacity>
                             </View>
                             <TouchableOpacity onPress={() => setStoreModalVisible(true)}>
-                                {!groups[groupID]?.tutorialStatus.store &&
+                                {!currentTutorialStatus.store &&
                                     <View style={[styles.tutorialIndicator, { left: 2, top: 2, marginBottom: -3, }]}/>
                                 }
                                 <Image
@@ -887,43 +917,37 @@ const BetSummaryPage: React.FC = () => {
                             </TouchableOpacity>
                         )}
                     </View>
-                    <View style={styles.statsContainer}>
-                        <TouchableOpacity style={styles.statItem} onPress={() => setTokensModalVisible(true)} activeOpacity={0.8}>
+                    <TouchableOpacity style={styles.statsContainer} onPress={() => setCurrencyModalVisible(true)} activeOpacity={0.8}>
+                        <View style={styles.statItem}>
                             <Image
                                 source={require('@assets/icons/tokens.png')}
                                 style={styles.tokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userTokens}</Text>
-                            {!groups[groupID]?.tutorialStatus.tokens &&
-                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 26, marginLeft: -7, }]} />
-                            }
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.statItem} onPress={() => setTokensUsedModalVisible(true)} activeOpacity={0.8}>
+                        </View>
+                        <View style={styles.statItem}>
                             <Image
                                 source={require('@assets/icons/betTokens.png')}
                                 style={styles.betTokensIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.todaysBetTokens}</Text>
-                            {!groups[groupID]?.tutorialStatus.betTokens &&
-                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 26, marginLeft: -7, }]} />
-                            }
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.statItem} onPress={() => setDiamondsModalVisible(true)} activeOpacity={0.8}>
+                        </View>
+                        <View style={styles.statItem}>
                             <Image
                                 source={require('@assets/icons/diamonds.png')}
                                 style={styles.diamondsIcon}
                             />
                             <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
-                            {!groups[groupID]?.tutorialStatus.diamonds &&
-                                <View style={[styles.tutorialIndicator, { bottom: 20, left: 34, marginLeft: -9, }]} />
-                            }
-                        </TouchableOpacity>
-                    </View>
+                        </View>
+                        {!currentTutorialStatus.currency &&
+                            <View style={[styles.tutorialIndicator, { bottom: 38, left: 24, marginLeft: -20, }]} />
+                        }
+                    </TouchableOpacity>
 
                     {/* Live Duel Section */}
                     <View>
                         <Text style={[styles.sectionTitle, { paddingHorizontal: scale(20), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
-                        {!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial &&
+                        {!currentTutorialStatus.liveDuels && showLiveDuelTutorial &&
                             <View style={[styles.tutorialIndicator, { bottom: 0, right: 21, marginBottom: -7, zIndex: 5, }]} />
                         }
                         <View style={styles.duelRow}>
@@ -951,7 +975,7 @@ const BetSummaryPage: React.FC = () => {
                                             onPress={() => setLiveDuelModalVisible(true)}
                                             activeOpacity={1}
                                             style={[styles.duelCardTouchable, { width: screenWidth, }]}
-                                            disabled={!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4}
+                                            disabled={!currentTutorialStatus.liveDuels && tutorialStep === 4}
                                         >
 
                                             {/* player 1 */}
@@ -1204,12 +1228,12 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/GainsHistory',
+                                        pathname: '/(authenticated)/home/bets/history/GainsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
                             >
-                                {/* {!groups[groupID]?.tutorialStatus.gainsHistory &&
+                                {/* {!currentTutorialStatus.gainsHistory &&
                                     <View style={[styles.tutorialIndicator, { top: 12, right: 38, marginTop: -4 }]}/>
                                 } */}
                                 <Text style={styles.dropdownText}>Gains</Text>
@@ -1218,12 +1242,12 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/BetsHistory',
+                                        pathname: '/(authenticated)/home/bets/history/BetsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
                             >
-                                {/* {!groups[groupID]?.tutorialStatus.betsHistory &&
+                                {/* {!currentTutorialStatus.betsHistory &&
                                     <View style={[styles.tutorialIndicator, { top: 12, right: 46, marginTop: -11 }]}/>
                                 } */}
                                 <Text style={styles.dropdownText}>Bets</Text>
@@ -1232,15 +1256,29 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/home/bets/RaceHistory',
+                                        pathname: '/(authenticated)/home/bets/history/RaceHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
                             >
-                                {/* {!groups[groupID]?.tutorialStatus.raceHistory &&
+                                {/* {!currentTutorialStatus.raceHistory &&
                                     <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
                                 } */}
                                 <Text style={styles.dropdownText}>Races</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setHistoryDropdownVisible(false);
+                                    router.push({
+                                        pathname: '/(authenticated)/home/bets/history/NewsHistory',
+                                        params: { groupIDTemp: groupID },
+                                    });
+                                }}
+                            >
+                                {/* {!currentTutorialStatus.raceHistory &&
+                                    <View style={[styles.tutorialIndicator, { top: 12, right: 35, marginTop: -11 }]}/>
+                                } */}
+                                <Text style={styles.dropdownText}>News</Text>
                             </TouchableOpacity>
                         </View>
                     </TouchableOpacity>
@@ -1281,7 +1319,7 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.liveDuelModalContainer}>
                             {/* Close button */}
                             <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} 
-                            activeOpacity={1} disabled={!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial}>
+                            activeOpacity={1} disabled={!currentTutorialStatus.liveDuels && showLiveDuelTutorial}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
@@ -1304,7 +1342,7 @@ const BetSummaryPage: React.FC = () => {
                             />
                             
                             {/* LiveDuels Tutorial */}
-                            {!groups[groupID]?.tutorialStatus.liveDuels && showLiveDuelTutorial && (
+                            {!currentTutorialStatus.liveDuels && showLiveDuelTutorial && (
                                 <>
                                 {tutorialStep === 2 && <View style={ [styles.tutorialOverlayTop, { height: '23%', }] } />}
                                 <View style={[
@@ -1325,7 +1363,7 @@ const BetSummaryPage: React.FC = () => {
                 </Modal>
 
                 {/* LiveDuels Tutorial on the outside */}
-                {!groups[groupID]?.tutorialStatus.liveDuels && tutorialStep === 4 && (
+                {!currentTutorialStatus.liveDuels && tutorialStep === 4 && !showTutorial && (
                     <>
                     <View style={ [styles.tutorialOverlayBottom, { height: '42.5%', }] } />
                     <View style={[styles.tutorialOverlayTop, { height: '37%', }]}>
@@ -1361,11 +1399,10 @@ const BetSummaryPage: React.FC = () => {
                             />
                             
                             {/* Store Tutorial */}
-                            {!groups[groupID]?.tutorialStatus.store && showStoreTutorial && (
+                            {!currentTutorialStatus.store && showStoreTutorial && (
                                 <View style={styles.tutorialOverlay}>
                                     <StoreTutorial
                                         tutorialStep={tutorialStep}
-                                        setTutorialStep={setTutorialStep}
                                         setShowStoreTutorial={setShowStoreTutorial}
                                     />
                                 </View>
@@ -1456,107 +1493,26 @@ const BetSummaryPage: React.FC = () => {
                 {/* Info Modals */}
                 <Modal
                     transparent={true}
-                    visible={isTokensModalVisible}
+                    visible={isCurrencyModalVisible}
                     animationType="fade"
                 >
                     <TouchableOpacity
                         style={styles.modalOverlay}
                         activeOpacity={1}
-                        onPress={() => setTokensModalVisible(false)} // Close dropdown when overlay is pressed
+                        onPress={closeCurrencyModal} // Close dropdown when overlay is pressed
                     />
-                        <View style={[styles.moneyModalContainer, { height: '27%', top: '37%' }]}>
-                            {/* Close button */}
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setTokensModalVisible(false)}>
-                                <Image
-                                    source={require('@assets/icons/x.png')}
-                                    style={styles.closeButtonIcon}
-                                />
-                            </TouchableOpacity>
-                            <View style={styles.infoModalContainer}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={styles.tokenText}>
-                                        Here are your total tokens. You can earn more by winning your bets or the weekly race!
-                                        {"\n\n"}The person with the most tokens at the end of your game wins!</Text>
-                                </View>
-                                {!groups[groupID]?.tutorialStatus.tokens && (
-                                    <TouchableOpacity onPress={() => addDiamond(setTokensModalVisible, 'tokens')} style={styles.diamondsButton}>
-                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
-                                        <Image
-                                            source={require('@assets/icons/diamonds.png')}
-                                            style={styles.diamondsIcon}
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                </Modal>
-                <Modal
-                    transparent={true}
-                    visible={isTokensUsedModalVisible}
-                    animationType="fade"
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setTokensUsedModalVisible(false)} // Close dropdown when overlay is pressed
-                    />
-                        <View style={[styles.moneyModalContainer, { height: '18%', top: '44%' }]}>
-                            {/* Close button */}
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setTokensUsedModalVisible(false)}>
-                                <Image
-                                    source={require('@assets/icons/x.png')}
-                                    style={styles.closeButtonIcon}
-                                />
-                            </TouchableOpacity>
-                            <View style={styles.infoModalContainer}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={styles.tokenText}>Here are the tokens you've bet this week.</Text>
-                                </View>
-                                {!groups[groupID]?.tutorialStatus.betTokens && (
-                                    <TouchableOpacity onPress={() => addDiamond(setTokensUsedModalVisible, 'betTokens')} style={styles.diamondsButton}>
-                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
-                                        <Image
-                                            source={require('@assets/icons/diamonds.png')}
-                                            style={styles.diamondsIcon}
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                </Modal>
-                <Modal
-                    transparent={true}
-                    visible={isDiamondsModalVisible}
-                    animationType="fade"
-                >
-                    <TouchableOpacity
-                        style={styles.modalOverlay}
-                        activeOpacity={1}
-                        onPress={() => setDiamondsModalVisible(false)} // Close dropdown when overlay is pressed
-                    />
-                        <View style={[styles.moneyModalContainer, { height: '20%', top: '40%' }]}>
-                            {/* Close button */}
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setDiamondsModalVisible(false)}>
-                                <Image
-                                    source={require('@assets/icons/x.png')}
-                                    style={styles.closeButtonIcon}
-                                />
-                            </TouchableOpacity>
-                            <View style={styles.infoModalContainer}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                                    <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
-                                </View>
-                                {!groups[groupID]?.tutorialStatus.diamonds && (
-                                    <TouchableOpacity onPress={() => addDiamond(setDiamondsModalVisible, 'diamonds')} style={styles.diamondsButton}>
-                                        <Text style={{ fontFamily: 'Lexend', color: '#fff',  }}>+1</Text>
-                                        <Image
-                                            source={require('@assets/icons/diamonds.png')}
-                                            style={styles.diamondsIcon}
-                                        />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
+                    <View style={[styles.moneyModalContainer, { height: '20%', top: '40%' }]}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={closeCurrencyModal}>
+                            <Image
+                                source={require('@assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
+                        </TouchableOpacity>
+                        <CurrencyTutorial
+                            diamondsTutorialStatus={currentTutorialStatus.currency ?? false}
+                        />
+                    </View>
                 </Modal>
             </SafeAreaView>
         </LinearGradient>
@@ -2003,7 +1959,7 @@ const styles = StyleSheet.create({
     },
     editGroupModalContainer: {
         height: '88%',
-        width: Dimensions.get('window').width + 2,
+        width: Dimensions.get('window').width,
         position: 'absolute',
         bottom: 0,
         backgroundColor: '#000',

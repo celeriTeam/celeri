@@ -8,7 +8,7 @@ import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, create
 import BetRecapPage from './Recap';
 import WeeklyBetRecapPage from './WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getDefaultBetOnSelf, getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setLatestBetTime, setTodaysBetTokens } from '@/backend/src/groups';
+import { getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setLatestBetTime, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
 import { match } from 'assert';
 import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
