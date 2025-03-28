@@ -1,7 +1,8 @@
 import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc,
     increment, arrayUnion, deleteDoc, deleteField, orderBy, limit, startAfter,
     DocumentSnapshot,
-    Timestamp
+    Timestamp,
+    runTransaction
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
@@ -484,9 +485,8 @@ export const getTutorialStatus = async (groupID: string, userID: string): Promis
         gainsHistory?: boolean,
         betsHistory?: boolean,
         raceHistory?: boolean,
-        tokens?: boolean,
-        betTokens?: boolean,
-        diamonds?: boolean
+        newsHistory?: boolean,
+        currency?: boolean
     }
 > => {
     try {
@@ -923,139 +923,82 @@ export const leaveGroup = async (groupID: string, userID: string) => {
 
 // START Game
 export const startGame = async (groupID: string, totalCycles: number, startingTokens: number, gameType: string, resetDay: number): Promise<undefined> => {
+    const groupDocRef = doc(db, 'groups', groupID);
+    
     try {
-        const groupDocRef = doc(db, 'groups', groupID);
+        await runTransaction(db, async (transaction) => {
+            // 1. Atomic read of group document
+            const groupDoc = await transaction.get(groupDocRef);
+            if (!groupDoc.exists()) {
+                throw new Error('Group document does not exist');
+            }
 
-        // Grab the number of players from the document
-        let numberOfPlayers;
-        let cycles;
-
-        const docSnap = await getDoc(groupDocRef);
-        
-        if (docSnap.exists()) {
-            // Access the 'order' array from the document data
-            const data = docSnap.data();
+            const data = groupDoc.data();
             const orderArray = data.order;
-            numberOfPlayers = orderArray.length;
-            cycles = createCycle(orderArray);
-        } else {
-            console.log("startGame - Error: Document does not exist.");
-            return undefined;
-        }
-        
-        // set it 
+            const numberOfPlayers = orderArray.length;
+            const cycles = createCycle(orderArray);
+            const users = data.users;
 
-        // if the game is weekly
-        if(gameType == "weekly" || gameType == 'biweekly'){
-            await updateDoc(groupDocRef, {
+            // 2. Prepare all updates first
+            const updateData: any = {
                 isGameActive: true,
                 currentPlayersInGame: numberOfPlayers,
-                cycleWeek: 1,
                 cycleCount: 1,
-                totalCycles: totalCycles,
-                startingTokens: startingTokens,
+                totalCycles,
+                startingTokens,
                 cycleDuels: cycles,
-                gameType: gameType,
-                resetDay: resetDay,
+                gameType,
+            };
+
+            if (gameType === "weekly" || gameType === 'biweekly') {
+                updateData.cycleWeek = 1;
+                updateData.resetDay = resetDay;
+            } else {
+                updateData.cycleDay = 1;
+                updateData.previousPlayersInGame = numberOfPlayers;
+            }
+
+            // 3. Update group document atomically
+            transaction.update(groupDocRef, updateData);
+
+            // 4. Update user tokens in transaction
+            const usersUpdate: Record<string, any> = {};
+            Object.keys(users).forEach(userID => {
+                usersUpdate[`users.${userID}.tokens`] = startingTokens;
+                usersUpdate[`users.${userID}.todaysBetTokens`] = 0;
             });
-        }
-        else {
-            await updateDoc(groupDocRef, {
-                isGameActive: true,
-                //set the cycle
-                currentPlayersInGame: numberOfPlayers,
-                previousPlayersInGame: numberOfPlayers,
-                cycleDay: 1,
-                cycleCount: 1,
-                totalCycles: totalCycles,
-                //dailyTokens: dailyTokens,
-                //defaultBetOnSelf: 0,
-                startingTokens: startingTokens,
-                cycleDuels: cycles,
-                gameType: gameType,
+            transaction.update(groupDocRef, usersUpdate);
+
+            // 5. Create duels in transaction
+            const duelsForDay1 = cycles[0];
+            const duelsCollection = collection(groupDocRef, 'duels');
+            
+            Object.values(duelsForDay1).forEach(duel => {
+                const duelDocRef = doc(duelsCollection);
+                const duelData = {
+                    player1: duel.player1,
+                    player2: duel.player2,
+                    createdAt: serverTimestamp(),
+                    winner: "empty",
+                    ended: false,
+                    bets: [
+                        { userID: duel.player1, wager: 0, betOnUserID: duel.player1 },
+                        { userID: duel.player2, wager: 0, betOnUserID: duel.player2 }
+                    ],
+                    ...(gameType === "weekly" || gameType === 'biweekly') ? 
+                        { cycleWeek: 1 } : 
+                        { cycleDay: 1 }
+                };
+                transaction.set(duelDocRef, duelData);
             });
-        }
-        // for each user in users, set their tokens to startingTokens
-        const users = docSnap.data()?.users;
-        for (const user in users) {
-            if (users.hasOwnProperty(user)) {
-                await updateDoc(groupDocRef, {
-                    [`users.${user}.tokens`]: startingTokens,
-                });
-            }
-        }
-
-        // Create the duels for cycleDay 1
-        const duelsForDay1 = cycles[0]; // Get the first day's duels
-        console.log("startGame -- duelsForDay1", duelsForDay1);
-
-        const usersInDuels = [];
-        for (const duelKey in duelsForDay1) {
-            if (duelsForDay1.hasOwnProperty(duelKey)) {
-                const duel = duelsForDay1[duelKey];
-                usersInDuels.push(duel.player1);
-                usersInDuels.push(duel.player2);
-
-                const player1Bet = {
-                    userID: duel.player1,
-                    wager: 0,
-                    betOnUserID: duel.player1,
-                };
+        });
         
-                  const player2Bet = {
-                    userID: duel.player2,
-                    wager: 0,
-                    betOnUserID: duel.player2,
-                };
-                let duelData = {};
-                if(gameType == "weekly" || gameType == 'biweekly'){
-                    duelData = {
-                        player1: duel.player1,
-                        player2: duel.player2,
-                        cycleWeek: 1,
-                        cycleCount: 1,
-                        createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
-                        winner: "empty",
-                        ended: false,
-                        bets: [player1Bet, player2Bet],
-                    };
-                } else {
-
-                    duelData = {
-                        player1: duel.player1,
-                        player2: duel.player2,
-                        cycleDay: 1,
-                        cycleCount: 1,
-                        createdAt: serverTimestamp(), // Add a timestamp for when the duel was created
-                        winner: "empty",
-                        ended: false,
-                        bets: [player1Bet, player2Bet],
-                    };
-                }
-
-                // Add the duel to the 'duels' subcollection of the group document
-                const duelDocRef = doc(collection(groupDocRef, 'duels')); // Auto-generate document ID in 'duels' subcollection
-                await setDoc(duelDocRef, duelData);
-            }
-        }
-
-        // update the bet tokens for each player in usersUpdate
-        for (const user in users) {
-            if (users.hasOwnProperty(user)) {
-                await updateDoc(groupDocRef, {
-                    // [`users.${user}.todaysBetTokens`]: usersInDuels.includes(user) ? defaultBetOnSelf : 0,
-                    [`users.${user}.todaysBetTokens`]: 0,
-                });
-            }
-        }
-        
-        console.log("startGame - response: ", true);
-        return undefined;
+        console.log("Transaction successfully committed!");
     } catch (error) {
-         console.error("startGame - Error fetching user document: ", error);
-         return undefined;
+        console.error("Transaction failed: ", error);
+        throw error; // Propagate error for handling upstream
     }
-}
+};
 
 function createCycle(players: Array<string>): Array<{ [duelKey: string]: { player1: string, player2: string } }> {
     const cycles: Array<{ [duelKey: string]: { player1: string, player2: string } }> = [];

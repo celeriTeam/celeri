@@ -29,8 +29,6 @@ const LiveDuelTutorial: React.FC<{
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [addedDiamond, setAddedDiamond] = useState(false);
 
-    const shouldShowNext = [3, 4, 5];
-
     const handleNextStep = async () => {
         if (tutorialStep === 3) {
             setLiveDuelModalVisible(false);
@@ -38,6 +36,7 @@ const LiveDuelTutorial: React.FC<{
         } else if (tutorialStep === 4) {
             setTutorialStep(1);
             setLiveDuelModalVisible(false);
+            await addDiamonds(groupID, userID, 1);
             await setTutorialStatus(groupID, userID, 'liveDuels');
         } else {
             setTutorialStep(tutorialStep + 1);
@@ -56,8 +55,6 @@ const LiveDuelTutorial: React.FC<{
     const addDiamond = async () => {
         try {
             setAddedDiamond(true);
-            await addDiamonds(groupID, userID, 1);
-            handleNextStep();
         } catch (error) {
             console.error('Error adding diamond:', error);
         }
@@ -115,15 +112,20 @@ const LiveDuelTutorial: React.FC<{
                     </Text>
                 )}
                 {tutorialStep === 4 && (
-                    <View style={{ alignItems: 'center' }}>
-                        <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
-                            <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
-                            <Image
-                                source={require('@assets/icons/diamonds.png')}
-                                style={[styles.diamondsIcon, addedDiamond && { tintColor: '#74FF6D80' }]}
-                            />
-                        </TouchableOpacity>
-                    </View>
+                    <>
+                        <Text style={styles.tutorialText}>
+                            Now, swipe through to see who's up against who!
+                        </Text>
+                        <View style={{ alignItems: 'center', marginTop: -20, }}>
+                            <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
+                                <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
+                                <Image
+                                    source={require('@assets/icons/diamonds.png')}
+                                    style={[styles.diamondsIcon, addedDiamond && { tintColor: '#74FF6D80' }]}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                    </>
                 )}
             </View>
         </View>
