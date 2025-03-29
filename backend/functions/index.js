@@ -1059,6 +1059,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
       const groupDocRef = doc.ref;
       const duelsRef = groupDocRef.collection("duels");
       const data = doc.data();
+      const groupName = data.groupName;
 
       const groupDoc = await groupDocRef.get();
       if (!groupDoc.exists) {
@@ -1068,7 +1069,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
 
       // Don't update winners if it's a weekly game and it's not the right day
       const gameType = data.gameType;
-      console.log(doc.id, ": gameType: ", data.gameType);
+      console.log(groupName, doc.id, ": gameType: ", data.gameType);
       if (gameType && gameType == "weekly" && hour <= 6) {
         // propogate weeklySteps, should be a map
         const weeklySteps = {};
@@ -1088,18 +1089,18 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
           // Sum the steps from the past six days and add the current day's steps
           const userWeeklySteps = weeklyStepsData.slice(1).reduce((sum, steps) => sum + steps, 0) + currentSteps;
           weeklySteps[userID] = userWeeklySteps + currentSteps;
-          console.log("weeklyStep for user: ", userID, userWeeklySteps, currentSteps);
+          console.log(groupName, "weeklyStep for user: ", userID, userWeeklySteps, currentSteps);
         });
 
-        console.log("weeklySteps: ", weeklySteps);
-        console.log("users: ", users);
+        console.log(groupName, "weeklySteps: ", weeklySteps);
+        console.log(groupName, "users: ", users);
 
         const currentDay = new Date().getDay();
         const resetDay = data.resetDay;
 
         // if it is the correct day of the week
         if (currentDay == resetDay) {
-          console.log(doc.id, ": currentDay == resetDay, resetting now.");
+          console.log(groupName, doc.id, ": currentDay == resetDay, resetting now.");
 
           const duelsSnapshot = await duelsRef
             .where("createdAt", ">=", startOfLastWeek)
@@ -1107,7 +1108,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
             .get();
 
           if (duelsSnapshot.empty) {
-            console.log(`No active duels found for group ${doc.id} from last week.`);
+            console.log(groupName, `No active duels found for group ${doc.id} from last week.`);
             return;
           }
 
@@ -1347,6 +1348,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
         const biweeklySteps = {};
         const weeklySteps = {};
         const users = data.users;
+        console.log(groupName, "inside biweekly if statement");
 
         // Get all users in the group and their current steps
         Object.keys(users).forEach((userID) => {
@@ -1364,26 +1366,26 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
           const userWeeklySteps = weeklyStepsData.slice(1).reduce((sum, steps) => sum + steps, 0) + currentSteps;
           weeklySteps[userID] = userWeeklySteps + currentSteps;
           biweeklySteps[userID] = userPastThreeDaysSteps + currentSteps;
-          console.log("past three days of steps for user: ", userID, userPastThreeDaysSteps, currentSteps);
+          console.log(groupName, "past three days of steps for user: ", userID, userPastThreeDaysSteps, currentSteps);
         });
 
-        console.log("biweeklySteps: ", biweeklySteps);
-        console.log("users: ", users);
+        console.log(groupName, "biweeklySteps: ", biweeklySteps);
+        console.log(groupName, "users: ", users);
 
         const currentDay = new Date().getDay();
         const resetDayOne = data.resetDay;
         const resetDayTwo = (resetDayOne + 3) % 7;
 
-        let startOfLastResetDay;
+        const startOfLastResetDay= new Date(today);
         if (currentDay == resetDayOne) {
-          startOfLastResetDay = today.getDate() - 4;
+          startOfLastResetDay.setDate(today.getDate() - 4);
         } else {
-          startOfLastResetDay = today.getDate() - 3;
+          startOfLastResetDay.setDate(today.getDate() - 3);
         }
 
         // if it is the correct day of the week
         if ((currentDay == resetDayOne && hour <= 6) || currentDay == resetDayTwo && hour >= 16) {
-          console.log(doc.id, ": currentDay == resetDayOne or resetDayTwo, resetting now.");
+          console.log(groupName, doc.id, ": currentDay == resetDayOne or resetDayTwo, resetting now.");
 
           const duelsSnapshot = await duelsRef
             .where("createdAt", ">=", startOfLastResetDay)
@@ -1391,11 +1393,11 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
             .get();
 
           if (duelsSnapshot.empty) {
-            console.log(`No active duels found for group ${doc.id} from last half-week.`);
+            console.log(groupName, `No active duels found for group ${doc.id} from last half-week.`);
             return;
           }
 
-          console.log(`Duels found for group ${doc.id}: `, duelsSnapshot.size);
+          console.log(groupName, `Duels found for group ${doc.id}: `, duelsSnapshot.size);
 
           // Create a new WriteBatch for this group
           const batch = firestore.batch();
@@ -1427,7 +1429,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
                 winner = player2Id;
               }
 
-              console.log(`Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
+              console.log(groupName, `Duel ${duelDoc.id}: Player1 (${player1Id}) steps = ${player1TotalSteps}, Player2 (${player2Id}) steps = ${player2TotalSteps}, Winner = ${winner}`);
 
               // now, distribute earnings
               // if player1 wins, grab the bets
@@ -1535,8 +1537,8 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
 
           // Now do the race distirbution -- but only if its resetDayOne
           if (currentDay == resetDayOne && hour <= 6 ) {
-            console.log("updateWinners -- race distribution starting now");
-            console.log("Right before race distribution -- Users Value:", users);
+            console.log(groupName, "updateWinners -- race distribution starting now");
+            console.log(groupName, "Right before race distribution -- Users Value:", users);
 
             // weeklySteps was declared much earlier
             let maxSteps = -Infinity; // Start with the lowest possible value
@@ -1548,7 +1550,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
               }
             }
 
-            console.log("Race distribution -- checkpoint one");
+            console.log(groupName, "Race distribution -- checkpoint one");
 
             let totalDecrease = 0; // Track total token decrease
             // To reset operations count per batch:
@@ -1575,7 +1577,7 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
                 gains[userID] = -decrease;
               }
             }
-            console.log("Race distribution -- checkpoint two");
+            console.log(groupName, "Race distribution -- checkpoint two");
 
             // Add the total decrease to the maxUser's tokens
             if (users[maxUser]) {
