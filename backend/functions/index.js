@@ -215,6 +215,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
   const newsType = newNewsData.type;
 
   const groupID = event.params.groupID; // Extract group ID from event params
+  console.log(`sendNotifOnNews is running in ${groupID}`);
   const newsRef = firestore.collection(`groups/${groupID}/news`);
   const newsDocRef = firestore.doc(`groups/${groupID}/news/${event.params.newsID}`);
 
@@ -295,6 +296,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
 
     console.log("priority1 exists: ", newNewsData.priority1);
 
+    let userIDList = [];
+
     if (!newsSnapshot.empty) {
       console.log("There is a priority 1 news document in the last 12 hours");
       // make sure to not send notifs to the users in the priority 1
@@ -318,92 +321,96 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
         console.log("Updated priority1 in new news document:", updatedPriority1);
       }
 
-
-      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
-      for (const userID of updatedPriority1) {
-        try {
-          const userDoc = await firestore.collection("users").doc(userID).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            const userTokens = userData.tokens || [];
-
-            for (const token of userTokens) {
-              let message;
-
-              if (newsType == "racePullAheadTopThree") {
-                // get information according to the newsType
-                const place = newNewsData.place;
-
-                // the user who pulled ahead
-                const targetUserID = newNewsData.userID;
-                const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
-                const targetUserData = targetUserDoc.data();
-
-                const targetUsername = targetUserData.username;
-
-                if (place == 3) {
-                  message = {
-                    token: token,
-                    notification: {
-                      title: "A new challenger approaches.",
-                      body: `${targetUsername} just barrelled into 3rd place!`,
-                    },
-                  };
-                } else if (place == 2) {
-                  message = {
-                    token: token,
-                    notification: {
-                      title: "Damn, this race is close!",
-                      body: `${targetUsername} just pulled ahead into 2nd place!`,
-                    },
-                  };
-                } else if (place == 1) {
-                  message = {
-                    token: token,
-                    notification: {
-                      title: `All hail ${targetUsername}!`,
-                      body: `${targetUsername} is your new race leader in 1st place!`,
-                    },
-                  };
-                }
-              } else if (newsType == "headToHeadPullAhead") {
-                const targetUserID = newNewsData.opponentID;
-                const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
-                const targetUserData = targetUserDoc.data();
-
-                const targetUsername = targetUserData.username;
-
-                message = {
-                  token: token,
-                  notification: {
-                    title: `You've gotta lock in.`,
-                    body: `${targetUsername} just surpassed you in steps in your head to head!`,
-                  },
-                };
-              } else {
-                message = {
-                  token: token,
-                  notification: {
-                    title: "New Priority 1 News",
-                    body: "You have an important update!",
-                  },
-                };
-              }
-
-              try {
-                const response = await admin.messaging().send(message);
-                console.log("Notification sent successfully to", userID, ":", response);
-              } catch (error) {
-                console.error("Error sending notification to", userID, ":", error);
-              }
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching user document for", userID, ":", error);
-        }
-      }
+      userIDList = updatedPriority1;
+      console.log("userIDList is updatedPriority1", userIDList);
     } else {
       console.log("No priority 1 news found in the last 12 hours");
+      userIDList = newNewsData.priority1;
+      console.log("userIDList is newNewsData.priority1", userIDList);
+    }
+
+    // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+    for (const userID of userIDList) {
+      try {
+        const userDoc = await firestore.collection("users").doc(userID).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const userTokens = userData.tokens || [];
+
+          for (const token of userTokens) {
+            let message;
+
+            if (newsType == "racePullAheadTopThree") {
+              // get information according to the newsType
+              const place = newNewsData.place;
+
+              // the user who pulled ahead
+              const targetUserID = newNewsData.userID;
+              const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
+              const targetUserData = targetUserDoc.data();
+
+              const targetUsername = targetUserData.username;
+
+              if (place == 3) {
+                message = {
+                  token: token,
+                  notification: {
+                    title: "A new challenger approaches.",
+                    body: `${targetUsername} just barrelled into 3rd place!`,
+                  },
+                };
+              } else if (place == 2) {
+                message = {
+                  token: token,
+                  notification: {
+                    title: "Damn, this race is close!",
+                    body: `${targetUsername} just pulled ahead into 2nd place!`,
+                  },
+                };
+              } else if (place == 1) {
+                message = {
+                  token: token,
+                  notification: {
+                    title: `All hail ${targetUsername}!`,
+                    body: `${targetUsername} is your new race leader in 1st place!`,
+                  },
+                };
+              }
+            } else if (newsType == "headToHeadPullAhead") {
+              const targetUserID = newNewsData.opponentID;
+              const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
+              const targetUserData = targetUserDoc.data();
+
+              const targetUsername = targetUserData.username;
+
+              message = {
+                token: token,
+                notification: {
+                  title: `You've gotta lock in.`,
+                  body: `${targetUsername} just surpassed you in steps in your head to head!`,
+                },
+              };
+            } else {
+              message = {
+                token: token,
+                notification: {
+                  title: "New Priority 1 News",
+                  body: "You have an important update!",
+                },
+              };
+            }
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log("Notification sent successfully to", userID, ":", response);
+            } catch (error) {
+              console.error("Error sending notification to", userID, ":", error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user document for", userID, ":", error);
+      }
     }
   }
 
@@ -445,6 +452,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
 
     console.log("merged news, ", mergedNews);
 
+    let userIDList = [];
+
     if (mergedNews.length > 0) {
       console.log("There is a priority 1 or priority 2 news document in the last 24 hours");
       const alreadyNotifiedUserIDs = new Set(); // Using Set to automatically handle uniqueness
@@ -465,90 +474,95 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
         console.log("Updated priority2 in new news document:", updatedPriority2);
       }
 
-      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
-      for (const userID of updatedPriority2) {
-        try {
-          const userDoc = await firestore.collection("users").doc(userID).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            const userTokens = userData.tokens || [];
+      userIDList = updatedPriority2;
+      console.log("userIDList is updatedPriority2", userIDList);
+    } else {
+      console.log("No priority 2 news or priority 1 news found in the last 12 hours");
+      userIDList = newNewsData.priority2;
+      console.log("userIDList is newNewsData.priority2", userIDList);
+    }
 
-            for (const token of userTokens) {
-              let message;
+    // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+    for (const userID of userIDList) {
+      try {
+        const userDoc = await firestore.collection("users").doc(userID).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const userTokens = userData.tokens || [];
 
-              if (newsType == "headToHeadPullAhead") {
-                // the person you bet on's opponent
+          for (const token of userTokens) {
+            let message;
 
-                const opponentUserID = newNewsData.opponentID;
-                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
-                const opponentUserData = opponentUserDoc.data();
+            if (newsType == "headToHeadPullAhead") {
+              // the person you bet on's opponent
 
-                const opponentUsername = opponentUserData.username;
+              const opponentUserID = newNewsData.opponentID;
+              const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+              const opponentUserData = opponentUserDoc.data();
 
-                // the person you bet on
+              const opponentUsername = opponentUserData.username;
 
-                const betOnUserID = newNewsData.userID;
-                const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
-                const betOnUserData = betOnUserDoc.data();
+              // the person you bet on
 
-                const betOnUsername = betOnUserData.username;
+              const betOnUserID = newNewsData.userID;
+              const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
+              const betOnUserData = betOnUserDoc.data();
 
-                // this targets anyone who's betting on you
+              const betOnUsername = betOnUserData.username;
 
-                message = {
-                  token: token,
-                  notification: {
-                    title: `Shucks, you're losing your bet!`,
-                    body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head!`,
-                  },
-                };
-              } else if (newsType == "racePullAheadOfYou") {
-                // the person who pulled ahea of you
+              // this targets anyone who's betting on you
 
-                const opponentUserID = newNewsData.userID;
-                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
-                const opponentUserData = opponentUserDoc.data();
+              message = {
+                token: token,
+                notification: {
+                  title: `Shucks, you're losing your bet!`,
+                  body: `${opponentUsername} just surpassed ${betOnUsername} in steps in their head to head!`,
+                },
+              };
+            } else if (newsType == "racePullAheadOfYou") {
+              // the person who pulled ahea of you
 
-                const opponentUsername = opponentUserData.username;
+              const opponentUserID = newNewsData.userID;
+              const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+              const opponentUserData = opponentUserDoc.data();
 
-                message = {
-                  token: token,
-                  notification: {
-                    title: `Don't be left behind!`,
-                    body: `${opponentUsername} just overtook you in steps! Are you just gonna sit back and let that happen?`,
-                  },
-                };
-              } else if (newsType == "headToHeadOpponentWalking") {
-                const opponentUserID = newNewsData.userID;
-                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
-                const opponentUserData = opponentUserDoc.data();
+              const opponentUsername = opponentUserData.username;
 
-                const opponentUsername = opponentUserData.username;
+              message = {
+                token: token,
+                notification: {
+                  title: `Don't be left behind!`,
+                  body: `${opponentUsername} just overtook you in steps! Are you just gonna sit back and let that happen?`,
+                },
+              };
+            } else if (newsType == "headToHeadOpponentWalking") {
+              const opponentUserID = newNewsData.userID;
+              const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+              const opponentUserData = opponentUserDoc.data();
 
-                const steps = newNewsData.steps;
+              const opponentUsername = opponentUserData.username;
 
-                message = {
-                  token: token,
-                  notification: {
-                    title: `Pick up the pace!`,
-                    body: `Your head-to-head opponent, ${opponentUsername} just walked ${steps} in five hours. What are you up to?`,
-                  },
-                };
-              }
-              try {
-                const response = await admin.messaging().send(message);
-                console.log("Notification sent successfully to", userID, ":", response);
-              } catch (error) {
-                console.error("Error sending notification to", userID, ":", error);
-              }
+              const steps = newNewsData.steps;
+
+              message = {
+                token: token,
+                notification: {
+                  title: `Pick up the pace!`,
+                  body: `Your head-to-head opponent, ${opponentUsername} just walked ${steps} in five hours. What are you up to?`,
+                },
+              };
+            }
+            try {
+              const response = await admin.messaging().send(message);
+              console.log("Notification sent successfully to", userID, ":", response);
+            } catch (error) {
+              console.error("Error sending notification to", userID, ":", error);
             }
           }
-        } catch (error) {
-          console.error("Error fetching user document for", userID, ":", error);
         }
+      } catch (error) {
+        console.error("Error fetching user document for", userID, ":", error);
       }
-    } else {
-      console.log("No priority 2 news found in the last 12 hours");
     }
   }
 
@@ -598,6 +612,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
 
     console.log("merged news, ", mergedNews);
 
+    let userIDList = [];
+
     if (mergedNews.length > 9) {
       console.log("There is a priority 3 news document in the last 36 hours");
       const alreadyNotifiedUserIDs = new Set();
@@ -619,74 +635,81 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
         console.log("Updated priority2 in new news document:", updatedPriority3);
       }
 
-      // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
-      for (const userID of updatedPriority3) {
-        try {
-          const userDoc = await firestore.collection("users").doc(userID).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            const userTokens = userData.tokens || [];
+      userIDList = updatedPriority3;
+      console.log("userIDList is updatedPriority3", userIDList);
+    } else {
+      console.log("No priority 3 news or priority 2 news or priority 1 news found in the last 12 hours");
+      userIDList = newNewsData.priority2;
+      console.log("userIDList is newNewsData.priority3", userIDList);
+    }
 
-            for (const token of userTokens) {
-              let message;
+    // Send notifications only to users who were NOT in alreadyNotifiedUserIDs
+    for (const userID of userIDList) {
+      try {
+        const userDoc = await firestore.collection("users").doc(userID).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const userTokens = userData.tokens || [];
 
-              if (newsType == "headToHeadOpponentWalking") {
-                const opponentUserID = newNewsData.userID;
-                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
-                const opponentUserData = opponentUserDoc.data();
+          for (const token of userTokens) {
+            let message;
 
-                const opponentUsername = opponentUserData.username;
+            if (newsType == "headToHeadOpponentWalking") {
+              const opponentUserID = newNewsData.userID;
+              const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+              const opponentUserData = opponentUserDoc.data();
 
-                const steps = newNewsData.steps;
+              const opponentUsername = opponentUserData.username;
 
-                message = {
-                  token: token,
-                  notification: {
-                    title: `${opponentUsername}'s on a roll!`,
-                    body: `They just walked ${steps}. What are you doing?`,
-                  },
-                };
-              } else if (newsType == "headToHeadPullAhead") {
-                // the person you bet on's opponent
+              const steps = newNewsData.steps;
 
-                const opponentUserID = newNewsData.userID;
-                const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
-                const opponentUserData = opponentUserDoc.data();
+              message = {
+                token: token,
+                notification: {
+                  title: `${opponentUsername}'s on a roll!`,
+                  body: `They just walked ${steps}. What are you doing?`,
+                },
+              };
+            } else if (newsType == "headToHeadPullAhead") {
+              // the person you bet on's opponent
 
-                const opponentUsername = opponentUserData.username;
+              const opponentUserID = newNewsData.userID;
+              const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
+              const opponentUserData = opponentUserDoc.data();
 
-                // the person you bet on
+              const opponentUsername = opponentUserData.username;
 
-                const betOnUserID = newNewsData.opponentID;
-                const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
-                const betOnUserData = betOnUserDoc.data();
+              // the person you bet on
 
-                const betOnUsername = betOnUserData.username;
+              const betOnUserID = newNewsData.opponentID;
+              const betOnUserDoc = await firestore.collection("users").doc(betOnUserID).get();
+              const betOnUserData = betOnUserDoc.data();
 
-                // this targets anyone who bet on the opponent
-                message = {
-                  token: token,
-                  notification: {
-                    title: `Good news!`,
-                    body: `You're winning your bet! ${betOnUsername} just surpassed ${opponentUsername} in steps in their head to head!`,
-                  },
-                };
-              }
+              const betOnUsername = betOnUserData.username;
 
-              // steps behind in race, steps in head to head, and diamond count
-              // waiting on frontend
+              // this targets anyone who bet on the opponent
+              message = {
+                token: token,
+                notification: {
+                  title: `Good news!`,
+                  body: `You're winning your bet! ${betOnUsername} just surpassed ${opponentUsername} in steps in their head to head!`,
+                },
+              };
+            }
 
-              try {
-                const response = await admin.messaging().send(message);
-                console.log("Notification sent successfully to", userID, ":", response);
-              } catch (error) {
-                console.error("Error sending notification to", userID, ":", error);
-              }
+            // steps behind in race, steps in head to head, and diamond count
+            // waiting on frontend
+
+            try {
+              const response = await admin.messaging().send(message);
+              console.log("Notification sent successfully to", userID, ":", response);
+            } catch (error) {
+              console.error("Error sending notification to", userID, ":", error);
             }
           }
-        } catch (error) {
-          console.error("Error fetching user document for", userID, ":", error);
         }
+      } catch (error) {
+        console.error("Error fetching user document for", userID, ":", error);
       }
     }
   }
