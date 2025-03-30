@@ -1917,7 +1917,7 @@ exports.managePropBets = onSchedule("every day 04:00", async (event) => {
     const groupSnapshots =
     await groupRef
       .where("isGameActive", "==", true)
-      .where("gameType", "==", "weekly")
+      .where("gameType", "in", ["weekly", "biweekly"])
       .get();
     if (groupSnapshots.empty) {
       console.log("No active games found.");
