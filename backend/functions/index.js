@@ -239,7 +239,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
 
         const userDoc = await firestore.collection("users").doc(userID).get();
         if (userDoc.exists) {
-          console.log("user exists in priority 0", targetUserID, targetUsername);
+          console.log("user exists in priority 0", userID);
           const userData = userDoc.data();
           const userTokens = userData && userData.tokens;
 
@@ -247,7 +247,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
             for (const token of userTokens) {
               let message;
               if (newsType == "recordSetter") {
-                console.log("recordSetter detected, will try to send message to ", targetUsername);
+                console.log("recordSetter detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
                 const steps = newNewsData.record;
                 message = {
                   token: token,
@@ -342,6 +342,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
 
             if (newsType == "racePullAheadTopThree") {
               // get information according to the newsType
+              console.log("racePullAheadTopThree detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
               const place = newNewsData.place;
 
               // the user who pulled ahead
@@ -377,6 +378,8 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
                 };
               }
             } else if (newsType == "headToHeadPullAhead") {
+              console.log("headToHeadPullAhead detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
+
               const targetUserID = newNewsData.opponentID;
               const targetUserDoc = await firestore.collection("users").doc(targetUserID).get();
               const targetUserData = targetUserDoc.data();
@@ -489,11 +492,13 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
         if (userDoc.exists) {
           const userData = userDoc.data();
           const userTokens = userData.tokens || [];
+          const targetUsername = userData.username;
 
           for (const token of userTokens) {
             let message;
 
             if (newsType == "headToHeadPullAhead") {
+              console.log("headToHeadPullAhead detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
               // the person you bet on's opponent
 
               const opponentUserID = newNewsData.opponentID;
@@ -521,6 +526,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
               };
             } else if (newsType == "racePullAheadOfYou") {
               // the person who pulled ahea of you
+              console.log("racePullAheadOfYou detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
 
               const opponentUserID = newNewsData.userID;
               const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
@@ -536,6 +542,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
                 },
               };
             } else if (newsType == "headToHeadOpponentWalking") {
+              console.log("headToHeadOpponentWalking detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
               const opponentUserID = newNewsData.userID;
               const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
               const opponentUserData = opponentUserDoc.data();
@@ -650,11 +657,13 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
         if (userDoc.exists) {
           const userData = userDoc.data();
           const userTokens = userData.tokens || [];
+          const targetUsername = userData.username;
 
           for (const token of userTokens) {
             let message;
 
             if (newsType == "headToHeadOpponentWalking") {
+              console.log("headToHeadOpponentWalking detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
               const opponentUserID = newNewsData.userID;
               const opponentUserDoc = await firestore.collection("users").doc(opponentUserID).get();
               const opponentUserData = opponentUserDoc.data();
@@ -671,6 +680,7 @@ exports.sendNotifOnNews = onDocumentCreated("groups/{groupID}/news/{newsID}", as
                 },
               };
             } else if (newsType == "headToHeadPullAhead") {
+              console.log("headToheadPullAhead detected for group, ", groupID, " will try to send message to ", targetUsername, "with token ", token);
               // the person you bet on's opponent
 
               const opponentUserID = newNewsData.userID;

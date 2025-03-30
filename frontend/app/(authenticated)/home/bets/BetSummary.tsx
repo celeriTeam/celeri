@@ -889,8 +889,34 @@ const BetSummaryPage: React.FC = () => {
                                         style={[styles.editIcon, (groups[groupID]?.groupName?.length || 0) > maxNameLength && { marginLeft: scale(-10), }]}
                                     />
                                 </TouchableOpacity>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', }}>
+                            </View> 
+                            <TouchableOpacity style={styles.statsContainer} onPress={() => setCurrencyModalVisible(true)} activeOpacity={0.8}>
+                                <View style={styles.statItem}>
+                                    <Image
+                                        source={require('@assets/icons/tokens.png')}
+                                        style={styles.tokensIcon}
+                                    />
+                                    <Text style={styles.statValue}> {groups[groupID]?.userTokens}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                    <Image
+                                        source={require('@assets/icons/betTokens.png')}
+                                        style={styles.betTokensIcon}
+                                    />
+                                    <Text style={styles.statValue}> {groups[groupID]?.todaysBetTokens}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                    <Image
+                                        source={require('@assets/icons/diamonds.png')}
+                                        style={styles.diamondsIcon}
+                                    />
+                                    <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
+                                </View>
+                                {!currentTutorialStatus.currency &&
+                                    <View style={[styles.tutorialIndicator, { bottom: 38, left: 24, marginLeft: -20, }]} />
+                                }
+                            </TouchableOpacity>
+                            {/* <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                                 <Image
                                     source={require('@assets/icons/timeLeft.png')}
                                     style={styles.timeLeftIcon}
@@ -904,7 +930,7 @@ const BetSummaryPage: React.FC = () => {
                                         <Text style={styles.timeLeftText}> until next bet</Text>
                                     </>
                                 )}
-                            </View>
+                            </View> */}
                         </View>
                     </View>
 
@@ -917,32 +943,6 @@ const BetSummaryPage: React.FC = () => {
                             </TouchableOpacity>
                         )}
                     </View>
-                    <TouchableOpacity style={styles.statsContainer} onPress={() => setCurrencyModalVisible(true)} activeOpacity={0.8}>
-                        <View style={styles.statItem}>
-                            <Image
-                                source={require('@assets/icons/tokens.png')}
-                                style={styles.tokensIcon}
-                            />
-                            <Text style={styles.statValue}> {groups[groupID]?.userTokens}</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Image
-                                source={require('@assets/icons/betTokens.png')}
-                                style={styles.betTokensIcon}
-                            />
-                            <Text style={styles.statValue}> {groups[groupID]?.todaysBetTokens}</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Image
-                                source={require('@assets/icons/diamonds.png')}
-                                style={styles.diamondsIcon}
-                            />
-                            <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
-                        </View>
-                        {!currentTutorialStatus.currency &&
-                            <View style={[styles.tutorialIndicator, { bottom: 38, left: 24, marginLeft: -20, }]} />
-                        }
-                    </TouchableOpacity>
 
                     {/* Live Duel Section */}
                     <View>
@@ -1635,22 +1635,18 @@ const styles = StyleSheet.create({
     },
     statsContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        alignSelf: 'flex-start',
         backgroundColor: '#65656580',
-        paddingHorizontal: 20,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
         borderRadius: 15,
-        padding: 10,
-        marginHorizontal: 20,
+        marginRight: 40,
         marginBottom: 5,
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#00000080',
-        borderRadius: 15,
-        padding: 10,
-        width: '30%',
+        marginRight: 10,
     },
     statValue: {
         color: '#fff',
