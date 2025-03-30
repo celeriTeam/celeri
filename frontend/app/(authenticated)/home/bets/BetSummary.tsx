@@ -693,8 +693,8 @@ const BetSummaryPage: React.FC = () => {
     const closeCurrencyModal = async () => {
         console.log('closing diamonds');
         setCurrencyModalVisible(false);
-        await addDiamonds(groupID, userID, 1);
         if (!currentTutorialStatus.currency) {
+            await addDiamonds(groupID, userID, 1);
             await setTutorialStatus(groupID, userID, 'currency');
             setCurrentTutorialStatus(prevState => ({
                 ...prevState,
@@ -812,7 +812,7 @@ const BetSummaryPage: React.FC = () => {
 
                     {/* Tutorial Modal */}
                     {showTutorial && (
-                        <View style={[1,2].includes(tutorialStep) ? styles.tutorialOverlay : [styles.tutorialOverlayTop, { height: '57.5%', }]}>
+                        <View style={[1,2,3,5].includes(tutorialStep) ? styles.tutorialOverlay : [styles.tutorialOverlayTop, { height: '57.5%', }]}>
                             <BetSummaryTutorial
                                 tutorialStep={tutorialStep}
                                 setTutorialStep={setTutorialStep}
@@ -1501,7 +1501,7 @@ const BetSummaryPage: React.FC = () => {
                         activeOpacity={1}
                         onPress={closeCurrencyModal} // Close dropdown when overlay is pressed
                     />
-                    <View style={[styles.moneyModalContainer, { height: '20%', top: '40%' }]}>
+                    <View style={[styles.moneyModalContainer, { height: '30%', top: '37%' }]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.closeButton} onPress={closeCurrencyModal}>
                             <Image
