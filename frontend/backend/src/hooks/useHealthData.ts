@@ -52,15 +52,14 @@ const useHealthData = () => {
                     reject(err);
                     return;
                 }
-                // console.log("getDailySteps succeeded -- getStepCount: ", results.value);
-                setSteps(results.value);
-                resolve(results.value);
+                const flooredSteps = Math.floor(results.value);
+                setSteps(flooredSteps);
+                resolve(flooredSteps);
             });
         });
     };
 
     const getStepsFiveHoursAgo = async (stepsLastUpdate: Date): Promise<number> => {
-        // console.log("getStepsFiveHoursAgo -- start");
 
         const currentDate = new Date();
 
@@ -91,7 +90,7 @@ const useHealthData = () => {
                 // Process each sample
                 for (let i = 0; i < sortedSamples.length; i++) {
                     const startTime = new Date(sortedSamples[i].startDate).getTime();
-                    let totalSteps = sortedSamples[i].value;
+                    let totalSteps = Math.floor(sortedSamples[i].value);
 
                     // Look for samples within 5 hours of this one
                     for (let j = i + 1; j < sortedSamples.length; j++) {
@@ -99,7 +98,7 @@ const useHealthData = () => {
 
                         // If within 5 hours, add to total
                         if (nextTime - startTime <= 5 * 60 * 60 * 1000) {
-                            totalSteps += sortedSamples[j].value;
+                            totalSteps += Math.floor(sortedSamples[j].value);
                         } else {
                             break; // Past 5-hour window
                         }
@@ -145,7 +144,7 @@ const useHealthData = () => {
                         if (err) {
                             reject(err);
                         } else {
-                            resolve(results.value);
+                            resolve(Math.floor(results.value));
                         }
                     });
                 });
@@ -197,7 +196,7 @@ const useHealthData = () => {
                         if (err) {
                             reject(err);
                         } else {
-                            resolve(results.value);
+                            resolve(Math.floor(results.value));
                         }
                     });
                 });
