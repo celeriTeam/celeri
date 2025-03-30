@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
 import { useUser } from '../../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -26,6 +26,8 @@ const CurrencyTutorial: React.FC<{
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
+    const [currentPage, setCurrentPage] = useState(0);
+    const scrollViewRef = useRef<ScrollView>(null);
     const [addedDiamond, setAddedDiamond] = useState(false);
     
     const addDiamond = async () => {
@@ -38,11 +40,71 @@ const CurrencyTutorial: React.FC<{
         }
     };
 
+    const handleScroll = (event: any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const page = Math.round(offsetX / (width * 0.74));
+        setCurrentPage(page);
+    };
+
     return (
         <View style={styles.overlayContainer}>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={styles.tokenText}>Here are your diamonds. You gain one diamond for every daily prop-bet that you win. Use them in the power-ups store.</Text>
+            <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollViewContent}
+            >
+                {/* page 1 */}
+                <View style={styles.page}>
+                        <Text style={styles.tokenText}>The </Text>
+                        <Image
+                            source={require('@assets/icons/tokens.png')}
+                            style={styles.tokensIcon}
+                        />
+                        <Text style={styles.tokenText}> icon shows how many tokens you</Text>
+                        <Text style={styles.tokenText}>have.</Text>
+                </View>
+
+                {/* Page 2 */}
+                <View style={styles.page}>
+                        <Text style={styles.tokenText}>The </Text>
+                        <Image
+                            source={require('@assets/icons/betTokens.png')}
+                            style={styles.betTokensIcon}
+                        />
+                        <Text style={styles.tokenText}> icon shows how many tokens</Text>
+                    <Text style={styles.tokenText}>you're currently betting in the head-to-heads.</Text>
+                </View>
+
+                {/* Page 3 */}
+                <View style={styles.page}>
+                        <Text style={styles.tokenText}>The </Text>
+                        <Image
+                            source={require('@assets/icons/diamonds.png')}
+                            style={styles.diamondsIcon}
+                        />
+                        <Text style={styles.tokenText}> icon shows how many diamonds</Text>
+                    <Text style={styles.tokenText}>you have. You can use them in the shop!</Text>
+                </View>
+            </ScrollView>
+
+            {/* Pagination Indicators */}
+            <View style={styles.pagination}>
+                {[0, 1, 2].map(index => (
+                    <View
+                        key={index}
+                        style={[
+                            styles.paginationDot,
+                            currentPage === index ? styles.paginationDotActive : {}
+                        ]}
+                    />
+                ))}
             </View>
+            
             {!diamondsTutorialStatus && (
                 <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
@@ -64,6 +126,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+        width: '100%',
     },
     overlay: {
         position: 'absolute',
@@ -119,6 +182,14 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
         gap: 5,
     },
+    tokensIcon: {
+        width: 16,
+        height: 16,
+    },
+    betTokensIcon: {
+        width: 15,
+        height: 15,
+    },
     diamondsIcon: {
         width: 14,
         height: 12,
@@ -127,6 +198,41 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         fontSize: 15,
         color: 'white',
+        // textAlign: 'center',
+        flexShrink: 1,
+    },
+    scrollView: {
+        width: width * 0.74,
+        height: 2000,
+    },
+    scrollViewContent: {
+        alignItems: 'center',
+    },
+    page: {
+        width: width * 0.74,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        // height: 150,
+        paddingVertical: 15,
+        // justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pagination: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 15,
+    },
+    paginationDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        borderColor: '#fff',
+        borderWidth: 1,
+        backgroundColor: 'transparent',
+        marginHorizontal: 3,
+    },
+    paginationDotActive: {
+        backgroundColor: '#fff',
     },
 });
 
