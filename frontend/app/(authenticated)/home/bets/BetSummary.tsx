@@ -115,6 +115,7 @@ const BetSummaryPage: React.FC = () => {
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [noMoreBets, setNoMoreBets] = useState(false);
     const [betTimeLeft, setBetTimeLeft] = useState("");
+    const [raceTimeLeft, setRaceTimeLeft] = useState('');
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
     const [selectedPropBet, setSelectedPropBet] = useState<'over' | 'under' | null>(null);
     const [finishedPropBet, setFinishedPropBet] = useState<boolean>(false);
@@ -378,8 +379,25 @@ const BetSummaryPage: React.FC = () => {
                                 const daysLeft = resetDay - currentDay;
                                 setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                             }
+
+                            // same as 
+                            setRaceTimeLeft(betTimeLeft);
                         } else if (gameType == "biweekly") {
-                            // console.log("biweekly -- setting days left for bet");
+                            
+                            // set the race time left first
+                            const today = new Date();
+                            const currentDay = today.getDay();
+                            if (currentDay === resetDay) {
+                                setRaceTimeLeft("7 days");
+                            } else if (currentDay > resetDay) {
+                                const daysLeft = 7 - (currentDay - resetDay);
+                                setRaceTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                            } else {
+                                const daysLeft = resetDay - currentDay;
+                                setRaceTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                            }
+
+                            // now setting the bet time left
                             const firstResetDay = resetDay; // e.g., Sunday (0)
                             const secondResetDay = (resetDay + 3) % 7; // e.g., Wednesday (3 days after Sunday)
                             const currentHour = new Date().getHours();
@@ -807,7 +825,13 @@ const BetSummaryPage: React.FC = () => {
             }}
         >
             <SafeAreaView style={styles.safeView} edges={['top']}>
-                <View style={styles.container}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={{ paddingBottom: 50 }} // Add bottom space if needed
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+            >
+
 
 
                     {/* Tutorial Modal */}
@@ -916,32 +940,36 @@ const BetSummaryPage: React.FC = () => {
                                     <View style={[styles.tutorialIndicator, { bottom: 38, left: 24, marginLeft: -20, }]} />
                                 }
                             </TouchableOpacity>
-                            {/* <View style={{ flexDirection: 'row', alignItems: 'center', }}>
-                                <Image
-                                    source={require('@assets/icons/timeLeft.png')}
-                                    style={styles.timeLeftIcon}
-                                />
-                                <Text style={styles.timeLeft}> {gameTimeLeft}</Text>
-                                <Text style={styles.timeLeftText}> left in game</Text>
-                                {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && (
-                                    <>
-                                        <Text style={styles.timeLeftText}> | </Text>
-                                        <Text style={styles.timeLeft}>{betTimeLeft}</Text>
-                                        <Text style={styles.timeLeftText}> until next bet</Text>
-                                    </>
-                                )}
-                            </View> */}
                         </View>
                     </View>
 
                     {/* Stats Container */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: scale(20), paddingTop: scale(15), }}>
-                        <Text style={styles.sectionTitle}>Your Total Stats</Text>
-                        {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && showPropBet && (
+                    <View style={{ paddingHorizontal: scale(20), paddingTop: scale(10) }}>
+                        {/* Top Row: Title + Button */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={styles.sectionTitle}>Game Duration</Text>
+                            {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && showPropBet && (
                             <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
                                 <Text style={styles.propBetButton}>Today's Prop Bet</Text>
                             </TouchableOpacity>
-                        )}
+                            )}
+                        </View>
+
+                        {/* Spacer */}
+                        <View style={{ height: scale(5) }} />
+
+                        {/* Three Rows */}
+                        {[
+                            { label: 'total left in game', value: gameTimeLeft },
+                            { label: 'until weekly race ends', value: raceTimeLeft },
+                            { label: 'until next head-to-head bet', value: betTimeLeft },
+                        ].map((item, idx) => (
+                            <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: scale(10), marginLeft: scale(10) }}>
+                            <Image source={require('@assets/icons/timeLeft.png')} style={styles.timeLeftIcon} />
+                            <Text style={styles.timeLeft}>{item.value}</Text>
+                            <Text style={styles.timeLeftText}> {item.label}</Text>
+                            </View>
+                        ))}
                     </View>
 
                     {/* Live Duel Section */}
@@ -1078,7 +1106,7 @@ const BetSummaryPage: React.FC = () => {
                             { alignSelf: 'flex-start', left: scale(10), }]}
                         />
                         {selectedTab === 'Tokens' ? (
-                            <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(40), }]}>
+                            <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(10), }]}>
                                 <ScrollView showsVerticalScrollIndicator={false}>
                                     <View style={styles.leaderboardTop}>
                                         <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
@@ -1213,7 +1241,7 @@ const BetSummaryPage: React.FC = () => {
                             </View>
                         )}
                     </View>
-                </View>
+                </ScrollView>
 
                 {/* ************************  MODALS  ********************** */}
 
@@ -1592,6 +1620,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         fontSize: 11,
         color: '#74FF6D',
+        paddingBottom: 8,
     },
     groupInfo: {
         flexDirection: 'row',
@@ -1620,17 +1649,18 @@ const styles = StyleSheet.create({
         height: 16,
     },
     timeLeftIcon: {
-        width: 13,
-        height: 13,
+        width: 15,
+        height: 15,
+        marginRight: 5,
     },
     timeLeft: {
         color: '#74FF6D',
         fontFamily: 'Lexend',
-        fontSize: 11,
+        fontSize: 13,
     },
     timeLeftText: {
         fontFamily: 'Lexend',
-        fontSize: 11,
+        fontSize: 13,
         color: '#fff',
     },
     statsContainer: {
@@ -1819,9 +1849,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#65656580',
         paddingHorizontal: 10,
         marginTop: 8,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        height: '97%',
+        borderRadius: 20,
+        //height: '97%',
     },
     grayLine: {
         position: 'absolute',

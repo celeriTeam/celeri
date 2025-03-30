@@ -1069,10 +1069,10 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
 
     const today = new Date();
     const hour = today.getHours(); // Get the current hour in 24-hour format
-    if (hour === 5) {
+    if (hour === 5 || hour === 4) {
       console.log("Running at night");
       // Logic for the morning run
-    } else if (hour === 17) {
+    } else if (hour === 17 || hour === 16) {
       console.log("Running at morning");
       // Logic for the evening run
     } else {
@@ -1409,12 +1409,16 @@ exports.updateWinners = onSchedule("0 4,16 * * *", async (event) => {
         const resetDayOne = data.resetDay;
         const resetDayTwo = (resetDayOne + 3) % 7;
 
-        const startOfLastResetDay= new Date(today);
+        const startOfLastResetDay = new Date(today);
         if (currentDay == resetDayOne) {
           startOfLastResetDay.setDate(today.getDate() - 4);
         } else {
           startOfLastResetDay.setDate(today.getDate() - 3);
         }
+
+        // startOfLastResetDay.setHours(0, 0, 0, 0);
+
+        console.log(groupName, "currentDay", currentDay, "resetDayOne ", resetDayOne, "resetDayTwo ", resetDayTwo, "startOfLastResetDay", startOfLastResetDay);
 
         // if it is the correct day of the week
         if ((currentDay == resetDayOne && hour <= 6) || currentDay == resetDayTwo && hour >= 16) {
