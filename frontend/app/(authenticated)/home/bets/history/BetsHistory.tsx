@@ -40,7 +40,7 @@ const BetsHistoryPage: React.FC = () => {
         const fetchInitialDuels = async () => {
             const lastWeekBets = groups[groupID]?.lastWeekDuels;
             const lastWeekPropBets = groups[groupID]?.lastWeekPropBets;
-            console.log("lastWeekBets: ", lastWeekBets)
+            // console.log("lastWeekBets: ", lastWeekBets)
             if (lastWeekBets) {
                 const initialDuels = lastWeekBets ? flattenDuels(lastWeekBets) : [];
                 const initialPropBets = lastWeekPropBets ? flattenDuels(lastWeekPropBets) : [];
@@ -85,8 +85,8 @@ const BetsHistoryPage: React.FC = () => {
         console.log("WeeklyBethistory - Loading more duels & prop bets");
         const moreDuels = await getMoreWeeklyDuelsSummary(groupID, duelsOffset);
         const morePropBets = await getMorePropBets(groupID, userID, propBetsOffset);
-        console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
-        console.log('WeeklyBetHistory - loadMorePropBets: morePropBets', morePropBets)
+        // console.log('WeeklyBetHistory - loadMoreDuels: moreDuels', moreDuels)
+        // console.log('WeeklyBetHistory - loadMorePropBets: morePropBets', morePropBets)
         if (moreDuels) {
             // Flatten and merge new duel bets.
             const newDuels = flattenDuels(moreDuels);
@@ -200,7 +200,7 @@ const BetsHistoryPage: React.FC = () => {
                         totalWagersOnWinner += betItem.wager;
                     }
                 });
-                console.log("totalWagersOnWinner", totalWagersOnWinner);
+                // console.log("totalWagersOnWinner", totalWagersOnWinner);
 
                 let percentage = 0.0;
                 let amountWon = 0.0;
@@ -217,9 +217,9 @@ const BetsHistoryPage: React.FC = () => {
 
                     //changed because now winner gets 50% by default
                     percentage = (userBet.wager / totalWagersOnWinner) / 2;
-                    console.log("percentage", percentage);
+                    // console.log("percentage", percentage);
                     amountWon = percentage * (totalWagers - totalWagersOnWinner);
-                    console.log("amountWon", amountWon);
+                    // console.log("amountWon", amountWon);
                     //console.log("minus wager: ", Math.floor(amountWon - userBet.wager));
                     return Math.floor(amountWon);
                     //return Math.floor(amountWon - userBet.wager);
@@ -234,10 +234,10 @@ const BetsHistoryPage: React.FC = () => {
                 earning,
             }
 
-            console.log(bet.bets);
-            console.log(earnings);
-            console.log('player1 bets: ', player1Bets);
-            console.log('player2 bets: ', player2Bets);
+            // console.log(bet.bets);
+            // console.log(earnings);
+            // console.log('player1 bets: ', player1Bets);
+            // console.log('player2 bets: ', player2Bets);
 
             return {
                 duelID: bet.duelID,

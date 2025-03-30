@@ -77,11 +77,13 @@ const RaceHistoryPage: React.FC = () => {
                 <Text style={styles.createdAtText}>{`${item.weeksAgo}w ago`}</Text>
             </View>
             <View style={styles.racesContainer}>
-                {item.races.map((race) => (
+                {item.races
+                .sort((a, b) => b.steps - a.steps)
+                .map((race) => (
                     <View key={`${race.userID}_${item.weeksAgo}`} style={styles.row}>
                         <Image source={{ uri: race.profilePic }} style={styles.profileImage} />
                         <Text style={styles.playerGain}>{race.username}</Text>
-                        <Text style={styles.stepCountText}>{`${race.steps} steps`}</Text>
+                        <Text style={styles.stepCountText}>{`${Math.floor(race.steps)} steps`}</Text>
                         <View style={styles.gainCountContainer}>
                             <Text
                                 style={[
