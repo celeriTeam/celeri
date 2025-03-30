@@ -29,6 +29,8 @@ const LiveDuelTutorial: React.FC<{
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [addedDiamond, setAddedDiamond] = useState(false);
 
+    
+
     const handleNextStep = async () => {
         if (tutorialStep === 3) {
             setLiveDuelModalVisible(false);
@@ -45,6 +47,7 @@ const LiveDuelTutorial: React.FC<{
 
     const handlePrevStep = () => {
         if (tutorialStep === 4) {
+            console.log("temp test");
             setLiveDuelModalVisible(true);
             setTutorialStep(tutorialStep - 1);
         } else if (tutorialStep > 1) {
@@ -68,7 +71,7 @@ const LiveDuelTutorial: React.FC<{
                 return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(140) };
             case 3: // powerups used
                 return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
-            case 4: // steps leaderboard
+            case 4: // swipe through
                 return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(160) };
             default:
                 return {};
@@ -98,17 +101,18 @@ const LiveDuelTutorial: React.FC<{
                 </View>
                 {tutorialStep === 1 && (
                     <Text style={styles.tutorialText}>
-                        Welcome to the live duel pop-up! Up here, you'll be able to find the two players going head-to-head, their steps so far, and the amount of tokens that people have bet on them.
+                        Welcome to the live duel pop-up! {'\n\n'}Up here, you'll be able to see <Text style={styles.highlight}>
+                        the players</Text> going head to head, <Text style={styles.highlight}>their steps</Text> so far, and  <Text style={styles.highlight}>the total amount of tokens</Text> bet on them.
                     </Text>
                 )}
                 {tutorialStep === 2 && (
                     <Text style={styles.tutorialText}>
-                       Under Bets Placed, you'll be able to see who made those bets, and how much they wagered.
+                       Under <Text style={styles.highlight}>"Bets Placed,"</Text> you'll be able to see who made those bets, and how much they wagered.
                     </Text>
                 )}
                 {tutorialStep === 3 && (
                     <Text style={styles.tutorialText}>
-                       Under Powerups Used, you can see if anyone has bought powerups to boost a player. You can buy powerups in the store!
+                       Under <Text style={styles.highlight}>"Powerups Used,"</Text> you can see if anyone has bought powerups to boost a player. <Text style={styles.highlight}>You can buy powerups in the store!</Text>
                     </Text>
                 )}
                 {tutorialStep === 4 && (
@@ -169,10 +173,15 @@ const styles = StyleSheet.create({
         tintColor: '#fff',
     },
     tutorialText: {
-        fontSize: 16,
+        fontSize: 13,
         marginBottom: 10,
         color: '#fff',
         fontFamily: 'Lexend'
+    },
+    highlight: {
+        fontSize: 13,
+        fontFamily: 'Lexend',
+        color: '#74FF6D', // Light green color for highlighted text
     },
     nextButton: {
         backgroundColor: '#007bff',

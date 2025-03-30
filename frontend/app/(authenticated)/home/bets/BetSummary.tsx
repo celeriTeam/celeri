@@ -114,6 +114,7 @@ const BetSummaryPage: React.FC = () => {
     });
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [noMoreBets, setNoMoreBets] = useState(false);
+    const [noMoreRaces, setNoMoreRaces] = useState(false);
     const [betTimeLeft, setBetTimeLeft] = useState("");
     const [raceTimeLeft, setRaceTimeLeft] = useState('');
     const [propBetPlayer, setPropBetPlayer] = useState<{ id: string; name: string; averageStepCount: number; }[]>([]);
@@ -158,6 +159,11 @@ const BetSummaryPage: React.FC = () => {
             }
         };
     }, [userID, isStoreModalVisible, isPropBetModalVisible]);
+
+    useEffect(() => {
+        console.log("Live duel Modal visibility:", isLiveDuelModalVisible);
+      }, [isLiveDuelModalVisible]);
+      
 
     const fetchPowerups = async () => {
         try {
@@ -294,13 +300,15 @@ const BetSummaryPage: React.FC = () => {
                     const safeResetDay = resetDay ?? 0; // Default to Sunday if undefined
                     const timeLeft = (currentPlayersInGame ?? 0) - (cycle ?? 0) + 
                         ((totalCycles ?? 0) - (cycleCount ?? 0)) * (Object.keys(userList ?? []).length - 1);
+                    let daysLeft;
+                    let daysLeftLessThanRace = false;
                     // console.log("BetSummary -- timeLeft -- ", timeLeft)
                     // console.log("BetSummary -- currentPlayersInGame ", currentPlayersInGame);
                     // console.log("BetSummary -- totalCycles ", totalCycles);
                     // console.log("BetSummary -- cycleCount ", cycleCount); // minus cycleCount by 1 because 
                     if (gameType == "weekly") {
                         if (timeLeft == 1) {
-                            let daysLeft = (safeResetDay - currentDay + 7) % 7;
+                            daysLeft = (safeResetDay - currentDay + 7) % 7;
                             if(daysLeft == 0){
                                 daysLeft = 7; // because daysLeft can't be 0.
                             }
@@ -337,6 +345,9 @@ const BetSummaryPage: React.FC = () => {
                                 } else {
                                     setGameTimeLeft(`${daysUntilReset} days`)
                                 }
+
+                                // since the next reset is the second reset, there can't be a race
+                                daysLeftLessThanRace = true;
                             } else if (currentDay === secondResetDay && currentHour < secondResetHour) {
                                 resetHour = secondResetHour
                                 const hoursLeft = resetHour - currentHour;
@@ -372,22 +383,27 @@ const BetSummaryPage: React.FC = () => {
                             const currentDay = today.getDay();
                             if (currentDay === resetDay) {
                                 setBetTimeLeft("7 days");
+                                setRaceTimeLeft("7 days");
                             } else if (currentDay > resetDay) {
                                 const daysLeft = 7 - (currentDay - resetDay);
                                 setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                                setRaceTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                             } else {
                                 const daysLeft = resetDay - currentDay;
                                 setBetTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
+                                setRaceTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                             }
-
-                            // same as 
-                            setRaceTimeLeft(betTimeLeft);
+                            
                         } else if (gameType == "biweekly") {
+                            console.log('game is biweekly');
                             
                             // set the race time left first
                             const today = new Date();
                             const currentDay = today.getDay();
-                            if (currentDay === resetDay) {
+                            if(daysLeftLessThanRace){
+                                setRaceTimeLeft("No more races");
+                                setNoMoreRaces(true);
+                            } else if (currentDay === resetDay) {
                                 setRaceTimeLeft("7 days");
                             } else if (currentDay > resetDay) {
                                 const daysLeft = 7 - (currentDay - resetDay);
@@ -396,6 +412,8 @@ const BetSummaryPage: React.FC = () => {
                                 const daysLeft = resetDay - currentDay;
                                 setRaceTimeLeft(`${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}`);
                             }
+
+                        
 
                             // now setting the bet time left
                             const firstResetDay = resetDay; // e.g., Sunday (0)
@@ -961,8 +979,8 @@ const BetSummaryPage: React.FC = () => {
                         {/* Three Rows */}
                         {[
                             { label: 'total left in game', value: gameTimeLeft },
-                            { label: 'until weekly race ends', value: raceTimeLeft },
-                            { label: 'until next head-to-head bet', value: betTimeLeft },
+                            { label: noMoreRaces ? '' : 'until weekly race ends', value: raceTimeLeft },
+                            { label: noMoreBets ? '' : 'until live duels are over', value: betTimeLeft },
                         ].map((item, idx) => (
                             <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: scale(10), marginLeft: scale(10) }}>
                             <Image source={require('@assets/icons/timeLeft.png')} style={styles.timeLeftIcon} />
@@ -1346,8 +1364,10 @@ const BetSummaryPage: React.FC = () => {
                     <View style={styles.modalOverlay}>
                         <View style={styles.liveDuelModalContainer}>
                             {/* Close button */}
-                            <TouchableOpacity style={styles.closeButton} onPress={() => setLiveDuelModalVisible(false)} 
-                            activeOpacity={1} disabled={!currentTutorialStatus.liveDuels && showLiveDuelTutorial}>
+                            <TouchableOpacity style={styles.closeButton} 
+                                onPress={() => setLiveDuelModalVisible(false)} 
+                                activeOpacity={1} 
+                                disabled={!currentTutorialStatus.liveDuels && showLiveDuelTutorial}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
@@ -1370,7 +1390,9 @@ const BetSummaryPage: React.FC = () => {
                             />
                             
                             {/* LiveDuels Tutorial */}
-                            {!currentTutorialStatus.liveDuels && showLiveDuelTutorial && (
+                            {!currentTutorialStatus.liveDuels &&
+                            tutorialStep >= 1 &&
+                            tutorialStep <= 3 && (
                                 <>
                                 {tutorialStep === 2 && <View style={ [styles.tutorialOverlayTop, { height: '23%', }] } />}
                                 <View style={[
@@ -1393,12 +1415,12 @@ const BetSummaryPage: React.FC = () => {
                 {/* LiveDuels Tutorial on the outside */}
                 {!currentTutorialStatus.liveDuels && tutorialStep === 4 && !showTutorial && (
                     <>
-                    <View style={ [styles.tutorialOverlayBottom, { height: '42.5%', }] } />
-                    <View style={[styles.tutorialOverlayTop, { height: '37%', }]}>
+                    <View style={ [styles.tutorialOverlayBottom, { height: '34.5%', }] } />
+                    <View style={[styles.tutorialOverlayTop, { height: '40%', }]}>
                         <LiveDuelTutorial
                             tutorialStep={tutorialStep}
                             setTutorialStep={setTutorialStep}
-                            setLiveDuelModalVisible={setShowLiveDuelTutorial}
+                            setLiveDuelModalVisible={setLiveDuelModalVisible}
                         />
                     </View>
                     </>
