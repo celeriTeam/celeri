@@ -37,17 +37,13 @@ const GainsHistoryPage: React.FC = () => {
         loadMoreGains();
     }, [groupID, groups]);
 
-    useEffect(() => {
-        console.log("gainHistory updated:", gainHistory);
-    }, [gainHistory])
-
     // Function to fetch gains based on gainsDaysAgo
     const loadMoreGains = async () => {
         console.log("WeeklyBetHistory - Loading more gains");
         let moreGains;
         moreGains = await getWeeklyGainsSummary(groupID, gainsWeeksAgo, groups);
-        console.log('WeeklyBetHistory - loadMoreGains: moreGains', moreGains)
-        console.log('WeeklyBetHistory - loadMoreGains: moreGains.gains', moreGains?.gains)
+        // console.log('WeeklyBetHistory - loadMoreGains: moreGains', moreGains)
+        // console.log('WeeklyBetHistory - loadMoreGains: moreGains.gains', moreGains?.gains)
         if (moreGains) {
             // Transform the `gains` map to an array of objects with `userID` and `gain` properties
             const newGains = Object.entries(moreGains.gains).map(([userID, gainData]) => ({
@@ -55,15 +51,15 @@ const GainsHistoryPage: React.FC = () => {
                 ...gainData,
                 dayIdentifier: gainsWeeksAgo, // Unique identifier for each day
             }));
-            console.log('loadMoreGains: newGains', newGains)
+            // console.log('loadMoreGains: newGains', newGains)
             setGainHistory((prevGainHistory) => {
                 const updatedGainHistory = [...prevGainHistory, ...newGains];
-                console.log("Updated gainHistory after set:", updatedGainHistory);
+                // console.log("Updated gainHistory after set:", updatedGainHistory);
                 return updatedGainHistory;
             });
 
             setGainsWeeksAgo((prevGainsWeeksAgo) => prevGainsWeeksAgo + 1);
-            console.log("gains Weeks ago", gainsWeeksAgo);
+            // console.log("gains Weeks ago", gainsWeeksAgo);
 
         }
     };
