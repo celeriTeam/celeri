@@ -24,13 +24,12 @@ const ProfilePage: React.FC = () => {
     const selectedUserID = selectedUserIDTemp ? String(selectedUserIDTemp) : '';
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const averageSteps = Array.isArray(averageStepsTemp)
-        ? averageStepsTemp.map(Number)
+        ? averageStepsTemp.map(num => Math.floor(Number(num)))
         : typeof averageStepsTemp === 'string'
-            ? averageStepsTemp.split(',').map(Number)
+            ? averageStepsTemp.split(',').map(num => Math.floor(Number(num)))
             : [];
-    const steps = stepsTemp ? Number(stepsTemp) : 0;
+    const steps = stepsTemp ? Math.floor(Number(stepsTemp)) : 0;
 
-    console.log('selectedUserID: ', selectedUserID);
     const currentProfilePic = groups[groupID]?.users[selectedUserID]?.profilePic || '';
     const currentName = groups[groupID]?.users[selectedUserID]?.name || '';
     const currentUserName = groups[groupID]?.users[selectedUserID]?.username || '';
