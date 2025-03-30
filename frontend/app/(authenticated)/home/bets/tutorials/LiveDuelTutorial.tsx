@@ -34,10 +34,10 @@ const LiveDuelTutorial: React.FC<{
             setLiveDuelModalVisible(false);
             setTutorialStep(tutorialStep + 1);
         } else if (tutorialStep === 4) {
-            setTutorialStep(1);
-            setLiveDuelModalVisible(false);
             await addDiamonds(groupID, userID, 1);
             await setTutorialStatus(groupID, userID, 'liveDuels');
+            setTutorialStep(1);
+            setLiveDuelModalVisible(false);
         } else {
             setTutorialStep(tutorialStep + 1);
         }

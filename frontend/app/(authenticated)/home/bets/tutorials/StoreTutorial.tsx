@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions, ScrollView } from 'react-native';
 import { useUser } from '../../../../UserProvider';
 import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -26,6 +26,8 @@ const StoreTutorial: React.FC<{
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
+    const [currentPage, setCurrentPage] = useState(0);
+    const scrollViewRef = useRef<ScrollView>(null);
     const [addedDiamond, setAddedDiamond] = useState(false);
 
     const handleNextStep = async () => {
@@ -45,25 +47,16 @@ const StoreTutorial: React.FC<{
         }
     };
 
-    const getModalStyle = (): StyleProp<ViewStyle> => {
-        switch (tutorialStep) {
-            case 1: // "see each player"
-                return { bottom: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
-            default:
-                return {};
-        }
+    const handleScroll = (event: any) => {
+        const offsetX = event.nativeEvent.contentOffset.x;
+        const page = Math.round(offsetX / (width * 0.74));
+        setCurrentPage(page);
     };
 
     return (
         <View style={styles.overlayContainer}>
-            <View style={[styles.overlay, getModalStyle()]}>
+            <View style={styles.overlay}>
                 <View style={styles.arrowContainer}>
-                    <TouchableOpacity style={[styles.circle, tutorialStep === 1 && { borderColor: '#656565' }]} onPress={handlePrevStep} disabled={tutorialStep === 1}>
-                        <Image
-                            source={require('@assets/icons/leftArrow.png')}
-                            style={[styles.arrow, tutorialStep === 1 && { tintColor: '#656565' } ]}
-                        />
-                    </TouchableOpacity>
                     <TouchableOpacity style={styles.circle} onPress={handleNextStep}>
                         <Image
                             source={require('@assets/icons/x.png')}
@@ -71,7 +64,43 @@ const StoreTutorial: React.FC<{
                         />
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.tutorialText}>You can buy powerups here with diamonds! Powerups can be used to influence head to heads.</Text>
+                <ScrollView
+                    ref={scrollViewRef}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    onScroll={handleScroll}
+                    scrollEventThrottle={16}
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollViewContent}
+                >
+                    {/* page 1 */}
+                    <View style={styles.page}>
+                        <Text style={styles.tokenText}>Welcome to the store! 
+                            Here, you can purchase powerups with diamonds!</Text>
+                    </View>
+
+                    {/* Page 2 */}
+                    <View style={styles.page}>
+                        <Text style={styles.tokenText}>
+                            Powerups can change the step count of players in their 
+                            head-to-heads, but it won't change their step count in 
+                            the weekly race. Use them wisely!</Text>
+                    </View>
+                </ScrollView>
+
+                {/* Pagination Indicators */}
+                <View style={styles.pagination}>
+                    {[0, 1].map(index => (
+                        <View
+                            key={index}
+                            style={[
+                                styles.paginationDot,
+                                currentPage === index ? styles.paginationDotActive : {}
+                            ]}
+                        />
+                    ))}
+                </View>
                 <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity onPress={addDiamond} style={[styles.diamondsButton, addedDiamond && { borderColor: '#ffffff80' }]} disabled={addedDiamond}>
                         <Text style={[{ fontFamily: 'Lexend', color: '#fff', }, addedDiamond && { color: '#ffffff80' }]}>+1</Text>
@@ -100,11 +129,14 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
         padding: 20,
         borderRadius: 10,
+        bottom: 60,
+        width: guidelineBaseWidth * 0.9,
+        height: 255,
     },
     arrowContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginBottom: 10,
+        // marginBottom: 10,
     },
     circle: {
         width: 21,
@@ -148,9 +180,57 @@ const styles = StyleSheet.create({
         borderColor: '#fff',
         gap: 5,
     },
+    tokensIcon: {
+        width: 16,
+        height: 16,
+    },
+    betTokensIcon: {
+        width: 15,
+        height: 15,
+    },
     diamondsIcon: {
         width: 14,
         height: 12,
+    },
+    tokenText: {
+        fontFamily: 'Lexend',
+        fontSize: 15,
+        color: 'white',
+        // textAlign: 'center',
+        flexShrink: 1,
+    },
+    scrollView: {
+        width: width * 0.74,
+        height: 2000,
+    },
+    scrollViewContent: {
+        alignItems: 'center',
+    },
+    page: {
+        width: width * 0.74,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        // height: 150,
+        // paddingVertical: 10,
+        // justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pagination: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 15,
+    },
+    paginationDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        borderColor: '#fff',
+        borderWidth: 1,
+        backgroundColor: 'transparent',
+        marginHorizontal: 3,
+    },
+    paginationDotActive: {
+        backgroundColor: '#fff',
     },
 });
 
