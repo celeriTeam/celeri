@@ -31,6 +31,7 @@ type News = {
     steps: number | undefined;
     betters: string[] | undefined;
     nonBetters: string[] | undefined;
+    createdAt: Date;
 };
 
 const NewsPage: React.FC< { 
@@ -44,8 +45,22 @@ const NewsPage: React.FC< {
     propBetQueued: boolean;
 } > = ({ groupID, userID, username, newsList, setNewsModalVisible, setPropBetModalVisible, setPropBetQueued, propBetQueued }) => {
     const { groups } = useUser();
+    console.log('ispropbetqueues: ', propBetQueued);
 
-    const uniqueNewsList = [...new Set(newsList.map(item => JSON.stringify(item)))].map(item => JSON.parse(item));
+    const uniqueNewsList = newsList
+    .reduce((acc, current) => {
+        // Create comparison key without createdAt
+        const { createdAt, ...keyProps } = current;
+        const key = JSON.stringify(keyProps);
+        
+        // Only add if not already in map
+        if (!acc.seen.has(key)) {
+        acc.seen.add(key);
+        acc.result.push(current);
+        }
+        return acc;
+    }, { seen: new Set<string>(), result: [] as News[] })
+    .result;
 
     const filteredNews = uniqueNewsList.reduce((acc: News[], item) => {
         if (!item) return acc;
@@ -121,15 +136,15 @@ const NewsPage: React.FC< {
                                         source={{ uri: news.pfp }}
                                         style={styles.pfp}
                                     />
-                                    <Text style={styles.username}>{news.username}</Text>
-                                    <Text style={styles.text}> rose up to </Text>
+                                    <Text style={styles.username}>{news.username} </Text>
+                                    <Text style={styles.text}>rose up to </Text>
                                     <Text style={styles.misc}>{news.place}</Text>
                                     <Text style={styles.misc}>{
-                                    news.place === 1 ? 'st' : 
-                                    news.place === 2 ? 'nd' : 
-                                    news.place === 3 ? 'rd' : 'th'
+                                    news.place === 1 ? 'st ' : 
+                                    news.place === 2 ? 'nd ' : 
+                                    news.place === 3 ? 'rd ' : 'th '
                                     }</Text>
-                                    <Text style={styles.text}> place in the steps race.</Text>
+                                    <Text style={styles.text}>place in the steps race.</Text>
                                 </>
                             )}
                             {news.type === 'headToHeadPullAhead' && (
@@ -142,10 +157,10 @@ const NewsPage: React.FC< {
                                                 source={{ uri: news.pfp }}
                                                 style={styles.pfp}
                                             />
-                                            <Text style={styles.username}>{news.username}</Text>
+                                            <Text style={styles.username}>{news.username} </Text>
                                         </>
                                     )}
-                                    <Text style={styles.text}> surpassed </Text>
+                                    <Text style={styles.text}>surpassed </Text>
                                     {username === news.opponentUsername ? (
                                             <Text style={styles.username}>you</Text>
                                     ) : (
@@ -154,15 +169,15 @@ const NewsPage: React.FC< {
                                                 source={{ uri: news.opponentPfp }}
                                                 style={styles.pfp}
                                             />
-                                            <Text style={styles.username}>{news.opponentUsername}</Text>
+                                            <Text style={styles.username}>{news.opponentUsername} </Text>
                                         </>
                                     )}
-                                    <Text style={styles.text}> in {[news.opponentUsername, news.username].includes(username) ? 'your' : 'their'} head to head.</Text>
+                                    <Text style={styles.text}>in {[news.opponentUsername, news.username].includes(username) ? 'your' : 'their'} head to head. </Text>
                                     {news.betters?.includes(userID) && (
-                                        <Text style={styles.text}> Give your friend a cookie</Text>
+                                        <Text style={styles.text}>Give your friend a cookie</Text>
                                     )}
                                     {news.nonBetters?.includes(userID) && (
-                                        <Text style={styles.text}> Tell your friend to keep on walkin</Text>
+                                        <Text style={styles.text}>Tell your friend to keep on walkin'</Text>
                                     )}
                                 </>
                             )}
@@ -183,15 +198,20 @@ const NewsPage: React.FC< {
                                         source={{ uri: news.pfp }}
                                         style={styles.pfp}
                                     />
-                                    <Text style={styles.username}>{news.username}</Text>
-                                    <Text style={styles.text}> walked </Text>
-                                    <Text style={styles.misc}>{news.steps}</Text>
-                                    <Text style={styles.text}> within a 5 hour window</Text>
+                                    <Text style={styles.username}>{news.username} </Text>
+                                    <Text style={styles.text}>walked</Text>
+                                    <Text style={styles.misc}> {news.steps} steps </Text>
+                                    <Text style={styles.text}>within a 5 hour window</Text>
                                 </>
                             )}
                         </View>
+                        <View style={styles.timeContainer}>
+                            <Text style={styles.newsTime}>
+                                {new Date(news.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</Text>
+                        </View>
                     </View>
                 ))}
+                <View style={{ height: 20 }} />
             </ScrollView>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>Close</Text>
@@ -205,18 +225,20 @@ const styles = StyleSheet.create({
         width: '100%',
         padding: 10,
         flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 20,
     },
     newsContainer: {
         width: '100%',
+        maxHeight: '60%',
+        alignSelf: 'flex-start',
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
     },
     newsItem: {
         flexDirection: 'row',
-        alignItems: 'center',
+        // alignItems: 'center',
         justifyContent: 'space-between',
         padding: 10,
         paddingHorizontal: 20,
@@ -228,6 +250,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
+        width: '80%',
     },
     pfp: {
         width: 26,
@@ -268,7 +291,15 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 12,
         color: '#000',
-    }
+    },
+    timeContainer: {
+
+    },
+    newsTime: {
+        color: '#ccc',
+        fontSize: 12,
+        top: 5,
+    },
 });
 
 export default NewsPage;

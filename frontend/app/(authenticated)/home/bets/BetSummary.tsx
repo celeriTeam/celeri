@@ -92,6 +92,7 @@ const BetSummaryPage: React.FC = () => {
         steps: number | undefined;
         betters: string[] | undefined;
         nonBetters: string[] | undefined;
+        createdAt: Date;
     }[]>([]);
     const [currentTutorialStatus, setCurrentTutorialStatus] = useState<{
         propBet?: boolean;
@@ -649,10 +650,11 @@ const BetSummaryPage: React.FC = () => {
                                 place: newsData.place ?? undefined,
                                 steps: Math.floor(newsData.steps) ?? undefined,
                                 betters: newsBetters,
-                                nonBetters: newsNonBetters
+                                nonBetters: newsNonBetters,
+                                createdAt: newsData.createdAt.toDate(),
                             };
                         });
-                        const newsArray = Object.values(currentNews);
+                        // const newsArray = Object.values(currentNews);
                         setCurrentNewsArray(Object.values(currentNews));
                         // console.log("NEWS ARRAY: ", newsArray);
 
@@ -660,7 +662,7 @@ const BetSummaryPage: React.FC = () => {
                         if (Object.values(currentNews).length > 0) {
                             console.log("NEWS IS HERE: ", Object.values(currentNews));
                             setTimeout(() => {
-                                if (isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
+                                if (!isFinishedPropBet && (gameType === 'weekly' || gameType === 'biweekly')) {
                                     console.log('prop bet modal is being queued');
                                     setPropBetQueued(true);
                                 }
@@ -1467,7 +1469,7 @@ const BetSummaryPage: React.FC = () => {
                     visible={isNewsModalVisible}
                 >
                     <View style={styles.modalOverlay}>
-                        <View style={[styles.moneyModalContainer]}>
+                        <View style={[styles.moneyModalContainer, { maxHeight: '70%', }]}>
 
                             <NewsPage
                                 groupID={groupID}
