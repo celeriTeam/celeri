@@ -2,7 +2,7 @@
   "expo": {
     "name": "Celeri",
     "slug": "health-bets-app",
-    "version": "8.2",
+    "version": "8.3",
     "orientation": "portrait",
     "icon": "./assets/images/Lettuce.png",
     "scheme": "myapp",
