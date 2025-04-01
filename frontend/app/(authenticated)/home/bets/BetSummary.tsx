@@ -29,6 +29,7 @@ import BetSummaryTutorial from './tutorials/BetSummaryTutorial';
 import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
 import StoreTutorial from './tutorials/StoreTutorial';
 import CurrencyTutorial from './tutorials/CurrencyTutorial';
+import StepsTutorial from './tutorials/StepsTutorial';
 
 const db = getFirestore(app);
 
@@ -95,23 +96,15 @@ const BetSummaryPage: React.FC = () => {
         createdAt: Date;
     }[]>([]);
     const [currentTutorialStatus, setCurrentTutorialStatus] = useState<{
-        propBet?: boolean;
         store?: boolean;
         liveDuels?: boolean;
-        gainsHistory?: boolean;
-        betsHistory?: boolean;
-        raceHistory?: boolean;
-        newsHistory?: boolean;
         currency?: boolean;
+        steps?: boolean;
     }>({
-        propBet: true,
         store: true,
         liveDuels: true,
-        gainsHistory: true,
-        betsHistory: true,
-        raceHistory: true,
-        newsHistory: true,
-        currency: true
+        currency: true,
+        steps: true,
     });
     const [gameTimeLeft, setGameTimeLeft] = useState("");
     const [noMoreBets, setNoMoreBets] = useState(false);
@@ -130,8 +123,6 @@ const BetSummaryPage: React.FC = () => {
     const [isDuelExpanded, setIsDuelExpanded] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(1);
     const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
-    const [showStoreTutorial, setShowStoreTutorial] = useState(true);
-    const [showLiveDuelTutorial, setShowLiveDuelTutorial] = useState(true);
     const router = useRouter();
     const maxNameLength = 16;
     const screenWidth = Dimensions.get('window').width * 0.8;
@@ -293,7 +284,6 @@ const BetSummaryPage: React.FC = () => {
                         latestBetTime,
                         users
                     };
-                    console.log('tutorialstatys: ', tutorialStatus);
                     setGroups(currentGroups);
 
                     // Set # of days/weeks left in the game
@@ -469,7 +459,7 @@ const BetSummaryPage: React.FC = () => {
                     // Set the prop bet player
                     // if gametype is daily and latestbettime is today, then set showpropbet to false
                     let showIntroModals = true;
-                    if (gameType === 'daily' || (latestBetTime && latestBetTime.toDateString() === new Date().toDateString())) {
+                    if (gameType === 'daily' || (latestBetTime && latestBetTime.toDateString() === new Date().toDateString()) || showTutorial) {
                         setShowPropBet(false);
                         showIntroModals = false;
                     } else {
@@ -741,6 +731,18 @@ const BetSummaryPage: React.FC = () => {
         }
     };
 
+    const closeStepsModal = async () => {
+        console.log('closing steps');
+        if (!currentTutorialStatus.steps) {
+            await addDiamonds(groupID, userID, 1);
+            await setTutorialStatus(groupID, userID, 'steps');
+            setCurrentTutorialStatus(prevState => ({
+                ...prevState,
+                steps: true
+            }));
+        }
+    };
+
     // if it hits 12:00 am, navigate to hometab
     useEffect(() => {
         const interval = setInterval(() => {
@@ -751,15 +753,6 @@ const BetSummaryPage: React.FC = () => {
         }, 60000);
         return () => clearInterval(interval);
     }, []);
-
-    useEffect(() => {
-        // Change tab based on tutorial step
-        if (tutorialStep === 3 && showTutorial) {
-            setSelectedTab('Tokens');
-        } else if (tutorialStep === 4 && showTutorial) {
-            setSelectedTab('Steps');
-        }
-    }, [tutorialStep]);
 
     if (isLoading) {
         return (
@@ -845,26 +838,22 @@ const BetSummaryPage: React.FC = () => {
             }}
         >
             <SafeAreaView style={styles.safeView} edges={['top']}>
+            {/* Tutorial Modal */}
+            {showTutorial && (
+                <View style={styles.tutorialOverlay}>
+                    <BetSummaryTutorial
+                        tutorialStep={tutorialStep}
+                        setTutorialStep={setTutorialStep}
+                        setShowTutorial={setShowTutorial}
+                    />
+                </View>
+            )}
             <ScrollView
                 style={styles.container}
-                contentContainerStyle={{ paddingBottom: 50 }} // Add bottom space if needed
+                // contentContainerStyle={{ paddingBottom: 50 }} // Add bottom space if needed
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-
-
-
-                    {/* Tutorial Modal */}
-                    {showTutorial && (
-                        <View style={[1,2,3,5].includes(tutorialStep) ? styles.tutorialOverlay : [styles.tutorialOverlayTop, { height: '57.5%', }]}>
-                            <BetSummaryTutorial
-                                tutorialStep={tutorialStep}
-                                setTutorialStep={setTutorialStep}
-                                setShowTutorial={setShowTutorial}
-                            />
-                        </View>
-                    )}
-
                     {/* Header Section */}
                     <View style={styles.header}>
                         <TouchableOpacity onPress={() => router.back()}>
@@ -876,9 +865,6 @@ const BetSummaryPage: React.FC = () => {
                         <View style={styles.rightIcons}>
                             <View>
                                 <TouchableOpacity onPress={() => { setHistoryDropdownVisible(!isHistoryDropdownVisible); }}>
-                                    {/* {!(currentTutorialStatus.gainsHistory && currentTutorialStatus.betsHistory && currentTutorialStatus.raceHistory) &&
-                                        <View style={[styles.tutorialIndicator, { top: 3, marginBottom: -6, }]}/>
-                                    } */}
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -957,7 +943,7 @@ const BetSummaryPage: React.FC = () => {
                                     <Text style={styles.statValue}> {groups[groupID]?.userDiamonds}</Text>
                                 </View>
                                 {!currentTutorialStatus.currency &&
-                                    <View style={[styles.tutorialIndicator, { bottom: 38, left: 24, marginLeft: -20, }]} />
+                                    <View style={[styles.tutorialIndicator, { bottom: 18, left: 5, marginLeft: -7, }]} />
                                 }
                             </TouchableOpacity>
                         </View>
@@ -969,9 +955,9 @@ const BetSummaryPage: React.FC = () => {
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Text style={styles.sectionTitle}>Game Duration</Text>
                             {(groups[groupID]?.gameType === 'weekly' || groups[groupID]?.gameType === 'biweekly') && showPropBet && (
-                            <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
-                                <Text style={styles.propBetButton}>Today's Prop Bet</Text>
-                            </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setPropBetModalVisible(true)}>
+                                    <Text style={styles.propBetButton}>Today's Prop Bet</Text>
+                                </TouchableOpacity>
                             )}
                         </View>
 
@@ -979,23 +965,25 @@ const BetSummaryPage: React.FC = () => {
                         <View style={{ height: scale(5) }} />
 
                         {/* Three Rows */}
-                        {[
-                            { label: 'total left in game', value: gameTimeLeft },
-                            { label: noMoreRaces ? '' : 'until weekly race ends', value: raceTimeLeft },
-                            { label: noMoreBets ? '' : 'until live duels are over', value: betTimeLeft },
-                        ].map((item, idx) => (
-                            <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: scale(10), marginLeft: scale(10) }}>
-                            <Image source={require('@assets/icons/timeLeft.png')} style={styles.timeLeftIcon} />
-                            <Text style={styles.timeLeft}>{item.value}</Text>
-                            <Text style={styles.timeLeftText}> {item.label}</Text>
-                            </View>
-                        ))}
+                        <View style={styles.gameDurationContainer}>
+                            {[
+                                { label: 'total left in game', value: gameTimeLeft },
+                                { label: noMoreRaces ? '' : 'until weekly race ends', value: raceTimeLeft },
+                                { label: noMoreBets ? '' : 'until live duels are over', value: betTimeLeft },
+                            ].map((item, idx) => (
+                                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: scale(10), marginLeft: scale(10) }}>
+                                    <Image source={require('@assets/icons/timeLeft.png')} style={styles.timeLeftIcon} />
+                                    <Text style={styles.timeLeft}>{item.value}</Text>
+                                    <Text style={styles.timeLeftText}> {item.label}</Text>
+                                </View>
+                            ))}
+                        </View>
                     </View>
 
                     {/* Live Duel Section */}
                     <View>
                         <Text style={[styles.sectionTitle, { paddingHorizontal: scale(20), paddingTop: scale(10), }]}>This Week's Live Duels</Text>
-                        {!currentTutorialStatus.liveDuels && showLiveDuelTutorial &&
+                        {!currentTutorialStatus.liveDuels &&
                             <View style={[styles.tutorialIndicator, { bottom: 0, right: 21, marginBottom: -7, zIndex: 5, }]} />
                         }
                         <View style={styles.duelRow}>
@@ -1118,6 +1106,9 @@ const BetSummaryPage: React.FC = () => {
                             >
                                 <Text style={[styles.tabText, { color: selectedTab === 'Steps' ? '#74FF6D' : '#fff', }]}>Steps</Text>
                             </TouchableOpacity>
+                            {!currentTutorialStatus.steps &&
+                                <View style={[styles.tutorialIndicator, { bottom: 28, marginTop: -7, zIndex: 5, }]} />
+                            }
                         </View>
                         {/* Line for showing selected tab */}
                         <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
@@ -1126,8 +1117,8 @@ const BetSummaryPage: React.FC = () => {
                             { alignSelf: 'flex-start', left: scale(10), }]}
                         />
                         {selectedTab === 'Tokens' ? (
-                            <View style={[styles.leaderboardStepsContainer, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), paddingBottom: moderateScale(10), }]}>
-                                <ScrollView showsVerticalScrollIndicator={false}>
+                            <View style={[styles.leaderboardStepsContainer, { paddingVertical: moderateScale(5), paddingBottom: moderateScale(10), }]}>
+                                <View>
                                     <View style={styles.leaderboardTop}>
                                         <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(currentGroupUsersArray[1]?.id)} activeOpacity={0.8}>
                                             <Image
@@ -1220,11 +1211,11 @@ const BetSummaryPage: React.FC = () => {
                                             </View>
                                         </TouchableOpacity>
                                     ))}
-                                </ScrollView>
+                                </View>
                             </View>
                         ) : (
-                            <View style={[styles.leaderboard, { paddingVertical: selectedTab === 'Tokens' ? moderateScale(5) : moderateScale(15), }]}>
-                                <ScrollView showsVerticalScrollIndicator={false}>
+                            <View style={[styles.leaderboard, { paddingVertical: moderateScale(15), }]}>
+                                <View>
                                     <View style={styles.grayLine} />
                                     {[...currentGroupUsersArray].sort((a, b) => (b.steps || 0) - (a.steps || 0)).map((user, index) => (
                                         <View key={user.id} style={styles.leaderboardRow}>
@@ -1257,7 +1248,7 @@ const BetSummaryPage: React.FC = () => {
                                             </View>
                                         </View>
                                     ))}
-                                </ScrollView>
+                                </View>
                             </View>
                         )}
                     </View>
@@ -1369,7 +1360,7 @@ const BetSummaryPage: React.FC = () => {
                             <TouchableOpacity style={styles.closeButton} 
                                 onPress={() => setLiveDuelModalVisible(false)} 
                                 activeOpacity={1} 
-                                disabled={!currentTutorialStatus.liveDuels && showLiveDuelTutorial}>
+                                disabled={!currentTutorialStatus.liveDuels}>
                                 <Image
                                     source={require('@assets/icons/x.png')}
                                     style={styles.closeButtonIcon}
@@ -1406,6 +1397,7 @@ const BetSummaryPage: React.FC = () => {
                                         tutorialStep={tutorialStep}
                                         setTutorialStep={setTutorialStep}
                                         setLiveDuelModalVisible={setLiveDuelModalVisible}
+                                        setCurrentTutorialStatus={setCurrentTutorialStatus}
                                     />
                                 </View>
                                 </>
@@ -1415,7 +1407,9 @@ const BetSummaryPage: React.FC = () => {
                 </Modal>
 
                 {/* LiveDuels Tutorial on the outside */}
-                {!currentTutorialStatus.liveDuels && tutorialStep === 4 && !showTutorial && (
+                {!currentTutorialStatus.liveDuels && 
+                tutorialStep === 4 && 
+                !showTutorial && (
                     <>
                     <View style={ [styles.tutorialOverlayBottom, { height: '34.5%', }] } />
                     <View style={[styles.tutorialOverlayTop, { height: '40%', }]}>
@@ -1423,6 +1417,7 @@ const BetSummaryPage: React.FC = () => {
                             tutorialStep={tutorialStep}
                             setTutorialStep={setTutorialStep}
                             setLiveDuelModalVisible={setLiveDuelModalVisible}
+                            setCurrentTutorialStatus={setCurrentTutorialStatus}
                         />
                     </View>
                     </>
@@ -1451,11 +1446,11 @@ const BetSummaryPage: React.FC = () => {
                             />
                             
                             {/* Store Tutorial */}
-                            {!currentTutorialStatus.store && showStoreTutorial && (
+                            {!currentTutorialStatus.store && (
                                 <View style={styles.tutorialOverlay}>
                                     <StoreTutorial
                                         tutorialStep={tutorialStep}
-                                        setShowStoreTutorial={setShowStoreTutorial}
+                                        setCurrentTutorialStatus={setCurrentTutorialStatus}
                                     />
                                 </View>
                             )}
@@ -1566,6 +1561,31 @@ const BetSummaryPage: React.FC = () => {
                         />
                     </View>
                 </Modal>
+
+                {/* Steps Tutorial */}
+                <Modal
+                    transparent={true}
+                    visible={!currentTutorialStatus.steps && selectedTab === 'Steps'}
+                    animationType="fade"
+                >
+                    <TouchableOpacity
+                        style={[styles.modalOverlay, { height: '60%', }]}
+                        activeOpacity={1}
+                        onPress={closeStepsModal}
+                    />
+                    <View style={[styles.moneyModalContainer, { height: '35%', top: '23%' }]}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.closeButton} onPress={closeStepsModal}>
+                            <Image
+                                source={require('@assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
+                        </TouchableOpacity>
+                        <StepsTutorial
+                            diamondsTutorialStatus={currentTutorialStatus.steps ?? false}
+                        />
+                    </View>
+                </Modal>
             </SafeAreaView>
         </LinearGradient>
     );
@@ -1646,6 +1666,11 @@ const styles = StyleSheet.create({
         color: '#74FF6D',
         paddingBottom: 8,
     },
+    gameDurationContainer: {
+        backgroundColor: '#65656580',
+        paddingTop: 10,
+        borderRadius: 10,
+    },
     groupInfo: {
         flexDirection: 'row',
         paddingHorizontal: 20,
@@ -1696,6 +1721,7 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         marginRight: 40,
         marginBottom: 5,
+        paddingRight: 5,
     },
     statItem: {
         flexDirection: 'row',

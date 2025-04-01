@@ -18,11 +18,19 @@ const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
+type TutorialStatus = {
+    store?: boolean;
+    liveDuels?: boolean;
+    currency?: boolean;
+    steps?: boolean;
+};
+
 const LiveDuelTutorial: React.FC<{
     tutorialStep: number,
     setTutorialStep: (step: number) => void;
     setLiveDuelModalVisible: (visible: boolean) => void;
-}> = ({ tutorialStep, setTutorialStep, setLiveDuelModalVisible }) => {
+    setCurrentTutorialStatus: (value: React.SetStateAction<TutorialStatus>) => void;
+}> = ({ tutorialStep, setTutorialStep, setLiveDuelModalVisible, setCurrentTutorialStatus }) => {
     const { userID, groups, loading } = useUser();
     const router = useRouter();
     const { groupIDTemp } = useLocalSearchParams();
@@ -40,6 +48,10 @@ const LiveDuelTutorial: React.FC<{
             await setTutorialStatus(groupID, userID, 'liveDuels');
             setTutorialStep(1);
             setLiveDuelModalVisible(false);
+            setCurrentTutorialStatus(prevState => ({
+                ...prevState,
+                liveDuels: true
+            }));
         } else {
             setTutorialStep(tutorialStep + 1);
         }
@@ -47,7 +59,6 @@ const LiveDuelTutorial: React.FC<{
 
     const handlePrevStep = () => {
         if (tutorialStep === 4) {
-            console.log("temp test");
             setLiveDuelModalVisible(true);
             setTutorialStep(tutorialStep - 1);
         } else if (tutorialStep > 1) {
@@ -66,11 +77,11 @@ const LiveDuelTutorial: React.FC<{
     const getModalStyle = (): StyleProp<ViewStyle> => {
         switch (tutorialStep) {
             case 1: // "see each player"
-                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(200) };
+                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(170) };
             case 2: // bets placed
-                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(140) };
+                return { top: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(120) };
             case 3: // powerups used
-                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
+                return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(130) };
             case 4: // swipe through
                 return { bottom: verticalScale(10), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(160) };
             default:

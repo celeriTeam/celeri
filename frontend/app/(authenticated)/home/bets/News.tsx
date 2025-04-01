@@ -46,8 +46,12 @@ const NewsPage: React.FC< {
 } > = ({ groupID, userID, username, newsList, setNewsModalVisible, setPropBetModalVisible, setPropBetQueued, propBetQueued }) => {
     const { groups } = useUser();
     console.log('ispropbetqueues: ', propBetQueued);
+    
+    const sortedNewsList = [...newsList].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
-    const uniqueNewsList = newsList
+    const uniqueNewsList = sortedNewsList
     .reduce((acc, current) => {
         // Create comparison key without createdAt
         const { createdAt, ...keyProps } = current;
@@ -55,12 +59,11 @@ const NewsPage: React.FC< {
         
         // Only add if not already in map
         if (!acc.seen.has(key)) {
-        acc.seen.add(key);
-        acc.result.push(current);
+            acc.seen.add(key);
+            acc.result.push(current);
         }
         return acc;
-    }, { seen: new Set<string>(), result: [] as News[] })
-    .result;
+    }, { seen: new Set<string>(), result: [] as News[] }).result;
 
     const filteredNews = uniqueNewsList.reduce((acc: News[], item) => {
         if (!item) return acc;
@@ -110,6 +113,25 @@ const NewsPage: React.FC< {
                 setPropBetQueued(false);
             }, 100);
             return () => clearTimeout(timer);
+        }
+    };
+
+    const newsDate = (news: News) => {
+        const createdAt = new Date(news.createdAt); // Handle Firebase Timestamp
+        const now = new Date();
+        const isSameDay = createdAt.toDateString() === now.toDateString();
+        const isYesterday = createdAt.toDateString() === new Date(now.setDate(now.getDate() - 1)).toDateString();
+        const time = createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+        if (isSameDay) {
+            // Show time only for today
+            return time;
+        } else if (isYesterday) {
+            // Show "Yesterday" and time
+            return `Yesterday${'\n'}${time}`;
+        } else {
+            // Show day of the week and time
+            return `${createdAt.toLocaleDateString('en-US', { weekday: 'long' })}${'\n'}${time}`;
         }
     };
 
@@ -164,13 +186,13 @@ const NewsPage: React.FC< {
                                     {username === news.opponentUsername ? (
                                             <Text style={styles.username}>you</Text>
                                     ) : (
-                                        <>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <Image
                                                 source={{ uri: news.opponentPfp }}
                                                 style={styles.pfp}
                                             />
                                             <Text style={styles.username}>{news.opponentUsername} </Text>
-                                        </>
+                                        </View>
                                     )}
                                     <Text style={styles.text}>in {[news.opponentUsername, news.username].includes(username) ? 'your' : 'their'} head to head. </Text>
                                     {news.betters?.includes(userID) && (
@@ -194,11 +216,13 @@ const NewsPage: React.FC< {
                             {news.type === 'headToHeadOpponentWalking' && groups[groupID]?.users[userID]?.username !== news.username && (
                                 <>
                                     {groups[groupID]?.users[userID]?.username !== news.opponentUsername && (<Text style={styles.text}>Your head to head opponent </Text>)}
-                                    <Image
-                                        source={{ uri: news.pfp }}
-                                        style={styles.pfp}
-                                    />
-                                    <Text style={styles.username}>{news.username} </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Image
+                                            source={{ uri: news.pfp }}
+                                            style={styles.pfp}
+                                        />
+                                        <Text style={styles.username}>{news.username} </Text>
+                                    </View>
                                     <Text style={styles.text}>walked</Text>
                                     <Text style={styles.misc}> {news.steps} steps </Text>
                                     <Text style={styles.text}>within a 5 hour window</Text>
@@ -206,8 +230,7 @@ const NewsPage: React.FC< {
                             )}
                         </View>
                         <View style={styles.timeContainer}>
-                            <Text style={styles.newsTime}>
-                                {new Date(news.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</Text>
+                            <Text style={styles.newsTime}>{newsDate(news)}</Text>
                         </View>
                     </View>
                 ))}
@@ -230,7 +253,8 @@ const styles = StyleSheet.create({
     },
     newsContainer: {
         width: '100%',
-        maxHeight: '60%',
+        maxHeight: 510,
+        // maxHeight: '100%',
         alignSelf: 'flex-start',
         padding: 10,
         borderRadius: 10,
@@ -239,7 +263,7 @@ const styles = StyleSheet.create({
     newsItem: {
         flexDirection: 'row',
         // alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         padding: 10,
         paddingHorizontal: 20,
         backgroundColor: '#00000080',
@@ -293,7 +317,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     timeContainer: {
-
+        // align to right:
     },
     newsTime: {
         color: '#ccc',

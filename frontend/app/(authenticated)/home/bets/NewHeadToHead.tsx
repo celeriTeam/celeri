@@ -162,9 +162,9 @@ const NewHeadToHeadPage: React.FC = () => {
 
     const fetchData = async () => {
         try {
-            const isFinishedRecap = true;
+            // const isFinishedRecap = true;
             const isItFirstDay = groups[groupID]?.isFirstDay;
-            //const isFinishedRecap = groups[groupID]?.isFinishedRecap;
+            const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
             }
