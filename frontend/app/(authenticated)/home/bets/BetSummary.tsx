@@ -853,6 +853,7 @@ const BetSummaryPage: React.FC = () => {
                 // contentContainerStyle={{ paddingBottom: 50 }} // Add bottom space if needed
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
+                scrollEnabled={!(tutorialStep === 4 && !currentTutorialStatus.liveDuels && !showTutorial)}
             >
                     {/* Header Section */}
                     <View style={styles.header}>

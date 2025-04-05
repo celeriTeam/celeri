@@ -30,6 +30,7 @@ const NewHeadToHeadTutorial: React.FC<{
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [gameType, setGameType] = useState<string | undefined>("");
     const [resetDay, setResetDay] = useState<number>(0);
+    const [dropdownVisible, setDropdownVisible] = useState(false);
 
     const shouldShowNext = [3, 4, 5];
 
@@ -92,7 +93,7 @@ const NewHeadToHeadTutorial: React.FC<{
             case 3: // choose desired player
                 return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
             case 4: // choose desired bet amount
-                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(120) };
+                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(dropdownVisible ? 470 : 170) };
             case 5: // wait for all bets to be placed
                 return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             case 6: // submit
@@ -171,6 +172,42 @@ const NewHeadToHeadTutorial: React.FC<{
                     )}
 
                 </Text>
+                {tutorialStep === 4 && (
+                    <View style={styles.dropdownContainer}>
+                        <TouchableOpacity style={styles.row} onPress={() => setDropdownVisible(!dropdownVisible)} activeOpacity={1}>
+                            <Text style={[styles.tutorialText, { fontSize: 11, }]}>(I'm a nerd and I want to understand the math)</Text>
+                            {dropdownVisible ? (
+                                <Image
+                                    source={require('@assets/icons/upCarrot.png')}
+                                    style={styles.carrot}
+                                />
+                            ) : (
+                                <Image
+                                    source={require('@assets/icons/downCarrot.png')}
+                                    style={styles.carrot}
+                                />
+                            )}
+                        </TouchableOpacity>
+                        {dropdownVisible && (
+                            <View>
+                                <View style={{ marginTop: 10, }} />
+                                <Text style={styles.dropdownText}>
+                                    <Text style={styles.highlight}>Here's how the winners are distributed:{'\n'}</Text>
+                                    <Text>  •  50% of winnings goes to the winner of the Head-{'\n'}to-Head.{'\n'}</Text>
+                                    <Text>  •  The other 50% is then split across the bet {'\n'}winners, and the greater your wager, the greater {'\n'}your share.{'\n'}{'\n'}</Text>
+                                    <Text style={styles.highlight}>Here's an example:{'\n'}</Text>
+                                    <Text>  •  Let's say player A and player B are going Head-{'\n'}to-Head, and you bet 200 Tokens on player A.{'\n'}</Text>
+                                    <Text>  •  There are 500 Tokens bet on player A and 600 {'\n'}Tokens bet on player B.{'\n'}</Text>
+                                    <Text>  •  If player A wins, anyone who bet on player B {'\n'}loses what they wagered.{'\n'}</Text>
+                                    <Text>  •  300 Tokens goes to player A.{'\n'}</Text>
+                                    <Text>  •  You bet 200 Tokens on player A, which is 40% of {'\n'}the total bets on player A. Thus, you get 40% of {'\n'}the 300 remaining Tokens to be distributed.{'\n'}</Text>
+                                    <Text>  •  You win 120 Tokens.{'\n'}</Text>
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                )}
+                {/* <View style={styles.pointingArrow} /> */}
             </View>
         </View>
     );
@@ -187,7 +224,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#fff',
         padding: 20,
-        borderRadius: 10,
+        borderRadius: 20,
     },
     arrowContainer: {
         flexDirection: 'row',
@@ -212,13 +249,10 @@ const styles = StyleSheet.create({
     },
     tutorialText: {
         fontSize: 14,
-        marginBottom: 10,
         color: '#fff',
         fontFamily: 'Lexend',
     },
     highlight: {
-        fontSize: 14,
-        fontFamily: 'Lexend',
         color: '#74FF6D', // Light green color for highlighted text
     },
     nextButton: {
@@ -229,6 +263,47 @@ const styles = StyleSheet.create({
     nextButtonText: {
         color: '#fff',
         fontSize: 14,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 10,
+        marginBottom: 10,
+    },
+    dropdownContainer: {
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        justifyContent: 'center',
+        marginTop: 15,
+    },
+    dropdownText: {
+        fontSize: 11,
+        color: '#fff',
+        fontFamily: 'Lexend',
+        lineHeight: 16,
+    },
+    carrot: {
+        width: 11,
+        height: 11,
+    },
+    pointingArrow: {
+        position: 'absolute',
+        bottom: -10, // Adjust this to position the arrow below the container
+        left: '50%',
+        marginLeft: -10, // Half of the arrow's width to center it
+        width: 0,
+        height: 0,
+        borderLeftWidth: 10,
+        borderRightWidth: 10,
+        borderBottomWidth: 10,
+        borderStyle: 'solid',
+        backgroundColor: 'transparent',
+        borderLeftColor: 'transparent',
+        borderRightColor: 'transparent',
+        borderBottomColor: '#000', // Match the container's background color
     },
 });
 
