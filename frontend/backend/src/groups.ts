@@ -985,6 +985,7 @@ export const startGame = async (groupID: string, totalCycles: number, startingTo
                         { userID: duel.player1, wager: 0, betOnUserID: duel.player1 },
                         { userID: duel.player2, wager: 0, betOnUserID: duel.player2 }
                     ],
+                    cycleCount: 1,
                     ...(gameType === "weekly" || gameType === 'biweekly') ? 
                         { cycleWeek: 1 } : 
                         { cycleDay: 1 }
