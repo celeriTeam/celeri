@@ -88,13 +88,13 @@ const NewHeadToHeadTutorial: React.FC<{
             case 1: // about weekly bets
                 return { top: verticalScale(100), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(230) };
             case 2: // bets + number of tokens
-                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(380) };
+                return { top: verticalScale(0), right: scale(170), width: scale(200), height: verticalScale(270) };
             case 3: // choose desired player
                 return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
             case 4: // choose desired bet amount
-                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
+                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(120) };
             case 5: // wait for all bets to be placed
-                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(115) };
+                return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             case 6: // submit
                 return { bottom: verticalScale(64), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             default:
@@ -211,13 +211,13 @@ const styles = StyleSheet.create({
         tintColor: '#fff',
     },
     tutorialText: {
-        fontSize: 16,
+        fontSize: 14,
         marginBottom: 10,
         color: '#fff',
         fontFamily: 'Lexend',
     },
     highlight: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Lexend',
         color: '#74FF6D', // Light green color for highlighted text
     },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     },
     nextButtonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 14,
     },
 });
 
