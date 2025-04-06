@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate } from '../users'; 
@@ -37,6 +37,9 @@ const useHealthData = () => {
     const [loadingStepsFromWeekBefore, setLoadingStepsFromWeekBefore] = useState(false);
     const [hasPermissions, setHasPermissions] = useState(false);
     const [isLoading, setLoading] = useState(true);
+
+    const updateLock = useRef(false);
+    const LOCK_TIMEOUT = 30000;
 
     const getDailySteps = async (): Promise<number> => {
         // console.log("getDailySteps -- start");
@@ -361,16 +364,29 @@ const useHealthData = () => {
             const updateListener = healthKitEventEmitter.addListener(
                 'healthKit:StepCount:new',
                 () => {
-                    console.log('StepCount Observer Triggered');
-                    fetchHealthData();
+                    if (!updateLock.current) {
+                        console.log('StepCount Observer Triggered');
+                        updateLock.current = true;
+                        fetchHealthData().finally(() => {
+                            setTimeout(() => {
+                                updateLock.current = false;
+                            }, LOCK_TIMEOUT);
+                        });
+                    }
                 }
             );
 
             // Firebase Messaging Handlers
             const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    console.log("Fetching HealthKit data from silent notification (foreground)...");
-                    fetchHealthData();
+                    if (!updateLock.current) {
+                        updateLock.current = true;
+                        console.log("Fetching HealthKit data from silent notification (foreground)...");
+                        fetchHealthData();
+                        setTimeout(() => {
+                            updateLock.current = false;
+                        }, LOCK_TIMEOUT);
+                    }
                 }
             });
 
@@ -385,7 +401,7 @@ const useHealthData = () => {
             });
 
             // Initial data fetch
-            fetchHealthData();
+            // fetchHealthData();
 
             return () => {
                 successListener.remove();

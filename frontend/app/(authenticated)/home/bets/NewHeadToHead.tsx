@@ -632,6 +632,7 @@ const NewHeadToHeadPage: React.FC = () => {
                                         />
                                         {increments.map((amount) => (
                                             <TouchableOpacity
+                                                key={amount}
                                                 style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
                                                 onPress={() => updateBetAmount(index, amount)}
                                                 activeOpacity={1}
@@ -666,6 +667,7 @@ const NewHeadToHeadPage: React.FC = () => {
                     <View style={styles.dotRow}>
                         {matchups.map((_, index) => (
                             <TouchableOpacity
+                                key={index}
                                 style={{
                                     width: scale(10),
                                     height: scale(10),
