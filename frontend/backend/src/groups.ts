@@ -948,6 +948,7 @@ export const startGame = async (groupID: string, totalCycles: number, startingTo
                 startingTokens,
                 cycleDuels: cycles,
                 gameType,
+                gameStartedAt: serverTimestamp(),
             };
 
             if (gameType === "weekly" || gameType === 'biweekly') {
