@@ -16,7 +16,6 @@ import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, g
 from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
-import useHealthData from '@/backend/src/hooks/useHealthData';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './LiveDuel';
@@ -46,7 +45,6 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 
 const BetSummaryPage: React.FC = () => {
     const { userID, loading } = useUser();
-    const { steps, stepsFromWeekBefore, averageSteps, distance, flights } = useHealthData();
     const { groupIDTemp, showTutorialTemp } = useLocalSearchParams();
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [isPropBetModalVisible, setPropBetModalVisible] = useState(false);
@@ -150,12 +148,7 @@ const BetSummaryPage: React.FC = () => {
                 cleanup();
             }
         };
-    }, [userID, isStoreModalVisible, isPropBetModalVisible]);
-
-    useEffect(() => {
-        console.log("Live duel Modal visibility:", isLiveDuelModalVisible);
-      }, [isLiveDuelModalVisible]);
-      
+    }, [userID, isStoreModalVisible, isPropBetModalVisible]);      
 
     const fetchPowerups = async () => {
         try {
@@ -386,7 +379,7 @@ const BetSummaryPage: React.FC = () => {
                             }
                             
                         } else if (gameType == "biweekly") {
-                            console.log('game is biweekly');
+                            // console.log('game is biweekly');
                             
                             // set the race time left first
                             const today = new Date();
@@ -510,8 +503,8 @@ const BetSummaryPage: React.FC = () => {
                         where('createdAt', '>=', Timestamp.fromDate(startDate)),
                         where('createdAt', '<', Timestamp.fromDate(endDate))
                     );
-                    console.log("checkpoint five");
-                    console.log("duelsQuery", duelsQuery);
+                    // console.log("checkpoint five");
+                    // console.log("duelsQuery", duelsQuery);
 
                     // Clean up previous duels listener if exists
                     if (unsubscribeFunctions.length > 0) {
@@ -597,7 +590,7 @@ const BetSummaryPage: React.FC = () => {
 
                         // console.log(`Duels for group ${groupID} updated`);
                         // console.log('Updated currentGroups: ', currentGroups);
-                        console.log('current Bets', currBets);
+                        // console.log('current Bets', currBets);
                         setCurrentBets(currBets);
                         setIsLoading(false);
                     });
@@ -733,14 +726,12 @@ const BetSummaryPage: React.FC = () => {
 
     const closeStepsModal = async () => {
         console.log('closing steps');
-        if (!currentTutorialStatus.steps) {
-            await addDiamonds(groupID, userID, 1);
-            await setTutorialStatus(groupID, userID, 'steps');
-            setCurrentTutorialStatus(prevState => ({
-                ...prevState,
-                steps: true
-            }));
-        }
+        await addDiamonds(groupID, userID, 1);
+        await setTutorialStatus(groupID, userID, 'steps');
+        setCurrentTutorialStatus(prevState => ({
+            ...prevState,
+            steps: true
+        }));
     };
 
     // if it hits 12:00 am, navigate to hometab
@@ -1009,6 +1000,7 @@ const BetSummaryPage: React.FC = () => {
                                     {currentBets.map((bets, index) => (
 
                                         <TouchableOpacity
+                                            key={bets.duelID}
                                             onPress={() => setLiveDuelModalVisible(true)}
                                             activeOpacity={1}
                                             style={[styles.duelCardTouchable, { width: screenWidth, }]}
@@ -1191,7 +1183,7 @@ const BetSummaryPage: React.FC = () => {
                                         </TouchableOpacity>
                                     </View>
                                     {currentGroupUsersArray.slice(3).map((user, index) => (
-                                        <TouchableOpacity onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                                        <TouchableOpacity key={user.id} onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
                                             <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
                                                 <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
                                                 <Image
@@ -1644,10 +1636,10 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#fff',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
+        // shadowColor: '#000',
+        // shadowOffset: { width: 0, height: 2 },
+        // shadowOpacity: 0.2,
+        // shadowRadius: 4,
         elevation: 5,
     },
     dropdownText: {

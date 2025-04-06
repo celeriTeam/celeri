@@ -26,21 +26,21 @@ const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps:
                 if (groupDoc.exists() && groupDoc.data().order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
-                    const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
                     
-                    const existingNewsQuery = query(
-                        newsCollectionRef,
-                        where('type', '==', 'recordSetter'),
-                        where('userID', '==', userID),
-                        where('createdAt', '>=', fiveMinutesAgo)
-                    );
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'recordSetter'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
 
-                    const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
                     
-                    if (!existingNewsSnapshot.empty) {
-                        // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
-                        continue;
-                    }
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
 
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
@@ -130,21 +130,21 @@ const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAver
                 if (groupDoc.exists() && groupDoc.data().order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
-                    const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
                     
-                    const existingNewsQuery = query(
-                        newsCollectionRef,
-                        where('type', '==', 'racePullAheadTopThree'),
-                        where('userID', '==', userID),
-                        where('createdAt', '>=', fiveMinutesAgo)
-                    );
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'racePullAheadTopThree'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
 
-                    const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
                     
-                    if (!existingNewsSnapshot.empty) {
-                        // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
-                        continue;
-                    }
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
 
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
@@ -217,21 +217,21 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
                 if (groupDoc.exists() && groupDoc.data().order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
-                    const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
                     
-                    const existingNewsQuery = query(
-                        newsCollectionRef,
-                        where('type', '==', 'headToHeadPullAhead'),
-                        where('userID', '==', userID),
-                        where('createdAt', '>=', fiveMinutesAgo)
-                    );
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'headToHeadPullAhead'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
 
-                    const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
                     
-                    if (!existingNewsSnapshot.empty) {
-                        // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
-                        continue;
-                    }
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
 
                     const members = groupDoc.data().order; // user IDs
                     const gameType = groupDoc.data().gameType;
@@ -347,21 +347,21 @@ const racePullAheadOfYou = async (userID: string, prevSteps: number, prevAverage
                 if (groupDoc.exists() && groupDoc.data().order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
-                    const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
                     
-                    const existingNewsQuery = query(
-                        newsCollectionRef,
-                        where('type', '==', 'racePullAheadOfYou'),
-                        where('userID', '==', userID),
-                        where('createdAt', '>=', fiveMinutesAgo)
-                    );
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'racePullAheadOfYou'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
 
-                    const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
                     
-                    if (!existingNewsSnapshot.empty) {
-                        // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
-                        continue;
-                    }
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
 
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
@@ -444,21 +444,21 @@ const headToHeadOpponentWalking = async (userID: string, fiveHoursSteps: number)
                 if (groupDoc.exists() && groupDoc.data().order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
-                    const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
                     
-                    const existingNewsQuery = query(
-                        newsCollectionRef,
-                        where('type', '==', 'headToHeadOpponentWalking'),
-                        where('userID', '==', userID),
-                        where('createdAt', '>=', fiveMinutesAgo)
-                    );
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'headToHeadOpponentWalking'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
 
-                    const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
                     
-                    if (!existingNewsSnapshot.empty) {
-                        // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
-                        continue;
-                    }
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
 
                     const members = groupDoc.data().order; // user IDs
                     const gameType = groupDoc.data().gameType;
@@ -596,6 +596,8 @@ const calculatePrevWeeklySteps = (prevSteps: number, prevAverageSteps: number[],
 export const newsFunctions = async (userID: string, prevSteps: number, prevAverageSteps: number[], fiveHoursSteps: number, stepsLastUpdate: Date) => {
     const { newPrevAverageSteps, newPrevSteps } = calculateNewPrevSteps(prevSteps, prevAverageSteps, stepsLastUpdate);
     const currentSteps = await getSteps(userID);
+    console.log('currentSteps', currentSteps);
+    console.log('newPrevSteps', newPrevSteps);
     if (currentSteps > newPrevSteps) {
         // run all news functions
         await recordSetter(userID, newPrevSteps, newPrevAverageSteps);

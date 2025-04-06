@@ -1,5 +1,5 @@
 // HomeTab.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -56,6 +56,10 @@ const HomeTab: React.FC = () => {
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
+    
+    const updateInProgress = useRef(false);
+    const lastUpdateTime = useRef(0);
+    const UPDATE_INTERVAL = 300000; // 5 minutes
     const router = useRouter();
 
     // Getting data because its the first page
@@ -83,22 +87,35 @@ const HomeTab: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
-        setIsLoadingHome(true);
-        if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
-            // Update backend the first time valid steps are retrieved
-            console.log("First-time backend update with steps:", steps);
-            //setStepsSinceMidnight(steps);
-            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore); // Call your backend update here
-            setHasInitialized(true); // Mark initialization as complete
-        } else if (hasInitialized) {
-            // Updates backend every time the listener runs, since listener cannot wait 
-            // for useHealthData, but this function can
-            console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
-            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore);
+        const updateIfNeeded = async () => {
+            const now = Date.now();
+
+            // Prevent concurrent updates and respect interval
+            if (!updateInProgress.current && now - lastUpdateTime.current > UPDATE_INTERVAL) {
+                updateInProgress.current = true;
+
+                try {
+                    console.log("Initiating controlled update");
+                    await fetchHealthData();
+                    lastUpdateTime.current = Date.now();
+                } catch (error) {
+                    console.error("Update failed:", error);
+                } finally {
+                    updateInProgress.current = false;
+                }
+            }
+        };
+
+        // Single update source
+        const intervalId = setInterval(updateIfNeeded, UPDATE_INTERVAL);
+
+        // Initial update
+        if (!hasInitialized) {
+            updateIfNeeded();
         }
-        setIsLoadingHome(false);
-    }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
+
+        return () => clearInterval(intervalId);
+    }, [hasInitialized]);
 
     useEffect(() => {
       const timer = setTimeout(() => {
@@ -107,26 +124,6 @@ const HomeTab: React.FC = () => {
   
       return () => clearTimeout(timer);
     }, []);
-
-    useEffect(() => {
-        if (hasInitialized) {
-            // console.log("HomeTab -- already initialized");
-            //getStepsSinceMidnight();
-            setIsLoadingHome(true);
-            const intervalId = setInterval(() => {
-                fetchHealthData();
-                //getStepsSinceMidnight();
-            }, 300000); // 5 minutes in milliseconds
-            setIsLoadingHome(false);
-
-            // Clean up the interval when the component unmounts
-            return () => {
-                clearInterval(intervalId);
-            };
-        } else {
-            console.log("HomeTab -- has not been initialized");
-        }
-    }, [userID, hasInitialized]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
@@ -372,6 +369,7 @@ const HomeTab: React.FC = () => {
                                             </View>
                                         </TouchableOpacity>
                                     ))}
+                                    <View style={{ marginTop: 10, }} />
                                 </ScrollView>
 
                                 {/* Floating Action Button */}
@@ -557,10 +555,10 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 10,
         width: '100%',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 5,
+        // shadowColor: '#000',
+        // shadowOpacity: 0.1,
+        // shadowOffset: { width: 0, height: 2 },
+        // shadowRadius: 5,
         elevation: 3,
         alignSelf: 'center',
     },
