@@ -55,6 +55,7 @@ const HomeTab: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
     const router = useRouter();
 
     // Getting data because its the first page
@@ -192,6 +193,8 @@ const HomeTab: React.FC = () => {
     };
 
     const goToGroup = async (groupName: string) => {
+        if (isPressed) return; // Prevent multiple presses
+        setIsPressed(true);
         // get groupID and number of users in group;
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
@@ -230,6 +233,7 @@ const HomeTab: React.FC = () => {
             });
             //navigation.navigate('InviteGroup', { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: false });
         }
+        setIsPressed(false); // Set the button as pressed
     }
 
     if (!hasPermissions) {
@@ -347,6 +351,7 @@ const HomeTab: React.FC = () => {
                                             key={groupID}
                                             style={styles.groupButton}
                                             onPress={() => goToGroup(group.groupName)}
+                                            disabled={isPressed}
                                         >
                                             {group.groupImageUrl ? (
                                                 <Image
