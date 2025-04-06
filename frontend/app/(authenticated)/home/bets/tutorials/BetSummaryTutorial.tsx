@@ -31,6 +31,7 @@ const BetSummaryTutorial: React.FC<{
     const groupID = groupIDTemp ? String(groupIDTemp) : '';
     const [addedDiamond, setAddedDiamond] = useState(false);
     const [selectedPropBet, setSelectedPropBet] = useState<selectedPropBet>(null);
+	const [dropdownVisible, setDropdownVisible] = useState(false);
 
     const handleNextStep = async () => {
         if (tutorialStep < 6) {
@@ -79,7 +80,7 @@ const BetSummaryTutorial: React.FC<{
             case 4: // prop bet
                 return { top: verticalScale(130), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(150) };
             case 5: // steps leaderboard
-                return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(320) };
+                return { top: verticalScale(250), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(dropdownVisible ? 470 : 330) };
             case 6: // final
                 return { width: scale(guidelineBaseWidth * 0.9), height: verticalScale(240) };
             default:
@@ -181,7 +182,38 @@ const BetSummaryTutorial: React.FC<{
                                 a 5% tax from all other players - that
                                  means that <Text style={styles.greenColor}>every player would lose 5% of 
                                 their total tokens and you could gain all of that for yourself!</Text>
-                            </Text>
+							</Text>
+							<View style={styles.dropdownContainer}>
+								<TouchableOpacity style={styles.row} onPress={() => setDropdownVisible(!dropdownVisible)} activeOpacity={1}>
+									<Text style={[styles.tutorialText, { fontSize: 11, marginBottom: 0, }]}>(I'm a nerd and I want to understand the math)</Text>
+									{dropdownVisible ? (
+										<Image
+											source={require('@assets/icons/upCarrot.png')}
+											style={styles.carrot}
+										/>
+									) : (
+										<Image
+											source={require('@assets/icons/downCarrot.png')}
+											style={styles.carrot}
+										/>
+									)}
+								</TouchableOpacity>
+								{dropdownVisible && (
+									<View>
+										<View style={{ marginTop: 10, }} />
+										<Text style={styles.dropdownText}>
+											<Text>In a game focused on betting, we want to incentivize Steps 
+												just as much! If you walk a lot, you should be rewarded, 
+												and not just through your Head-to-Head.{'\n'}{'\n'}
+											</Text>
+											<Text>Additionally, if you're at zero Tokens, it's still not over! 
+												Weekly Races are your opportunity to win some Tokens 
+												back.{'\n'}
+											</Text>
+										</Text>
+									</View>
+								)}
+							</View>
                             {/* <Text style={styles.tutorialText}>
                                 I'm a nerd and want to understand the point of this
                             </Text> */}
@@ -229,14 +261,14 @@ const BetSummaryTutorial: React.FC<{
                                 onPress={() => setSelectedPropBet('over')}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Over</Text> {1000}</Text>
+                                <Text style={styles.overUnderChooseText}><Text style={styles.greenColor}>Over</Text> {1000}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={selectedPropBet === 'under' ? styles.overUnderButtonTouched : styles.overUnderButtonTouchable}
                                 onPress={() => setSelectedPropBet('under')}
                                 activeOpacity={0.8}
                             >
-                                <Text style={styles.overUnderChooseText}><Text style={{ color: "#74FF6D" }}>Under</Text> {1000}</Text>
+                                <Text style={styles.overUnderChooseText}><Text style={styles.greenColor}>Under</Text> {1000}</Text>
                             </TouchableOpacity>
                         </View>
                         <TouchableOpacity
@@ -323,7 +355,6 @@ const styles = StyleSheet.create({
         width: 14,
         height: 12,
     },
-    
     title: {
         fontFamily: "Lexend",
         color: '#fff',
@@ -384,6 +415,31 @@ const styles = StyleSheet.create({
     submitButtonText: {
         fontFamily: "Lexend",
         fontSize: 15,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingTop: 10,
+        marginBottom: 10,
+    },
+    dropdownContainer: {
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        justifyContent: 'center',
+        marginTop: 15,
+    },
+    dropdownText: {
+        fontSize: 11,
+        color: '#fff',
+        fontFamily: 'Lexend',
+        lineHeight: 16,
+    },
+    carrot: {
+        width: 11,
+        height: 11,
     },
 });
 
