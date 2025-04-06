@@ -747,6 +747,24 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
     }
 }
 
+export const getGameStartedAt = async (groupID: string): Promise<Timestamp | undefined> => {
+    try {
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
+        if (groupDoc.exists()){
+            const gameStartedAt = groupDoc.data()?.gameStartedAt;
+            return gameStartedAt;
+        } else{
+            console.error("getGameStartedAt - error: No such document!");
+            return undefined;
+        }
+    }
+    catch (error) {
+        console.error("getGameStartedAt - Error fetching user document: ", error);
+        return undefined;
+    }
+}
+
 // HELPER FUNCTION
 
 interface Bet {
