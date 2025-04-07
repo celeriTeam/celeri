@@ -159,6 +159,30 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
     }
 }
 
+// GET Group isResultAvailable
+export const getGroupIsResultAvailable = async (groupID: string, userID: string): Promise <boolean | undefined> =>{
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists()) {
+            const viewedResults = groupDoc.data()?.viewedResults;
+            console.log("getGroupIsResultAvailable, ", viewedResults)
+      
+            if (viewedResults && userID in viewedResults) {
+              return viewedResults[userID] === false;
+            }
+      
+            return false; // UserID not in map or map is empty
+          } else {
+            console.error("getGroupIsResultAvailable -- error: No such document!");
+            return undefined;
+        }
+
+    } catch (error) {
+        console.error("getGroupIsResultAvailable - Error fetching user document: ", error);
+        return undefined;
+   }
+}
+
 // GET Group Creator
 export const getGroupCreator = async (groupID: string): Promise<string | undefined> => {
     // this will be the first user that was added to the group

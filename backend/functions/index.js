@@ -2055,6 +2055,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
           let cycleWeek = data.cycleWeek;
           let cycleCount = data.cycleCount;
           let cycleDuels = data.cycleDuels;
+          const users = data.users;
           const players = data.order;
           const numberOfPlayers = data.currentPlayersInGame;
 
@@ -2097,6 +2098,34 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
           console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
           if (cycleCount > data.totalCycles) {
+            // create a map called viewResults of every player and whether they've viewed the results
+            const viewedResults = {};
+
+            // create a map for the results document
+            const userResultsMap = {};
+
+            players.forEach((playerId) => {
+              viewedResults[playerId] = false;
+              const playerData = users[playerId];
+              userResultsMap[playerId] = playerData ? playerData.tokens : 0;
+            });
+
+            const currentTimestamp = admin.firestore.FieldValue.serverTimestamp();
+
+            // Add result doc to 'results' collection to remember tokens
+            const resultDocRef = admin.firestore().collection("results").doc();
+            const resultDocId = resultDocRef.id;
+
+            // Prepare the dynamic key for resultsHistory
+            const resultEntry = {};
+            resultEntry[`resultsHistory.${resultDocId}`] = currentTimestamp;
+
+            groupBatch.set(resultDocRef, {
+              createdAt: currentTimestamp,
+              groupID: doc.id,
+              results: userResultsMap,
+            });
+
             // end the game
             groupBatch.update(groupDocRef, {
               isGameActive: false,
@@ -2110,7 +2139,11 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               finishedRecap: admin.firestore.FieldValue.delete(),
               finishedTutorial: admin.firestore.FieldValue.delete(),
               startingTokens: admin.firestore.FieldValue.delete(),
+              viewedResults: viewedResults,
+              ...resultEntry,
             });
+
+
             // reset the tokens for each player
             const usersUpdate = {};
             players.forEach((playerID) => {

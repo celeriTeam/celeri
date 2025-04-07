@@ -5,7 +5,8 @@ import { getFirestore, doc, collection, query, where, onSnapshot } from "firebas
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
     getUserFinishedTutorial} from '@/backend/src/users';
-import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
+import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, 
+    getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 const auth = getAuth(app);
@@ -111,7 +112,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setLoading(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, 
+                        const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, isResultAvailable,
                         groupCreator, userTokens, todaysBetTokens, 
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
@@ -122,6 +123,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
                             getGroupIsFirstDay(groupID),
+                            getGroupIsResultAvailable(groupID, uid),
                             getGroupCreator(groupID),
                             getUserTokens(groupID, uid),
                             getTodaysBetTokens(groupID, uid),
@@ -144,6 +146,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getUserFinishedTutorial(uid),
                             getTutorialStatus(groupID, uid)
                         ]);
+
+                        console.log("testing here", groupName, isResultAvailable)
 
                         const userList = await getUsersInGroup(groupID); // userIDs
                         const users: { [userID: string]: any } = {};
@@ -191,6 +195,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             groupName,
                             isGameActive,
                             isFirstDay,
+                            isResultAvailable,
                             groupCreator,
                             userTokens,
                             todaysBetTokens,

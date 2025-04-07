@@ -16,7 +16,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import useHealthData from '../../../backend/src/hooks/useHealthData';
-import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setStepsFirebase } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
@@ -141,10 +141,11 @@ const HomeTab: React.FC = () => {
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setIsLoadingHome(true);
                     if (docSnapshot.exists() && groupID) {
-                        const [groupImageUrl, groupName, isGameActive, isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
+                        const [groupImageUrl, groupName, isGameActive, isResultAvailable, isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
                             getGroupIsGameActive(groupID),
+                            getGroupIsResultAvailable(groupID, uid),
                             checkFinishedBetting(groupID, uid),
                             checkFinishedTutorial(groupID, uid),
                             getGroupCreator(groupID),
@@ -158,6 +159,7 @@ const HomeTab: React.FC = () => {
                             groupImageUrl,
                             groupName,
                             isGameActive,
+                            isResultAvailable,
                             isFinishedBetting,
                             isFinishedTutorial,
                             userList,
@@ -342,31 +344,44 @@ const HomeTab: React.FC = () => {
                                 <Text style={styles.subTitle}>Your Groups:</Text>
                                 <ScrollView style={styles.scrollContainer}>
 
-                                    {Object.entries(groups).map(([groupID, group]) => (
-                                        <TouchableOpacity
-                                            key={groupID}
-                                            style={styles.groupButton}
-                                            onPress={() => goToGroup(group.groupName)}
-                                        >
-                                            {group.groupImageUrl ? (
-                                                <Image
-                                                    source={{ uri: group.groupImageUrl }}
-                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
-                                                />
-                                            ) : (
-                                                <Image
-                                                    source={require('@components/blank-profile-picture.png')}
-                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
-                                                />
-                                            )}
-                                            <View style={styles.groupInfo}>
-                                                <Text style={styles.groupName}>{group.groupName}</Text>
-                                                <Text style={[styles.groupDetails, { color: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}>
-                                                    {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
-                                                </Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
+                                {Object.entries(groups).map(([groupID, group]) => {
+                                    const memberCount = group.userList ? Object.keys(group.userList).length : 0;
+
+                                    let statusText = group.isGameActive ? 'Active' : 'Inactive';
+                                    let statusColor = group.isGameActive ? '#74FF6D' : '#a7a7a7';
+
+                                    console.log("tea2", groupID, group.isResultAvailable);
+
+                                    if (!group.isGameActive && group.isResultAvailable) {
+                                        statusText = 'Game Ended - See Results';
+                                        statusColor = 'orange';
+                                    }
+
+                                    return (
+                                    <TouchableOpacity
+                                        key={groupID}
+                                        style={styles.groupButton}
+                                        onPress={() => goToGroup(group.groupName)}
+                                    >
+                                        <Image
+                                        source={
+                                            group.groupImageUrl
+                                            ? { uri: group.groupImageUrl }
+                                            : require('@components/blank-profile-picture.png')
+                                        }
+                                        style={[styles.groupImage, { borderColor: statusColor }]}
+                                        />
+                                        <View style={styles.groupInfo}>
+                                        <Text style={styles.groupName}>{group.groupName}</Text>
+                                        <Text style={[styles.groupDetails, { color: statusColor }]}>
+                                            {!group.isGameActive && group.isResultAvailable
+                                            ? statusText
+                                            : `${memberCount} members - ${statusText}`}
+                                        </Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                    );
+                                })}
                                 </ScrollView>
 
                                 {/* Floating Action Button */}

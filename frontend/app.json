@@ -23,7 +23,7 @@
         ],
         "CFBundleDisplayName": "Celeri"
       },
-      "buildNumber": "8.2"
+      "buildNumber": "8.3"
     },
     "android": {
       "googleServicesFile": "google-services.json",
