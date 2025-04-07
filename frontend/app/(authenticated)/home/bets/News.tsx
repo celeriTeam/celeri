@@ -147,8 +147,8 @@ const NewsPage: React.FC< {
                                         source={{ uri: news.pfp }}
                                         style={styles.pfp}
                                     />
-                                    <Text style={styles.username}>{news.username}</Text>
-                                    <Text style={styles.text}> set a record of </Text>
+                                    <Text style={styles.username}>{news.username} </Text>
+                                    <Text style={styles.text}>set a record of </Text>
                                     <Text style={styles.misc}>{news.record}</Text>
                                 </>
                             )}
@@ -172,7 +172,7 @@ const NewsPage: React.FC< {
                             {news.type === 'headToHeadPullAhead' && (
                                 <>
                                     {username === news.username ? (
-                                        <Text style={styles.username}>You</Text>
+                                        <Text style={styles.username}>You </Text>
                                     ) : (
                                         <>
                                             <Image
@@ -184,7 +184,7 @@ const NewsPage: React.FC< {
                                     )}
                                     <Text style={styles.text}>surpassed </Text>
                                     {username === news.opponentUsername ? (
-                                            <Text style={styles.username}>you</Text>
+                                            <Text style={styles.username}>you </Text>
                                     ) : (
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                             <Image
@@ -223,8 +223,8 @@ const NewsPage: React.FC< {
                                         />
                                         <Text style={styles.username}>{news.username} </Text>
                                     </View>
-                                    <Text style={styles.text}>walked</Text>
-                                    <Text style={styles.misc}> {news.steps} steps </Text>
+                                    <Text style={styles.text}>walked </Text>
+                                    <Text style={styles.misc}>{news.steps} steps </Text>
                                     <Text style={styles.text}>within a 5 hour window</Text>
                                 </>
                             )}

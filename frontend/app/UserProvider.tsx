@@ -149,7 +149,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGameStartedAt(groupID),
                         ]);
 
-                        console.log("testing here", groupName, isResultAvailable)
+                        // console.log("testing here", groupName, isResultAvailable)
 
                         const userList = await getUsersInGroup(groupID); // userIDs
                         const users: { [userID: string]: any } = {};
