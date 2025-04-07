@@ -392,10 +392,16 @@ const useHealthData = () => {
 
             messaging().setBackgroundMessageHandler(async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    console.log("Fetching HealthKit data from silent notification (background)...");
-                    const permissionsValid = await checkAndRequestPermissions();
-                    if (permissionsValid) {
-                        await fetchHealthDataBackground();
+                    if (!updateLock.current) {
+                        updateLock.current = true;
+                        console.log("Fetching HealthKit data from silent notification (background)...");
+                        const permissionsValid = await checkAndRequestPermissions();
+                        if (permissionsValid) {
+                            await fetchHealthDataBackground();
+                        }
+                        setTimeout(() => {
+                            updateLock.current = false;
+                        }, LOCK_TIMEOUT);
                     }
                 }
             });
