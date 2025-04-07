@@ -1,5 +1,5 @@
 // HomeTab.tsx
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -55,6 +55,11 @@ const HomeTab: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
+    
+    const updateInProgress = useRef(false);
+    const lastUpdateTime = useRef(0);
+    const UPDATE_INTERVAL = 300000; // 5 minutes
     const router = useRouter();
 
     // Getting data because its the first page
@@ -82,22 +87,35 @@ const HomeTab: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        console.log("HomeTab -- hasInitialized: ", hasInitialized, " steps: ", steps, " averageSteps: ", averageSteps);
-        setIsLoadingHome(true);
-        if (!hasInitialized && steps > 0 && averageStepsCount > 0) {
-            // Update backend the first time valid steps are retrieved
-            console.log("First-time backend update with steps:", steps);
-            //setStepsSinceMidnight(steps);
-            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore); // Call your backend update here
-            setHasInitialized(true); // Mark initialization as complete
-        } else if (hasInitialized) {
-            // Updates backend every time the listener runs, since listener cannot wait 
-            // for useHealthData, but this function can
-            console.log("Listener-triggered backend update with steps: ", steps, " and averageSteps, ", averageStepsCount);
-            setStepsFirebase(userID, steps, averageSteps, stepsFromWeekBefore);
+        const updateIfNeeded = async () => {
+            const now = Date.now();
+
+            // Prevent concurrent updates and respect interval
+            if (!updateInProgress.current && now - lastUpdateTime.current > UPDATE_INTERVAL) {
+                updateInProgress.current = true;
+
+                try {
+                    console.log("Initiating controlled update");
+                    await fetchHealthData();
+                    lastUpdateTime.current = Date.now();
+                } catch (error) {
+                    console.error("Update failed:", error);
+                } finally {
+                    updateInProgress.current = false;
+                }
+            }
+        };
+
+        // Single update source
+        const intervalId = setInterval(updateIfNeeded, UPDATE_INTERVAL);
+
+        // Initial update
+        if (!hasInitialized) {
+            updateIfNeeded();
         }
-        setIsLoadingHome(false);
-    }, [steps, averageSteps, stepsFromWeekBefore, hasInitialized, userID]);
+
+        return () => clearInterval(intervalId);
+    }, [hasInitialized]);
 
     useEffect(() => {
       const timer = setTimeout(() => {
@@ -106,26 +124,6 @@ const HomeTab: React.FC = () => {
   
       return () => clearTimeout(timer);
     }, []);
-
-    useEffect(() => {
-        if (hasInitialized) {
-            // console.log("HomeTab -- already initialized");
-            //getStepsSinceMidnight();
-            setIsLoadingHome(true);
-            const intervalId = setInterval(() => {
-                fetchHealthData();
-                //getStepsSinceMidnight();
-            }, 300000); // 5 minutes in milliseconds
-            setIsLoadingHome(false);
-
-            // Clean up the interval when the component unmounts
-            return () => {
-                clearInterval(intervalId);
-            };
-        } else {
-            console.log("HomeTab -- has not been initialized");
-        }
-    }, [userID, hasInitialized]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
@@ -194,6 +192,8 @@ const HomeTab: React.FC = () => {
     };
 
     const goToGroup = async (groupName: string) => {
+        if (isPressed) return; // Prevent multiple presses
+        setIsPressed(true);
         // get groupID and number of users in group;
         const groupID: any = getGroupID[groupName];
         const GroupUsers = groups[groupID]?.userList;
@@ -232,6 +232,7 @@ const HomeTab: React.FC = () => {
             });
             //navigation.navigate('InviteGroup', { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: false });
         }
+        setIsPressed(false); // Set the button as pressed
     }
 
     if (!hasPermissions) {
@@ -344,44 +345,33 @@ const HomeTab: React.FC = () => {
                                 <Text style={styles.subTitle}>Your Groups:</Text>
                                 <ScrollView style={styles.scrollContainer}>
 
-                                {Object.entries(groups).map(([groupID, group]) => {
-                                    const memberCount = group.userList ? Object.keys(group.userList).length : 0;
-
-                                    let statusText = group.isGameActive ? 'Active' : 'Inactive';
-                                    let statusColor = group.isGameActive ? '#74FF6D' : '#a7a7a7';
-
-                                    console.log("tea2", groupID, group.isResultAvailable);
-
-                                    if (!group.isGameActive && group.isResultAvailable) {
-                                        statusText = 'Game Ended - See Results';
-                                        statusColor = 'orange';
-                                    }
-
-                                    return (
-                                    <TouchableOpacity
-                                        key={groupID}
-                                        style={styles.groupButton}
-                                        onPress={() => goToGroup(group.groupName)}
-                                    >
-                                        <Image
-                                        source={
-                                            group.groupImageUrl
-                                            ? { uri: group.groupImageUrl }
-                                            : require('@components/blank-profile-picture.png')
-                                        }
-                                        style={[styles.groupImage, { borderColor: statusColor }]}
-                                        />
-                                        <View style={styles.groupInfo}>
-                                        <Text style={styles.groupName}>{group.groupName}</Text>
-                                        <Text style={[styles.groupDetails, { color: statusColor }]}>
-                                            {!group.isGameActive && group.isResultAvailable
-                                            ? statusText
-                                            : `${memberCount} members - ${statusText}`}
-                                        </Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                    );
-                                })}
+                                    {Object.entries(groups).map(([groupID, group]) => (
+                                        <TouchableOpacity
+                                            key={groupID}
+                                            style={styles.groupButton}
+                                            onPress={() => goToGroup(group.groupName)}
+                                            disabled={isPressed}
+                                        >
+                                            {group.groupImageUrl ? (
+                                                <Image
+                                                    source={{ uri: group.groupImageUrl }}
+                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
+                                                />
+                                            ) : (
+                                                <Image
+                                                    source={require('@components/blank-profile-picture.png')}
+                                                    style={[styles.groupImage, { borderColor: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}
+                                                />
+                                            )}
+                                            <View style={styles.groupInfo}>
+                                                <Text style={styles.groupName}>{group.groupName}</Text>
+                                                <Text style={[styles.groupDetails, { color: group.isGameActive ? '#74FF6D' : '#a7a7a7' }]}>
+                                                    {group.userList ? Object.keys(group.userList).length : 0} members - {group.isGameActive ? 'Active' : 'Inactive'}
+                                                </Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                    <View style={{ marginTop: 10, }} />
                                 </ScrollView>
 
                                 {/* Floating Action Button */}
@@ -567,10 +557,10 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         marginBottom: 10,
         width: '100%',
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 5,
+        // shadowColor: '#000',
+        // shadowOpacity: 0.1,
+        // shadowOffset: { width: 0, height: 2 },
+        // shadowRadius: 5,
         elevation: 3,
         alignSelf: 'center',
     },

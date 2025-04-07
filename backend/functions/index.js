@@ -2307,6 +2307,12 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               finishedRecap: admin.firestore.FieldValue.delete(),
               finishedTutorial: admin.firestore.FieldValue.delete(),
               startingTokens: admin.firestore.FieldValue.delete(),
+              finishedPropBet: admin.firestore.FieldValue.delete(),
+              propBets: admin.firestore.FieldValue.delete(),
+              previousPlayersInGame: admin.firestore.FieldValue.delete(),
+              resetDay: admin.firestore.FieldValue.delete(),
+              totalCycles: admin.firestore.FieldValue.delete(),
+              gameType: admin.firestore.FieldValue.delete(),
             });
             // reset the tokens for each player
             const usersUpdate = {};
@@ -2315,6 +2321,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
                 placedBet: false,
                 tokens: 0,
                 todaysBetTokens: 0,
+                diamonds: 0,
               };
             });
             groupBatch.update(groupDocRef, usersUpdate);

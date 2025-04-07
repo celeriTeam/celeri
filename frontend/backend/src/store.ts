@@ -24,11 +24,11 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
         const q = query(powerupsCollectionRef, where("createdAt", ">=", startOfDayTimestamp));
 
         const powerupsSnapshot = await getDocs(q);
-        console.log("powerupsSnapshot, ", powerupsSnapshot);
+        // console.log("powerupsSnapshot, ", powerupsSnapshot);
         const powerupsArray: Array<Array<string>> = [];
 
         powerupsSnapshot.forEach((doc) => {
-            console.log("document in powerupsSnapshot: ", doc);
+            // console.log("document in powerupsSnapshot: ", doc);
             const data = doc.data();
             const powerupType = data.type || ""; // Assuming 'type' is the field for powerup type
             const targetUserID = data.targetUserID || ""; // Assuming 'targetID' is the field for target ID
@@ -36,12 +36,12 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
             const userID = data.userID || ""; // Assuming 'userID' is the field for user ID
             const duelID = data.duelID || "";
 
-            console.log("document type: ", powerupType);
+            // console.log("document type: ", powerupType);
 
             powerupsArray.push([powerupType, targetUserID, targetUserName, userID, duelID]);
         });
 
-        console.log("powerupsArray in getPowerups", powerupsArray);
+        // console.log("powerupsArray in getPowerups", powerupsArray);
 
         return powerupsArray;
     } catch (error) {

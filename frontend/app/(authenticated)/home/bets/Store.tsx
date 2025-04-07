@@ -20,7 +20,16 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
     const [isBuying, setIsBuying] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [subtractedDiamonds, setSubtractedDiamonds] = useState(0);
 
+    useEffect(() => {
+        console.log('userdiamonds: ', userDiamonds);
+        if (userDiamonds - subtractedDiamonds === groups[groupID]?.users[userID]?.diamonds || 
+            userDiamonds - subtractedDiamonds + 1 === groups[groupID]?.users[userID]?.diamonds) {
+            setSubtractedDiamonds(0);
+        }
+    }
+    , [isModalVisible]);
 
     const speedBoots = require('@assets/images/speed_boot.png');
     const secondWind = require('@assets/images/wind_store.jpg');
@@ -78,11 +87,12 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
                 console.error("Error purchasing item:", error);
             } finally {
                 setIsBuying(false);
-                setIsModalVisible(false);
+                // setIsModalVisible(false);
     
                 setTimeout(() => {
                     if (success) {
                         Alert.alert("Success", "Purchase successful!");
+                        setSubtractedDiamonds((prevDiamonds) => prevDiamonds + 3);
                     } else {
                         Alert.alert("Error", "Failed to purchase item.");
                     }
@@ -152,7 +162,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
                                             title="Select"
                                             onPress={() => {
                                                 console.log("handleBuyPowerup: ", selectedItemId)
-                                                setStoreModalVisible(false);
+                                                // setStoreModalVisible(false);
                                                 setIsModalVisible(false);
                                                 handleBuyPowerup(item.id, item.name);
                                             }}
@@ -177,7 +187,7 @@ const StorePage: React.FC<Props> = ({ groupID, userDiamonds, gameType, currentGr
             <View style={styles.titleRow}>
                 <Text style={styles.topTitle}>Powerups</Text>
                 <View style={styles.diamonds}>
-                    <Text style={styles.tokenText}>{userDiamonds}</Text>
+                    <Text style={styles.tokenText}>{groups[groupID]?.users[userID]?.diamonds - subtractedDiamonds}</Text>
                     <Image
                         source={require('@assets/images/diamond.png')}
                         style={styles.diamondIcon}

@@ -269,7 +269,7 @@ const InvitePage: React.FC = () => {
                         <View style={styles.titleContainer}>
                             <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
                         </View>
-                </View>
+                    </View>
                     <View style={styles.groupImageContainer}>
                         {groups[resolvedGroupID]?.groupImageUrl ? (
                             <Image source={{ uri: groups[resolvedGroupID]?.groupImageUrl }} style={styles.groupImage} />
@@ -317,6 +317,7 @@ const InvitePage: React.FC = () => {
                         ) : (
                             <Text>No users found.</Text>
                         )}
+                        <View style={{ height: 20 }} />
                     </ScrollView>
 
                     <View style={styles.centeredGroupCode}>

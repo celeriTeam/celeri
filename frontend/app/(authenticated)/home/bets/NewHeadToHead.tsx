@@ -68,6 +68,7 @@ const NewHeadToHeadPage: React.FC = () => {
     const [tutorialStep, setTutorialStep] = useState(1);
     const [showTutorial, setShowTutorial] = useState(showTutorialTemp === 'true' ? true : false);
     const [shouldShowNext, setShouldShowNext] = useState(true);
+    const [triggerSubmitCheck, setTriggerSubmitCheck] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const increments = [25, 50, 100, 250];
@@ -162,9 +163,9 @@ const NewHeadToHeadPage: React.FC = () => {
 
     const fetchData = async () => {
         try {
-            const isFinishedRecap = true;
+            // const isFinishedRecap = true;
             const isItFirstDay = groups[groupID]?.isFirstDay;
-            //const isFinishedRecap = groups[groupID]?.isFinishedRecap;
+            const isFinishedRecap = groups[groupID]?.isFinishedRecap;
             if (isFinishedRecap || isItFirstDay) {
                 setModalVisible(false);
             }
@@ -298,6 +299,14 @@ const NewHeadToHeadPage: React.FC = () => {
         }
     }, [changePageForUserName]);
 
+    useEffect(() => {
+        if (showTutorial && tutorialStep === 5 && shouldShowSubmit().isValid) {
+            setTutorialStep(6);
+        }
+        // Reset the trigger to avoid unnecessary re-runs
+        setTriggerSubmitCheck(false);
+    }, [triggerSubmitCheck]); 
+
     // if it hits 12:00 am, navigate to hometab
     useEffect(() => {
         const interval = setInterval(() => {
@@ -335,8 +344,9 @@ const NewHeadToHeadPage: React.FC = () => {
             return newArray;
         });
         if (showTutorial && tutorialStep === 3) {
-            setShouldShowNext(true);
+            setTutorialStep(4);
         }
+        setTriggerSubmitCheck(true);
     };
 
     const isChosen = (playerID: string) => chosenPlayer[currentMatchupIndex] === playerID;
@@ -357,8 +367,9 @@ const NewHeadToHeadPage: React.FC = () => {
             return newArray;
         });
         if (showTutorial && tutorialStep === 4) {
-            setShouldShowNext(true);
+            setTutorialStep(5);
         }
+        setTriggerSubmitCheck(true);
     };
 
     const truncateString = (str: string, maxLength: number) => {
@@ -621,6 +632,7 @@ const NewHeadToHeadPage: React.FC = () => {
                                         />
                                         {increments.map((amount) => (
                                             <TouchableOpacity
+                                                key={amount}
                                                 style={[styles.betItem, { backgroundColor: containsBet(amount) ? '#fff' : 'transparent' }]}
                                                 onPress={() => updateBetAmount(index, amount)}
                                                 activeOpacity={1}
@@ -655,6 +667,7 @@ const NewHeadToHeadPage: React.FC = () => {
                     <View style={styles.dotRow}>
                         {matchups.map((_, index) => (
                             <TouchableOpacity
+                                key={index}
                                 style={{
                                     width: scale(10),
                                     height: scale(10),

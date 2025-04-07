@@ -9,6 +9,7 @@ import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic
     getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -117,7 +118,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
                         todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
                         isFinishedTutorial, gameType, createdAt, resetDay,
-                        startingTokens, userFinishedTutorial, tutorialStatus] = await Promise.all([
+                        startingTokens, userFinishedTutorial, tutorialStatus, gameStartedAt] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -144,7 +145,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getResetDay(groupID),
                             getStartingTokens(groupID),
                             getUserFinishedTutorial(uid),
-                            getTutorialStatus(groupID, uid)
+                            getTutorialStatus(groupID, uid),
+                            getGameStartedAt(groupID),
                         ]);
 
                         console.log("testing here", groupName, isResultAvailable)
@@ -214,6 +216,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             isFinishedTutorial,
                             userFinishedTutorial,
                             tutorialStatus,
+                            gameStartedAt,
                             gameType,
                             createdAt,
                             resetDay,

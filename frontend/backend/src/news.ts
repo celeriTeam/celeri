@@ -24,6 +24,24 @@ const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps:
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if (groupDoc.exists() && groupDoc.data().order) {
+
+                    const newsCollectionRef = collection(db, 'groups', groupID, 'news');
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'recordSetter'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
+
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
+
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
                     const isGameActive = groupDoc.data().isGameActive;
@@ -76,9 +94,10 @@ const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps:
                         userID: userID,
                         record: record[recordIndex],
                     };
-                    const groupDocRef = doc(db, 'groups', groupID);
+
                     // add to 'news' collection in group:
-                    const newsCollectionRef = collection(groupDocRef, 'news');
+                    // const groupDocRef = doc(db, 'groups', groupID);
+                    // const newsCollectionRef = collection(groupDocRef, 'news');
                     await addDoc(newsCollectionRef, newNews);
                 } else {
                     console.error("recordSetter - error: No such document!");
@@ -109,6 +128,24 @@ const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAver
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if (groupDoc.exists() && groupDoc.data().order) {
+
+                    const newsCollectionRef = collection(db, 'groups', groupID, 'news');
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'racePullAheadTopThree'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
+
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
+
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
                     const isGameActive = groupDoc.data().isGameActive;
@@ -144,10 +181,10 @@ const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAver
                         userID: userID,
                         place: userIndex + 1,
                     };
-                    const groupDocRef = doc(db, 'groups', groupID);
                     // add to 'news' collection in group:
-                    const newsCollection = collection(groupDocRef, 'news');
-                    await addDoc(newsCollection, newNews);
+                    // const groupDocRef = doc(db, 'groups', groupID);
+                    // const newsCollection = collection(groupDocRef, 'news');
+                    await addDoc(newsCollectionRef, newNews);
                 } else {
                 }
             }
@@ -178,6 +215,24 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if (groupDoc.exists() && groupDoc.data().order) {
+
+                    const newsCollectionRef = collection(db, 'groups', groupID, 'news');
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'headToHeadPullAhead'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
+
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
+
                     const members = groupDoc.data().order; // user IDs
                     const gameType = groupDoc.data().gameType;
                     const groupCycleCount = groupDoc.data()?.cycleCount;
@@ -261,8 +316,8 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
                         opponentID: opponentID,
                     };
                     // add to 'news' collection in group:
-                    const newsCollection = collection(groupDocRef, 'news');
-                    await addDoc(newsCollection, newNews);
+                    // const newsCollection = collection(groupDocRef, 'news');
+                    await addDoc(newsCollectionRef, newNews);
                 } else {
                 }
             }
@@ -290,6 +345,24 @@ const racePullAheadOfYou = async (userID: string, prevSteps: number, prevAverage
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if (groupDoc.exists() && groupDoc.data().order) {
+
+                    const newsCollectionRef = collection(db, 'groups', groupID, 'news');
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'racePullAheadOfYou'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
+
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
+
                     const members = groupDoc.data().order; // user IDs
                     const resetDay = groupDoc.data().resetDay;
                     const isGameActive = groupDoc.data().isGameActive;
@@ -329,10 +402,11 @@ const racePullAheadOfYou = async (userID: string, prevSteps: number, prevAverage
                         priority2: usersPassed,
                         userID: userID,
                     };
-                    const groupDocRef = doc(db, 'groups', groupID);
+
                     // add to 'news' collection in group:
-                    const newsCollection = collection(groupDocRef, 'news');
-                    await addDoc(newsCollection, newNews);
+                    // const groupDocRef = doc(db, 'groups', groupID);
+                    // const newsCollection = collection(groupDocRef, 'news');
+                    await addDoc(newsCollectionRef, newNews);
                 } else {
                 }
             }
@@ -368,6 +442,24 @@ const headToHeadOpponentWalking = async (userID: string, fiveHoursSteps: number)
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
                 if (groupDoc.exists() && groupDoc.data().order) {
+
+                    const newsCollectionRef = collection(db, 'groups', groupID, 'news');
+                    // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
+                    
+                    // const existingNewsQuery = query(
+                    //     newsCollectionRef,
+                    //     where('type', '==', 'headToHeadOpponentWalking'),
+                    //     where('userID', '==', userID),
+                    //     where('createdAt', '>=', fiveMinutesAgo)
+                    // );
+
+                    // const existingNewsSnapshot = await getDocs(existingNewsQuery);
+                    
+                    // if (!existingNewsSnapshot.empty) {
+                    //     // console.log("Duplicate recordSetter news detected within 5 minutes - skipping");
+                    //     continue;
+                    // }
+
                     const members = groupDoc.data().order; // user IDs
                     const gameType = groupDoc.data().gameType;
                     const groupCycleCount = groupDoc.data()?.cycleCount;
@@ -504,6 +596,8 @@ const calculatePrevWeeklySteps = (prevSteps: number, prevAverageSteps: number[],
 export const newsFunctions = async (userID: string, prevSteps: number, prevAverageSteps: number[], fiveHoursSteps: number, stepsLastUpdate: Date) => {
     const { newPrevAverageSteps, newPrevSteps } = calculateNewPrevSteps(prevSteps, prevAverageSteps, stepsLastUpdate);
     const currentSteps = await getSteps(userID);
+    console.log('currentSteps', currentSteps);
+    console.log('newPrevSteps', newPrevSteps);
     if (currentSteps > newPrevSteps) {
         // run all news functions
         await recordSetter(userID, newPrevSteps, newPrevAverageSteps);

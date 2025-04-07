@@ -40,20 +40,26 @@ const NewsHistoryPage: React.FC = () => {
     }, [groupID, groups]);
 
     const loadMoreNews = async () => {
-        if (loadingMore) return;
+        if (loadingMore || !hasMore) return;
         setLoadingMore(true);
         try {
             const { news, nextTargetDate } = await getNewsSummary(groupID, currentTargetDate);
+
+            // if nexttargetdate < gamestartedat, set hasmore to false
+            if (nextTargetDate < new Date(groups[groupID]?.gameStartedAt?.toDate())) {
+                setHasMore(false);
+            }
         
-            if (news.length > 0) {
+            if (news && news.length > 0) {
                 const groupedNews = groupNewsByDate(news);
                 setNewsHistory(prev => [...prev, ...groupedNews]);
                 setLoadedDates(prev => [...prev, currentTargetDate]);
             }
-            
             setCurrentTargetDate(nextTargetDate);
+            
         } catch (error) {
             console.error('Error loading news:', error);
+            setHasMore(false);
         }
         setLoadingMore(false);
     };
