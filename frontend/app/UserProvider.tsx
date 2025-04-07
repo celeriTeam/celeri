@@ -7,7 +7,7 @@ import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeekly
     getUserFinishedTutorial} from '@/backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, 
     getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
-import { getYesterdaysDuelsSummary, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
+import { getYesterdaysDuelsSummary, getGameStartedAt, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
 
 
 const auth = getAuth(app);
