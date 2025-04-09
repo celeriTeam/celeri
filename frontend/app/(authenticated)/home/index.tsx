@@ -49,18 +49,42 @@ const HomeTab: React.FC = () => {
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [groupsState, setGroupsState] = useState({});
     const [isLoadingHome, setIsLoadingHome] = useState(true);
-    const [hasInitialized, setHasInitialized] = useState(false);
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
     
+    const router = useRouter();
+
     const updateInProgress = useRef(false);
     const lastUpdateTime = useRef(0);
     const UPDATE_INTERVAL = 300000; // 5 minutes
-    const router = useRouter();
+
+    const strictUpdate = async () => {
+        const now = Date.now();
+
+        // Atomic check-and-lock
+        if (updateInProgress.current || now - lastUpdateTime.current < UPDATE_INTERVAL) {
+            return;
+        }
+
+        updateInProgress.current = true;
+        try {
+            await fetchHealthData();
+            lastUpdateTime.current = Date.now();
+        } catch (error) {
+            console.error("Update failed:", error);
+        } finally {
+            updateInProgress.current = false;
+        }
+    };
+
+    useEffect(() => {
+        strictUpdate();
+        const intervalId = setInterval(strictUpdate, 15000); // Check every 15s
+        return () => clearInterval(intervalId);
+    }, []);
 
     // Getting data because its the first page
     useEffect(() => {
@@ -87,42 +111,11 @@ const HomeTab: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const updateIfNeeded = async () => {
-            const now = Date.now();
+        const timer = setTimeout(() => {
+            setShowExtendedMessage(true);
+        }, 5000);
 
-            // Prevent concurrent updates and respect interval
-            if (!updateInProgress.current && now - lastUpdateTime.current > UPDATE_INTERVAL) {
-                updateInProgress.current = true;
-
-                try {
-                    console.log("Initiating controlled update");
-                    await fetchHealthData();
-                    lastUpdateTime.current = Date.now();
-                } catch (error) {
-                    console.error("Update failed:", error);
-                } finally {
-                    updateInProgress.current = false;
-                }
-            }
-        };
-
-        // Single update source
-        const intervalId = setInterval(updateIfNeeded, UPDATE_INTERVAL);
-
-        // Initial update
-        if (!hasInitialized) {
-            updateIfNeeded();
-        }
-
-        return () => clearInterval(intervalId);
-    }, [hasInitialized]);
-
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setShowExtendedMessage(true);
-      }, 5000);
-  
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
     }, []);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
