@@ -27,6 +27,8 @@ const PersonalProfilePage: React.FC = () => {
     const [currentPic, setCurrentPic] = useState(profileImageUrl);
     const router = useRouter();
 
+    console.log('averagesteps: ', averageSteps);
+
     const handleLogout = async () => {
         setIsLoggingOut(true);
         const authInstance = getAuth();
