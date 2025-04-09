@@ -38,8 +38,8 @@ const useHealthData = () => {
     const [hasPermissions, setHasPermissions] = useState(false);
     const [isLoading, setLoading] = useState(true);
 
-    const updateLock = useRef(false);
-    const LOCK_TIMEOUT = 30000;
+    const newsUpdateLock = useRef(false);
+    const NEWS_LOCK_TIMEOUT = 30000;
 
     const getDailySteps = async (): Promise<number> => {
         // console.log("getDailySteps -- start");
@@ -265,17 +265,17 @@ const useHealthData = () => {
         const userID = user ? user.uid : "unknown_user";
 
         const healthData = await fetchAllHealthData(userID);
-        if (healthData) {
+        if (healthData && !newsUpdateLock.current) {
             try {
-                setLoading(true);
+                newsUpdateLock.current = true;
 
                 // Update Firebase and news
-                await setStepsFirebase(
-                    userID,
-                    healthData.currentData.dailySteps,
-                    healthData.currentData.weeklyAverageSteps,
-                    healthData.currentData.stepsFromWeekBefore
-                );
+                // await setStepsFirebase(
+                //     userID,
+                //     healthData.currentData.dailySteps,
+                //     healthData.currentData.weeklyAverageSteps,
+                //     healthData.currentData.stepsFromWeekBefore
+                // );
     
                 console.log("UPDATING NEWS");
                 await newsFunctions(
@@ -291,7 +291,9 @@ const useHealthData = () => {
             } catch (error) {
                 console.error("Error updating Firebase and news:", error);
             } finally {
-                setLoading(false);
+                setTimeout(() => {
+                    newsUpdateLock.current = false;
+                }, NEWS_LOCK_TIMEOUT);
             }
         }
     }, [setLoading, setSteps, setAverageSteps, setStepsFromWeekBefore]);
@@ -364,50 +366,31 @@ const useHealthData = () => {
             const updateListener = healthKitEventEmitter.addListener(
                 'healthKit:StepCount:new',
                 () => {
-                    if (!updateLock.current) {
-                        console.log('StepCount Observer Triggered');
-                        updateLock.current = true;
-                        fetchHealthData().finally(() => {
-                            setTimeout(() => {
-                                updateLock.current = false;
-                            }, LOCK_TIMEOUT);
-                        });
-                    }
+                    console.log('StepCount Observer Triggered');
+                    fetchHealthData();
                 }
             );
 
             // Firebase Messaging Handlers
             const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    if (!updateLock.current) {
-                        updateLock.current = true;
-                        console.log("Fetching HealthKit data from silent notification (foreground)...");
-                        fetchHealthData();
-                        setTimeout(() => {
-                            updateLock.current = false;
-                        }, LOCK_TIMEOUT);
-                    }
+                    console.log("Fetching HealthKit data from silent notification (foreground)...");
+                    fetchHealthData();
                 }
             });
 
             messaging().setBackgroundMessageHandler(async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
-                    if (!updateLock.current) {
-                        updateLock.current = true;
-                        console.log("Fetching HealthKit data from silent notification (background)...");
-                        const permissionsValid = await checkAndRequestPermissions();
-                        if (permissionsValid) {
-                            await fetchHealthDataBackground();
-                        }
-                        setTimeout(() => {
-                            updateLock.current = false;
-                        }, LOCK_TIMEOUT);
+                    console.log("Fetching HealthKit data from silent notification (background)...");
+                    const permissionsValid = await checkAndRequestPermissions();
+                    if (permissionsValid) {
+                        await fetchHealthDataBackground();
                     }
                 }
             });
 
             // Initial data fetch
-            // fetchHealthData();
+            fetchHealthData();
 
             return () => {
                 successListener.remove();
@@ -419,8 +402,6 @@ const useHealthData = () => {
 
         setupHealthKit();
     }, [setLoading, setSteps, setAverageSteps, setStepsFromWeekBefore, fetchHealthData]);
-    
-
 
     return { steps, averageSteps, stepsFromWeekBefore, flights, distance, fetchHealthData, isLoading, hasPermissions };
 };
