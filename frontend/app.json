@@ -2,7 +2,7 @@
   "expo": {
     "name": "Celeri",
     "slug": "health-bets-app",
-    "version": "8.3",
+    "version": "8.4",
     "orientation": "portrait",
     "icon": "./assets/images/Lettuce.png",
     "scheme": "myapp",
@@ -23,7 +23,7 @@
         ],
         "CFBundleDisplayName": "Celeri"
       },
-      "buildNumber": "8.3"
+      "buildNumber": "8.4"
     },
     "android": {
       "googleServicesFile": "google-services.json",

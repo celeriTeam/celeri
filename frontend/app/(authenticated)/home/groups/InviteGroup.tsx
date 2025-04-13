@@ -17,6 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
+import GameEndPage from './GameEnd';
 
 const db = getFirestore(app);
 
@@ -33,7 +34,7 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 
 const InvitePage: React.FC = () => {
     const { userID } = useUser();
-    const { leaderID, groupID, fromCreate } = useLocalSearchParams();
+    const { leaderID, groupID, fromCreate, isResultAvailable } = useLocalSearchParams();
     const router = useRouter();
 
     // Convert `fromCreate` back to a boolean
@@ -44,6 +45,8 @@ const InvitePage: React.FC = () => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [showGameEndModal, setShowGameEndModal] = useState(false);
+
     const userStartRequirement = 3;
 
     // Direct firebase listener in InviteGroup page
@@ -68,6 +71,14 @@ const InvitePage: React.FC = () => {
             }
         };
     }, [userID]);
+
+    useEffect(() => {
+        console.log("InviteGroup -- isResultAvailable -- ", isResultAvailable)
+        if (isResultAvailable === 'true') {
+            setShowGameEndModal(true);
+        }
+    }, [isResultAvailable]);
+    
 
     const fetchData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
@@ -289,7 +300,7 @@ const InvitePage: React.FC = () => {
                         </Text>
                     ) : (
                         <Text style={[styles.text, { textAlign: 'center' }]}>
-                            You need three members to start a game. Share the group code below to invite others to join!
+                            You need four members to start a game. Share the group code below to invite others to join!
                         </Text>
                     )}
 
@@ -353,6 +364,8 @@ const InvitePage: React.FC = () => {
                             <Text style={styles.cancelButtonText}>Leave Group</Text>
                         </TouchableOpacity>
                     )}
+
+                    {/* Delete group Modal */}
                     <Modal
                         transparent={true}
                         visible={isDeleteModalVisible !== ''}
@@ -370,9 +383,37 @@ const InvitePage: React.FC = () => {
                             </View>
                         </View>
                     </Modal>
+
+                    {/*Game end page modal */}
+
+                    <Modal
+                        transparent={true}
+                        visible={showGameEndModal}
+                        animationType="slide"
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={[styles.gameEndModalContainer, { height: '85%', }]}>
+                                {/* Close button */}
+                                <TouchableOpacity style={styles.closeButton} onPress={() => { setShowGameEndModal(false) }}>
+                                    <Image
+                                        source={require('@assets/icons/x.png')}
+                                        style={styles.closeButtonIcon}
+                                    />
+                                </TouchableOpacity>
+
+                                <GameEndPage 
+                                    currentGroupUsersArray={currentGroupUsersArray}
+                                    groups={groups}
+                                />
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
+
             </SafeAreaView>
+            
         </LinearGradient>
+        
     );
 };
 
@@ -525,6 +566,10 @@ const styles = StyleSheet.create({
         right: 10,
         zIndex: 1,
     },
+    closeButtonIcon: {
+        width: 20,
+        height: 20,
+    },
     closeButtonText: {
         fontSize: 18,
         fontWeight: 'bold',
@@ -571,12 +616,22 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 100,
     },
     modalContainer: {
         backgroundColor: '#fff',
         padding: 20,
         borderRadius: 10,
         width: '80%',
+    },
+    gameEndModalContainer: {
+        width: '90%',
+        backgroundColor: '#000',
+        borderWidth: 1,
+        borderColor: '#fff',
+        borderRadius: 25,
+        padding: 20,
+        position: 'relative',
     },
     modalTitle: {
         textAlign: 'center',

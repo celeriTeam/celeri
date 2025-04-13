@@ -637,6 +637,26 @@ export const getNewsSummary = async (groupID: string, targetDate: Date): Promise
     }
 };
 
+// GET results from the results collection
+export const getGameResults = async (groupID: string): Promise<Record<string, any> | null> => {
+    try {
+      const resultsRef = collection(db, "results");
+      const q = query(resultsRef, where("groupID", "==", groupID));
+      const querySnapshot = await getDocs(q);
+  
+      if (!querySnapshot.empty) {
+        const docData = querySnapshot.docs[0].data();
+        return docData.results ?? null; // assumes `results` is the field storing the map
+      } else {
+        console.warn("No results found for groupID:", groupID);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching game results:", error);
+      return null;
+    }
+};
+
 /*********************************************** ADD FUNCTIONS ********************************************/
 
 // ADD user to group
