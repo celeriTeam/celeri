@@ -68,7 +68,15 @@
           "cameraPermission": "The app needs access to your camera to let you take profile pictures."
         }
       ],
-      "react-native-health"
+      "react-native-health",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.25"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
