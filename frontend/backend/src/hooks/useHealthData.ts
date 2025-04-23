@@ -1,15 +1,19 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { NativeEventEmitter, NativeModules } from 'react-native';
+import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate } from '../users'; 
 import { getAuth } from "firebase/auth";
-
 import AppleHealthKit, {
     HealthInputOptions,
     HealthKitPermissions,
     HealthObserver,
     HealthUnit,
 } from "react-native-health";
+import { 
+  initialize as healthConnectInitialize,
+  requestPermission as healthConnectRequestPermission,
+  readRecords
+} from 'react-native-health-connect';
 import { newsFunctions } from '../news';
 
 const { Permissions } = AppleHealthKit.Constants;
@@ -41,30 +45,117 @@ const useHealthData = () => {
     const newsUpdateLock = useRef(false);
     const NEWS_LOCK_TIMEOUT = 30000;
 
+    const getStepCountPlatform = async (options: HealthInputOptions): Promise<number> => {
+        if (Platform.OS === 'ios') {
+            const result = await new Promise<number>((resolve, reject) => {
+                AppleHealthKit.getStepCount(options, (err, results) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(Math.floor(results.value));
+                    }
+                });
+            });
+            return result;
+        } else if (Platform.OS === 'android') {
+            try {
+                const date = new Date(options.date || Date.now());
+                const startOfDay = new Date(date);
+                startOfDay.setHours(0, 0, 0, 0);
+
+                const endOfDay = new Date(date);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                const results = await readRecords('Steps', {
+                    timeRangeFilter: {
+                        operator: 'between',
+                        startTime: startOfDay.toISOString(),
+                        endTime: endOfDay.toISOString()
+                    }
+                });
+
+                return results.records.reduce((sum, record) => sum + record.count, 0);
+            } catch (error) {
+                console.error('Error reading Android steps:', error);
+                return 0;
+            }
+        }
+        return 0;
+    };
+
     const getDailySteps = async (): Promise<number> => {
         // console.log("getDailySteps -- start");
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             const today = new Date();
             const options: HealthInputOptions = {
                 date: today.toISOString(),
             };
+
+            setSteps(await getStepCountPlatform(options));
     
-            AppleHealthKit.getStepCount(options, (err, results) => {
-                if (err) {
-                    console.log('Error getting the steps');
-                    reject(err);
-                    return;
-                }
-                const flooredSteps = Math.floor(results.value);
-                setSteps(flooredSteps);
-                resolve(flooredSteps);
-            });
+            // AppleHealthKit.getStepCount(options, (err, results) => {
+            //     if (err) {
+            //         console.log('Error getting the steps');
+            //         reject(err);
+            //         return;
+            //     }
+            //     const flooredSteps = Math.floor(results.value);
+            //     setSteps(flooredSteps);
+            //     resolve(flooredSteps);
+            // });
         });
     };
 
     const getStepsFiveHoursAgo = async (stepsLastUpdate: Date): Promise<number> => {
 
         const currentDate = new Date();
+
+        if (Platform.OS === 'android') {
+            try {
+                // Read step records from Health Connect
+                const results = await readRecords('Steps', {
+                    timeRangeFilter: {
+                        operator: 'between',
+                        startTime: stepsLastUpdate.toISOString(),
+                        endTime: currentDate.toISOString()
+                    }
+                });
+
+                // Sort records by start time
+                const sortedRecords = results.records.sort((a, b) =>
+                    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+                );
+
+                let maxStepsIn5Hours = 0;
+
+                // Check all possible 5-hour windows
+                for (let i = 0; i < sortedRecords.length; i++) {
+                    const windowStart = new Date(sortedRecords[i].startTime).getTime();
+                    let windowSteps = sortedRecords[i].count;
+
+                    // Check subsequent records
+                    for (let j = i + 1; j < sortedRecords.length; j++) {
+                        const recordTime = new Date(sortedRecords[j].startTime).getTime();
+
+                        if ((recordTime - windowStart) <= 5 * 60 * 60 * 1000) {
+                            windowSteps += sortedRecords[j].count;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (windowSteps > maxStepsIn5Hours) {
+                        maxStepsIn5Hours = windowSteps;
+                    }
+                }
+
+                return maxStepsIn5Hours >= 5000 ? maxStepsIn5Hours : 0;
+
+            } catch (error) {
+                console.error('Android steps fetch error:', error);
+                return 0;
+            }
+        }
 
         return new Promise((resolve, reject) => {
             // Define the options for querying step data
@@ -142,17 +233,8 @@ const useHealthData = () => {
             };
     
             try {
-                const result = await new Promise<number>((resolve, reject) => {
-                    AppleHealthKit.getStepCount(options, (err, results) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(Math.floor(results.value));
-                        }
-                    });
-                });
     
-                averageSteps.push(result);
+                averageSteps.push(await getStepCountPlatform(options));
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
                 averageSteps.push(0); // Push 0 for days with errors
@@ -194,18 +276,7 @@ const useHealthData = () => {
             // console.log("currentDate: ", currentDate);
     
             try {
-                const result = await new Promise<number>((resolve, reject) => {
-                    AppleHealthKit.getStepCount(options, (err, results) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(Math.floor(results.value));
-                        }
-                    });
-                });
-
-                // console.log("stepsFromWeeksBefore day: ", result);
-    
+                const result = await getStepCountPlatform(options)
                 stepsFromWeekBeforeTemp += result;
                 // console.log("stepsFromWeeksBefore after added: ", stepsFromWeekBeforeTemp);
             } catch (error) {
@@ -330,24 +401,55 @@ const useHealthData = () => {
     };
   
     // Check permissions
-    const checkAndRequestPermissions = () => {
-        return new Promise((resolve) => {
-            AppleHealthKit.initHealthKit(permissions, (err) => {
-                if (err) {
-                    console.log('Error getting permissions', err);
-                    resolve(false);
-                    return;
-                }
-                console.log('Apple Health Data: Permissions received!');
-                setHasPermissions(true);
-                resolve(true);
+    const checkAndRequestPermissions = async () => {
+        if (Platform.OS === 'ios') {
+            return new Promise((resolve) => {
+                AppleHealthKit.initHealthKit(permissions, (err) => {
+                    if (err) {
+                        console.log('Error getting permissions', err);
+                        resolve(false);
+                        return;
+                    }
+                    console.log('Apple Health Data: Permissions received!');
+                    setHasPermissions(true);
+                    resolve(true);
+                });
             });
-        });
+        } else if (Platform.OS === 'android') {
+            try {
+                console.log('trying to initialize Health Connect on android...');
+                const initialized = await healthConnectInitialize();
+                if (!initialized) {
+                    console.log('Health Connect not available');
+                    return false;
+                }
+
+                const granted = await healthConnectRequestPermission([
+                    { accessType: 'read', recordType: 'Steps' }
+                ]);
+                const hasStepsPermission = granted.some(p => 
+                  p.recordType === 'Steps' && p.accessType === 'read'
+                );
+
+                // if (!granted) {
+                //     console.log('Health Connect permission denied');
+                //     return false;
+                // }
+
+                setHasPermissions(hasStepsPermission);
+                return hasStepsPermission;
+            } catch (error) {
+                console.log('Android Health Connect error:', error);
+                return false;
+            }
+        }
+        return false;
     };
 
     useEffect(() => {
         const setupHealthKit = async () => {
             const permissionsGranted = await checkAndRequestPermissions();
+            console.log('Health Connect initialized successfully: ', !permissionsGranted);
             if (!permissionsGranted) return;
 
             // Set up observers

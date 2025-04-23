@@ -76,6 +76,15 @@
             "kotlinVersion": "1.9.25"
           }
         }
+      ],
+      [
+        "expo-health-connect",
+        {
+          "permissions": [
+            "android.permission.health.READ_STEPS",
+            "android.permission.health.WRITE_STEPS"
+          ]
+        }
       ]
     ],
     "experiments": {
