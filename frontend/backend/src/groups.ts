@@ -165,7 +165,7 @@ export const getGroupIsResultAvailable = async (groupID: string, userID: string)
         const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists()) {
             const viewedResults = groupDoc.data()?.viewedResults;
-            console.log("getGroupIsResultAvailable, ", viewedResults)
+            // console.log("getGroupIsResultAvailable, ", viewedResults)
       
             if (viewedResults && userID in viewedResults) {
               return viewedResults[userID] === false;

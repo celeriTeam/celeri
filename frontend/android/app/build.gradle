@@ -127,6 +127,14 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion "1.5.15" // Matches Kotlin 1.9.25
     }
+    applicationVariants.all { variant ->
+        def variantName = variant.name.capitalize()
+        tasks.whenTaskAdded { task ->
+            if (task.name == "merge${variantName}Resources") {
+                task.dependsOn(":@react-native-firebase_app:generate${variantName}ResValues")
+            }
+        }
+    }
 }
 
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
