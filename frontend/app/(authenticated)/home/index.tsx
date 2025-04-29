@@ -10,7 +10,9 @@ import {
     Modal,
     ScrollView,
     Dimensions,
-    Touchable
+    Touchable,
+    Platform,
+    Linking
 } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
@@ -229,6 +231,9 @@ const HomeTab: React.FC = () => {
     }
 
     if (!hasPermissions) {
+        if (Platform.OS === 'android' && Platform.Version < 34) {
+            Linking.openURL('market://details?id=com.google.android.apps.healthdata');
+        }
         return (
             <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>

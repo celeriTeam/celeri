@@ -12,7 +12,7 @@ Create a `local.properties` file. It will look something like this:
 ```
 sdk.dir=C:\\Users\\{name}\\AppData\\Local\\Android\\Sdk
 ndk.dir=C:\\Users\\{name}\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125
-org.gradle.java.home=C:\\Program Files\\Java\\jdk-24
+org.gradle.java.home=C:\\Program Files\\Java\\jdk-17
 ```
 
 ### Clean:
