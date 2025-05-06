@@ -46,21 +46,23 @@ const useHealthData = () => {
     const newsUpdateLock = useRef(false);
     const NEWS_LOCK_TIMEOUT = 30000;
 
-    const getStepCountPlatform = async (options: HealthInputOptions, resolve: any, reject: any): Promise<number> => {
+    const getStepCountPlatform = async (options: HealthInputOptions): Promise<number> => {
         if (Platform.OS === 'ios') {
-            let flooredSteps = 0;
-            AppleHealthKit.getStepCount(options, (err, results) => {
-                if (err) {
-                    console.log('Error getting the steps');
-                    reject(err);
-                    return 0;
-                } 
-                flooredSteps = Math.floor(results.value);
-                resolve(flooredSteps);
+            return new Promise((resolve, reject) => {
+                let flooredSteps = 0;
+                AppleHealthKit.getStepCount(options, (err, results) => {
+                    if (err) {
+                        console.log('Error getting the steps');
+                        reject(err);
+                        return 0;
+                    } 
+                    flooredSteps = Math.floor(results.value);
+                    resolve(flooredSteps);
+                });
             });
-            return flooredSteps;
         } else if (Platform.OS === 'android') {
             try {
+                console.log('fetching android steps...');
                 const date = new Date(options.date || Date.now());
                 const startOfDay = new Date(date);
                 startOfDay.setHours(0, 0, 0, 0);
@@ -76,14 +78,14 @@ const useHealthData = () => {
                         endTime: endOfDay.toISOString(),
                     }
                 });
+
+                console.log('Android steps results:', results);
     
                 // Sum up the steps from all records
                 const totalSteps = results.records.reduce((sum, record) => sum + record.count, 0);
-                resolve(totalSteps);
                 return totalSteps;
             } catch (error) {
                 console.log('Error reading Android steps:', error);
-                reject(error);
                 return 0;
             }
         }
@@ -92,25 +94,19 @@ const useHealthData = () => {
 
     const getDailySteps = async (): Promise<number> => {
         // console.log("getDailySteps -- start");
-        return new Promise(async (resolve, reject) => {
-            const today = new Date();
-            const options: HealthInputOptions = {
-                date: today.toISOString(),
-            };
+        const today = new Date();
+        const options: HealthInputOptions = {
+            date: today.toISOString(),
+        };
 
-            setSteps(await getStepCountPlatform(options, resolve, reject));
-    
-            // AppleHealthKit.getStepCount(options, (err, results) => {
-            //     if (err) {
-            //         console.log('Error getting the steps');
-            //         reject(err);
-            //         return;
-            //     }
-            //     const flooredSteps = Math.floor(results.value);
-            //     setSteps(flooredSteps);
-            //     resolve(flooredSteps);
-            // });
-        });
+        try {
+            const steps = await getStepCountPlatform(options);
+            setSteps(steps);
+            return steps;
+        } catch (error) {
+            console.log('Error getting daily steps:', error);
+            return 0;
+        }
     };
 
     const getStepsFiveHoursAgo = async (stepsLastUpdate: Date): Promise<number> => {
@@ -241,10 +237,7 @@ const useHealthData = () => {
             };
     
             try {
-                const result = await new Promise<number>(async (resolve, reject) => {
-                    await getStepCountPlatform(options, resolve, reject);
-                });
-    
+                const result = await getStepCountPlatform(options);    
                 averageSteps.push(result);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
@@ -287,10 +280,7 @@ const useHealthData = () => {
             // console.log("currentDate: ", currentDate);
     
             try {
-                const result = await new Promise<number>(async (resolve, reject) => {
-                    await getStepCountPlatform(options, resolve, reject);
-                });
-
+                const result = await getStepCountPlatform(options);
                 // console.log("stepsFromWeeksBefore day: ", result);
     
                 stepsFromWeekBeforeTemp += result;

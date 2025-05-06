@@ -14,7 +14,7 @@ import { StyleSheet } from 'react-native-size-scaling';
 // };
 
 const BugReportsPage: React.FC = () => {
-    const { userID, username } = useUser();
+    const { userID, username, name } = useUser();
     const [subject, setSubject] = useState<string>('');
     const [issue, setIssue] = useState<string>('');
     const [submitting, setSubmitting] = useState<boolean>(false);
@@ -32,7 +32,7 @@ const BugReportsPage: React.FC = () => {
             await sendEmail({
                 to: ['appceleri@gmail.com', 'lukaschin000@gmail.com', 'acn64@georgetown.edu', 'ssw59@georgetown.edu'],
                 subject: `Betting App Bug: ${subject}`,
-                text: `From: ${username}\n\nIssue: ${issue}`,
+                text: `From: ${name}\nUsername: ${username}\n\nIssue: ${issue}`,
             });
             
             setSubject('');
@@ -121,7 +121,6 @@ const styles = StyleSheet.create({
         fontWeight: "100",
         fontFamily: 'Lexend'
     },
-    
     textArea: {
         height: 300,
         width: 350,
@@ -132,7 +131,8 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         fontSize: 18,
         paddingHorizontal: 12,
-        fontFamily: "Lexend"
+        fontFamily: "Lexend",
+        textAlignVertical: 'top'
     },
     titleContainer: {
         marginBottom: 0,

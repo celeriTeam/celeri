@@ -93,7 +93,7 @@ const NewHeadToHeadTutorial: React.FC<{
             case 3: // choose desired player
                 return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(90) };
             case 4: // choose desired bet amount
-                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(dropdownVisible ? 470 : 170) };
+                return { top: verticalScale(90), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(dropdownVisible ? 527 : 170) };
             case 5: // wait for all bets to be placed
                 return { top: verticalScale(0), width: scale(guidelineBaseWidth * 0.9), height: verticalScale(100) };
             case 6: // submit
@@ -175,7 +175,7 @@ const NewHeadToHeadTutorial: React.FC<{
                 {tutorialStep === 4 && (
                     <View style={styles.dropdownContainer}>
                         <TouchableOpacity style={styles.row} onPress={() => setDropdownVisible(!dropdownVisible)} activeOpacity={1}>
-                            <Text style={[styles.tutorialText, { fontSize: 11, }]}>(I'm a nerd and I want to understand the math)</Text>
+                            <Text style={[styles.tutorialText, { fontSize: scale(11), }]}>(I'm a nerd and I want to understand the math)</Text>
                             {dropdownVisible ? (
                                 <Image
                                     source={require('@assets/icons/upCarrot.png')}
@@ -190,18 +190,18 @@ const NewHeadToHeadTutorial: React.FC<{
                         </TouchableOpacity>
                         {dropdownVisible && (
                             <View>
-                                <View style={{ marginTop: 10, }} />
+                                <View style={{ marginTop: verticalScale(10), }} />
                                 <Text style={styles.dropdownText}>
                                     <Text style={styles.highlight}>Here's how the winners are distributed:{'\n'}</Text>
-                                    <Text>  •  50% of winnings goes to the winner of the Head-{'\n'}to-Head.{'\n'}</Text>
-                                    <Text>  •  The other 50% is then split across the bet {'\n'}winners, and the greater your wager, the greater {'\n'}your share.{'\n'}{'\n'}</Text>
+                                    {'  •  50% of winnings goes to the winner of the Head-to-Head.\n'}
+                                    {'  •  The other 50% is then split across the bet winners, and the greater your wager, the greater your share.\n\n'}
                                     <Text style={styles.highlight}>Here's an example:{'\n'}</Text>
-                                    <Text>  •  Let's say player A and player B are going Head-{'\n'}to-Head, and you bet 200 Tokens on player A.{'\n'}</Text>
-                                    <Text>  •  There are 500 Tokens bet on player A and 600 {'\n'}Tokens bet on player B.{'\n'}</Text>
-                                    <Text>  •  If player A wins, anyone who bet on player B {'\n'}loses what they wagered.{'\n'}</Text>
-                                    <Text>  •  300 Tokens goes to player A.{'\n'}</Text>
-                                    <Text>  •  You bet 200 Tokens on player A, which is 40% of {'\n'}the total bets on player A. Thus, you get 40% of {'\n'}the 300 remaining Tokens to be distributed.{'\n'}</Text>
-                                    <Text>  •  You win 120 Tokens.{'\n'}</Text>
+                                    {'  •  Let\'s say player A and player B are going Head-to-Head, and you bet 200 Tokens on player A.\n'}
+                                    {'  •  There are 500 Tokens bet on player A and 600 Tokens bet on player B.\n'}
+                                    {'  •  If player A wins, anyone who bet on player B loses what they wagered.\n'}
+                                    {'  •  300 Tokens goes to player A.\n'}
+                                    {'  •  You bet 200 Tokens on player A, which is 40% of the total bets on player A. Thus, you get 40% of the 300 remaining Tokens to be distributed.\n'}
+                                    {'  •  You win 120 Tokens.\n'}
                                 </Text>
                             </View>
                         )}

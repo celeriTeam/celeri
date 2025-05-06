@@ -214,9 +214,6 @@ const BetSummaryTutorial: React.FC<{
 									</View>
 								)}
 							</View>
-                            {/* <Text style={styles.tutorialText}>
-                                I'm a nerd and want to understand the point of this
-                            </Text> */}
                         </>
                     )}
                     {tutorialStep === 6 && (
