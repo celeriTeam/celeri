@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
         // shadowOpacity: 0.1,
         // shadowOffset: { width: 0, height: 2 },
         // shadowRadius: 5,
-        elevation: 3,
+        // elevation: 6,
         alignSelf: 'center',
     },
     groupImage: {
@@ -609,6 +609,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         color: '#000',
         fontSize: 24,
+        top: Platform.OS === 'ios' ? 0 : -2,
     },
     row: {
         flexDirection: 'row',

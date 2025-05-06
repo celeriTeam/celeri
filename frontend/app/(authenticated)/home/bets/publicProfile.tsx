@@ -92,7 +92,7 @@ const ProfilePage: React.FC = () => {
         const data = {
             labels: getLast8DaysLabels(),
             datasets: [{
-                data: [...weeklySteps, steps]
+                data: weeklySteps.length === 7 ? [...weeklySteps, steps] : weeklySteps
             }]
         };
 
@@ -114,7 +114,7 @@ const ProfilePage: React.FC = () => {
                     propsForBackgroundLines: {
                         strokeWidth: 1,
                         stroke: "rgba(0, 255, 0, 0.3)",
-                        strokeDasharray: [] // Solid lines
+                        strokeDasharray: "" // Solid lines
                     },
                     style: {
                         borderRadius: 16
@@ -146,7 +146,7 @@ const ProfilePage: React.FC = () => {
                             padding: 5,
                             borderRadius: 5
                         }}>
-                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff' }}>
+                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff', includeFontPadding: false }}>
                                 {tooltipPos.value}
                             </Text>
                         </View>

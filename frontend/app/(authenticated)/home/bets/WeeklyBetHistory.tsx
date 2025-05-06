@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
         color: 'green',
     },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyText: { fontSize: 18, color: 'gray', fontFamily: 'Lexend_400Regular' },
+    emptyText: { fontSize: 18, color: 'gray', fontFamily: 'Lexend' },
 });
 
 export default WeeklyBetHistoryPage;
