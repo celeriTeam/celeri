@@ -26,6 +26,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
+import Store1v1Page from './1v1/Store';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -54,6 +55,7 @@ const HomeTab: React.FC = () => {
     const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
+    const [storeModal, setStoreModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
     
@@ -392,6 +394,12 @@ const HomeTab: React.FC = () => {
                         ) : (
                             <>
                                 <View style={styles.row}>
+                                    <TouchableOpacity onPress={() => setStoreModal(true)}>
+                                        <Image
+                                            source={require('@assets/icons/store.png')}
+                                            style={styles.storeIcon}
+                                        />
+                                    </TouchableOpacity>
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -476,6 +484,34 @@ const HomeTab: React.FC = () => {
                                         />
                                     </TouchableOpacity>
                                     <Text style={styles.modalText}>Coming soon</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </Modal>
+
+                        {/* Store modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={storeModal}
+                            onRequestClose={() => setStoreModal(false)}
+                        >
+                            <TouchableOpacity
+                                style={styles.modalOverlay}
+                                activeOpacity={1}
+                                onPress={() => setStoreModal(false)} // Close dropdown when overlay is pressed
+                            >
+                                <View style={[styles.modalContainer, { height: '80%', }]}>
+                                    {/* Close button */}
+                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setStoreModal(false)}>
+                                        <Image
+                                            source={require('@assets/icons/x.png')}
+                                            style={styles.closeButtonIcon}
+                                        />
+                                    </TouchableOpacity>
+                                    <Store1v1Page
+                                        userDiamonds={3}
+                                        setStoreModalVisible={setStoreModal}
+                                    />
                                 </View>
                             </TouchableOpacity>
                         </Modal>
@@ -618,6 +654,10 @@ const styles = StyleSheet.create({
         width: '98%',
         gap: 5,
         margin: 20,
+    },
+    storeIcon: {
+        width: 21,
+        height: 21,
     },
     historyIcon: {
         width: 27,

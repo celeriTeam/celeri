@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet, Platform } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
 import { Image } from 'expo-image';
@@ -1134,21 +1134,52 @@ const BetSummaryPage: React.FC = () => {
                                             </View>
                                         </TouchableOpacity>
                                         <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(currentGroupUsersArray[0]?.id)} activeOpacity={0.8}>
-                                            <View style={{
-                                                shadowColor: '#51ba51',
-                                                shadowOffset: { width: 0, height: 0 },
-                                                shadowOpacity: 0.7,
-                                                shadowRadius: moderateScale(7),
-                                                elevation: 10,
-                                            }}>
-                                                <Image
-                                                    source={currentGroupUsersArray[0]?.pfp ?
-                                                        { uri: currentGroupUsersArray[0]?.pfp } :
-                                                        require('@components/blank-profile-picture.png')
-                                                    }
-                                                    style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
-                                                />
-                                            </View>
+                                            {Platform.OS === 'ios' ? (
+                                                <View style={{
+                                                    shadowColor: '#51ba51',
+                                                    shadowOffset: { width: 0, height: 0 },
+                                                    shadowOpacity: 0.7,
+                                                    shadowRadius: moderateScale(7),
+                                                    elevation: 10,
+                                                }}>
+                                                    <Image
+                                                        source={currentGroupUsersArray[0]?.pfp ?
+                                                            { uri: currentGroupUsersArray[0]?.pfp } :
+                                                            require('@components/blank-profile-picture.png')
+                                                        }
+                                                        style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                                    />
+                                                </View>
+                                            ) : (
+                                                <>
+                                                    <LinearGradient
+                                                        colors={['#51ba51', 'rgba(81, 186, 81, 0.5)', 'rgba(81, 186, 81, 0)']}
+                                                        style={{
+                                                        position: 'absolute',
+                                                        width: scale(51) + moderateScale(14),
+                                                        height: scale(51) + moderateScale(14),
+                                                        borderRadius: (moderateScale(50 + 14)) / 2,
+                                                        justifyContent: 'center',
+                                                        alignItems: 'center',
+                                                        top: 0,
+                                                        }}
+                                                        locations={[0, 0.5, 1]}
+                                                    />
+                                                    <View style={{
+                                                        padding: moderateScale(7),
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                    }}>
+                                                        <Image
+                                                            source={currentGroupUsersArray[0]?.pfp ?
+                                                                { uri: currentGroupUsersArray[0]?.pfp } :
+                                                                require('@components/blank-profile-picture.png')
+                                                            }
+                                                            style={{ width: scale(51), height: scale(51), borderRadius: moderateScale(50), borderWidth: moderateScale(1.5), borderColor: '#fff', }}
+                                                        />
+                                                    </View>
+                                                </>
+                                            )}
                                             <View style={styles.leaderboardTopCircle} >
                                                 <Text style={{ fontFamily: 'Lexend', color: '#000', fontSize: moderateScale(9), }}>1</Text>
                                             </View>

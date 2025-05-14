@@ -234,7 +234,7 @@ const NewsPage: React.FC< {
                         </View>
                     </View>
                 ))}
-                <View style={{ height: 20 }} />
+                <View style={{ height: verticalScale(20) }} />
             </ScrollView>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>Close</Text>
