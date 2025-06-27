@@ -1,0 +1,232 @@
+import React, { useEffect, useState } from 'react';
+import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useUser } from '../../../UserProvider';
+import { StyleSheet } from 'react-native-size-scaling';
+import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { app } from "@firebaseConfig";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
+const db = getFirestore(app);
+
+const { width, height } = Dimensions.get('window');
+
+// Guidelines based on my test device (iPhone 16):
+const guidelineBaseWidth = 393;   // 1179 / 3
+const guidelineBaseHeight = 852;  // 2556 / 3
+
+// Scale functions to calculate sizes proportionate to the device dimensions
+const scale = (size: number) => (width / guidelineBaseWidth) * size;
+const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
+const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
+
+type User = {
+    id: string;
+    name: string;
+    username: string;
+    pfp: string;
+    lastLogin: string;
+};
+
+type Props = {
+    userDiamonds: number;
+    setUserSearchModalVisible: (visible: boolean) => void;
+};
+
+const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisible }) => {
+    const { userID } = useUser();
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
+
+    useEffect(() => {
+        const fetchData = async (uid: string) => {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const usersArray: User[] = [];
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const createdAt = data.lastLogin?.toDate() || new Date();
+                    usersArray.push({
+                        id: doc.id,
+                        name: data.name || 'Unknown',
+                        username: data.username || 'Unknown',
+                        pfp: data.profileImageUrl || '',
+                        lastLogin: data.lastLogin ? formatRelativeTime(createdAt) : 'over 1 month ago',
+                    });
+                });
+
+                setCurrentGroupUsersArray(usersArray);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData(userID);
+    }, [userID]);
+    
+
+    const createMemberButtonHandle = (id: string) => {
+        console.log('Pressed user:', id);
+    };
+
+    const formatRelativeTime = (timestamp: Date): string => {
+        const now = dayjs();
+        const then = dayjs(timestamp);
+
+        console.log(`Current time: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
+        console.log(`User's last login time: ${then.format('YYYY-MM-DD HH:mm:ss')}`);
+
+        const diffMinutes = now.diff(then, 'minute');
+        const diffHours = now.diff(then, 'hour');
+        const diffDays = now.diff(then, 'day');
+        const diffMonths = now.diff(then, 'month');
+
+        console.log(`Time difference: ${diffMinutes} minutes, ${diffHours} hours, ${diffDays} days, ${diffMonths} months`);
+
+        if (diffMinutes < 1) return 'just now';
+        if (diffMinutes < 60) return `${diffMinutes} min ago`;
+        if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+        return `over ${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+    };
+
+    return (
+        <View style={styles.container}>
+            <ScrollView style={styles.scrollContainer}>
+                {currentGroupUsersArray ? (
+                    currentGroupUsersArray.map((user) => (
+                        <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
+                            <View style={styles.row}>
+                                <Image
+                                    source={
+                                        user.pfp ?
+                                            { uri: user?.pfp }
+                                            : require('@components/blank-profile-picture.png')
+                                    }
+                                    style={styles.profilePic}
+                                />
+                                <View>
+                                    <Text style={styles.memberName}>{user?.name}</Text>
+                                    <Text style={styles.memberUserName}>@{user?.username}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.memberLastLogin}>{user?.lastLogin}</Text>
+                        </TouchableOpacity>
+                    ))
+                ) : (
+                    <Text>No users found.</Text>
+                )}
+                <View style={{ height: 20 }} />
+            </ScrollView>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        padding: 30,
+    },
+    title: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 20,
+        textAlign: 'center',
+    },
+    text: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 13,
+        marginRight: 5,
+    },
+    diamonds: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        padding: 10,
+        gap: 5,
+    },
+    diamondIcon: {
+        width: 14,
+        height: 12,
+    },
+    itemContainer: {
+        backgroundColor: '#5BE35C33',
+        justifyContent: 'center',
+        marginVertical: 10,
+        borderRadius: 15,
+        paddingVertical: 10,
+        paddingLeft: 20,
+        paddingTop: 30,
+    },
+    buyContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingVertical: 10,
+    },
+    buyButton: {
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        paddingVertical: 7,
+        width: '50%',
+        alignItems: 'center',
+    },
+    buyButtonText: {
+        fontFamily: 'Lexend',
+        color: '#000',
+        fontSize: 13,
+    },
+    scrollContainer: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#5BE35C32',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    memberItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 10,
+        paddingHorizontal: 20,
+        backgroundColor: '#00000080',
+        marginVertical: 3,
+        borderRadius: 10,
+    },
+    profilePic: {
+        width: 26,
+        height: 26,
+        borderRadius: 20,
+        borderColor: '#fff',
+        borderWidth: 1,
+    },
+    memberName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#fff',
+        marginLeft: 10,
+    },
+    memberUserName: {
+        fontFamily: "Lexend",
+        fontSize: 8,
+        color: '#74FF6D',
+        marginLeft: 10,
+    },
+    memberLastLogin: {
+        fontFamily: "Lexend",
+        fontSize: 8,
+        color: '#ffffffaa',
+    }
+});
+
+export default UserSearchPage;
