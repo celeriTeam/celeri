@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate } from '../users'; 
+import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate, setLastLogin } from '../users'; 
 import { getAuth } from "firebase/auth";
 import AppleHealthKit, {
     HealthInputOptions,
@@ -364,6 +364,7 @@ const useHealthData = () => {
                 );
     
                 await setStepsLastUpdate(userID, new Date());
+                await setLastLogin(userID, new Date());
 
             } catch (error) {
                 console.error("Error updating Firebase and news:", error);

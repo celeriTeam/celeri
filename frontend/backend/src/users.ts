@@ -594,3 +594,32 @@ export const setStepsLastUpdate = async (id: string, date: Date): Promise<void> 
         console.error('setStepsLastUpdate - Error updating steps last updated:', error);
     }
 }
+
+export const getLastLogin = async (userID: string): Promise<Date | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userID));
+        if (userDoc.exists() && userDoc.data()?.lastLogin) {
+            const lastLogin = userDoc.data()?.lastLogin.toDate();
+            // console.log("getLastLogin - response: ", lastLogin);
+            return lastLogin;
+        } else {
+            console.error("getLastLogin - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getLastLogin - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+export const setLastLogin = async (userID: string, date: Date): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            lastLogin: date,
+        });
+        console.log('setLastLogin - response: ', date);
+    } catch (error) {
+        console.error('setLastLogin - Error updating last login:', error);
+    }
+}

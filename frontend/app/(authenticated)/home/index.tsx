@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 import Store1v1Page from './1v1/Store';
+import UserSearchPage from './1v1/UserSearch';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -55,6 +56,7 @@ const HomeTab: React.FC = () => {
     const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [selectedTab, setSelectedTab] = useState('Group');
     const [comingSoonModal, setComingSoonModal] = useState(false);
+    const [userSearchModal, setUserSearchModal] = useState(false);
     const [storeModal, setStoreModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
@@ -414,7 +416,7 @@ const HomeTab: React.FC = () => {
                                     style={styles.magifyIcon}
                                 />
                                 <Text style={styles.noMatchText}>No match in progress.</Text>
-                                <TouchableOpacity style={styles.challengeButton} onPress={() => setComingSoonModal(true)}>
+                                <TouchableOpacity style={styles.challengeButton} onPress={() => setUserSearchModal(true)}>
                                     <Text style={styles.challengeText}>Challenge a friend</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
@@ -514,6 +516,30 @@ const HomeTab: React.FC = () => {
                                     />
                                 </View>
                             </TouchableOpacity>
+                        </Modal>
+
+                        {/* User Search modal */}
+                        <Modal
+                            animationType="fade"
+                            transparent={true}
+                            visible={userSearchModal}
+                            onRequestClose={() => setUserSearchModal(false)}
+                        >
+                            <View style={styles.modalOverlay} >
+                                <View style={[styles.modalContainer, { height: '80%', }]}>
+                                    {/* Close button */}
+                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setUserSearchModal(false)}>
+                                        <Image
+                                            source={require('@assets/icons/x.png')}
+                                            style={styles.closeButtonIcon}
+                                        />
+                                    </TouchableOpacity>
+                                    <UserSearchPage
+                                        userDiamonds={3}
+                                        setUserSearchModalVisible={setUserSearchModal}
+                                    />
+                                </View>
+                            </View>
                         </Modal>
                     </View>
                 </SafeAreaView>
