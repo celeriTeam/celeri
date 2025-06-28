@@ -8,6 +8,7 @@ import { collection, getDocs, getFirestore } from 'firebase/firestore';
 import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { TextInput } from 'react-native-gesture-handler';
 
 dayjs.extend(relativeTime);
 
@@ -41,6 +42,7 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
     const { userID } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
+    const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
@@ -51,6 +53,7 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const createdAt = data.lastLogin?.toDate() || new Date();
+                    if (userID === doc.id) return; // Skip the current user
                     usersArray.push({
                         id: doc.id,
                         name: data.name || 'Unknown',
@@ -60,7 +63,10 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
                     });
                 });
 
+
+                // for search functionality
                 setCurrentGroupUsersArray(usersArray);
+                setFilteredUsers(usersArray);
             } catch (error) {
                 console.error('Error fetching users:', error);
             } finally {
@@ -97,34 +103,59 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
         return `over ${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
     };
 
+    const handleSearch = (text: string) => {
+        const query = text.toLowerCase();
+
+        const filtered = currentGroupUsersArray.filter(user => {
+            const nameMatch = user.name?.toLowerCase().includes(query);
+            const usernameMatch = user.username?.toLowerCase().includes(query);
+            return nameMatch || usernameMatch;
+        });
+
+        setFilteredUsers(filtered);
+    };
+
     return (
         <View style={styles.container}>
-            <ScrollView style={styles.scrollContainer}>
-                {currentGroupUsersArray ? (
-                    currentGroupUsersArray.map((user) => (
-                        <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
-                            <View style={styles.row}>
-                                <Image
-                                    source={
-                                        user.pfp ?
-                                            { uri: user?.pfp }
-                                            : require('@components/blank-profile-picture.png')
-                                    }
-                                    style={styles.profilePic}
-                                />
-                                <View>
-                                    <Text style={styles.memberName}>{user?.name}</Text>
-                                    <Text style={styles.memberUserName}>@{user?.username}</Text>
+            <View style={styles.scrollContainer}>
+                <TextInput
+                    style={styles.searchBar}
+                    placeholder="Search users..."
+                    placeholderTextColor="#ffffffaa"
+                    onChangeText={handleSearch}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                />
+                <ScrollView>
+                    {filteredUsers.length > 0 || currentGroupUsersArray.length === 0 ? (
+                        filteredUsers.map((user) => (
+                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
+                                <View style={styles.row}>
+                                    <Image
+                                        source={
+                                            user.pfp ?
+                                                { uri: user?.pfp }
+                                                : require('@components/blank-profile-picture.png')
+                                        }
+                                        style={styles.profilePic}
+                                    />
+                                    <View>
+                                        <View style={[styles.row, { justifyContent: 'space-between', width: '92%' }]}>
+                                            <Text style={styles.memberName}>{user?.name}</Text>
+                                            <Text style={styles.memberLastLogin}>{user?.lastLogin}</Text>
+                                        </View>
+                                        <Text style={styles.memberUserName}>@{user?.username}</Text>
+                                    </View>
                                 </View>
-                            </View>
-                            <Text style={styles.memberLastLogin}>{user?.lastLogin}</Text>
-                        </TouchableOpacity>
-                    ))
-                ) : (
-                    <Text>No users found.</Text>
-                )}
-                <View style={{ height: 20 }} />
-            </ScrollView>
+                                
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <Text style={styles.noUsersText}>No users found.</Text>
+                    )}
+                    <View style={{ height: 20 }} />
+                </ScrollView>
+            </View>
         </View>
     );
 };
@@ -188,10 +219,17 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
+        height: '102%',
     },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    searchBar: {
+        paddingHorizontal: 5,
+        paddingBottom: 5,
+        color: '#fff',
+        fontFamily: 'Lexend',
     },
     memberItem: {
         flexDirection: 'row',
@@ -226,7 +264,13 @@ const styles = StyleSheet.create({
         fontFamily: "Lexend",
         fontSize: 8,
         color: '#ffffffaa',
-    }
+    },
+    noUsersText: {
+        fontFamily: 'Lexend',
+        color: '#ffffffaa',
+        fontSize: 13,
+        paddingLeft: 5,
+    },
 });
 
 export default UserSearchPage;
