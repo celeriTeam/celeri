@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import FullScreenWrapper from '../components/FullScreenWrapper';
 import { TabBarProvider } from "../hooks/useTabBar";
 import { TextInput, Text } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // @ts-ignore
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
@@ -16,12 +17,14 @@ if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {
 
 export default function RootLayout() {
     return (
-        <FullScreenWrapper>
-            <TabBarProvider>
-                <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="index" />
-                </Stack>
-            </TabBarProvider>
-        </FullScreenWrapper>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <FullScreenWrapper>
+                <TabBarProvider>
+                    <Stack screenOptions={{ headerShown: false }}>
+                        <Stack.Screen name="index" />
+                    </Stack>
+                </TabBarProvider>
+            </FullScreenWrapper>
+        </GestureHandlerRootView>
     );
 }
