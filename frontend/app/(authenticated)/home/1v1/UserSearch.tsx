@@ -9,6 +9,7 @@ import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
+import { create1v1Request } from '@/backend/src/1v1Requests';
 
 dayjs.extend(relativeTime);
 
@@ -43,6 +44,7 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [userExpanded, setUserExpanded] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
@@ -78,8 +80,18 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
     }, [userID]);
     
 
-    const createMemberButtonHandle = (id: string) => {
+    const handleChallenge = (id: string) => {
         console.log('Pressed user:', id);
+        create1v1Request(userID, id)
+            .then((requestId) => {
+                console.log('1v1 request created with ID:', requestId);
+                Alert.alert('Challenge Sent', 'Your challenge has been sent successfully!');
+                setUserSearchModalVisible(false); // Close the modal after sending the challenge
+            })
+            .catch((error) => {
+                console.error('Error creating 1v1 request:', error);
+                Alert.alert('Error', error.message || 'Failed to send challenge. Please try again later.');
+            })
     };
 
     const formatRelativeTime = (timestamp: Date): string => {
@@ -129,8 +141,8 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
                 <ScrollView>
                     {filteredUsers.length > 0 || currentGroupUsersArray.length === 0 ? (
                         filteredUsers.map((user) => (
-                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
-                                <View style={styles.row}>
+                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => setUserExpanded(userExpanded === user.id ? null : user.id)} activeOpacity={0.7}>
+                                <View style={styles.memberInfo}>
                                     <Image
                                         source={
                                             user.pfp ?
@@ -147,7 +159,11 @@ const UserSearchPage: React.FC<Props> = ({ userDiamonds, setUserSearchModalVisib
                                         <Text style={styles.memberUserName}>@{user?.username}</Text>
                                     </View>
                                 </View>
-                                
+                                {userExpanded === user.id && (
+                                    <TouchableOpacity style={styles.challengeButton} onPress={() => handleChallenge(user.id)}>
+                                        <Text style={styles.text}>Send challenge</Text>
+                                    </TouchableOpacity>
+                                )}
                             </TouchableOpacity>
                         ))
                     ) : (
@@ -174,7 +190,6 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         color: '#fff',
         fontSize: 13,
-        marginRight: 5,
     },
     diamonds: {
         flexDirection: "row",
@@ -232,14 +247,17 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
     },
     memberItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         padding: 10,
-        paddingHorizontal: 20,
+        paddingLeft: 20,
+        paddingRight: 5,
         backgroundColor: '#00000080',
         marginVertical: 3,
         borderRadius: 10,
+        alignItems: 'center',
+    },
+    memberInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     profilePic: {
         width: 26,
@@ -270,6 +288,15 @@ const styles = StyleSheet.create({
         color: '#ffffffaa',
         fontSize: 13,
         paddingLeft: 5,
+    },
+    challengeButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#5BE35C80',
+        padding: 5,
+        paddingHorizontal: 15,
+        borderRadius: 10,
+        marginTop: 5,
     },
 });
 
