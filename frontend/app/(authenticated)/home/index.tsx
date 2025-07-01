@@ -419,9 +419,9 @@ const HomeTab: React.FC = () => {
                                 <TouchableOpacity style={styles.challengeButton} onPress={() => setUserSearchModal(true)}>
                                     <Text style={styles.challengeText}>Challenge a friend</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
+                                {/* <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
                                     <Text style={styles.randomText}>Find Random Match</Text>
-                                </TouchableOpacity>
+                                </TouchableOpacity> */}
                             </>
                         )}
 
