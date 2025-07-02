@@ -623,3 +623,15 @@ export const setLastLogin = async (userID: string, date: Date): Promise<void> =>
         console.error('setLastLogin - Error updating last login:', error);
     }
 }
+
+export const setIsIn1v1 = async (userID: string, isIn1v1: boolean): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            isIn1v1: isIn1v1,
+        });
+        console.log('setIsIn1v1 - response: ', isIn1v1);
+    } catch (error) {
+        console.error('setIsIn1v1 - Error updating isIn1v1:', error);
+    }
+}

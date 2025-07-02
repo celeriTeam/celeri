@@ -32,6 +32,7 @@ type User = {
     username: string;
     pfp: string;
     lastLogin: string;
+    isIn1v1: boolean;
 };
 
 type Props = {
@@ -62,6 +63,7 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestS
                         username: data.username || 'Unknown',
                         pfp: data.profileImageUrl || '',
                         lastLogin: data.lastLogin ? formatRelativeTime(createdAt) : 'over 1 month ago',
+                        isIn1v1: data.isIn1v1 || false,
                     });
                 });
 
@@ -99,15 +101,10 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestS
         const now = dayjs();
         const then = dayjs(timestamp);
 
-        console.log(`Current time: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
-        console.log(`User's last login time: ${then.format('YYYY-MM-DD HH:mm:ss')}`);
-
         const diffMinutes = now.diff(then, 'minute');
         const diffHours = now.diff(then, 'hour');
         const diffDays = now.diff(then, 'day');
         const diffMonths = now.diff(then, 'month');
-
-        console.log(`Time difference: ${diffMinutes} minutes, ${diffHours} hours, ${diffDays} days, ${diffMonths} months`);
 
         if (diffMinutes < 1) return 'just now';
         if (diffMinutes < 60) return `${diffMinutes} min ago`;
@@ -128,6 +125,14 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestS
         setFilteredUsers(filtered);
     };
 
+    const handleUserPress = (user: User) => {
+        if (user.isIn1v1) {
+            Alert.alert('User is currently in a 1v1 duel', 'You cannot challenge a user who is already in a duel.');
+            return;
+        }
+        setUserExpanded(userExpanded === user.id ? null : user.id);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.scrollContainer}>
@@ -142,7 +147,7 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestS
                 <ScrollView>
                     {filteredUsers.length > 0 || currentGroupUsersArray.length === 0 ? (
                         filteredUsers.map((user) => (
-                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => setUserExpanded(userExpanded === user.id ? null : user.id)} activeOpacity={0.7}>
+                            <TouchableOpacity key={user.id} style={[styles.memberItem, { backgroundColor: user.isIn1v1 ? '#00000050' : '#00000080' }]} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
                                 <View style={styles.memberInfo}>
                                     <Image
                                         source={
