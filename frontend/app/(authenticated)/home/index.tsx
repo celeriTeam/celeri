@@ -19,7 +19,7 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import useHealthData from '../../../backend/src/hooks/useHealthData';
 import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
-import { getUserGroups, getUserName, setStepsFirebase } from '@backend/src/users';
+import { getUserGroups, getUserName, setIsIn1v1, setStepsFirebase } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
@@ -28,9 +28,10 @@ import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 import Store1v1Page from './1v1/Store';
 import UserSearchPage from './1v1/UserSearch';
-import { get1v1Requests, getSent1v1Requests } from '@/backend/src/1v1Requests';
+import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend/src/1v1Requests';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { create1v1, get1v1 } from '@/backend/src/1v1';
 
 dayjs.extend(relativeTime);
 
@@ -69,7 +70,8 @@ const HomeTab: React.FC = () => {
     const [receivedChallengeRequests, setReceivedChallengeRequests] = useState<any[]>([]);
     const [sentChallengeRequests, setSentChallengeRequests] = useState<any[]>([]);
     const [refreshRequestsFlag, setRefreshRequestsFlag] = useState(false);
-    const [requestModalVisible, setRequestModalVisible] = useState(false);
+    const [requestModalVisible, setRequestModalVisible] = useState<any>({});
+    const [current1v1, setCurrent1v1] = useState<any>(null);
     
     const router = useRouter();
 
@@ -109,8 +111,10 @@ const HomeTab: React.FC = () => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 setUserID(user.uid);
-                setRequests();
                 const userGroups = await getUserGroups(user.uid);
+                await setRequests();
+                await setCurrent1v1Data();
+
                 unsubscribeUser = fetchGroupData(userGroups || [], user.uid);
             } else {
                 console.log('No user signed in');
@@ -141,6 +145,15 @@ const HomeTab: React.FC = () => {
 
         setReceivedChallengeRequests(receivedRequests);
         setSentChallengeRequests(sentRequests);
+    };
+
+    const setCurrent1v1Data = async () => {
+        const current1v1Data = await get1v1(userID);
+        if (current1v1Data) {
+            setCurrent1v1(current1v1Data);
+        } else {
+            setCurrent1v1(null);
+        }
     };
 
     useEffect(() => {
@@ -265,15 +278,15 @@ const HomeTab: React.FC = () => {
         const now = dayjs();
         const then = dayjs(timestamp);
 
-        console.log(`Current time: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
-        console.log(`User's last login time: ${then.format('YYYY-MM-DD HH:mm:ss')}`);
+        // console.log(`Current time: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
+        // console.log(`User's last login time: ${then.format('YYYY-MM-DD HH:mm:ss')}`);
 
         const diffMinutes = now.diff(then, 'minute');
         const diffHours = now.diff(then, 'hour');
         const diffDays = now.diff(then, 'day');
         const diffMonths = now.diff(then, 'month');
 
-        console.log(`Time difference: ${diffMinutes} minutes, ${diffHours} hours, ${diffDays} days, ${diffMonths} months`);
+        // console.log(`Time difference: ${diffMinutes} minutes, ${diffHours} hours, ${diffDays} days, ${diffMonths} months`);
 
         if (diffMinutes < 1) return 'just now';
         if (diffMinutes < 60) return `${diffMinutes} min ago`;
@@ -283,11 +296,22 @@ const HomeTab: React.FC = () => {
     };
 
     const handleRequestClick = (request: any) => () => {
-        setRequestModalVisible(true);
+        setRequestModalVisible(request);
+    };
+
+    const handleRequestAccept = async (request: any) => {
+        console.log('request1v1ID: ', request?.request1v1ID);
+        setRequestModalVisible({});
+
+        const new1v1Data = await create1v1(request?.request1v1ID);
+        await update1v1Requests(userID, request?.request1v1ID, new1v1Data.current1v1ID);
+        await setIsIn1v1(request?.senderID, true);
+        await setIsIn1v1(request?.receiverID, true);
+        setCurrent1v1(new1v1Data);
     };
 
     if (!hasPermissions) {
-        if (Platform.OS === 'android' && Platform.Version < 34) {
+        if (Platform.OS === 'android' && Platform.Version < 34 && !isLoading) {
             Linking.openURL('market://details?id=com.google.android.apps.healthdata');
         }
         return (
@@ -448,12 +472,14 @@ const HomeTab: React.FC = () => {
                         ) : (
                             <>
                                 <View style={styles.row}>
-                                    <TouchableOpacity onPress={() => setStoreModal(true)}>
-                                        <Image
-                                            source={require('@assets/icons/store.png')}
-                                            style={styles.storeIcon}
-                                        />
-                                    </TouchableOpacity>
+                                    {current1v1 && (
+                                        <TouchableOpacity onPress={() => setStoreModal(true)}>
+                                            <Image
+                                                source={require('@assets/icons/store.png')}
+                                                style={styles.storeIcon}
+                                            />
+                                        </TouchableOpacity>
+                                    )}
                                     <Image
                                         source={require('@assets/icons/history.png')}
                                         style={styles.historyIcon}
@@ -463,100 +489,107 @@ const HomeTab: React.FC = () => {
                                         style={styles.trophyIcon}
                                     />
                                 </View>
-                                <Image
-                                    source={require('@assets/icons/magnify.png')}
-                                    style={styles.magifyIcon}
-                                />
-                                <Text style={styles.noMatchText}>No match in progress.</Text>
-                                <TouchableOpacity style={styles.challengeButton} onPress={() => setUserSearchModal(true)}>
-                                    <Text style={styles.challengeText}>Challenge a friend</Text>
-                                </TouchableOpacity>
-                                {/* <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
-                                    <Text style={styles.randomText}>Find Random Match</Text>
-                                </TouchableOpacity> */}
-                                {/* challenge requests */}
-                                <Text style={styles.requestsTitle}>Challenge Requests</Text>
-                                <View style={styles.tabContainer}>
-                                    <TouchableOpacity
-                                        style={[styles.tab, { borderBottomColor: selectedTab === 'Received' ? '#74FF6D' : 'transparent', }]}
-                                        onPress={() => setChallengeRequestsTab('Received')}
-                                        activeOpacity={1}
-                                    >
-                                        <Text style={[styles.tabText, { color: selectedTab === 'Received' ? '#74FF6D' : '#fff', }]}>Received</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        style={[styles.tab, { borderBottomColor: selectedTab === 'Sent' ? '#74FF6D' : 'transparent', }]}
-                                        onPress={() => setChallengeRequestsTab('Sent')}
-                                        activeOpacity={1}
-                                    >
-                                        <Text style={[styles.tabText, { color: selectedTab === 'Sent' ? '#74FF6D' : '#fff', }]}>Sent</Text>
-                                    </TouchableOpacity>
-                                </View>
-                                {/* Line for showing selected tab */}
-                                <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
-                                challengeRequestsTab === 'Sent' ?
-                                    { alignSelf: 'flex-end', right: scale(10) } :
-                                    { alignSelf: 'flex-start', left: scale(10), }]}
-                                />
-                                <View style={styles.requestsContainer}>
-                                    {challengeRequestsTab === 'Received' ? (
-                                        <ScrollView>
-                                            {receivedChallengeRequests.length > 0 ? (
-                                                receivedChallengeRequests.map((request) => (
-                                                    <TouchableOpacity 
-                                                        key={request.requestID}
-                                                        style={[styles.memberInfo, { backgroundColor: request.status === 'pending' ? '#00000010' : '#00000080' }]}
-                                                        onPress={request.status === 'pending' ? handleRequestClick(request) : undefined}
-                                                    >
-                                                        <Image
-                                                            source={
-                                                                request.senderPfp ?
-                                                                    { uri: request?.senderPfp }
-                                                                    : require('@components/blank-profile-picture.png')
-                                                            }
-                                                            style={styles.profilePic}
-                                                        />
-                                                        <View>
-                                                            <View style={styles.memberRow}>
-                                                                <Text style={styles.memberName}>{request?.senderName}</Text>
-                                                                <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
-                                                            </View>
-                                                            <Text style={styles.memberUserName}>@{request?.senderUsername}</Text>
-                                                        </View>
-                                                    </TouchableOpacity>
-                                                ))
+                                {current1v1 ? (
+                                    <Text style={{ color: '#fff' }}>Welcome to the game!</Text>
+                                ) : (
+                                    <>
+                                        <Image
+                                            source={require('@assets/icons/magnify.png')}
+                                            style={styles.magifyIcon}
+                                        />
+                                        <Text style={styles.noMatchText}>No match in progress.</Text>
+                                        <TouchableOpacity style={styles.challengeButton} onPress={() => setUserSearchModal(true)}>
+                                            <Text style={styles.challengeText}>Challenge a friend</Text>
+                                        </TouchableOpacity>
+                                        {/* <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
+                                            <Text style={styles.randomText}>Find Random Match</Text>
+                                        </TouchableOpacity> */}
+                                        {/* challenge requests */}
+                                        <Text style={styles.requestsTitle}>Challenge Requests</Text>
+                                        <View style={styles.tabContainer}>
+                                            <TouchableOpacity
+                                                style={[styles.tab, { borderBottomColor: selectedTab === 'Received' ? '#74FF6D' : 'transparent', }]}
+                                                onPress={() => setChallengeRequestsTab('Received')}
+                                                activeOpacity={1}
+                                            >
+                                                <Text style={[styles.tabText, { color: selectedTab === 'Received' ? '#74FF6D' : '#fff', }]}>Received</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.tab, { borderBottomColor: selectedTab === 'Sent' ? '#74FF6D' : 'transparent', }]}
+                                                onPress={() => setChallengeRequestsTab('Sent')}
+                                                activeOpacity={1}
+                                            >
+                                                <Text style={[styles.tabText, { color: selectedTab === 'Sent' ? '#74FF6D' : '#fff', }]}>Sent</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                        {/* Line for showing selected tab */}
+                                        <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
+                                        challengeRequestsTab === 'Sent' ?
+                                            { alignSelf: 'flex-end', right: scale(10) } :
+                                            { alignSelf: 'flex-start', left: scale(10), }]}
+                                        />
+                                        <View style={styles.requestsContainer}>
+                                            {challengeRequestsTab === 'Received' ? (
+                                                <ScrollView>
+                                                    {receivedChallengeRequests.length > 0 ? (
+                                                        receivedChallengeRequests.map((request) => (
+                                                            <TouchableOpacity 
+                                                                key={request.requestID}
+                                                                style={[styles.memberInfo, { backgroundColor: request.status === 'pending' ? '#00000080' : '#00000050' }]}
+                                                                onPress={request.status === 'pending' ? handleRequestClick(request) : undefined}
+                                                                activeOpacity={request.status === 'pending' ? 0.7 : 1}
+                                                            >
+                                                                <Image
+                                                                    source={
+                                                                        request.senderPfp ?
+                                                                            { uri: request?.senderPfp }
+                                                                            : require('@components/blank-profile-picture.png')
+                                                                    }
+                                                                    style={styles.profilePic}
+                                                                />
+                                                                <View>
+                                                                    <View style={styles.memberRow}>
+                                                                        <Text style={styles.memberName}>{request?.senderName}</Text>
+                                                                        <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
+                                                                    </View>
+                                                                    <Text style={styles.memberUserName}>@{request?.senderUsername}</Text>
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        ))
+                                                    ) : (
+                                                        <Text style={styles.noMatchText}>No received challenge requests.</Text>
+                                                    )}
+                                                </ScrollView>
                                             ) : (
-                                                <Text style={styles.noMatchText}>No received challenge requests.</Text>
-                                            )}
-                                        </ScrollView>
-                                    ) : (
-                                        <ScrollView>
-                                            {sentChallengeRequests.length > 0 ? (
-                                                sentChallengeRequests.map((request) => (
-                                                    <View style={styles.memberInfo}>
-                                                        <Image
-                                                            source={
-                                                                request.receiverPfp ?
-                                                                    { uri: request?.receiverPfp }
-                                                                    : require('@components/blank-profile-picture.png')
-                                                            }
-                                                            style={styles.profilePic}
-                                                        />
-                                                        <View>
-                                                            <View style={styles.memberRow}>
-                                                                <Text style={styles.memberName}>{request?.receiverName}</Text>
-                                                                <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
+                                                <ScrollView>
+                                                    {sentChallengeRequests.length > 0 ? (
+                                                        sentChallengeRequests.map((request) => (
+                                                            <View style={styles.memberInfo}>
+                                                                <Image
+                                                                    source={
+                                                                        request.receiverPfp ?
+                                                                            { uri: request?.receiverPfp }
+                                                                            : require('@components/blank-profile-picture.png')
+                                                                    }
+                                                                    style={styles.profilePic}
+                                                                />
+                                                                <View>
+                                                                    <View style={styles.memberRow}>
+                                                                        <Text style={styles.memberName}>{request?.receiverName}</Text>
+                                                                        <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
+                                                                    </View>
+                                                                    <Text style={styles.memberUserName}>@{request?.receiverUsername}</Text>
+                                                                </View>
                                                             </View>
-                                                            <Text style={styles.memberUserName}>@{request?.receiverUsername}</Text>
-                                                        </View>
-                                                    </View>
-                                                ))
-                                            ) : (
-                                                <Text style={styles.noMatchText}>No sent challenge requests.</Text>
+                                                        ))
+                                                    ) : (
+                                                        <Text style={styles.noMatchText}>No sent challenge requests.</Text>
+                                                    )}
+                                                </ScrollView>
                                             )}
-                                        </ScrollView>
-                                    )}
-                                </View>
+                                        </View>
+                                    </>
+                                )}
                             </>
                         )}
 
@@ -681,29 +714,29 @@ const HomeTab: React.FC = () => {
                         <Modal
                             animationType="fade"
                             transparent={true}
-                            visible={storeModal}
-                            onRequestClose={() => setStoreModal(false)}
+                            visible={requestModalVisible?.requestID !== undefined}
+                            onRequestClose={() => setRequestModalVisible({})}
                         >
                             <TouchableOpacity
                                 style={styles.modalOverlay}
                                 activeOpacity={1}
-                                onPress={() => setStoreModal(false)} // Close dropdown when overlay is pressed
+                                onPress={() => setRequestModalVisible({})} // Close dropdown when overlay is pressed
                             >
-                                <View style={[styles.modalContainer, { height: '80%', }]}>
-                                    {/* Close button */}
-                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setStoreModal(false)}>
-                                        <Image
-                                            source={require('@assets/icons/x.png')}
-                                            style={styles.closeButtonIcon}
-                                        />
-                                    </TouchableOpacity>
-                                    <Text>Do you want to accept this request?</Text>
-                                    <TouchableOpacity style={styles.button} onPress={() => {
-                                        // SET game page
-                                        setRequestModalVisible(false);
-                                    }}>
-                                        <Text style={styles.buttonText}>Accept</Text>
-                                    </TouchableOpacity>
+                                <View style={[styles.modalContainer, { height: '20%', }]}>
+                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text style={styles.buttonText}>Do you want to accept this request?</Text>
+                                        <View style={{  flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingTop: 5, }}>
+                                            <TouchableOpacity style={[styles.requestButton, { backgroundColor: '#fff' }]} onPress={() => {
+                                                // SET game page
+                                                setRequestModalVisible({});
+                                            }}>
+                                                <Text style={[styles.buttonText, { color: '#000' }]}>Close</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={[styles.requestButton, { backgroundColor: '#1976d2' }]} onPress={() => handleRequestAccept(requestModalVisible?.requestID || '')}>
+                                                <Text style={styles.buttonText}>Accept</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         </Modal>
@@ -756,6 +789,13 @@ const styles = StyleSheet.create({
     },
     spaceAboveButton: {
         marginTop: 30,
+    },
+    requestButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 30, // Oval shape
+        marginVertical: 10,
+        width: '48%',  
     },
     titleContainer: {
         justifyContent: "center",
@@ -889,7 +929,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         paddingLeft: 10,
-        paddingTop: 20,
+        // paddingTop: 10,
         textAlign: "left",
         alignSelf: 'flex-start',
         marginBottom: 10,

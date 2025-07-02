@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -58,7 +58,8 @@ export const get1v1Requests = async (userID: string) => {
 export const getSent1v1Requests = async (userID: string) => {
     const requestsQuery = query(
         collection(db, '1v1Requests'),
-        where('senderID', '==', userID)
+        where('senderID', '==', userID),
+        where('status', '==', 'pending') // Only get pending requests
     );
 
     const requestsSnapshot = await getDocs(requestsQuery);
@@ -127,3 +128,50 @@ export const create1v1Request = async (userID: string, opponentID: string) => {
         throw new Error("Failed to create 1v1 request");
     }
 };
+
+export const update1v1Requests = async (userID: string, requestID: string, new1v1ID: string) => {
+    // get all 1v1 requests sent or received by user that is 'pending'
+    // update requestID to 'accepted'
+    // update all others to 'invalid'
+    const requestsSentQuery = query(
+        collection(db, '1v1Requests'),
+        where('senderID', '==', userID),
+        where('status', '==', 'pending')
+    );
+    const requestsReceivedQuery = query(
+        collection(db, '1v1Requests'),
+        where('receiverID', '==', userID),
+        where('status', '==', 'pending')
+    );
+    const requestsSentSnapshot = await getDocs(requestsSentQuery);
+    const requestsReceivedSnapshot = await getDocs(requestsReceivedQuery);
+    const batch = writeBatch(db);
+    requestsSentSnapshot.docs.forEach(doc => {
+        if (doc.id === requestID) {
+            batch.update(doc.ref, { 
+                status: 'accepted', 
+                duelID: new1v1ID,
+                respondedAt: serverTimestamp()
+            });
+        } else {
+            batch.update(doc.ref, { 
+                status: 'invalid',
+                respondedAt: serverTimestamp()
+            });
+        }
+    });
+    requestsReceivedSnapshot.docs.forEach(doc => {
+        if (doc.id === requestID) {
+            batch.update(doc.ref, { status: 'accepted', duelID: new1v1ID });
+        } else {
+            batch.update(doc.ref, { status: 'invalid' });
+        }
+    });
+    try {
+        await batch.commit();
+        return true; // Indicate success
+    } catch (error) {
+        console.error("Error updating 1v1 requests:", error);
+        throw new Error("Failed to update 1v1 requests");
+    }
+}
