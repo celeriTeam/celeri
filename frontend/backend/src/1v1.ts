@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, onSnapshot } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -17,24 +17,44 @@ const storage = getStorage();
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
-export const get1v1 = async (userID: string) => {
+// export const get1v1 = async (userID: string) => {
+//     const current1v1Query = query(
+//         collection(db, '1v1s'),
+//         where('participants', 'array-contains', userID),
+//         where('endTime', '>', Timestamp.now())
+//     );
+
+//     const current1v1Snapshot = await getDocs(current1v1Query);
+//     if (current1v1Snapshot.empty) {
+//         return null; // No active 1v1 found
+//     }
+//     const current1v1Doc = current1v1Snapshot.docs[0];
+//     const current1v1Data = current1v1Doc.data();
+//     return {
+//         current1v1ID: current1v1Doc.id,
+//         ...current1v1Data,
+//     };
+// }
+
+// get 1v1 listener
+export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
     const current1v1Query = query(
         collection(db, '1v1s'),
         where('participants', 'array-contains', userID),
         where('endTime', '>', Timestamp.now())
     );
 
-    const current1v1Snapshot = await getDocs(current1v1Query);
-    if (current1v1Snapshot.empty) {
-        return null; // No active 1v1 found
-    }
-    const current1v1Doc = current1v1Snapshot.docs[0];
-    const current1v1Data = current1v1Doc.data();
-    return {
-        current1v1ID: current1v1Doc.id,
-        ...current1v1Data,
-    };
-}
+    const unsubscribe = onSnapshot(current1v1Query, (snapshot) => {
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            onUpdate({ current1v1ID: doc.id, ...doc.data() });
+        } else {
+            onUpdate(null);
+        }
+    });
+
+    return unsubscribe;
+};
 
 export const create1v1 = async (Request1v1ID: string) => {
     // grab senderID and receiverID from the request

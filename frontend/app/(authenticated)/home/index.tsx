@@ -32,6 +32,8 @@ import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { create1v1, get1v1 } from '@/backend/src/1v1';
+import SoloTab from './1v1/SoloTab';
+import { set } from 'date-fns';
 
 dayjs.extend(relativeTime);
 
@@ -61,16 +63,11 @@ const HomeTab: React.FC = () => {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [selectedTab, setSelectedTab] = useState('Group');
-    const [challengeRequestsTab, setChallengeRequestsTab] = useState('Received'); // "Received" || "Sent"
     const [comingSoonModal, setComingSoonModal] = useState(false);
-    const [userSearchModal, setUserSearchModal] = useState(false);
-    const [storeModal, setStoreModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
     const [receivedChallengeRequests, setReceivedChallengeRequests] = useState<any[]>([]);
     const [sentChallengeRequests, setSentChallengeRequests] = useState<any[]>([]);
-    const [refreshRequestsFlag, setRefreshRequestsFlag] = useState(false);
-    const [requestModalVisible, setRequestModalVisible] = useState<any>({});
     const [current1v1, setCurrent1v1] = useState<any>(null);
     
     const router = useRouter();
@@ -106,16 +103,28 @@ const HomeTab: React.FC = () => {
 
     // Getting data because its the first page
     useEffect(() => {
-        setIsLoadingHome(true);
         let unsubscribeUser: any;
+        let unsubscribeReceivedRequests: (() => void) | null = null;
+        let unsubscribeSentRequests: (() => void) | null = null;
+        let unsubscribeCurrent1v1: (() => void) | null = null;
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
+                setIsLoadingHome(true);
                 setUserID(user.uid);
                 const userGroups = await getUserGroups(user.uid);
-                await setRequests();
-                await setCurrent1v1Data();
-
                 unsubscribeUser = fetchGroupData(userGroups || [], user.uid);
+
+                unsubscribeReceivedRequests = get1v1Requests(user.uid, (data) => {
+                    setReceivedChallengeRequests(data);
+                });
+
+                unsubscribeSentRequests = getSent1v1Requests(user.uid, (data) => {
+                    setSentChallengeRequests(data);
+                });
+                
+                unsubscribeCurrent1v1 = get1v1(user.uid, (data) => {
+                    setCurrent1v1(data);
+                });
             } else {
                 console.log('No user signed in');
             }
@@ -128,6 +137,15 @@ const HomeTab: React.FC = () => {
             if (typeof unsubscribeUser === 'function') {
                 unsubscribeUser();
             }
+            if (unsubscribeReceivedRequests) {
+                unsubscribeReceivedRequests();
+            }
+            if (unsubscribeSentRequests) {
+                unsubscribeSentRequests();
+            }
+            if (unsubscribeCurrent1v1) {
+                unsubscribeCurrent1v1();
+            }
         };
     }, []);
 
@@ -139,30 +157,21 @@ const HomeTab: React.FC = () => {
         return () => clearTimeout(timer);
     }, []);
 
-    const setRequests = async () => {
-        const receivedRequests = await get1v1Requests(userID);
-        const sentRequests = await getSent1v1Requests(userID);
+    // const setRequests = async () => {
+    //     const receivedRequests = await get1v1Requests(userID);
+    //     const sentRequests = await getSent1v1Requests(userID);
 
-        setReceivedChallengeRequests(receivedRequests);
-        setSentChallengeRequests(sentRequests);
-    };
+    //     setReceivedChallengeRequests(receivedRequests);
+    //     setSentChallengeRequests(sentRequests);
+    // };
 
-    const setCurrent1v1Data = async () => {
-        const current1v1Data = await get1v1(userID);
-        if (current1v1Data) {
-            setCurrent1v1(current1v1Data);
-        } else {
-            setCurrent1v1(null);
-        }
-    };
-
-    useEffect(() => {
-        if (refreshRequestsFlag) {
-            setRequests().finally(() => {
-                setRefreshRequestsFlag(false); // Reset flag after update
-            });
-        }
-    }, [refreshRequestsFlag]);
+    // useEffect(() => {
+    //     if (refreshRequestsFlag) {
+    //         setRequests().finally(() => {
+    //             setRefreshRequestsFlag(false); // Reset flag after update
+    //         });
+    //     }
+    // }, [refreshRequestsFlag]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
@@ -273,42 +282,6 @@ const HomeTab: React.FC = () => {
         }
         setIsPressed(false); // Set the button as pressed
     }
-    
-    const formatRelativeTime = (timestamp: Date): string => {
-        const now = dayjs();
-        const then = dayjs(timestamp);
-
-        // console.log(`Current time: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
-        // console.log(`User's last login time: ${then.format('YYYY-MM-DD HH:mm:ss')}`);
-
-        const diffMinutes = now.diff(then, 'minute');
-        const diffHours = now.diff(then, 'hour');
-        const diffDays = now.diff(then, 'day');
-        const diffMonths = now.diff(then, 'month');
-
-        // console.log(`Time difference: ${diffMinutes} minutes, ${diffHours} hours, ${diffDays} days, ${diffMonths} months`);
-
-        if (diffMinutes < 1) return 'just now';
-        if (diffMinutes < 60) return `${diffMinutes} min ago`;
-        if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-        return `over ${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
-    };
-
-    const handleRequestClick = (request: any) => () => {
-        setRequestModalVisible(request);
-    };
-
-    const handleRequestAccept = async (request: any) => {
-        console.log('request1v1ID: ', request?.request1v1ID);
-        setRequestModalVisible({});
-
-        const new1v1Data = await create1v1(request?.request1v1ID);
-        await update1v1Requests(userID, request?.request1v1ID, new1v1Data.current1v1ID);
-        await setIsIn1v1(request?.senderID, true);
-        await setIsIn1v1(request?.receiverID, true);
-        setCurrent1v1(new1v1Data);
-    };
 
     if (!hasPermissions) {
         if (Platform.OS === 'android' && Platform.Version < 34 && !isLoading) {
@@ -470,127 +443,12 @@ const HomeTab: React.FC = () => {
                                 </TouchableOpacity>
                             </>
                         ) : (
-                            <>
-                                <View style={styles.row}>
-                                    {current1v1 && (
-                                        <TouchableOpacity onPress={() => setStoreModal(true)}>
-                                            <Image
-                                                source={require('@assets/icons/store.png')}
-                                                style={styles.storeIcon}
-                                            />
-                                        </TouchableOpacity>
-                                    )}
-                                    <Image
-                                        source={require('@assets/icons/history.png')}
-                                        style={styles.historyIcon}
-                                    />
-                                    <Image
-                                        source={require('@assets/icons/trophy.png')}
-                                        style={styles.trophyIcon}
-                                    />
-                                </View>
-                                {current1v1 ? (
-                                    <Text style={{ color: '#fff' }}>Welcome to the game!</Text>
-                                ) : (
-                                    <>
-                                        <Image
-                                            source={require('@assets/icons/magnify.png')}
-                                            style={styles.magifyIcon}
-                                        />
-                                        <Text style={styles.noMatchText}>No match in progress.</Text>
-                                        <TouchableOpacity style={styles.challengeButton} onPress={() => setUserSearchModal(true)}>
-                                            <Text style={styles.challengeText}>Challenge a friend</Text>
-                                        </TouchableOpacity>
-                                        {/* <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
-                                            <Text style={styles.randomText}>Find Random Match</Text>
-                                        </TouchableOpacity> */}
-                                        {/* challenge requests */}
-                                        <Text style={styles.requestsTitle}>Challenge Requests</Text>
-                                        <View style={styles.tabContainer}>
-                                            <TouchableOpacity
-                                                style={[styles.tab, { borderBottomColor: selectedTab === 'Received' ? '#74FF6D' : 'transparent', }]}
-                                                onPress={() => setChallengeRequestsTab('Received')}
-                                                activeOpacity={1}
-                                            >
-                                                <Text style={[styles.tabText, { color: selectedTab === 'Received' ? '#74FF6D' : '#fff', }]}>Received</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                style={[styles.tab, { borderBottomColor: selectedTab === 'Sent' ? '#74FF6D' : 'transparent', }]}
-                                                onPress={() => setChallengeRequestsTab('Sent')}
-                                                activeOpacity={1}
-                                            >
-                                                <Text style={[styles.tabText, { color: selectedTab === 'Sent' ? '#74FF6D' : '#fff', }]}>Sent</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                        {/* Line for showing selected tab */}
-                                        <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
-                                        challengeRequestsTab === 'Sent' ?
-                                            { alignSelf: 'flex-end', right: scale(10) } :
-                                            { alignSelf: 'flex-start', left: scale(10), }]}
-                                        />
-                                        <View style={styles.requestsContainer}>
-                                            {challengeRequestsTab === 'Received' ? (
-                                                <ScrollView>
-                                                    {receivedChallengeRequests.length > 0 ? (
-                                                        receivedChallengeRequests.map((request) => (
-                                                            <TouchableOpacity 
-                                                                key={request.requestID}
-                                                                style={[styles.memberInfo, { backgroundColor: request.status === 'pending' ? '#00000080' : '#00000050' }]}
-                                                                onPress={request.status === 'pending' ? handleRequestClick(request) : undefined}
-                                                                activeOpacity={request.status === 'pending' ? 0.7 : 1}
-                                                            >
-                                                                <Image
-                                                                    source={
-                                                                        request.senderPfp ?
-                                                                            { uri: request?.senderPfp }
-                                                                            : require('@components/blank-profile-picture.png')
-                                                                    }
-                                                                    style={styles.profilePic}
-                                                                />
-                                                                <View>
-                                                                    <View style={styles.memberRow}>
-                                                                        <Text style={styles.memberName}>{request?.senderName}</Text>
-                                                                        <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
-                                                                    </View>
-                                                                    <Text style={styles.memberUserName}>@{request?.senderUsername}</Text>
-                                                                </View>
-                                                            </TouchableOpacity>
-                                                        ))
-                                                    ) : (
-                                                        <Text style={styles.noMatchText}>No received challenge requests.</Text>
-                                                    )}
-                                                </ScrollView>
-                                            ) : (
-                                                <ScrollView>
-                                                    {sentChallengeRequests.length > 0 ? (
-                                                        sentChallengeRequests.map((request) => (
-                                                            <View style={styles.memberInfo}>
-                                                                <Image
-                                                                    source={
-                                                                        request.receiverPfp ?
-                                                                            { uri: request?.receiverPfp }
-                                                                            : require('@components/blank-profile-picture.png')
-                                                                    }
-                                                                    style={styles.profilePic}
-                                                                />
-                                                                <View>
-                                                                    <View style={styles.memberRow}>
-                                                                        <Text style={styles.memberName}>{request?.receiverName}</Text>
-                                                                        <Text style={styles.memberCreatedAt}>{formatRelativeTime(request?.createdAt)}</Text>
-                                                                    </View>
-                                                                    <Text style={styles.memberUserName}>@{request?.receiverUsername}</Text>
-                                                                </View>
-                                                            </View>
-                                                        ))
-                                                    ) : (
-                                                        <Text style={styles.noMatchText}>No sent challenge requests.</Text>
-                                                    )}
-                                                </ScrollView>
-                                            )}
-                                        </View>
-                                    </>
-                                )}
-                            </>
+                            <SoloTab
+                                current1v1={current1v1}
+                                setCurrent1v1={setCurrent1v1}
+                                receivedChallengeRequests={receivedChallengeRequests}
+                                sentChallengeRequests={sentChallengeRequests}
+                            />
                         )}
 
                         {/* Modal */}
@@ -654,89 +512,6 @@ const HomeTab: React.FC = () => {
                                         />
                                     </TouchableOpacity>
                                     <Text style={styles.modalText}>Coming soon</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </Modal>
-
-                        {/* Store modal */}
-                        <Modal
-                            animationType="fade"
-                            transparent={true}
-                            visible={storeModal}
-                            onRequestClose={() => setStoreModal(false)}
-                        >
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={() => setStoreModal(false)} // Close dropdown when overlay is pressed
-                            >
-                                <View style={[styles.modalContainer, { height: '80%', }]}>
-                                    {/* Close button */}
-                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setStoreModal(false)}>
-                                        <Image
-                                            source={require('@assets/icons/x.png')}
-                                            style={styles.closeButtonIcon}
-                                        />
-                                    </TouchableOpacity>
-                                    <Store1v1Page
-                                        userDiamonds={3}
-                                        setStoreModalVisible={setStoreModal}
-                                    />
-                                </View>
-                            </TouchableOpacity>
-                        </Modal>
-
-                        {/* User Search modal */}
-                        <Modal
-                            animationType="fade"
-                            transparent={true}
-                            visible={userSearchModal}
-                            onRequestClose={() => setUserSearchModal(false)}
-                        >
-                            <View style={styles.modalOverlay} >
-                                <View style={[styles.modalContainer, { height: '80%', }]}>
-                                    {/* Close button */}
-                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setUserSearchModal(false)}>
-                                        <Image
-                                            source={require('@assets/icons/x.png')}
-                                            style={styles.closeButtonIcon}
-                                        />
-                                    </TouchableOpacity>
-                                    <UserSearchPage
-                                        setUserSearchModalVisible={setUserSearchModal}
-                                        onRequestSent={() => setRefreshRequestsFlag(true)} 
-                                    />
-                                </View>
-                            </View>
-                        </Modal>
-
-                        {/* Request modal */}
-                        <Modal
-                            animationType="fade"
-                            transparent={true}
-                            visible={requestModalVisible?.requestID !== undefined}
-                            onRequestClose={() => setRequestModalVisible({})}
-                        >
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={() => setRequestModalVisible({})} // Close dropdown when overlay is pressed
-                            >
-                                <View style={[styles.modalContainer, { height: '20%', }]}>
-                                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                                        <Text style={styles.buttonText}>Do you want to accept this request?</Text>
-                                        <View style={{  flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, paddingTop: 5, }}>
-                                            <TouchableOpacity style={[styles.requestButton, { backgroundColor: '#fff' }]} onPress={() => {
-                                                // SET game page
-                                                setRequestModalVisible({});
-                                            }}>
-                                                <Text style={[styles.buttonText, { color: '#000' }]}>Close</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity style={[styles.requestButton, { backgroundColor: '#1976d2' }]} onPress={() => handleRequestAccept(requestModalVisible?.requestID || '')}>
-                                                <Text style={styles.buttonText}>Accept</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
                                 </View>
                             </TouchableOpacity>
                         </Modal>

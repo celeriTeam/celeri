@@ -37,10 +37,9 @@ type User = {
 
 type Props = {
     setUserSearchModalVisible: (visible: boolean) => void;
-    onRequestSent?: () => void;
 };
 
-const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestSent }) => {
+const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const { userID } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
@@ -89,7 +88,6 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible, onRequestS
                 console.log('1v1 request created with ID:', requestId);
                 Alert.alert('Challenge Sent', 'Your challenge has been sent successfully!');
                 setUserSearchModalVisible(false); // Close the modal after sending the challenge
-                onRequestSent?.();
             })
             .catch((error) => {
                 console.error('Error creating 1v1 request:', error);

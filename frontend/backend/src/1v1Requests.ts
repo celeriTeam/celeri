@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -18,78 +18,79 @@ const storage = getStorage();
 /*********************************************** GET FUNCTIONS ********************************************/
 
 // Get all 1v1 requests received by user
-export const get1v1Requests = async (userID: string) => {
+export const get1v1Requests = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
     const requestsQuery = query(
         collection(db, '1v1Requests'),
         where('receiverID', '==', userID)
     );
 
-    const requestsSnapshot = await getDocs(requestsQuery);
-    const requests = requestsSnapshot.docs.map(doc => ({ 
-        requestID: doc.id,
-        senderID: doc.data().senderID,
-        status: doc.data().status,
-        createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : null,
-    }));
-    // what do i want to return:
-    // requestID
-    // senderID
-    // senderName
-    // senderUsername
-    // senderPfp
-    // status
-    // createdAt
-    console.log('requests: ', requests);
+    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+        const processRequests = async () => {
+            if (snapshot.empty) {
+                onUpdate([]);
+                return;
+            }
+            const requests = await Promise.all(
+                snapshot.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
+                    const senderDoc = await getDoc(doc(db, 'users', data.senderID));
+                    return {
+                        requestID: docSnap.id,
+                        senderID: docSnap.data().senderID,
+                        receiverID: docSnap.data().receiverID,
+                        status: docSnap.data().status,
+                        createdAt: docSnap.data().createdAt ? (docSnap.data().createdAt as Timestamp).toDate() : null,
+                        senderName: senderDoc.data()?.name || "",
+                        senderUsername: senderDoc.data()?.username || "",
+                        senderPfp: senderDoc.data()?.profileImageUrl || null 
+                    };
+                })
+            );
+            requests.sort((a, b) => (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0));
+            onUpdate(requests);
+        }
+        processRequests();
+    });
 
-    const requestsWithSenderInfo = await Promise.all(requests.map(async (request) => {
-        const senderDoc = await getDoc(doc(db, 'users', request.senderID));
-        return {
-            ...request,
-            senderName: senderDoc.data()?.name || "",
-            senderUsername: senderDoc.data()?.username || "",
-            senderPfp: senderDoc.data()?.profileImageUrl || null // Assuming pfp is the profile picture URL
-        };
-    }));
-
-    return requestsWithSenderInfo;
+    return unsubscribe;
 }
 
 // Get all 1v1 requests sent by user
-export const getSent1v1Requests = async (userID: string) => {
+export const getSent1v1Requests = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
     const requestsQuery = query(
         collection(db, '1v1Requests'),
         where('senderID', '==', userID),
         where('status', '==', 'pending') // Only get pending requests
     );
 
-    const requestsSnapshot = await getDocs(requestsQuery);
-    const requests = requestsSnapshot.docs.map(doc => ({
-        requestID: doc.id,
-        receiverID: doc.data().receiverID,
-        status: doc.data().status,
-        createdAt: doc.data().createdAt ? (doc.data().createdAt as Timestamp).toDate() : null,
-    }));
-    
-    // what do i want to return:
-    // requestID
-    // senderID
-    // senderName
-    // senderUsername
-    // senderPfp
-    // status
-    // createdAt
+    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+        const processRequests = async () => {
+            if (snapshot.empty) {
+                onUpdate([]);
+                return;
+            }
+            const requests = await Promise.all(
+                snapshot.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
+                    const receiverDoc = await getDoc(doc(db, 'users', data.receiverID));
+                    return {
+                        requestID: docSnap.id,
+                        receiverID: docSnap.data().requestID,
+                        status: docSnap.data().status,
+                        createdAt: docSnap.data().createdAt ? (docSnap.data().createdAt as Timestamp).toDate() : null,
+                        receiverName: receiverDoc.data()?.name || "",
+                        receiverUsername: receiverDoc.data()?.username || "",
+                        receiverPfp: receiverDoc.data()?.profileImageUrl || null 
+                    };
+                })
+            );
+            requests.sort((a, b) => (b.createdAt?.getTime?.() || 0) - (a.createdAt?.getTime?.() || 0));
+            onUpdate(requests);
+        }
+        processRequests();
+    });
 
-    const requestsWithReceiverInfo = await Promise.all(requests.map(async (request) => {
-        const receiverDoc = await getDoc(doc(db, 'users', request.receiverID));
-        return {
-            ...request,
-            receiverName: receiverDoc.data()?.name || "",
-            receiverUsername: receiverDoc.data()?.username || "",
-            receiverPfp: receiverDoc.data()?.profileImageUrl || null // Assuming pfp is the profile picture URL
-        };
-    }));
-
-    return requestsWithReceiverInfo;
+    return unsubscribe;
 }
 
 export const create1v1Request = async (userID: string, opponentID: string) => {
