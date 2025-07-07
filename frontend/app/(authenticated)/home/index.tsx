@@ -10,20 +10,32 @@ import {
     Modal,
     ScrollView,
     Dimensions,
-    Touchable
+    Touchable,
+    Platform,
+    Linking
 } from 'react-native';
 import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import useHealthData from '../../../backend/src/hooks/useHealthData';
 import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
-import { getUserGroups, getUserName, setStepsFirebase } from '@backend/src/users';
+import { getUserGroups, getUserName, setIsIn1v1, setStepsFirebase } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
+import Store1v1Page from './1v1/Store';
+import UserSearchPage from './1v1/UserSearch';
+import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend/src/1v1Requests';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { create1v1, get1v1 } from '@/backend/src/1v1';
+import SoloTab from './1v1/SoloTab';
+import { set } from 'date-fns';
+
+dayjs.extend(relativeTime);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -54,6 +66,9 @@ const HomeTab: React.FC = () => {
     const [comingSoonModal, setComingSoonModal] = useState(false);
     const [showExtendedMessage, setShowExtendedMessage] = useState(false);
     const [isPressed, setIsPressed] = useState(false);
+    const [receivedChallengeRequests, setReceivedChallengeRequests] = useState<any[]>([]);
+    const [sentChallengeRequests, setSentChallengeRequests] = useState<any[]>([]);
+    const [current1v1, setCurrent1v1] = useState<any>(null);
     
     const router = useRouter();
 
@@ -88,13 +103,28 @@ const HomeTab: React.FC = () => {
 
     // Getting data because its the first page
     useEffect(() => {
-        setIsLoadingHome(true);
         let unsubscribeUser: any;
+        let unsubscribeReceivedRequests: (() => void) | null = null;
+        let unsubscribeSentRequests: (() => void) | null = null;
+        let unsubscribeCurrent1v1: (() => void) | null = null;
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
+                setIsLoadingHome(true);
                 setUserID(user.uid);
                 const userGroups = await getUserGroups(user.uid);
                 unsubscribeUser = fetchGroupData(userGroups || [], user.uid);
+
+                unsubscribeReceivedRequests = get1v1Requests(user.uid, (data) => {
+                    setReceivedChallengeRequests(data);
+                });
+
+                unsubscribeSentRequests = getSent1v1Requests(user.uid, (data) => {
+                    setSentChallengeRequests(data);
+                });
+                
+                unsubscribeCurrent1v1 = get1v1(user.uid, (data) => {
+                    setCurrent1v1(data);
+                });
             } else {
                 console.log('No user signed in');
             }
@@ -107,6 +137,15 @@ const HomeTab: React.FC = () => {
             if (typeof unsubscribeUser === 'function') {
                 unsubscribeUser();
             }
+            if (unsubscribeReceivedRequests) {
+                unsubscribeReceivedRequests();
+            }
+            if (unsubscribeSentRequests) {
+                unsubscribeSentRequests();
+            }
+            if (unsubscribeCurrent1v1) {
+                unsubscribeCurrent1v1();
+            }
         };
     }, []);
 
@@ -117,6 +156,22 @@ const HomeTab: React.FC = () => {
 
         return () => clearTimeout(timer);
     }, []);
+
+    // const setRequests = async () => {
+    //     const receivedRequests = await get1v1Requests(userID);
+    //     const sentRequests = await getSent1v1Requests(userID);
+
+    //     setReceivedChallengeRequests(receivedRequests);
+    //     setSentChallengeRequests(sentRequests);
+    // };
+
+    // useEffect(() => {
+    //     if (refreshRequestsFlag) {
+    //         setRequests().finally(() => {
+    //             setRefreshRequestsFlag(false); // Reset flag after update
+    //         });
+    //     }
+    // }, [refreshRequestsFlag]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
         const groups: { [groupID: string]: any } = {};
@@ -229,6 +284,9 @@ const HomeTab: React.FC = () => {
     }
 
     if (!hasPermissions) {
+        if (Platform.OS === 'android' && Platform.Version < 34 && !isLoading) {
+            Linking.openURL('market://details?id=com.google.android.apps.healthdata');
+        }
         return (
             <SafeAreaView style={styles.safeView} edges={['top']}>
                 <View style={styles.container}>
@@ -385,29 +443,12 @@ const HomeTab: React.FC = () => {
                                 </TouchableOpacity>
                             </>
                         ) : (
-                            <>
-                                <View style={styles.row}>
-                                    <Image
-                                        source={require('@assets/icons/history.png')}
-                                        style={styles.historyIcon}
-                                    />
-                                    <Image
-                                        source={require('@assets/icons/trophy.png')}
-                                        style={styles.trophyIcon}
-                                    />
-                                </View>
-                                <Image
-                                    source={require('@assets/icons/magnify.png')}
-                                    style={styles.magifyIcon}
-                                />
-                                <Text style={styles.noMatchText}>No match in progress.</Text>
-                                <TouchableOpacity style={styles.challengeButton} onPress={() => setComingSoonModal(true)}>
-                                    <Text style={styles.challengeText}>Challenge a friend</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.randomButton} onPress={() => setComingSoonModal(true)}>
-                                    <Text style={styles.randomText}>Find Random Match</Text>
-                                </TouchableOpacity>
-                            </>
+                            <SoloTab
+                                current1v1={current1v1}
+                                setCurrent1v1={setCurrent1v1}
+                                receivedChallengeRequests={receivedChallengeRequests}
+                                sentChallengeRequests={sentChallengeRequests}
+                            />
                         )}
 
                         {/* Modal */}
@@ -524,6 +565,13 @@ const styles = StyleSheet.create({
     spaceAboveButton: {
         marginTop: 30,
     },
+    requestButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 30, // Oval shape
+        marginVertical: 10,
+        width: '48%',  
+    },
     titleContainer: {
         justifyContent: "center",
     },
@@ -566,7 +614,7 @@ const styles = StyleSheet.create({
         // shadowOpacity: 0.1,
         // shadowOffset: { width: 0, height: 2 },
         // shadowRadius: 5,
-        elevation: 3,
+        // elevation: 6,
         alignSelf: 'center',
     },
     groupImage: {
@@ -604,6 +652,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         color: '#000',
         fontSize: 24,
+        top: Platform.OS === 'ios' ? 0 : -2,
     },
     row: {
         flexDirection: 'row',
@@ -612,6 +661,10 @@ const styles = StyleSheet.create({
         width: '98%',
         gap: 5,
         margin: 20,
+    },
+    storeIcon: {
+        width: 21,
+        height: 21,
     },
     historyIcon: {
         width: 27,
@@ -645,6 +698,68 @@ const styles = StyleSheet.create({
         color: '#74FF6D',
         fontSize: 13,
         padding: 10,
+    },
+    requestsTitle: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 16,
+        paddingLeft: 10,
+        // paddingTop: 10,
+        textAlign: "left",
+        alignSelf: 'flex-start',
+        marginBottom: 10,
+    },
+    requestsContainer: {
+        backgroundColor: '#5BE35C33',
+        justifyContent: 'center',
+        width: '100%',
+        height: '15%',
+        marginVertical: 10,
+        borderRadius: 15,
+        padding: 10,
+        paddingLeft: 20,
+    },
+    memberInfo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        
+        padding: 10,
+        paddingLeft: 20,
+        paddingRight: 5,
+        backgroundColor: '#00000080',
+        marginVertical: 3,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    memberRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '92%',
+    },
+    profilePic: {
+        width: 26,
+        height: 26,
+        borderRadius: 20,
+        borderColor: '#fff',
+        borderWidth: 1,
+    },
+    memberName: {
+        fontFamily: "Lexend",
+        fontSize: 12,
+        color: '#fff',
+        marginLeft: 10,
+    },
+    memberUserName: {
+        fontFamily: "Lexend",
+        fontSize: 8,
+        color: '#74FF6D',
+        marginLeft: 10,
+    },
+    memberCreatedAt: {
+        fontFamily: "Lexend",
+        fontSize: 8,
+        color: '#ffffffaa',
     },
     randomButton: {
         backgroundColor: 'transparent',

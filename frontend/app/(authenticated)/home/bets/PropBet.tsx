@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
         fontSize: 14
     },
     overUnderText: {
-        fontFamily: "Lexend-bold",
+        fontFamily: "Lexend-Bold",
         textAlign: 'center'
     },
     overUnderChooseText: { 

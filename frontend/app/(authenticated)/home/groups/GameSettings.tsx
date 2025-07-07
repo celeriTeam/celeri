@@ -212,7 +212,7 @@ const GameSettings: React.FC = () => {
                                                 style={{
                                                 color: chosenAnswer[index] === option.answer ? '#000' : '#fff',
                                                 textAlign: 'center',
-                                                fontFamily: 'Lexend-bold',
+                                                fontFamily: 'Lexend-Bold',
                                                 fontSize: 20
                                                 }}
                                             >

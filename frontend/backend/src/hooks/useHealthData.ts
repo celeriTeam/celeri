@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate } from '../users'; 
+import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate, setLastLogin } from '../users'; 
 import { getAuth } from "firebase/auth";
 import AppleHealthKit, {
     HealthInputOptions,
@@ -15,6 +15,7 @@ import {
   readRecords
 } from 'react-native-health-connect';
 import { newsFunctions } from '../news';
+import { set } from 'date-fns';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -47,36 +48,44 @@ const useHealthData = () => {
 
     const getStepCountPlatform = async (options: HealthInputOptions): Promise<number> => {
         if (Platform.OS === 'ios') {
-            const result = await new Promise<number>((resolve, reject) => {
+            return new Promise((resolve, reject) => {
+                let flooredSteps = 0;
                 AppleHealthKit.getStepCount(options, (err, results) => {
                     if (err) {
+                        console.log('Error getting the steps');
                         reject(err);
-                    } else {
-                        resolve(Math.floor(results.value));
-                    }
+                        return 0;
+                    } 
+                    flooredSteps = Math.floor(results.value);
+                    resolve(flooredSteps);
                 });
             });
-            return result;
         } else if (Platform.OS === 'android') {
             try {
+                console.log('fetching android steps...');
                 const date = new Date(options.date || Date.now());
                 const startOfDay = new Date(date);
                 startOfDay.setHours(0, 0, 0, 0);
-
+    
                 const endOfDay = new Date(date);
                 endOfDay.setHours(23, 59, 59, 999);
-
+    
+                // Use readRecords to get steps for today
                 const results = await readRecords('Steps', {
                     timeRangeFilter: {
                         operator: 'between',
                         startTime: startOfDay.toISOString(),
-                        endTime: endOfDay.toISOString()
+                        endTime: endOfDay.toISOString(),
                     }
                 });
 
-                return results.records.reduce((sum, record) => sum + record.count, 0);
+                console.log('Android steps results:', results);
+    
+                // Sum up the steps from all records
+                const totalSteps = results.records.reduce((sum, record) => sum + record.count, 0);
+                return totalSteps;
             } catch (error) {
-                console.error('Error reading Android steps:', error);
+                console.log('Error reading Android steps:', error);
                 return 0;
             }
         }
@@ -85,32 +94,82 @@ const useHealthData = () => {
 
     const getDailySteps = async (): Promise<number> => {
         // console.log("getDailySteps -- start");
-        return new Promise(async (resolve, reject) => {
-            const today = new Date();
-            const options: HealthInputOptions = {
-                date: today.toISOString(),
-            };
+        const today = new Date();
+        const options: HealthInputOptions = {
+            date: today.toISOString(),
+        };
 
-            setSteps(await getStepCountPlatform(options));
-    
-            // AppleHealthKit.getStepCount(options, (err, results) => {
-            //     if (err) {
-            //         console.log('Error getting the steps');
-            //         reject(err);
-            //         return;
-            //     }
-            //     const flooredSteps = Math.floor(results.value);
-            //     setSteps(flooredSteps);
-            //     resolve(flooredSteps);
-            // });
-        });
+        try {
+            const steps = await getStepCountPlatform(options);
+            setSteps(steps);
+            return steps;
+        } catch (error) {
+            console.log('Error getting daily steps:', error);
+            return 0;
+        }
     };
 
     const getStepsFiveHoursAgo = async (stepsLastUpdate: Date): Promise<number> => {
 
         const currentDate = new Date();
 
-        if (Platform.OS === 'android') {
+        if (Platform.OS === 'ios') {
+            return new Promise((resolve, reject) => {
+                // Define the options for querying step data
+                const options = {
+                    startDate: stepsLastUpdate.toISOString(),
+                    endDate: currentDate.toISOString(),
+                };
+
+                AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
+                    if (err) {
+                        console.log('Error getting step samples:', err);
+                        reject(err);
+                        return;
+                    }
+
+                    // console.log("Step samples received:", results);
+
+                    // We need to manually check for 5-hour periods with 5k+ steps
+                    let maxStepsIn5Hours = 0;
+
+                    // Sort samples by start date
+                    const sortedSamples = [...results].sort((a, b) =>
+                        new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+                    );
+
+                    // Process each sample
+                    for (let i = 0; i < sortedSamples.length; i++) {
+                        const startTime = new Date(sortedSamples[i].startDate).getTime();
+                        let totalSteps = Math.floor(sortedSamples[i].value);
+
+                        // Look for samples within 5 hours of this one
+                        for (let j = i + 1; j < sortedSamples.length; j++) {
+                            const nextTime = new Date(sortedSamples[j].startDate).getTime();
+
+                            // If within 5 hours, add to total
+                            if (nextTime - startTime <= 5 * 60 * 60 * 1000) {
+                                totalSteps += Math.floor(sortedSamples[j].value);
+                            } else {
+                                break; // Past 5-hour window
+                            }
+                        }
+
+                        // Update max steps if this period has more
+                        if (totalSteps > maxStepsIn5Hours) {
+                            maxStepsIn5Hours = totalSteps;
+                        }
+                    }
+
+                    // Return steps if over 5k, otherwise 0
+                    if (maxStepsIn5Hours >= 5000) {
+                        resolve(maxStepsIn5Hours);
+                    } else {
+                        resolve(0);
+                    }
+                });
+            });
+        } else if (Platform.OS === 'android') {
             try {
                 // Read step records from Health Connect
                 const results = await readRecords('Steps', {
@@ -156,62 +215,7 @@ const useHealthData = () => {
                 return 0;
             }
         }
-
-        return new Promise((resolve, reject) => {
-            // Define the options for querying step data
-            const options = {
-                startDate: stepsLastUpdate.toISOString(),
-                endDate: currentDate.toISOString(),
-            };
-
-            AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
-                if (err) {
-                    console.log('Error getting step samples:', err);
-                    reject(err);
-                    return;
-                }
-
-                // console.log("Step samples received:", results);
-
-                // We need to manually check for 5-hour periods with 5k+ steps
-                let maxStepsIn5Hours = 0;
-
-                // Sort samples by start date
-                const sortedSamples = [...results].sort((a, b) =>
-                    new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
-                );
-
-                // Process each sample
-                for (let i = 0; i < sortedSamples.length; i++) {
-                    const startTime = new Date(sortedSamples[i].startDate).getTime();
-                    let totalSteps = Math.floor(sortedSamples[i].value);
-
-                    // Look for samples within 5 hours of this one
-                    for (let j = i + 1; j < sortedSamples.length; j++) {
-                        const nextTime = new Date(sortedSamples[j].startDate).getTime();
-
-                        // If within 5 hours, add to total
-                        if (nextTime - startTime <= 5 * 60 * 60 * 1000) {
-                            totalSteps += Math.floor(sortedSamples[j].value);
-                        } else {
-                            break; // Past 5-hour window
-                        }
-                    }
-
-                    // Update max steps if this period has more
-                    if (totalSteps > maxStepsIn5Hours) {
-                        maxStepsIn5Hours = totalSteps;
-                    }
-                }
-
-                // Return steps if over 5k, otherwise 0
-                if (maxStepsIn5Hours >= 5000) {
-                    resolve(maxStepsIn5Hours);
-                } else {
-                    resolve(0);
-                }
-            });
-        });
+        return 0;
     };
 
     const getWeeklyAverageOfSteps = async (): Promise<number[]> => {
@@ -233,8 +237,8 @@ const useHealthData = () => {
             };
     
             try {
-    
-                averageSteps.push(await getStepCountPlatform(options));
+                const result = await getStepCountPlatform(options);    
+                averageSteps.push(result);
             } catch (error) {
                 console.log("Error getting steps for date:", currentDate.toISOString(), error);
                 averageSteps.push(0); // Push 0 for days with errors
@@ -276,7 +280,9 @@ const useHealthData = () => {
             // console.log("currentDate: ", currentDate);
     
             try {
-                const result = await getStepCountPlatform(options)
+                const result = await getStepCountPlatform(options);
+                // console.log("stepsFromWeeksBefore day: ", result);
+    
                 stepsFromWeekBeforeTemp += result;
                 // console.log("stepsFromWeeksBefore after added: ", stepsFromWeekBeforeTemp);
             } catch (error) {
@@ -358,6 +364,7 @@ const useHealthData = () => {
                 );
     
                 await setStepsLastUpdate(userID, new Date());
+                await setLastLogin(userID, new Date());
 
             } catch (error) {
                 console.error("Error updating Firebase and news:", error);
@@ -449,8 +456,10 @@ const useHealthData = () => {
     useEffect(() => {
         const setupHealthKit = async () => {
             const permissionsGranted = await checkAndRequestPermissions();
-            console.log('Health Connect initialized successfully: ', !permissionsGranted);
-            if (!permissionsGranted) return;
+            if (!permissionsGranted) {
+                setLoading(false);
+                return;
+            }
 
             // Set up observers
             const healthKitEventEmitter = new NativeEventEmitter(NativeModules.AppleHealthKit);
