@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -45,15 +45,60 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
     );
 
     const unsubscribe = onSnapshot(current1v1Query, (snapshot) => {
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            onUpdate({ current1v1ID: doc.id, ...doc.data() });
-        } else {
-            onUpdate(null);
+        const processRequests = async () => {
+            if (!snapshot.empty) {
+                const duelDoc = snapshot.docs[0];
+                const isCurrentUserA = duelDoc.data().participants[0] === userID;
+                const opponentDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 1 : 0]));
+                const currentUserDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 0 : 1]));
+                onUpdate({ 
+                    current1v1ID: duelDoc.id, 
+                    userInfo: {
+                        currentUserPfp: currentUserDoc.data()?.profileImageUrl || null,
+                        opponentName: opponentDoc.data()?.name || "",
+                        opponentUsername: opponentDoc.data()?.username || "",
+                        opponentPfp: opponentDoc.data()?.profileImageUrl || null
+                    },
+                    ...duelDoc.data() 
+                });
+            } else {
+                onUpdate(null);
+            }
         }
+        processRequests();
     });
 
     return unsubscribe;
+};
+
+export const get1v1History = async (userID: string) => {
+    const historyQuery = query(
+        collection(db, '1v1s'),
+        where('participants', 'array-contains', userID),
+        where('endTime', '<=', Timestamp.now())
+    );
+
+    const historySnapshot = await getDocs(historyQuery);
+    if (historySnapshot.empty) {
+        return []; // No history found
+    }
+
+    const history = await Promise.all(
+        historySnapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data();
+            const opponentID = data.participants.find((id: string) => id !== userID);
+            const opponentDoc = await getDoc(doc(db, 'users', opponentID));
+            return {
+                duelID: docSnap.id,
+                ...data,
+                opponentName: opponentDoc.data()?.name || "",
+                opponentUsername: opponentDoc.data()?.username || "",
+                opponentPfp: opponentDoc.data()?.profileImageUrl || null
+            };
+        })
+    );
+
+    return history;
 };
 
 export const create1v1 = async (Request1v1ID: string) => {
@@ -103,26 +148,26 @@ export const create1v1 = async (Request1v1ID: string) => {
         startTime: serverTimestamp(),
         endTime: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // 24 hours later
         lastSynced: {
-            userA: serverTimestamp(),
-            userB: serverTimestamp()
+            [senderID]: serverTimestamp(),
+            [receiverID]: serverTimestamp()
         },
         participants: [senderID, receiverID],
         progress: {
-            userA: {
-                4: 0,
-                8: 0,
-                12: 0,
-                16: 0,
-                20: 0,
-                24: 0
+            [senderID]: {
+                '4': 0,
+                '8': 0,
+                '12': 0,
+                '16': 0,
+                '20': 0,
+                '24': 0
             },
-            userB: {
-                4: 0,
-                8: 0,
-                12: 0,
-                16: 0,
-                20: 0,
-                24: 0
+            [receiverID]: {
+                '4': 0,
+                '8': 0,
+                '12': 0,
+                '16': 0,
+                '20': 0,
+                '24': 0
             }
         }
     }

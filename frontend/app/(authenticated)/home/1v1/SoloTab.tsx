@@ -14,6 +14,7 @@ import UserSearchPage from './UserSearch';
 import Store1v1Page from './Store';
 import { create1v1 } from '@/backend/src/1v1';
 import { setIsIn1v1 } from '@/backend/src/users';
+import { LineChart } from 'react-native-chart-kit';
 
 dayjs.extend(relativeTime);
 
@@ -48,6 +49,8 @@ const SoloTab: React.FC<Props> = ({
     const [storeModal, setStoreModal] = useState(false);
     const [userSearchModal, setUserSearchModal] = useState(false);
     const [requestModalVisible, setRequestModalVisible] = useState<any>({});
+    const [timeLeftString, setTimeLeftString] = useState<string>('00:00:00');
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
         
     const formatRelativeTime = (timestamp: Date): string => {
         const now = dayjs();
@@ -95,6 +98,153 @@ const SoloTab: React.FC<Props> = ({
         }
     };
 
+    const countdownTimer = () => {
+        if (!current1v1) {
+            setTimeLeftString('00:00:00');
+            return;
+        }
+
+        const endTime = current1v1.endTime.toDate();
+        const now = new Date();
+        const timeLeft = endTime.getTime() - now.getTime();
+
+        if (timeLeft <= 0) {
+            setTimeLeftString('00:00:00');
+            return;
+        }
+
+        const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+        const seconds = Math.floor((timeLeft / 1000) % 60);
+
+        setTimeLeftString(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    };
+
+    useEffect(() => {
+        countdownTimer(); // run immediately on mount
+        const interval = setInterval(countdownTimer, 1000); // update every second
+
+        return () => clearInterval(interval); // cleanup on unmount
+    }, [current1v1]);
+
+    const StepsChart = () => {
+        if (!current1v1) {
+            return null;
+        }
+
+        const getHoursLeft = () => {
+            const [hours, minutes, seconds] = timeLeftString.split(":").map(Number);
+            return hours + minutes / 60 + seconds / 3600;
+        };
+
+        const getFilledIntervals = () => {
+            const hoursPassed = 24 - getHoursLeft() + 4;
+
+            const intervals = [0, 4, 8, 12, 16, 20, 24];
+            return intervals.filter(interval => hoursPassed >= interval);
+        };
+
+        const filledIntervals = getFilledIntervals(); // e.g., [4, 8]
+
+        const labels = ["0", "4h", "8h", "12h", "16h", "20h", "24h"];
+
+        const opponentID = current1v1.participants.find((id: string) => id !== userID);
+
+        const getStepsArray = (userId: string) => {
+            const progress = current1v1.progress[userId] || {};
+            return [0, 4, 8, 12, 16, 20, 24]
+                .filter(hour => filledIntervals.includes(hour))
+                .map(hour => progress[hour.toString()] || 0);
+        };
+
+        const userSteps = getStepsArray(userID);
+        const opponentSteps = getStepsArray(opponentID);
+
+        const data = {
+            labels: labels.slice(0, filledIntervals.length),
+            datasets: [
+                {
+                    data: userSteps,
+                    color: () => "#FF6060",
+                    strokeWidth: 2,
+                },
+                {
+                    data: opponentSteps,
+                    color: () => "#7464FF",
+                    strokeWidth: 2,
+                }
+            ]
+        };
+
+        return (
+            <LineChart
+                data={data}
+                width={width - 40}
+                height={verticalScale(240)}
+                fromZero
+                withVerticalLabels
+                withDots
+                withInnerLines
+                yAxisInterval={1}
+                chartConfig={{
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientFrom: 'rgba(2, 68, 5, 1)',
+                    backgroundGradientTo: 'rgba(2, 68, 5, 1)',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    propsForDots: {
+                        r: "5",
+                        strokeWidth: "2",
+                        stroke: "#fff",
+                    },
+                    propsForBackgroundLines: {
+                        strokeWidth: 1,
+                        stroke: "rgba(255,255,255,0.1)",
+                    },
+                    propsForLabels: {
+                        fontFamily: "Lexend",
+                        fontSize: 11,
+                    },
+                    style: {
+                        borderRadius: 16,
+                    }
+                }}
+                style={{
+                    marginVertical: 8,
+                    borderRadius: 16,
+                    paddingTop: 20,
+                    paddingBottom: 5,
+                    backgroundColor: 'rgba(2, 68, 5, 1)',
+                }}
+                decorator={() => {
+                    return tooltipPos.visible ? (
+                        <View style={{
+                            position: 'absolute',
+                            left: tooltipPos.x - 20,
+                            top: tooltipPos.y - 25,
+                            backgroundColor: 'rgba(0,0,0,0.7)',
+                            padding: 5,
+                            borderRadius: 5
+                        }}>
+                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff', includeFontPadding: false }}>
+                                {tooltipPos.value}
+                            </Text>
+                        </View>
+                    ) : null;
+                }}
+                onDataPointClick={({ x, y, value }) => {
+                    setTooltipPos({
+                        x: x,
+                        y: y,
+                        value: value,
+                        visible: true
+                    });
+                }}
+            />
+        );
+    };
+
     return (
         <>
             <View style={styles.row}>
@@ -116,7 +266,40 @@ const SoloTab: React.FC<Props> = ({
                 />
             </View>
             {current1v1 ? (
-                <Text style={{ color: '#fff' }}>Welcome to the game!</Text>
+                <>
+                    <View style={styles.row}>
+                        <View style={styles.playerInfo}>
+                            <Image
+                                source={current1v1?.userInfo?.currentUserPfp ?
+                                    { uri: current1v1?.userInfo?.currentUserPfp } :
+                                    require('@components/blank-profile-picture.png')
+                                }
+                                style={[styles.playerImage, { borderColor: '#FF6060', }]}
+                            />
+                            <Text style={styles.playerName}>You</Text>
+                        </View>
+                        <View style={styles.duelInfo}>
+                            <View style={styles.liveContainer}>
+                                <Text style={styles.liveTag}><Text style={{ color: 'green', }}>•</Text> LIVE</Text>
+                            </View>
+                            <Text style={styles.versus}>VS</Text>
+                        </View>
+                        <View style={styles.playerInfo}>
+                            <Image
+                                source={current1v1?.userInfo?.opponentPfp ?
+                                    { uri: current1v1?.userInfo?.opponentPfp } :
+                                    require('@components/blank-profile-picture.png')
+                                }
+                                style={[styles.playerImage, { borderColor: '#7464FF', }]}
+                            />
+                            <Text style={styles.playerName}>{current1v1?.userInfo?.opponentUsername}</Text>
+                        </View>
+                    </View>
+                    <View>
+                        <Text style={styles.countdownTimer}>{timeLeftString}</Text>
+                    </View>
+                    <View>{StepsChart()}</View>
+                </>
             ) : (
                 <>
                     <Image
@@ -190,7 +373,7 @@ const SoloTab: React.FC<Props> = ({
                             <ScrollView>
                                 {sentChallengeRequests.length > 0 ? (
                                     sentChallengeRequests.map((request) => (
-                                        <View style={styles.memberInfo}>
+                                        <View key={request.requestID} style={styles.memberInfo}>
                                             <Image
                                                 source={
                                                     request.receiverPfp ?
@@ -237,10 +420,11 @@ const SoloTab: React.FC<Props> = ({
                                 style={styles.closeButtonIcon}
                             />
                         </TouchableOpacity>
-                        <Store1v1Page
+                        {/* <Store1v1Page
                             userDiamonds={3}
                             setStoreModalVisible={setStoreModal}
-                        />
+                        /> */}
+                        <Text style={styles.modalContent}>Coming Soon.</Text>
                     </View>
                 </TouchableOpacity>
             </Modal>
@@ -445,6 +629,11 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: 'Lexend',
     },
+    modalContent: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 20,
+    },
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',
@@ -484,6 +673,55 @@ const styles = StyleSheet.create({
     closeButtonIcon: {
         width: scale(20),
         height: scale(20),
+    },
+    playerInfo: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '38%',
+    },
+    playerImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
+    },
+    playerName: {
+        color: '#fff',
+        fontSize: 14,
+        fontFamily: 'Lexend-Bold',
+        marginVertical: 5,
+    },
+    duelInfo: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        width: '20%',
+    },
+    liveContainer: {
+        position: 'absolute',
+        top: -30,
+        padding: 5,
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        marginTop: 5,
+    },
+    liveTag: {
+        color: '#000',
+        fontSize: 12,
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    versus: {
+        color: '#fff',
+        fontFamily: 'Lexend-Bold',
+        fontSize: 28,
+    },
+    countdownTimer: {
+        color: '#fff',
+        fontFamily: 'Lexend',
+        fontSize: 60,
+        textAlign: 'center',
+        // marginTop: 10,
     },
 });
 
