@@ -31,7 +31,7 @@ import UserSearchPage from './1v1/UserSearch';
 import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend/src/1v1Requests';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { create1v1, get1v1 } from '@/backend/src/1v1';
+import { create1v1, get1v1, get1v1History } from '@/backend/src/1v1';
 import SoloTab from './1v1/SoloTab';
 import { set } from 'date-fns';
 
@@ -69,6 +69,7 @@ const HomeTab: React.FC = () => {
     const [receivedChallengeRequests, setReceivedChallengeRequests] = useState<any[]>([]);
     const [sentChallengeRequests, setSentChallengeRequests] = useState<any[]>([]);
     const [current1v1, setCurrent1v1] = useState<any>(null);
+    const [history1v1s, setHistory1v1s] = useState<any[]>([]);
     
     const router = useRouter();
 
@@ -125,6 +126,9 @@ const HomeTab: React.FC = () => {
                 unsubscribeCurrent1v1 = get1v1(user.uid, (data) => {
                     setCurrent1v1(data);
                 });
+
+                const current1v1History = await get1v1History(user.uid);
+                setHistory1v1s(current1v1History);
             } else {
                 console.log('No user signed in');
             }
@@ -446,6 +450,7 @@ const HomeTab: React.FC = () => {
                             <SoloTab
                                 current1v1={current1v1}
                                 setCurrent1v1={setCurrent1v1}
+                                history1v1s={history1v1s}
                                 receivedChallengeRequests={receivedChallengeRequests}
                                 sentChallengeRequests={sentChallengeRequests}
                             />
