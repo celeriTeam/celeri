@@ -15,6 +15,7 @@ import Store1v1Page from './Store';
 import { create1v1 } from '@/backend/src/1v1';
 import { setIsIn1v1 } from '@/backend/src/users';
 import { LineChart } from 'react-native-chart-kit';
+import History1v1s from './History1v1s';
 
 dayjs.extend(relativeTime);
 
@@ -34,6 +35,7 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 type Props = {
     current1v1: any;
     setCurrent1v1: (val: any) => void;
+    history1v1s: any[];
     receivedChallengeRequests: any[];
     sentChallengeRequests: any[];
 };
@@ -41,12 +43,14 @@ type Props = {
 const SoloTab: React.FC<Props> = ({
     current1v1,
     setCurrent1v1,
+    history1v1s,
     receivedChallengeRequests,
     sentChallengeRequests
 }) => {
     const { userID } = useUser();
     const [selectedTab, setSelectedTab] = useState('Received');
     const [storeModal, setStoreModal] = useState(false);
+    const [historyModal, setHistoryModal] = useState(false);
     const [userSearchModal, setUserSearchModal] = useState(false);
     const [requestModalVisible, setRequestModalVisible] = useState<any>({});
     const [timeLeftString, setTimeLeftString] = useState<string>('00:00:00');
@@ -256,10 +260,12 @@ const SoloTab: React.FC<Props> = ({
                         />
                     </TouchableOpacity>
                 )}
-                <Image
-                    source={require('@assets/icons/history.png')}
-                    style={styles.historyIcon}
-                />
+                <TouchableOpacity onPress={() => setStoreModal(true)}>
+                    <Image
+                        source={require('@assets/icons/history.png')}
+                        style={styles.historyIcon}
+                    />
+                </TouchableOpacity>
                 <Image
                     source={require('@assets/icons/trophy.png')}
                     style={styles.trophyIcon}
@@ -399,6 +405,38 @@ const SoloTab: React.FC<Props> = ({
                     </View>
                 </>
             )}
+            
+            {/* History modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={historyModal}
+                onRequestClose={() => setHistoryModal(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setHistoryModal(false)} // Close dropdown when overlay is pressed
+                >
+                    <View style={[styles.modalContainer, { height: '80%', }]}>
+                        {/* Close button */}
+                        <TouchableOpacity style={styles.modalCloseButton} onPress={() => setHistoryModal(false)}>
+                            <Image
+                                source={require('@assets/icons/x.png')}
+                                style={styles.closeButtonIcon}
+                            />
+                        </TouchableOpacity>
+                        {history1v1s.length > 0 ? (
+                            <History1v1s 
+                                history1v1s={history1v1s}
+                                setHistoryModal={setHistoryModal}
+                            />
+                        ) : (
+                            <Text style={styles.noMatchText}>No match history found.</Text>
+                        )}
+                    </View>
+                </TouchableOpacity>
+            </Modal>
             
             {/* Store modal */}
             <Modal
@@ -633,6 +671,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         color: '#fff',
         fontSize: 20,
+        margin: 20,
     },
     modalOverlay: {
         flex: 1,

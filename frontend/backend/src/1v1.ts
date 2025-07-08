@@ -50,7 +50,7 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
                 const duelDoc = snapshot.docs[0];
                 const isCurrentUserA = duelDoc.data().participants[0] === userID;
                 const opponentDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 1 : 0]));
-                const currentUserDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 0 : 1]));
+                const currentUserDoc = await getDoc(doc(db, 'users', userID));
                 onUpdate({ 
                     current1v1ID: duelDoc.id, 
                     userInfo: {
@@ -88,12 +88,16 @@ export const get1v1History = async (userID: string) => {
             const data = docSnap.data();
             const opponentID = data.participants.find((id: string) => id !== userID);
             const opponentDoc = await getDoc(doc(db, 'users', opponentID));
+            const currentUserDoc = await getDoc(doc(db, 'users', userID));
             return {
                 duelID: docSnap.id,
                 ...data,
-                opponentName: opponentDoc.data()?.name || "",
-                opponentUsername: opponentDoc.data()?.username || "",
-                opponentPfp: opponentDoc.data()?.profileImageUrl || null
+                userInfo: {
+                    currentUserPfp: currentUserDoc.data()?.profileImageUrl || null,
+                    opponentName: opponentDoc.data()?.name || "",
+                    opponentUsername: opponentDoc.data()?.username || "",
+                    opponentPfp: opponentDoc.data()?.profileImageUrl || null
+                },
             };
         })
     );
