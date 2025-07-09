@@ -114,11 +114,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setLoading(true);
                     if (docSnapshot.exists() && groupID) {
                         const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, isResultAvailable,
-                        groupCreator, userTokens, todaysBetTokens, 
-                        currentPlayersInGame, cycle, cycleCount, totalCycles, yesterdaysDuels, lastWeekDuels,
-                        todaysDuels, unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
-                        isFinishedTutorial, gameType, createdAt, resetDay,
-                        startingTokens, userFinishedTutorial, tutorialStatus, gameStartedAt] = await Promise.all([
+                        groupCreator] = await Promise.all([
                             getGroupCode(groupID),
                             getGroupProfilePic(groupID),
                             getGroupName(groupID),
@@ -126,28 +122,59 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                             getGroupIsFirstDay(groupID),
                             getGroupIsResultAvailable(groupID, uid),
                             getGroupCreator(groupID),
-                            getUserTokens(groupID, uid),
-                            getTodaysBetTokens(groupID, uid),
-                            getCurrentPlayersInGame(groupID),
-                            getCycle(groupID),
-                            getCycleCount(groupID),
-                            getTotalCycles(groupID),
-                            getYesterdaysDuelsSummary(groupID),
-                            getLastWeekDuelsSummary(groupID),
-                            getTodaysDuelsSummary(groupID),
-                            getUnbetDuels(groupID, uid),
-                            getLastWeekPropBets(groupID, uid),
-                            checkFinishedBetting(groupID, uid),
-                            checkFinishedRecap(groupID, uid),
-                            checkFinishedTutorial(groupID, uid),
-                            getGameType(groupID),
-                            getGroupCreatedAt(groupID),
-                            getResetDay(groupID),
-                            getStartingTokens(groupID),
-                            getUserFinishedTutorial(uid),
-                            getTutorialStatus(groupID, uid),
-                            getGameStartedAt(groupID),
                         ]);
+
+                        let userTokens = null,
+                        todaysBetTokens = null,
+                        cycle = null,
+                        cycleCount = null,
+                        totalCycles = null,
+                        currentPlayersInGame = null,
+                        yesterdaysDuels = null,
+                        lastWeekDuels = null,
+                        todaysDuels = null,
+                        unbetDuels = null,
+                        lastWeekPropBets = null,
+                        isFinishedBetting = null,
+                        isFinishedRecap = null,
+                        isFinishedTutorial = null,
+                        gameType = null,
+                        createdAt = null,
+                        resetDay = null,
+                        startingTokens = null,
+                        userFinishedTutorial = null,
+                        tutorialStatus = null,
+                        gameStartedAt = null;
+
+                        if (isGameActive) {
+                            [userTokens, todaysBetTokens, cycle, cycleCount, totalCycles, currentPlayersInGame, 
+                            yesterdaysDuels, lastWeekDuels, todaysDuels, 
+                            unbetDuels, lastWeekPropBets, isFinishedBetting, isFinishedRecap, 
+                            isFinishedTutorial, gameType, createdAt, resetDay,
+                            startingTokens, userFinishedTutorial, tutorialStatus, gameStartedAt] = await Promise.all([
+                                getUserTokens(groupID, uid),
+                                getTodaysBetTokens(groupID, uid),
+                                getCycle(groupID),
+                                getCycleCount(groupID),
+                                getTotalCycles(groupID),
+                                getCurrentPlayersInGame(groupID),
+                                getYesterdaysDuelsSummary(groupID),
+                                getLastWeekDuelsSummary(groupID),
+                                getTodaysDuelsSummary(groupID),
+                                getUnbetDuels(groupID, uid),
+                                getLastWeekPropBets(groupID, uid),
+                                checkFinishedBetting(groupID, uid),
+                                checkFinishedRecap(groupID, uid),
+                                checkFinishedTutorial(groupID, uid),
+                                getGameType(groupID),
+                                getGroupCreatedAt(groupID),
+                                getResetDay(groupID),
+                                getStartingTokens(groupID),
+                                getUserFinishedTutorial(uid),
+                                getTutorialStatus(groupID, uid),
+                                getGameStartedAt(groupID),
+                            ]);
+                        }
 
                         // console.log("testing here", groupName, isResultAvailable)
 
@@ -155,21 +182,34 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const users: { [userID: string]: any } = {};
                         if (userList) {
                             await Promise.all(userList.map(async (selectedUserID) => {
-                                const [profilePic, username, steps, weeklySteps, averageSteps, stepsFromWeekBefore, lastWeekSteps, weeklyDuelsWon, tokens, betOnTokens, diamonds, name, lastLogin] = await Promise.all([
+                                const [profilePic, username, name, steps, averageSteps, stepsFromWeekBefore] = await Promise.all([
                                     getProfilePic(selectedUserID),
                                     getUserName(selectedUserID),
+                                    getName(selectedUserID),
                                     getSteps(selectedUserID),
-                                    getWeeklySteps(groupID, selectedUserID), // the steps that are being counted for the game week by week
                                     getAverageSteps(selectedUserID), // average amount of steps over the past seven days 
                                     getStepsFromWeekBefore(selectedUserID), // from the week before the past reset day to one week before that. 7 days before the one below.
-                                    getLastWeekSteps(groupID, selectedUserID), // from the past reset day to 7 days behind that
-                                    getWeeklyDuelsWon(groupID, selectedUserID),
-                                    getUserTokens(groupID, selectedUserID),
-                                    getTodaysBetTokens(groupID, selectedUserID),
-                                    getUserDiamonds(groupID, selectedUserID),
-                                    getName(selectedUserID),
-                                    getLastLogin(groupID, selectedUserID)
                                 ]);
+
+                                let weeklySteps = null,
+                                lastWeekSteps = null,
+                                weeklyDuelsWon = null,
+                                tokens = null,
+                                betOnTokens = null,
+                                diamonds = null,
+                                lastLogin = null;
+
+                                if (isGameActive) {
+                                    [weeklySteps, lastWeekSteps, weeklyDuelsWon, tokens, betOnTokens, diamonds, lastLogin] = await Promise.all([
+                                        getWeeklySteps(groupID, selectedUserID), // the steps that are being counted for the game week by week
+                                        getLastWeekSteps(groupID, selectedUserID), // from the past reset day to 7 days behind that
+                                        getWeeklyDuelsWon(groupID, selectedUserID),
+                                        getUserTokens(groupID, selectedUserID),
+                                        getTodaysBetTokens(groupID, selectedUserID),
+                                        getUserDiamonds(groupID, selectedUserID),
+                                        getLastLogin(groupID, selectedUserID)
+                                    ]);
+                                }
                         
                                 users[selectedUserID] = {
                                     profilePic,

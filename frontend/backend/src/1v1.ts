@@ -105,6 +105,43 @@ export const get1v1History = async (userID: string) => {
     return history;
 };
 
+export const get1v1StartTime = async (userID: string) => {
+    const q = query(
+        collection(db,'1v1s'),
+        where('participants','array-contains', userID),
+        where('endTime', '>', Timestamp.now())
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return { startTime: null, current1v1ID: null };
+
+    const doc = snap.docs[0];
+    const data = doc.data();
+    const current1v1ID = doc.id || null;
+    const startTime = data.startTime?.toDate?.();
+    return { startTime, current1v1ID };
+};
+
+export const update1v1Steps = async (userID: string, current1v1ID: string, stepsMap: { [key: string]: number }) => {
+    const duelRef = doc(db, '1v1s', current1v1ID);
+    const duelDoc = await getDoc(duelRef);
+    if (!duelDoc.exists()) {
+        throw new Error('Duel not found');
+    }
+
+    const duelData = duelDoc.data();
+
+    await updateDoc(duelRef, {
+        progress: {
+            ...duelData.progress,
+            [userID]: stepsMap,
+        },
+        lastSynced: {
+            ...duelData.lastSynced,
+            [userID]: serverTimestamp()
+        }
+    });
+};
+
 export const create1v1 = async (Request1v1ID: string) => {
     // grab senderID and receiverID from the request
     // set the following:

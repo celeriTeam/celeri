@@ -37,6 +37,116 @@ exports.sendEmail = onCall(async (request) => {
   }
 });
 
+/**
+ * Retrieves the FCM tokens array for a specific user.
+ *
+ * @param {string} userID - The ID of the user to fetch tokens for.
+ * @return {Promise<string[] | null>} The list of FCM tokens or null if none found.
+ */
+async function getUserFcmTokens(userID) {
+  const userSnap = await getFirestore().collection("users").doc(userID).get();
+  const userData = userSnap.data();
+  return userData.tokens || null;
+}
+
+// Sync Step Scheduler
+exports.syncStepScheduler = onSchedule("every 5 minutes", async () => {
+  const db = getFirestore();
+  const now = new Date();
+  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const usersSnap = await db.collection("users").get();
+
+  for (const userDoc of usersSnap.docs) {
+    const user = userDoc.data();
+    const userID = userDoc.id;
+
+    // check login activity:
+    if (!user.lastLogin || user.lastLogin.toDate() < sixtyDaysAgo) continue;
+
+    // check if user in 1v1
+    const isIn1v1 = user.isIn1v1;
+
+    // if user is active in app, let frontend handle sync
+    let lastAppOpen = null;
+    if (user.lastLogin && typeof user.lastLogin.toDate === "function") {
+      lastAppOpen = user.lastLogin.toDate();
+    }
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if (lastAppOpen && lastAppOpen > fiveMinutesAgo) {
+      continue; // Skip backend push, app is active
+    }
+
+    let syncIntervalMs = null;
+
+    if (isIn1v1) {
+      syncIntervalMs = 1 * 60 * 60 * 1000; // 1 hour
+    } else {
+      // check group activity:
+      let isInActiveGroup = false;
+      if (user.groups && user.groups.length > 0) {
+        const groupChecks = await Promise.all(
+          user.groups.map(async (groupID) => {
+            const groupSnap = await db.collection("groups").doc(groupID).get();
+            return groupSnap.exists && groupSnap.data().isGameActive;
+          }),
+        );
+        isInActiveGroup = groupChecks.includes(true);
+      }
+      if (!isInActiveGroup) continue;
+
+      syncIntervalMs = 4 * 60 * 60 * 1000; // 4 hours
+    }
+
+    const nextSyncTime = new Date(now.getTime() + syncIntervalMs);
+
+    // check for existing job
+    const existingJobSnap = await db
+      .collection("syncQueue")
+      .doc(userID)
+      .get();
+
+    if (!existingJobSnap.exists || existingJobSnap.data().scheduledTime.toDate() > nextSyncTime) {
+      await db.collection("syncQueue").doc(userID).set({
+        userID,
+        scheduledTime: nextSyncTime,
+        processed: false,
+      });
+    }
+  }
+
+  // process due jobs
+  const dueJobsSnap = await db
+    .collection("syncQueue")
+    .where("processed", "==", false)
+    .where("scheduledTime", "<=", now)
+    .get();
+
+  for (const jobDoc of dueJobsSnap.docs) {
+    const job = jobDoc.data();
+
+    // Send silent push
+    const tokens = await getUserFcmTokens(job.userID);
+    for (const token of tokens) {
+      const message = {
+        token,
+        data: {
+          type: "silent",
+          action: "fetchSteps",
+        },
+      };
+
+      try {
+        await admin.messaging().send(message);
+        await jobDoc.ref.delete(); // or mark as processed
+        console.log(`Sent sync for user ${job.userID}`);
+      } catch (err) {
+        console.error(`Failed to send sync for ${job.userID}:`, err);
+      }
+    }
+  }
+});
+
 // function for sending daily notifs to all users
 exports.sendNotif = onSchedule("every day 04:00", async (event) => {
   const today = new Date();
@@ -865,6 +975,93 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
     } catch (error) {
       console.error("Error fetching user document:", error);
     }
+  }
+});
+
+exports.send1v1RequestNotification = onCall(async (req) => {
+  const {receiverID, senderName} = req.data;
+  const db = getFirestore();
+
+  const userSnap = await db.collection("users").doc(receiverID).get();
+  const tokens = userSnap.data().tokens || [];
+
+  const message = {
+    notification: {
+      title: "You've been challenged!",
+      body: `${senderName} has sent you a 1v1 challenge.`,
+    },
+    tokens: tokens,
+  };
+
+  await admin.messaging().sendEachForMulticast(message);
+  return {success: true};
+});
+
+exports.send1v1StartedNotification = onCall(async (req) => {
+  const {opponentID, opponentName} = req.data;
+  const db = getFirestore();
+
+  const userSnap = await db.collection("users").doc(opponentID).get();
+  const tokens = userSnap.data().tokens || [];
+
+  const message = {
+    notification: {
+      title: "Your 1v1 has started!",
+      body: `You are now in a 1v1 with ${opponentName}. Time to walk!`,
+    },
+    tokens: tokens,
+  };
+
+  await admin.messaging().sendEachForMulticast(message);
+  return {success: true};
+});
+
+exports.handle1v1End = onDocumentUpdated("1v1s/{duelID}", async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
+  const db = getFirestore();
+
+  const now = Date.now();
+  if (
+    before.endTime.toMillis() > now &&
+    after.endTime.toMillis() <= now
+  ) {
+    const participants = after.participants || [];
+
+    const [uid1, uid2] = participants;
+    const userSnap1 = db.collection("users").doc(uid1).get();
+    const userSnap2 = db.collection("users").doc(uid2).get();
+    const user1 = userSnap1.data();
+    const user2 = userSnap2.data();
+    const name1 = user1.username || "your opponent";
+    const name2 = user2.username || "your opponent";
+    const tokens1 = user1.tokens || [];
+    const tokens2 = user2.tokens || [];
+
+    db.collection("users").doc(uid1).update({isIn1v1: false});
+    db.collection("users").doc(uid2).update({isIn1v1: false});
+
+    console.log(`1v1 ended for: ${uid1}, ${uid2}`);
+
+    const message1 = {
+      notification: {
+        title: `1v1 with ${name2} ended`,
+        body: "See the results!",
+      },
+      tokens: tokens1,
+    };
+
+    const message2 = {
+      notification: {
+        title: `1v1 with ${name1} ended`,
+        body: "See the results!",
+      },
+      tokens: tokens2,
+    };
+    await admin.messaging().sendEachForMulticast(message1);
+    await admin.messaging().sendEachForMulticast(message2);
+
+    console.log(`1v1 ended notification sent for: ${participants.join(", ")}`);
   }
 });
 
@@ -2311,7 +2508,6 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               propBets: admin.firestore.FieldValue.delete(),
               previousPlayersInGame: admin.firestore.FieldValue.delete(),
               resetDay: admin.firestore.FieldValue.delete(),
-              totalCycles: admin.firestore.FieldValue.delete(),
               gameType: admin.firestore.FieldValue.delete(),
             });
             // reset the tokens for each player

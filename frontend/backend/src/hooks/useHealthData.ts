@@ -16,6 +16,8 @@ import {
 } from 'react-native-health-connect';
 import { newsFunctions } from '../news';
 import { set } from 'date-fns';
+import { get } from 'http';
+import { get1v1StartTime, update1v1Steps } from '../1v1';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -299,6 +301,85 @@ const useHealthData = () => {
         return stepsFromWeekBeforeTemp; // Return the calculated value
     };
 
+    const getStepCountForRange = async (start: Date, end: Date): Promise<number> => {
+        if (Platform.OS === 'ios') {
+            return new Promise((resolve, reject) => {
+                const options = {
+                    startDate: start.toISOString(),
+                    endDate: end.toISOString(),
+                };
+
+                AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
+                    if (err || !results) {
+                        console.log("Error fetching steps for range", err);
+                        resolve(0);
+                    } else {
+                        const total = results.reduce((sum, s) => {
+                            const sStart = new Date(s.startDate).getTime();
+                            const sEnd = new Date(s.endDate).getTime();
+                            if (sStart >= start.getTime() && sEnd <= end.getTime()) {
+                                return sum + s.value;
+                            }
+                            return sum;
+                        }, 0);
+                        resolve(Math.floor(total));
+                    }
+                });
+            });
+        } else {
+            try {
+                const records = await readRecords('Steps', {
+                    timeRangeFilter: {
+                        operator: 'between',
+                        startTime: start.toISOString(),
+                        endTime: end.toISOString()
+                    }
+                });
+                return records.records.reduce((sum, r) => sum + r.count, 0);
+            } catch (err) {
+                console.log("Android steps error:", err);
+                return 0;
+            }
+        }
+    };
+
+    const get1v1Steps = async (userID: string) => {
+        const { startTime, current1v1ID } = await get1v1StartTime(userID);
+        if (startTime === null || current1v1ID === null) return;
+
+        // Calculate time since start
+        const now = new Date();
+        const hoursSinceStart = Math.floor((now.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+        const completedIntervals = Math.floor(hoursSinceStart / 4) + 1;
+
+        let stepsMap: { [key: string]: number } = {
+            '4': 0,
+            '8': 0,
+            '12': 0,
+            '16': 0,
+            '20': 0,
+            '24': 0
+        };
+
+        let sum = 0;
+
+        for (let interval = 0; interval < completedIntervals; interval++) {
+            const hourMark = interval * 4;
+            const stepsInterval = `${hourMark + 4}`;
+
+            const intervalStart = new Date(startTime.getTime() + hourMark * 60 * 60 * 1000);
+            const intervalEnd = new Date(startTime.getTime() + (hourMark + 4) * 60 * 60 * 1000);
+
+            const intervalSteps = await getStepCountForRange(intervalStart, intervalEnd);
+            sum += intervalSteps;
+            console.log('adding ', intervalSteps, ' steps for interval:', stepsInterval);
+            stepsMap[stepsInterval] = sum;
+        }
+
+        // Write updated steps to Firestore
+        await update1v1Steps(userID, current1v1ID, stepsMap);
+    };
+
     // Grabbing all health data
     const fetchAllHealthData = async (userID: string) => {
         try {
@@ -365,6 +446,7 @@ const useHealthData = () => {
     
                 await setStepsLastUpdate(userID, new Date());
                 await setLastLogin(userID, new Date());
+                await get1v1Steps(userID);
 
             } catch (error) {
                 console.error("Error updating Firebase and news:", error);
@@ -401,6 +483,7 @@ const useHealthData = () => {
             );
 
             await setStepsLastUpdate(userID, new Date());
+            await get1v1Steps(userID);
 
             return healthData.currentData;
         }
