@@ -16,6 +16,7 @@ import { create1v1 } from '@/backend/src/1v1';
 import { setIsIn1v1 } from '@/backend/src/users';
 import { LineChart } from 'react-native-chart-kit';
 import History1v1s from './History1v1s';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 dayjs.extend(relativeTime);
 
@@ -47,7 +48,7 @@ const SoloTab: React.FC<Props> = ({
     receivedChallengeRequests,
     sentChallengeRequests
 }) => {
-    const { userID } = useUser();
+    const { userID, username } = useUser();
     const [selectedTab, setSelectedTab] = useState('Received');
     const [storeModal, setStoreModal] = useState(false);
     const [historyModal, setHistoryModal] = useState(false);
@@ -95,7 +96,11 @@ const SoloTab: React.FC<Props> = ({
             await update1v1Requests(userID, request?.requestID, new1v1Data.current1v1ID);
             await setIsIn1v1(request?.senderID, true);
             await setIsIn1v1(request?.receiverID, true);
-            setCurrent1v1(new1v1Data);
+
+            const functions = getFunctions();
+            const notifyStart = httpsCallable(functions, 'send1v1StartedNotification');
+            await notifyStart({ opponentID: request.senderID, opponentName: username });
+            // setCurrent1v1(new1v1Data);
         } catch (error) {
             console.error('Error accepting request:', error);
             Alert.alert('Error', 'Failed to accept the challenge request. Please try again.');
