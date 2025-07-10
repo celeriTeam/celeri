@@ -38,9 +38,17 @@ type Props = {
 
 const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
     const { userID } = useUser();
-    const opponentID = history1v1s[0]?.participants.find((id: string) => id !== userID);
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
+
+    if (!history1v1s || history1v1s.length === 0) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.title}>No 1v1 History</Text>
+                <Text style={styles.statusText}>You haven't participated in any 1v1s yet.</Text>
+            </View>
+        );
+    }
 
     const StepsChart = ({ current1v1 }: { current1v1: any }) => {
         const labels = ["0", "4h", "8h", "12h", "16h", "20h", "24h"];
@@ -62,12 +70,12 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
                 {
                     data: userSteps,
                     color: () => "#FF6060",
-                    strokeWidth: 2,
+                    strokeWidth: 1,
                 },
                 {
                     data: opponentSteps,
                     color: () => "#7464FF",
-                    strokeWidth: 2,
+                    strokeWidth: 1,
                 }
             ]
         };
@@ -75,8 +83,8 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
         return (
             <LineChart
                 data={data}
-                width={width - 40}
-                height={verticalScale(240)}
+                width={width * 0.7}
+                height={verticalScale(200)}
                 fromZero
                 withVerticalLabels
                 withDots
@@ -90,26 +98,26 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
                     color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
                     propsForDots: {
-                        r: "5",
-                        strokeWidth: "2",
+                        r: "4",
+                        strokeWidth: "1",
                         stroke: "#fff",
                     },
                     propsForBackgroundLines: {
-                        strokeWidth: 1,
+                        strokeWidth: 0.5,
                         stroke: "rgba(255,255,255,0.1)",
                     },
                     propsForLabels: {
                         fontFamily: "Lexend",
-                        fontSize: 11,
+                        fontSize: 9,
                     },
                     style: {
-                        borderRadius: 16,
+                        borderRadius: 12,
                     }
                 }}
                 style={{
                     marginVertical: 8,
-                    borderRadius: 16,
-                    paddingTop: 20,
+                    borderRadius: 14,
+                    paddingTop: 15,
                     paddingBottom: 5,
                     backgroundColor: 'rgba(2, 68, 5, 1)',
                 }}
@@ -123,7 +131,7 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
                             padding: 5,
                             borderRadius: 5
                         }}>
-                            <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff', includeFontPadding: false }}>
+                            <Text style={{ fontFamily: 'Lexend', fontSize: 11, color: '#fff', includeFontPadding: false }}>
                                 {tooltipPos.value}
                             </Text>
                         </View>
@@ -142,57 +150,74 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
     };
 
     return (
-        <FlatList
-            data={history1v1s.sort((a, b) => b.endTime.toDate().getTime() - a.endTime.toDate().getTime())}
-            keyExtractor={(item) => item.duelID}
-            renderItem={({ item }) => (
-                <View>
-                    <TouchableHighlight
-                        onPress={() => {
-                            setIsExpanded(!isExpanded);
-                            setHistoryModal(false);
-                        }}
-                        underlayColor="#5BE35C33"
-                        style={styles.playerContainer}
-                    >
-                        <View style={styles.row}>
+        <View style={styles.container}>
+            <View style={styles.scrollContainer}>
+                <FlatList
+                    data={history1v1s.sort((a, b) => b.endTime.toDate().getTime() - a.endTime.toDate().getTime())}
+                    keyExtractor={(item) => item.duelID}
+                    renderItem={({ item }) => {
+                        const opponentID = item.participants.find((id: string) => id !== userID);
+
+                        const userSteps = item?.progress?.[userID]?.[24] ?? 0;
+                        const opponentSteps = item?.progress?.[opponentID]?.[24] ?? 0;
+                        const userWon = userSteps > opponentSteps;
+                        const opponentWon = opponentSteps > userSteps;
+                        return (
                             <View>
-                                <Image
-                                    source={item?.userInfo?.currentUserPfp ?
-                                        { uri: item?.userInfo?.currentUserPfp } :
-                                        require('@components/blank-profile-picture.png')
-                                    }
-                                    style={styles.profileImage}
-                                />
-                                <View>
-                                    <Text style={styles.player}>You</Text>
-                                    <Text style={styles.steps}>{item?.progress[userID][24]} steps</Text>
+                                <Text style={styles.date}>
+                                    {dayjs(item.endTime.toDate()).format('MMM D, YYYY')}
+                                </Text>
+                                <View style={styles.playerContainer}>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setTooltipPos({ x: 0, y: 0, visible: false, value: 0 });
+                                            if (isExpanded === item.duelID) {
+                                                setIsExpanded(null);
+                                            } else {
+                                                setIsExpanded(item.duelID);
+                                            }
+                                        }}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={styles.row}>
+                                            <View style={[styles.rowSide, { opacity: (userWon || !opponentWon) ? 1 : 0.5 }]}>
+                                                <Image
+                                                    source={item?.userInfo?.currentUserPfp ?
+                                                        { uri: item?.userInfo?.currentUserPfp } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[styles.profileImage, { marginRight: 10, borderColor: "#FF606080", }]}
+                                                />
+                                                <View>
+                                                    <Text style={styles.player}>You</Text>
+                                                    <Text style={styles.steps}>{userSteps} steps</Text>
+                                                </View>
+                                            </View>
+                                            <View style={[styles.rowSide, { opacity: (!userWon || opponentWon) ? 1 : 0.5}]}>
+                                                <View>
+                                                    <Text style={[styles.player, { textAlign: 'right', }]}>{item?.userInfo?.opponentUsername}</Text>
+                                                    <Text style={[styles.steps, { textAlign: 'right', }]}>{opponentSteps} steps</Text>
+                                                </View>
+                                                <Image
+                                                    source={item?.userInfo?.opponentPfp ?
+                                                        { uri: item?.userInfo?.opponentPfp } :
+                                                        require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[styles.profileImage, { marginLeft: 10, borderColor: "#7464FF80", }]}
+                                                />
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                    {item.duelID === isExpanded && (
+                                        <StepsChart current1v1={item} />
+                                    )}
                                 </View>
                             </View>
-                            <View>
-                                <View>
-                                    <Text style={styles.player}>{item?.userInfo?.opponentUsername}</Text>
-                                    <Text style={styles.steps}>{item?.progress[opponentID][24]} steps</Text>
-                                </View>
-                                <Image
-                                    source={item?.userInfo?.opponentPfp ?
-                                        { uri: item?.userInfo?.opponentPfp } :
-                                        require('@components/blank-profile-picture.png')
-                                    }
-                                    style={styles.profileImage}
-                                />
-                            </View>
-                            {/* <Text style={styles.memberCreatedAt}>
-                                {dayjs(item.endTime.toDate()).format('MMM D, YYYY')}
-                            </Text> */}
-                        </View>
-                        {/* {isExpanded && (
-                            <StepsChart current1v1={item} />
-                        )} */}
-                    </TouchableHighlight>
-                </View>
-            )}
-        />
+                        );
+                    }}
+                />
+            </View>
+        </View>
     )
 };
 
@@ -201,10 +226,17 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        paddingHorizontal: 20,
+        // justifyContent: 'center',
+        // alignItems: 'center',
         height: '100%',
+        padding: 10,
+        paddingTop: 30,
+    },
+    scrollContainer: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: '#5BE35C32',
+        // height: '102%',
     },
     backButton: {
         position: 'absolute',
@@ -259,6 +291,12 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 20,
     },
+    date: {
+        fontFamily: "Lexend",
+        color: '#ffffff80',
+        fontSize: 10,
+        marginBottom: 5,
+    },
     flatList: {
         marginTop: 10,
         width: '100%',
@@ -290,6 +328,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        width: '100%',
+    },
+    rowSide: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     carrotIcon: {
         textAlign: 'right',
@@ -318,12 +361,10 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#D3D3D3",
-        marginRight: 10,
     },
     playerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        // flexDirection: 'row',
+        // justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 6,
         backgroundColor: '#00000080',
@@ -336,13 +377,11 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: '#fff',
         flex: 1,
-        textAlign: 'left',
     },
     steps: {
         fontFamily: "Lexend",
-        fontSize: 11,
-        color: '#fff',
-        textAlign: 'right',
+        fontSize: 9,
+        color: '#ffffffaa',
     },
     createdAtText: {
         fontFamily: "Lexend",

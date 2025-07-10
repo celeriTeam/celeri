@@ -265,7 +265,7 @@ const SoloTab: React.FC<Props> = ({
                         />
                     </TouchableOpacity>
                 )}
-                <TouchableOpacity onPress={() => setStoreModal(true)}>
+                <TouchableOpacity onPress={() => setHistoryModal(true)}>
                     <Image
                         source={require('@assets/icons/history.png')}
                         style={styles.historyIcon}
@@ -418,11 +418,7 @@ const SoloTab: React.FC<Props> = ({
                 visible={historyModal}
                 onRequestClose={() => setHistoryModal(false)}
             >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={() => setHistoryModal(false)} // Close dropdown when overlay is pressed
-                >
+                <View style={styles.modalOverlay}>
                     <View style={[styles.modalContainer, { height: '80%', }]}>
                         {/* Close button */}
                         <TouchableOpacity style={styles.modalCloseButton} onPress={() => setHistoryModal(false)}>
@@ -440,7 +436,7 @@ const SoloTab: React.FC<Props> = ({
                             <Text style={styles.noMatchText}>No match history found.</Text>
                         )}
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
             
             {/* Store modal */}

@@ -363,9 +363,15 @@ const useHealthData = () => {
 
         let sum = 0;
 
-        for (let interval = 0; interval < completedIntervals; interval++) {
+        for (let interval = 0; interval < 6; interval++) {
             const hourMark = interval * 4;
             const stepsInterval = `${hourMark + 4}`;
+
+            if (interval >= completedIntervals) {
+                console.log('adding ', sum, ' steps for interval:', stepsInterval);
+                stepsMap[stepsInterval] = sum;
+                continue;
+            };
 
             const intervalStart = new Date(startTime.getTime() + hourMark * 60 * 60 * 1000);
             const intervalEnd = new Date(startTime.getTime() + (hourMark + 4) * 60 * 60 * 1000);
