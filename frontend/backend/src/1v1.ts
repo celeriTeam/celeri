@@ -45,6 +45,10 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
     );
 
     const unsubscribe = onSnapshot(current1v1Query, (snapshot) => {
+        if (snapshot.empty || snapshot.docs.length === 0) {
+            onUpdate(null); // No active 1v1
+            return;
+        }
         const processRequests = async () => {
             if (!snapshot.empty) {
                 const duelDoc = snapshot.docs[0];
@@ -102,6 +106,7 @@ export const get1v1History = async (userID: string) => {
         })
     );
 
+    console.log('1v1 History:', history);
     return history;
 };
 
