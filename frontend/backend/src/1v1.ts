@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -45,15 +45,106 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
     );
 
     const unsubscribe = onSnapshot(current1v1Query, (snapshot) => {
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            onUpdate({ current1v1ID: doc.id, ...doc.data() });
-        } else {
-            onUpdate(null);
+        if (snapshot.empty || snapshot.docs.length === 0) {
+            onUpdate(null); // No active 1v1
+            return;
         }
+        const processRequests = async () => {
+            if (!snapshot.empty) {
+                const duelDoc = snapshot.docs[0];
+                const isCurrentUserA = duelDoc.data().participants[0] === userID;
+                const opponentDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 1 : 0]));
+                const currentUserDoc = await getDoc(doc(db, 'users', userID));
+                onUpdate({ 
+                    current1v1ID: duelDoc.id, 
+                    userInfo: {
+                        currentUserPfp: currentUserDoc.data()?.profileImageUrl || null,
+                        opponentName: opponentDoc.data()?.name || "",
+                        opponentUsername: opponentDoc.data()?.username || "",
+                        opponentPfp: opponentDoc.data()?.profileImageUrl || null
+                    },
+                    ...duelDoc.data() 
+                });
+            } else {
+                onUpdate(null);
+            }
+        }
+        processRequests();
     });
 
     return unsubscribe;
+};
+
+export const get1v1History = async (userID: string) => {
+    const historyQuery = query(
+        collection(db, '1v1s'),
+        where('participants', 'array-contains', userID),
+        where('endTime', '<=', Timestamp.now())
+    );
+
+    const historySnapshot = await getDocs(historyQuery);
+    if (historySnapshot.empty) {
+        return []; // No history found
+    }
+
+    const history = await Promise.all(
+        historySnapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data();
+            const opponentID = data.participants.find((id: string) => id !== userID);
+            const opponentDoc = await getDoc(doc(db, 'users', opponentID));
+            const currentUserDoc = await getDoc(doc(db, 'users', userID));
+            return {
+                duelID: docSnap.id,
+                ...data,
+                userInfo: {
+                    currentUserPfp: currentUserDoc.data()?.profileImageUrl || null,
+                    opponentName: opponentDoc.data()?.name || "",
+                    opponentUsername: opponentDoc.data()?.username || "",
+                    opponentPfp: opponentDoc.data()?.profileImageUrl || null
+                },
+            };
+        })
+    );
+
+    console.log('1v1 History:', history);
+    return history;
+};
+
+export const get1v1StartTime = async (userID: string) => {
+    const q = query(
+        collection(db,'1v1s'),
+        where('participants','array-contains', userID),
+        where('endTime', '>', Timestamp.now())
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return { startTime: null, current1v1ID: null };
+
+    const doc = snap.docs[0];
+    const data = doc.data();
+    const current1v1ID = doc.id || null;
+    const startTime = data.startTime?.toDate?.();
+    return { startTime, current1v1ID };
+};
+
+export const update1v1Steps = async (userID: string, current1v1ID: string, stepsMap: { [key: string]: number }) => {
+    const duelRef = doc(db, '1v1s', current1v1ID);
+    const duelDoc = await getDoc(duelRef);
+    if (!duelDoc.exists()) {
+        throw new Error('Duel not found');
+    }
+
+    const duelData = duelDoc.data();
+
+    await updateDoc(duelRef, {
+        progress: {
+            ...duelData.progress,
+            [userID]: stepsMap,
+        },
+        lastSynced: {
+            ...duelData.lastSynced,
+            [userID]: serverTimestamp()
+        }
+    });
 };
 
 export const create1v1 = async (Request1v1ID: string) => {
@@ -103,26 +194,26 @@ export const create1v1 = async (Request1v1ID: string) => {
         startTime: serverTimestamp(),
         endTime: Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)), // 24 hours later
         lastSynced: {
-            userA: serverTimestamp(),
-            userB: serverTimestamp()
+            [senderID]: serverTimestamp(),
+            [receiverID]: serverTimestamp()
         },
         participants: [senderID, receiverID],
         progress: {
-            userA: {
-                4: 0,
-                8: 0,
-                12: 0,
-                16: 0,
-                20: 0,
-                24: 0
+            [senderID]: {
+                '4': 0,
+                '8': 0,
+                '12': 0,
+                '16': 0,
+                '20': 0,
+                '24': 0
             },
-            userB: {
-                4: 0,
-                8: 0,
-                12: 0,
-                16: 0,
-                20: 0,
-                24: 0
+            [receiverID]: {
+                '4': 0,
+                '8': 0,
+                '12': 0,
+                '16': 0,
+                '20': 0,
+                '24': 0
             }
         }
     }

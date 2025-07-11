@@ -163,9 +163,16 @@ export const update1v1Requests = async (userID: string, requestID: string, new1v
     });
     requestsReceivedSnapshot.docs.forEach(doc => {
         if (doc.id === requestID) {
-            batch.update(doc.ref, { status: 'accepted', duelID: new1v1ID });
+            batch.update(doc.ref, { 
+                status: 'accepted', 
+                duelID: new1v1ID,
+                respondedAt: serverTimestamp()
+            });
         } else {
-            batch.update(doc.ref, { status: 'invalid' });
+            batch.update(doc.ref, { 
+                status: 'invalid',
+                respondedAt: serverTimestamp()
+            });
         }
     });
     try {
