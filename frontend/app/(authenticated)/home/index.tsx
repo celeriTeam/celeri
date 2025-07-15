@@ -287,8 +287,8 @@ const HomeTab: React.FC = () => {
         setIsPressed(false); // Set the button as pressed
     }
 
-    if (!hasPermissions) {
-        if (Platform.OS === 'android' && Platform.Version < 34 && !isLoading) {
+    if (hasPermissions === false) {
+        if (Platform.OS === 'android' && Platform.Version < 34) {
             Linking.openURL('market://details?id=com.google.android.apps.healthdata');
         }
         return (
@@ -322,209 +322,193 @@ const HomeTab: React.FC = () => {
         );
     }
 
-    if (groups === null || groups === undefined) {
-        return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-                <SafeAreaView style={styles.safeView} edges={['top']}>
-                    <View style={styles.container}>
-                        <Text>Failed to fetch user groups</Text>
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
-        );
-    } else if (Object.keys(groups).length === 0) {
-        return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-                <SafeAreaView style={styles.safeView} edges={['top']}>
-                    <View style={[styles.container, { justifyContent: 'center' }]}>
-                        <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
-                            <Text style={styles.buttonText}>Create Group</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
-                            <Text style={styles.buttonText}>Join Existing Group</Text>
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
-        );
-    } else {
-        return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-                <SafeAreaView style={styles.safeView} edges={['top']}>
-                    <View style={styles.container}>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.titleText}>Home</Text>
-                        </View>
-                        <View style={styles.tabContainer}>
-                            <TouchableOpacity
-                                style={[styles.tab, { borderBottomColor: selectedTab === 'Group' ? '#74FF6D' : 'transparent', }]}
-                                onPress={() => setSelectedTab('Group')}
-                                activeOpacity={1}
-                            >
-                                <Text style={[styles.tabText, { color: selectedTab === 'Group' ? '#74FF6D' : '#fff', }]}>Group Mode</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.tab, { borderBottomColor: selectedTab === 'Solo' ? '#74FF6D' : 'transparent', }]}
-                                onPress={() => setSelectedTab('Solo')}
-                                activeOpacity={1}
-                            >
-                                <Text style={[styles.tabText, { color: selectedTab === 'Solo' ? '#74FF6D' : '#fff', }]}>Solo Mode</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {/* Line for showing selected tab */}
-                        <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
-                        selectedTab === 'Solo' ?
-                            { alignSelf: 'flex-end', right: scale(10) } :
-                            { alignSelf: 'flex-start', left: scale(10), }]}
-                        />
-                        {selectedTab === 'Group' ? (
-                            <>
-                                <Text style={styles.subTitle}>Your Groups:</Text>
-                                <ScrollView style={styles.scrollContainer}>
+    const groupContainer = () => {
+        if (groups === null || groups === undefined) {
+            return (
+                <Text>Failed to fetch user groups</Text>
+            );
+        } else if (Object.keys(groups).length === 0) {
+            return (
+                <View style={{ justifyContent: 'center', alignItems: 'center', height: '90%' }}>
+                    <TouchableOpacity style={styles.button} onPress={createGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Create Group</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.button} onPress={joinGroupButtonHandle}>
+                        <Text style={styles.buttonText}>Join Existing Group</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        } else {
+            return (
+                <>
+                    <Text style={styles.subTitle}>Your Groups:</Text>
+                    <ScrollView style={styles.scrollContainer}>
 
-                                    {Object.entries(groups).map(([groupID, group]) => {
-                                        const memberCount = group.userList ? Object.keys(group.userList).length : 0;
-    
-                                        let statusText = group.isGameActive ? 'Active' : 'Inactive';
-                                        let statusColor = group.isGameActive ? '#74FF6D' : '#a7a7a7';
-    
-                                        console.log("tea2", groupID, group.isResultAvailable);
-    
-                                        if (!group.isGameActive && group.isResultAvailable) {
-                                            statusText = 'Game Ended - See Results';
-                                            statusColor = 'orange';
-                                        }
-    
-                                        return (
-                                        <TouchableOpacity
-                                            key={groupID}
-                                            style={styles.groupButton}
-                                            onPress={() => goToGroup(group.groupName)}
-                                        >
-                                            <Image
-                                            source={
-                                                group.groupImageUrl
+                        {Object.entries(groups).map(([groupID, group]) => {
+                            const memberCount = group.userList ? Object.keys(group.userList).length : 0;
+
+                            let statusText = group.isGameActive ? 'Active' : 'Inactive';
+                            let statusColor = group.isGameActive ? '#74FF6D' : '#a7a7a7';
+
+                            console.log("tea2", groupID, group.isResultAvailable);
+
+                            if (!group.isGameActive && group.isResultAvailable) {
+                                statusText = 'Game Ended - See Results';
+                                statusColor = 'orange';
+                            }
+
+                            return (
+                                <TouchableOpacity
+                                    key={groupID}
+                                    style={styles.groupButton}
+                                    onPress={() => goToGroup(group.groupName)}
+                                >
+                                    <Image
+                                        source={
+                                            group.groupImageUrl
                                                 ? { uri: group.groupImageUrl }
                                                 : require('@components/blank-profile-picture.png')
-                                            }
-                                            style={[styles.groupImage, { borderColor: statusColor }]}
-                                            />
-                                            <View style={styles.groupInfo}>
-                                            <Text style={styles.groupName}>{group.groupName}</Text>
-                                            <Text style={[styles.groupDetails, { color: statusColor }]}>
-                                                {!group.isGameActive && group.isResultAvailable
+                                        }
+                                        style={[styles.groupImage, { borderColor: statusColor }]}
+                                    />
+                                    <View style={styles.groupInfo}>
+                                        <Text style={styles.groupName}>{group.groupName}</Text>
+                                        <Text style={[styles.groupDetails, { color: statusColor }]}>
+                                            {!group.isGameActive && group.isResultAvailable
                                                 ? statusText
                                                 : `${memberCount} members - ${statusText}`}
-                                            </Text>
-                                            </View>
-                                        </TouchableOpacity>
-                                        );
-                                    })}
-                                    <View style={{ marginTop: 10, }} />
-                                </ScrollView>
-
-                                {/* Floating Action Button */}
-                                <TouchableOpacity style={styles.fab} onPress={toggleModal} activeOpacity={1}>
-                                    <Text style={styles.fabText}>+</Text>
+                                        </Text>
+                                    </View>
                                 </TouchableOpacity>
-                            </>
-                        ) : (
-                            <SoloTab
-                                current1v1={current1v1}
-                                setCurrent1v1={setCurrent1v1}
-                                history1v1s={history1v1s}
-                                receivedChallengeRequests={receivedChallengeRequests}
-                                sentChallengeRequests={sentChallengeRequests}
-                            />
-                        )}
+                            );
+                        })}
+                        <View style={{ marginTop: 10, }} />
+                    </ScrollView>
 
-                        {/* Modal */}
-                        <Modal
-                            animationType="fade"
-                            transparent={true}
-                            visible={isModalVisible}
-                            onRequestClose={toggleModal}
-                        >
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={toggleModal} // Closes the modal when clicked outside the content
-                            >
-                                <BlurView intensity={50} style={styles.blurView}>
-                                    <TouchableOpacity
-                                        activeOpacity={1}
-                                        style={styles.modalContentWrapper}
-                                        onPress={() => { }} // Prevent closing when clicking inside the modal content
-                                    >
-                                        <View style={styles.modalContent}>
-                                            <Text style={styles.modalTitle}>Group Options</Text>
-                                            <TouchableOpacity style={styles.button} onPress={() => {
-                                                toggleModal();
-                                                joinGroupButtonHandle();
-                                            }}
-                                            >
-                                                <Text style={styles.buttonText}>Join Group</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity style={styles.button} onPress={() => {
-                                                toggleModal();
-                                                createGroupButtonHandle();
-                                            }}
-                                            >
-                                                <Text style={styles.buttonText}>Create Group</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </TouchableOpacity>
-                                </BlurView>
-                            </TouchableOpacity>
-                        </Modal>
-
-                        {/* Coming Soon Modal */}
-                        <Modal
-                            animationType="fade"
-                            transparent={true}
-                            visible={comingSoonModal}
-                            onRequestClose={() => setComingSoonModal(false)}
-                        >
-                            <TouchableOpacity
-                                style={styles.modalOverlay}
-                                activeOpacity={1}
-                                onPress={() => setComingSoonModal(false)} // Close dropdown when overlay is pressed
-                            >
-                                <View style={[styles.modalContainer, { height: '41%', }]}>
-                                    {/* Close button */}
-                                    <TouchableOpacity style={styles.modalCloseButton} onPress={() => setComingSoonModal(false)}>
-                                        <Image
-                                            source={require('@assets/icons/x.png')}
-                                            style={styles.closeButtonIcon}
-                                        />
-                                    </TouchableOpacity>
-                                    <Text style={styles.modalText}>Coming soon</Text>
-                                </View>
-                            </TouchableOpacity>
-                        </Modal>
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
-        );
+                    {/* Floating Action Button */}
+                    <TouchableOpacity style={styles.fab} onPress={toggleModal} activeOpacity={1}>
+                        <Text style={styles.fabText}>+</Text>
+                    </TouchableOpacity>
+                </>
+            )
+        }
     }
+
+    return (
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+            }}
+        >
+            <SafeAreaView style={styles.safeView} edges={['top']}>
+                <View style={styles.container}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.titleText}>Home</Text>
+                    </View>
+                    <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                            style={[styles.tab, { borderBottomColor: selectedTab === 'Group' ? '#74FF6D' : 'transparent', }]}
+                            onPress={() => setSelectedTab('Group')}
+                            activeOpacity={1}
+                        >
+                            <Text style={[styles.tabText, { color: selectedTab === 'Group' ? '#74FF6D' : '#fff', }]}>Group Mode</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, { borderBottomColor: selectedTab === 'Solo' ? '#74FF6D' : 'transparent', }]}
+                            onPress={() => setSelectedTab('Solo')}
+                            activeOpacity={1}
+                        >
+                            <Text style={[styles.tabText, { color: selectedTab === 'Solo' ? '#74FF6D' : '#fff', }]}>Solo Mode</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {/* Line for showing selected tab */}
+                    <View style={[{ borderBottomWidth: 1, borderBottomColor: '#74FF6D', width: '47%', top: -1, },
+                    selectedTab === 'Solo' ?
+                        { alignSelf: 'flex-end', right: scale(10) } :
+                        { alignSelf: 'flex-start', left: scale(10), }]}
+                    />
+                    {selectedTab === 'Group' ? (
+                        groupContainer()
+                    ) : (
+                        <SoloTab
+                            current1v1={current1v1}
+                            setCurrent1v1={setCurrent1v1}
+                            history1v1s={history1v1s}
+                            receivedChallengeRequests={receivedChallengeRequests}
+                            sentChallengeRequests={sentChallengeRequests}
+                        />
+                    )}
+
+                    {/* Modal */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={isModalVisible}
+                        onRequestClose={toggleModal}
+                    >
+                        <TouchableOpacity
+                            style={styles.modalOverlay}
+                            activeOpacity={1}
+                            onPress={toggleModal} // Closes the modal when clicked outside the content
+                        >
+                            <BlurView intensity={50} style={styles.blurView}>
+                                <TouchableOpacity
+                                    activeOpacity={1}
+                                    style={styles.modalContentWrapper}
+                                    onPress={() => { }} // Prevent closing when clicking inside the modal content
+                                >
+                                    <View style={styles.modalContent}>
+                                        <Text style={styles.modalTitle}>Group Options</Text>
+                                        <TouchableOpacity style={styles.button} onPress={() => {
+                                            toggleModal();
+                                            joinGroupButtonHandle();
+                                        }}
+                                        >
+                                            <Text style={styles.buttonText}>Join Group</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.button} onPress={() => {
+                                            toggleModal();
+                                            createGroupButtonHandle();
+                                        }}
+                                        >
+                                            <Text style={styles.buttonText}>Create Group</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            </BlurView>
+                        </TouchableOpacity>
+                    </Modal>
+
+                    {/* Coming Soon Modal */}
+                    <Modal
+                        animationType="fade"
+                        transparent={true}
+                        visible={comingSoonModal}
+                        onRequestClose={() => setComingSoonModal(false)}
+                    >
+                        <TouchableOpacity
+                            style={styles.modalOverlay}
+                            activeOpacity={1}
+                            onPress={() => setComingSoonModal(false)} // Close dropdown when overlay is pressed
+                        >
+                            <View style={[styles.modalContainer, { height: '41%', }]}>
+                                {/* Close button */}
+                                <TouchableOpacity style={styles.modalCloseButton} onPress={() => setComingSoonModal(false)}>
+                                    <Image
+                                        source={require('@assets/icons/x.png')}
+                                        style={styles.closeButtonIcon}
+                                    />
+                                </TouchableOpacity>
+                                <Text style={styles.modalText}>Coming soon</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </Modal>
+                </View>
+            </SafeAreaView>
+        </LinearGradient>
+    );
 };
 
 const styles = StyleSheet.create({
