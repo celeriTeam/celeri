@@ -50,10 +50,12 @@ async function getUserFcmTokens(userID) {
 }
 
 // Sync Step Scheduler
-exports.syncStepScheduler = onSchedule("every 5 minutes", async () => {
+exports.syncStepScheduler = onSchedule("every 1 minutes", async () => {
   const db = getFirestore();
   const now = new Date();
   const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  await handleExpired1v1s(db, now);
 
   const usersSnap = await db.collection("users").get();
 
@@ -1016,54 +1018,97 @@ exports.send1v1StartedNotification = onCall(async (req) => {
   return {success: true};
 });
 
-exports.handle1v1End = onDocumentUpdated("1v1s/{duelID}", async (event) => {
-  const before = event.data.before.data();
-  const after = event.data.after.data();
-  const db = getFirestore();
+const handleExpired1v1s = async (db, now) => {
+  const expiredDuelsSnap = await db
+    .collection("1v1s")
+    .where("endTime", "<=", now)
+    .where("processed", "==", false)
+    .get();
 
-  const now = Date.now();
-  if (
-    before.endTime.toMillis() > now &&
-    after.endTime.toMillis() <= now
-  ) {
-    const participants = after.participants || [];
-
+  for (const duelDoc of expiredDuelsSnap.docs) {
+    const duel = duelDoc.data();
+    const duelID = duelDoc.id;
+    const { participants = [] } = duel;
     const [uid1, uid2] = participants;
-    const userSnap1 = db.collection("users").doc(uid1).get();
-    const userSnap2 = db.collection("users").doc(uid2).get();
-    const user1 = userSnap1.data();
-    const user2 = userSnap2.data();
-    const name1 = user1.username || "your opponent";
-    const name2 = user2.username || "your opponent";
-    const tokens1 = user1.tokens || [];
-    const tokens2 = user2.tokens || [];
 
-    db.collection("users").doc(uid1).update({isIn1v1: false});
-    db.collection("users").doc(uid2).update({isIn1v1: false});
+    // 1. Mark both users as not in 1v1
+    await Promise.all([
+      db.collection("users").doc(uid1).update({ isIn1v1: false }),
+      db.collection("users").doc(uid2).update({ isIn1v1: false }),
+    ]);
 
-    console.log(`1v1 ended for: ${uid1}, ${uid2}`);
+    // 2. Fetch user tokens
+    const [snap1, snap2] = await Promise.all([
+      db.collection("users").doc(uid1).get(),
+      db.collection("users").doc(uid2).get(),
+    ]);
+    const user1 = snap1.data();
+    const user2 = snap2.data();
 
-    const message1 = {
+    const tokens1 = user1?.tokens || [];
+    const tokens2 = user2?.tokens || [];
+    const name1 = user1?.username || "your opponent";
+    const name2 = user2?.username || "your opponent";
+
+    // 3. Send silent push to both users to trigger fetchSteps
+    const silentMessage1 = {
+      tokens: tokens1,
+      data: {
+        type: "silent",
+        action: "fetchSteps",
+      },
+    };
+    const silentMessage2 = {
+      tokens: tokens2,
+      data: {
+        type: "silent",
+        action: "fetchSteps",
+      },
+    };
+
+    await admin.messaging().sendEachForMulticast(silentMessage1);
+    await admin.messaging().sendEachForMulticast(silentMessage2);
+
+    // 4. Send notification about duel end
+    const notif1 = {
       notification: {
         title: `1v1 with ${name2} ended`,
         body: "See the results!",
       },
       tokens: tokens1,
     };
-
-    const message2 = {
+    const notif2 = {
       notification: {
         title: `1v1 with ${name1} ended`,
         body: "See the results!",
       },
       tokens: tokens2,
     };
-    await admin.messaging().sendEachForMulticast(message1);
-    await admin.messaging().sendEachForMulticast(message2);
 
-    console.log(`1v1 ended notification sent for: ${participants.join(", ")}`);
+    await admin.messaging().sendEachForMulticast(notif1);
+    await admin.messaging().sendEachForMulticast(notif2);
+
+    // 5. Mark duel as processed
+    await duelDoc.ref.update({ processed: true });
+
+    // 6. Add new sync job to syncQueue for both users
+    const nowTime = new Date();
+    await Promise.all([
+      db.collection("syncQueue").doc(uid1).set({
+        userID: uid1,
+        scheduledTime: nowTime,
+        processed: false,
+      }),
+      db.collection("syncQueue").doc(uid2).set({
+        userID: uid2,
+        scheduledTime: nowTime,
+        processed: false,
+      }),
+    ]);
+
+    console.log(`Processed expired 1v1: ${duelID}`);
   }
-});
+};
 
 
 /**
