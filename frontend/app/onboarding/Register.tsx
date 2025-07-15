@@ -158,7 +158,8 @@ const SignUpPage: React.FC = () => {
                     console.log("createProfile function about to run:");
                     await createProfile(response.user);
                     console.log("Navigation to App Page now!");
-                    router.replace('./(authenticated)');
+                    router.back();
+                    router.replace('/(authenticated)/home');
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {
