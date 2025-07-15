@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { Tabs, Redirect } from 'expo-router';
 import { Image, View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '../UserProvider';
 import * as Font from 'expo-font';
@@ -140,11 +140,7 @@ const AuthenticatedLayout: React.FC = () => {
     }
 
     if (!userID) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>No user found. Please log in.</Text>
-            </View>
-        );
+        return <Redirect href={{ pathname: '../login' }} />;
     }
 
     return (
