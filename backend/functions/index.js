@@ -1028,13 +1028,13 @@ const handleExpired1v1s = async (db, now) => {
   for (const duelDoc of expiredDuelsSnap.docs) {
     const duel = duelDoc.data();
     const duelID = duelDoc.id;
-    const { participants = [] } = duel;
+    const {participants = []} = duel;
     const [uid1, uid2] = participants;
 
     // 1. Mark both users as not in 1v1
     await Promise.all([
-      db.collection("users").doc(uid1).update({ isIn1v1: false }),
-      db.collection("users").doc(uid2).update({ isIn1v1: false }),
+      db.collection("users").doc(uid1).update({isIn1v1: false}),
+      db.collection("users").doc(uid2).update({isIn1v1: false}),
     ]);
 
     // 2. Fetch user tokens
@@ -1045,10 +1045,10 @@ const handleExpired1v1s = async (db, now) => {
     const user1 = snap1.data();
     const user2 = snap2.data();
 
-    const tokens1 = user1?.tokens || [];
-    const tokens2 = user2?.tokens || [];
-    const name1 = user1?.username || "your opponent";
-    const name2 = user2?.username || "your opponent";
+    const tokens1 = user1.tokens || [];
+    const tokens2 = user2.tokens || [];
+    const name1 = user1.username || "your opponent";
+    const name2 = user2.username || "your opponent";
 
     // 3. Send silent push to both users to trigger fetchSteps
     const silentMessage1 = {
@@ -1089,7 +1089,7 @@ const handleExpired1v1s = async (db, now) => {
     await admin.messaging().sendEachForMulticast(notif2);
 
     // 5. Mark duel as processed
-    await duelDoc.ref.update({ processed: true });
+    await duelDoc.ref.update({processed: true});
 
     // 6. Add new sync job to syncQueue for both users
     const nowTime = new Date();

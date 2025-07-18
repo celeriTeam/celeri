@@ -587,11 +587,13 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     requestsContainer: {
+        flex: 1,
         backgroundColor: '#5BE35C33',
         justifyContent: 'center',
         width: '100%',
         height: '15%',
         marginVertical: 10,
+        marginBottom: 20,
         borderRadius: 15,
         padding: 10,
         paddingLeft: 20,
