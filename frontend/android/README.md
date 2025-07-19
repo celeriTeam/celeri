@@ -39,3 +39,36 @@ Run the app:
 ```
 npx expo run:android
 ```
+
+## Ready to upload a new version?
+
+### Updating the version
+
+This is important for Google Play to differentiate between different app bundles.
+
+In `build.gradle`:
+
+- Increment the `versionCode` (Previously on version code `3`)
+- Update the `versionName` (Previously on version `2.0.1`)
+
+### Uploading the expo build
+
+Development android build:
+
+    eas build --profile development --platform android
+
+Android build:
+
+    eas build --platform android
+
+### Add to Google Play
+
+**Internal App Sharing:**
+
+- Drop your app bundle (`.aab`) [here](https://play.google.com/console/u/0/internal-app-sharing).
+
+**Open testing:** (Currently inactive for production. Need to run a closed test on >=12 users for >=14 days)
+
+- Go to [All app bundles](https://play.google.com/console/u/0/developers/5632879565246356586/app/4976476189007278725/bundle-explorer-selector)
+
+- Press `Upload new version`, and drop your downloaded app bundle (`.aab`)
