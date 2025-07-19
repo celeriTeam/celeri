@@ -37,6 +37,12 @@ adb reverse tcp:19000 tcp:19000
 
 Run the app:
 ```
+npx expo start
+```
+
+OR
+
+```
 npx expo run:android
 ```
 
@@ -48,8 +54,8 @@ This is important for Google Play to differentiate between different app bundles
 
 In `build.gradle`:
 
-- Increment the `versionCode` (Previously on version code `3`)
-- Update the `versionName` (Previously on version `2.0.1`)
+- Increment the `versionCode` (Previously on version code `4`)
+- Update the `versionName` (Previously on version `2.0.2`)
 
 ### Uploading the expo build
 

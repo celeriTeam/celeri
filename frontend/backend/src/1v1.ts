@@ -78,8 +78,6 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
 export const get1v1History = async (userID: string) => {
     const historyQuery = query(
         collection(db, '1v1s'),
-        where('participants', 'array-contains', userID),
-        where('endTime', '<=', Timestamp.now()),
         where('processed', '==', true)
     );
 
