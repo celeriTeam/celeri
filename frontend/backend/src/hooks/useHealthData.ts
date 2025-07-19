@@ -42,7 +42,7 @@ const useHealthData = () => {
     const [flights, setFlights] = useState(0);
     const [distance, setDistance] = useState(0);
     const [loadingStepsFromWeekBefore, setLoadingStepsFromWeekBefore] = useState(false);
-    const [hasPermissions, setHasPermissions] = useState(false);
+    const [hasPermissions, setHasPermissions] = useState<boolean | null>(null);
     const [isLoading, setLoading] = useState(true);
 
     const newsUpdateLock = useRef(false);

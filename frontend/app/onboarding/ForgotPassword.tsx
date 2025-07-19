@@ -23,7 +23,7 @@ const ForgotPasswordPage: React.FC = () => {
                     [
                         {
                             text: 'OK',
-                            onPress: () => router.replace('/(authenticated)')
+                            onPress: () => router.back()
                         }
                     ]
                 );

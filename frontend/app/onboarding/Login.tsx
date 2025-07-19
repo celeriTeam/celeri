@@ -38,7 +38,8 @@ const LoginPage: React.FC = () => {
                 console.log("User login response: ", response);
 
                 if (response.user) {
-                    router.replace('/(authenticated)'); // Change to your authenticated route
+                    router.back();
+                    router.replace('/(authenticated)/home'); // Change to your authenticated route
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

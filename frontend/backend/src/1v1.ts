@@ -79,7 +79,8 @@ export const get1v1History = async (userID: string) => {
     const historyQuery = query(
         collection(db, '1v1s'),
         where('participants', 'array-contains', userID),
-        where('endTime', '<=', Timestamp.now())
+        where('endTime', '<=', Timestamp.now()),
+        where('processed', '==', true)
     );
 
     const historySnapshot = await getDocs(historyQuery);
@@ -215,7 +216,8 @@ export const create1v1 = async (Request1v1ID: string) => {
                 '20': 0,
                 '24': 0
             }
-        }
+        },
+        processed: false,
     }
 
     const new1v1Ref = await addDoc(collection(db, '1v1s'), new1v1Data);

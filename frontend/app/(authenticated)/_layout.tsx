@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { Image, View, Text, ActivityIndicator, Dimensions } from 'react-native';
+import { Tabs, Redirect } from 'expo-router';
+import { Image, View, Text, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { UserProvider } from '../UserProvider';
 import * as Font from 'expo-font';
 import { useEffect, useState } from 'react';
@@ -11,7 +11,7 @@ import firestore from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
 import TabBar from "../../components/TabBar";
 import { useTabBar, TabBarProvider } from '../,./../../hooks/useTabBar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 
@@ -140,11 +140,7 @@ const AuthenticatedLayout: React.FC = () => {
     }
 
     if (!userID) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text>No user found. Please log in.</Text>
-            </View>
-        );
+        return <Redirect href={{ pathname: '../login' }} />;
     }
 
     return (
@@ -160,7 +156,8 @@ const AuthenticatedLayout: React.FC = () => {
 
 function InnerAuthenticatedLayout() {
     const { isTabBarVisible } = useTabBar();
-  
+    const insets = useSafeAreaInsets();
+
     return (
       <Tabs
         screenOptions={({ route }) => ({
@@ -168,9 +165,9 @@ function InnerAuthenticatedLayout() {
           tabBarStyle: {
             backgroundColor: '#1b2c1c',
             borderTopWidth: 0,
-            paddingBottom: 0,
+            paddingBottom: insets.bottom, // this accounts for the bottom safe area
             paddingTop: 0,
-            height: isTabBarVisible ? scale(65) : 0, // <-- THE MAGIC
+            height: (isTabBarVisible ? verticalScale(60) : 0) + insets.bottom, // <-- THE MAGIC
           },
           tabBarShowLabel: false,
           tabBarActiveTintColor: '#51ba51',
