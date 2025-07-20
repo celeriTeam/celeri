@@ -2,7 +2,7 @@
   "expo": {
     "name": "Celeri",
     "slug": "health-bets-app",
-    "version": "8.4",
+    "version": "2.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/Lettuce.png",
     "scheme": "myapp",
@@ -23,7 +23,7 @@
         ],
         "CFBundleDisplayName": "Celeri"
       },
-      "buildNumber": "8.5"
+      "buildNumber": "4"
     },
     "android": {
       "googleServicesFile": "google-services.json",
@@ -39,7 +39,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/Lettuce.png"
     },
     "plugins": [
       "expo-router",
@@ -98,7 +98,7 @@
         "projectId": "aced3ed5-7df5-4f2c-8f1c-dc12a8426cd8"
       }
     },
-    "runtimeVersion": "2.0.1",
+    "runtimeVersion": "2.0.2",
     "updates": {
       "url": "https://u.expo.dev/aced3ed5-7df5-4f2c-8f1c-dc12a8426cd8"
     }
