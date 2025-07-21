@@ -93,8 +93,8 @@ android {
         applicationId 'com.alp2goose.flex'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "8.4"
+        versionCode 4
+        versionName "2.0.2"
     }
     signingConfigs {
         debug {
