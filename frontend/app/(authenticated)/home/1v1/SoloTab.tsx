@@ -56,6 +56,8 @@ const SoloTab: React.FC<Props> = ({
     const [requestModalVisible, setRequestModalVisible] = useState<any>({});
     const [timeLeftString, setTimeLeftString] = useState<string>('00:00:00');
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
+    const userSteps = (current1v1 ? current1v1.progress[userID]?.['24'] || 0 : 0);
+    const opponentSteps = (current1v1 ? current1v1.progress[current1v1.participants.find((id: string) => id !== userID)]?.['24'] || 0 : 0);
         
     const formatRelativeTime = (timestamp: Date): string => {
         const now = dayjs();
@@ -136,15 +138,15 @@ const SoloTab: React.FC<Props> = ({
         return () => clearInterval(interval); // cleanup on unmount
     }, [current1v1]);
 
+    const getHoursLeft = () => {
+        const [hours, minutes, seconds] = timeLeftString.split(":").map(Number);
+        return hours + minutes / 60 + seconds / 3600;
+    };
+
     const StepsChart = () => {
         if (!current1v1) {
             return null;
         }
-
-        const getHoursLeft = () => {
-            const [hours, minutes, seconds] = timeLeftString.split(":").map(Number);
-            return hours + minutes / 60 + seconds / 3600;
-        };
 
         const getFilledIntervals = () => {
             const hoursPassed = 24 - getHoursLeft() + 4;
@@ -170,7 +172,7 @@ const SoloTab: React.FC<Props> = ({
         const opponentSteps = getStepsArray(opponentID);
 
         const data = {
-            labels: labels.slice(0, filledIntervals.length),
+            labels: [...labels.slice(0, filledIntervals.length - 1), 'now'],
             datasets: [
                 {
                     data: userSteps,
@@ -288,6 +290,7 @@ const SoloTab: React.FC<Props> = ({
                                 style={[styles.playerImage, { borderColor: '#FF6060', }]}
                             />
                             <Text style={styles.playerName}>You</Text>
+                            <Text style={styles.playerSteps}>{userSteps} steps</Text>
                         </View>
                         <View style={styles.duelInfo}>
                             <View style={styles.liveContainer}>
@@ -304,6 +307,7 @@ const SoloTab: React.FC<Props> = ({
                                 style={[styles.playerImage, { borderColor: '#7464FF', }]}
                             />
                             <Text style={styles.playerName}>{current1v1?.userInfo?.opponentUsername}</Text>
+                            <Text style={styles.playerSteps}>{userSteps} steps</Text>
                         </View>
                     </View>
                     <View>
@@ -731,7 +735,12 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 14,
         fontFamily: 'Lexend-Bold',
-        marginVertical: 5,
+        marginTop: 5,
+    },
+    playerSteps: {
+        color: '#ffffff80',
+        fontSize: 11,
+        fontFamily: 'Lexend',
     },
     duelInfo: {
         alignItems: 'center',
