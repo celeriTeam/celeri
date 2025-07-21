@@ -2,7 +2,7 @@ import { Tabs, Redirect } from 'expo-router';
 import { Image, View, Text, ActivityIndicator, Dimensions, Platform } from 'react-native';
 import { UserProvider } from '../UserProvider';
 import * as Font from 'expo-font';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { app } from '@firebaseConfig';
 import * as Device from 'expo-device';
@@ -13,6 +13,7 @@ import TabBar from "../../components/TabBar";
 import { useTabBar, TabBarProvider } from '../,./../../hooks/useTabBar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 
 const { width, height } = Dimensions.get('window');
@@ -160,7 +161,7 @@ function InnerAuthenticatedLayout() {
 
     return (
       <Tabs
-        screenOptions={({ route }) => ({
+        screenOptions={({ route }: { route: { name: string } }) => ({
           headerShown: false,
           tabBarStyle: {
             backgroundColor: '#1b2c1c',
@@ -172,7 +173,7 @@ function InnerAuthenticatedLayout() {
           tabBarShowLabel: false,
           tabBarActiveTintColor: '#51ba51',
           tabBarInactiveTintColor: '#ffffff',
-          tabBarIcon: ({ focused, color }) => {
+          tabBarIcon: ({ focused, color }: { focused: boolean; color: string }) => {
             let iconSource, width, height;
   
             if (route.name === 'home') {
