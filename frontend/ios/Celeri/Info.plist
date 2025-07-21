@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
-    <key>BGTaskSchedulerPermittedIdentifiers</key>
-    <array>
-      <string>com.alp2goose.flex.background</string>
-    </array>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
     <key>CFBundleDevelopmentRegion</key>
@@ -23,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>2.0.2</string>
+    <string>8.7</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -31,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>myapp</string>
+          <string>health-bets-app</string>
           <string>com.alp2goose.flex</string>
         </array>
       </dict>
@@ -43,7 +39,9 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>8.4</string>
+    <string>4</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>
@@ -58,20 +56,17 @@
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
     <key>NSHealthShareUsageDescription</key>
-    <string>App requires access to health data to display your steps and screen time.</string>
+    <string>Allow $(PRODUCT_NAME) to check health info</string>
     <key>NSHealthUpdateUsageDescription</key>
-    <string>App requires access to update health data.</string>
+    <string>Allow $(PRODUCT_NAME) to update health info</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSMotionUsageDescription</key>
-    <string>App requires access to motion data to track your physical activity</string>
+    <string>Allow $(PRODUCT_NAME) to access your device motion</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>The app needs access to your photos to let you set profile pictures.</string>
     <key>NSUserActivityTypes</key>
     <array>
-      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
-      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
-      <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
     <key>UIAppFonts</key>

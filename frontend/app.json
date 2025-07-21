@@ -2,13 +2,13 @@
   "expo": {
     "name": "Celeri",
     "slug": "health-bets-app",
-    "version": "2.0.2",
+    "version": "8.7",
     "orientation": "portrait",
-    "icon": "./assets/images/Lettuce.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/Lettuce.jpg",
+    "scheme": "health-bets-app",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/Lettuce.png",
+      "image": "./assets/images/Lettuce.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -28,7 +28,7 @@
     "android": {
       "googleServicesFile": "google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/Lettuce.png",
+        "foregroundImage": "./assets/images/Lettuce.jpg",
         "backgroundColor": "#ffffff"
       },
       "package": "com.alp2goose.flex",
@@ -39,7 +39,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/Lettuce.png"
+      "favicon": "./assets/images/Lettuce.jpg"
     },
     "plugins": [
       "expo-router",

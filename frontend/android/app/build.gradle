@@ -18,7 +18,6 @@ react {
     // works correctly with Expo projects.
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
-    
 
     /* Folders */
      //   The root of your project, i.e. where "package.json" lives. Default is '../..'
@@ -33,7 +32,6 @@ react {
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
     // debuggableVariants = ["liteDebug", "prodDebug"]
-    debuggableVariants = ["debug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -93,8 +91,8 @@ android {
         applicationId 'com.alp2goose.flex'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "2.0.2"
+        versionCode 1
+        versionName "8.7"
     }
     signingConfigs {
         debug {
@@ -105,10 +103,6 @@ android {
         }
     }
     buildTypes {
-        development {
-            initWith debug
-            matchingFallbacks = ['debug', 'release']
-        }
         debug {
             signingConfig signingConfigs.debug
         }
@@ -129,17 +123,6 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion "1.5.15" // Matches Kotlin 1.9.25
-    }
-    applicationVariants.all { variant ->
-        def variantName = variant.name.capitalize()
-        tasks.whenTaskAdded { task ->
-            if (task.name == "merge${variantName}Resources") {
-                task.dependsOn(":@react-native-firebase_app:generate${variantName}ResValues")
-            }
-        }
     }
 }
 
@@ -190,24 +173,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
-
-    implementation project(':react-native-firebase_app')
-    implementation project(':react-native-firebase_auth')
-    implementation project(':react-native-async-storage_async-storage')
-    implementation project(':react-native-firebase_dynamic-links')
-    implementation project(':react-native-firebase_firestore')
-    implementation project(':react-native-firebase_messaging')
-    implementation project(':react-native-firebase_storage')
-    implementation project(':react-native-gesture-handler')
-    implementation project(':react-native-health-connect')
-    implementation project(':react-native-image-picker')
-    implementation project(':react-native-permissions')
-    implementation project(':react-native-reanimated')
-    implementation project(':react-native-safe-area-context')
-    implementation project(':react-native-screens')
-    implementation project(':react-native-shake')
-    implementation project(':react-native-svg')
-    implementation project(':react-native-vector-icons')
 }
 
 apply plugin: 'com.google.gms.google-services'
