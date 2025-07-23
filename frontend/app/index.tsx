@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const App: React.FC = () => {
-    const [initialRoute, setInitialRoute] = useState<"/(authenticated)/home" | "/onboarding" | null>(null);
+    const [initialRoute, setInitialRoute] = useState<"/(authenticated)/(tabs)/home" | "/onboarding" | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const auth = getAuth();
@@ -33,7 +33,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-            setInitialRoute(user ? '/(authenticated)/home' : '/onboarding');
+            setInitialRoute(user ? '/(authenticated)/(tabs)/home' : '/onboarding');
             setIsLoading(false);
         });
 

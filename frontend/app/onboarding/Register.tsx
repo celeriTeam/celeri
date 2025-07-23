@@ -159,7 +159,7 @@ const SignUpPage: React.FC = () => {
                     await createProfile(response.user);
                     console.log("Navigation to App Page now!");
                     router.back();
-                    router.replace('/(authenticated)/home');
+                    router.replace('/(authenticated)/(tabs)/home');
                 }
             } catch (e: unknown) {
                 if (e instanceof FirebaseError) {

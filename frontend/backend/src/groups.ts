@@ -375,7 +375,7 @@ export const getGroupProfilePic = async (id: string): Promise<string | undefined
             // console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
             return groupDoc.data()?.groupImageUrl;
         } else {
-            console.error("getGroupPic - error: No such document!");
+            //console.error("getGroupPic - error: No such document!");
             return undefined;
         }
     } catch (error) {

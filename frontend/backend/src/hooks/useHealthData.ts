@@ -34,7 +34,6 @@ const permissions: HealthKitPermissions = {
 
 
 const useHealthData = () => {
-    console.log("useHealthData is running");
     const [prevData, setPrevData] = useState<any>(null);
     const [steps, setSteps] = useState(0);
     const [averageSteps, setAverageSteps] = useState<number[]>([]);
@@ -308,20 +307,28 @@ const useHealthData = () => {
                     startDate: start.toISOString(),
                     endDate: end.toISOString(),
                 };
+                console.log("start and end", options.startDate, options.endDate);
 
                 AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
                     if (err || !results) {
                         console.log("Error fetching steps for range", err);
                         resolve(0);
                     } else {
+
+                        console.log("getDailyStepCountSamples started");
+
                         const total = results.reduce((sum, s) => {
                             const sStart = new Date(s.startDate).getTime();
                             const sEnd = new Date(s.endDate).getTime();
-                            if (sStart >= start.getTime() && sEnd <= end.getTime()) {
+                            if (sEnd > start.getTime() && sStart < end.getTime()) {
                                 return sum + s.value;
                             }
+                            console.log("sum, ", sum);
                             return sum;
                         }, 0);
+
+                        console.log("total, ", total);
+                        console.log("results, ", results);
                         resolve(Math.floor(total));
                     }
                 });
