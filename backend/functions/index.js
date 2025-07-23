@@ -987,15 +987,18 @@ exports.send1v1RequestNotification = onCall(async (req) => {
   const userSnap = await db.collection("users").doc(receiverID).get();
   const tokens = userSnap.data().tokens || [];
 
-  const message = {
-    notification: {
-      title: "You've been challenged!",
-      body: `${senderName} has sent you a 1v1 challenge.`,
-    },
-    tokens: tokens,
-  };
+  for (const token of tokens) {
+    const message = {
+      notification: {
+        title: "You've been challenged!",
+        body: `${senderName} has sent you a 1v1 challenge.`,
+      },
+      token: token,
+    };
 
-  await admin.messaging().sendEachForMulticast(message);
+    await admin.messaging().send(message);
+  }
+
   return {success: true};
 });
 
@@ -1006,15 +1009,18 @@ exports.send1v1StartedNotification = onCall(async (req) => {
   const userSnap = await db.collection("users").doc(opponentID).get();
   const tokens = userSnap.data().tokens || [];
 
-  const message = {
-    notification: {
-      title: "Your 1v1 has started!",
-      body: `You are now in a 1v1 with ${opponentName}. Time to walk!`,
-    },
-    tokens: tokens,
-  };
+  for (const token of tokens) {
+    const message = {
+      notification: {
+        title: "Your 1v1 has started!",
+        body: `You are now in a 1v1 with ${opponentName}. Time to walk!`,
+      },
+      token: token,
+    };
 
-  await admin.messaging().sendEachForMulticast(message);
+    await admin.messaging().send(message);
+  }
+
   return {success: true};
 });
 
@@ -1050,43 +1056,49 @@ const handleExpired1v1s = async (db, now) => {
     const name1 = user1.username || "your opponent";
     const name2 = user2.username || "your opponent";
 
-    // 3. Send silent push to both users to trigger fetchSteps
-    const silentMessage1 = {
-      tokens: tokens1,
-      data: {
-        type: "silent",
-        action: "fetchSteps",
-      },
-    };
-    const silentMessage2 = {
-      tokens: tokens2,
-      data: {
-        type: "silent",
-        action: "fetchSteps",
-      },
-    };
+    // user1 tokens:
+    for (const token of tokens1) {
+      const silentMessage1 = {
+        token: token,
+        data: {
+          type: "silent",
+          action: "fetchSteps",
+        },
+      };
 
-    await admin.messaging().sendEachForMulticast(silentMessage1);
-    await admin.messaging().sendEachForMulticast(silentMessage2);
+      await admin.messaging().send(silentMessage1);
 
-    // 4. Send notification about duel end
-    const notif1 = {
-      notification: {
-        title: `1v1 with ${name2} ended`,
-        body: "See the results!",
-      },
-      tokens: tokens1,
-    };
-    const notif2 = {
-      notification: {
-        title: `1v1 with ${name1} ended`,
-        body: "See the results!",
-      },
-      tokens: tokens2,
-    };
+      const notif1 = {
+        token: token,
+        notification: {
+          title: `1v1 with ${name2} ended`,
+          body: "See the results!",
+        },
+      };
+      await admin.messaging().send(notif1);
+    }
 
-    await admin.messaging().sendEachForMulticast(notif1);
-    await admin.messaging().sendEachForMulticast(notif2);
+    // user2 tokens:
+    for (const token of tokens2) {
+      const silentMessage2 = {
+        token: token,
+        data: {
+          type: "silent",
+          action: "fetchSteps",
+        },
+      };
+
+      await admin.messaging().send(silentMessage2);
+
+      const notif2 = {
+        token: token,
+        notification: {
+          title: `1v1 with ${name1} ended`,
+          body: "See the results!",
+        },
+      };
+      await admin.messaging().send(notif2);
+    }
 
     // 5. Mark duel as processed
     await duelDoc.ref.update({processed: true});
