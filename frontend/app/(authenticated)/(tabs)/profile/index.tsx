@@ -260,11 +260,15 @@ const PersonalProfilePage: React.FC = () => {
             <SafeAreaView style={styles.safeArea} edges={['top']}>
                 <View style={styles.container}>
 
-                
-                    <Image
-                        source={require('@assets/icons/friends.png')}
-                        style={styles.friendsIcon}
-                    />
+                    <TouchableOpacity 
+                        style={styles.friendsButton}
+                        onPress={() => router.push('/friends')}
+                    >
+                        <Image
+                            source={require('@assets/icons/friends.png')}
+                            style={styles.friendsIcon}
+                        />
+                    </TouchableOpacity>
 
                     <TouchableOpacity onPress={() => setEditProfileModal(true)} activeOpacity={0.8}>
                         <Image
@@ -359,12 +363,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
     },
-    friendsIcon: {
-        width: 21,
-        height: 21,
+    friendsButton: {
         position: 'absolute',
         top: scale(16),     
-        right: scale(16),   
+        right: scale(16),
+        width: 32,
+        height: 32,
+        padding: 8,
+    },
+    friendsIcon: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain',
     },
     row: {
         flexDirection: 'row',

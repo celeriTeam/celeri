@@ -5,15 +5,22 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useRouter } from 'expo-router'
 import { useUser } from '../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { 
+  collection,
+  getDocs,
+  getDoc,
+  doc,
+  getFirestore
+} from 'firebase/firestore'
 import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
-import { create1v1Request } from '@/backend/src/1v1Requests';
+
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-dayjs.extend(relativeTime);
+import { requestFriend } from '@/backend/src/friends';
+
 
 const db = getFirestore(app);
 
@@ -39,12 +46,12 @@ type Props = {
     setUserSearchModalVisible: (visible: boolean) => void;
 };
 
-const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
+const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const { userID, username } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [userExpanded, setUserExpanded] = useState<string | null>(null);
+    const [requestedIds, setRequestedIds] = useState<string[]>([]);
 
     const router = useRouter()
 
@@ -52,12 +59,31 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
+
+                // we want to exclude IDs from already requested, incoming requests, and already friends
+
+                // 1) Grab the current user’s doc and pull out the three arrays
+                const meRef = doc(db, 'users', userID)
+                const meSnap = await getDoc(meRef)
+                const meData = meSnap.data() || {}
+
+                const outgoing: string[] = meData.outgoingRequests || []
+                const incoming: string[] = meData.incomingRequests || []
+                const friends:  string[] = meData.friendsList       || []
+
+                // 2) Fetch *all* users
+
                 const querySnapshot = await getDocs(collection(db, 'users'));
                 const usersArray: User[] = [];
 
+                // 3) Build the list, skipping self & anyone in those arrays
+                
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    if (userID === doc.id) return; // Skip the current user
+                    if (doc.id === userID) return                                 // skip yourself
+                    if (outgoing.includes(doc.id)) return                       // skip already‐sent
+                    if (incoming.includes(doc.id)) return                       // skip already‐received
+                    if (friends.includes(doc.id)) return                        // skip already friends
                     usersArray.push({
                         id: doc.id,
                         name: data.name || 'Unknown',
@@ -97,8 +123,14 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         // go to profile 
     };
 
-    const handleAddFriend = (text: string) => {
-        // go to profile 
+    const handleAddFriend = async (requestedID: string) => {
+        try {
+            await requestFriend(userID, requestedID);
+            setRequestedIds(prev => [...prev, requestedID]);
+        } catch (error) {
+            console.error("handleAddFriend Error: ", error);
+            Alert.alert('Error', 'Unable to send friend request.');
+        }
     };
 
     return (
@@ -140,10 +172,16 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
                                     {/* right side: Add Friend button */}
                                     <TouchableOpacity
-                                        style={styles.addFriendButton}
+                                        style={[
+                                            styles.addFriendButton,
+                                            requestedIds.includes(user.id) && styles.addFriendButtonDisabled
+                                        ]}
                                         onPress={() => handleAddFriend(user.id)}
+                                        disabled={requestedIds.includes(user.id)}
                                     >
-                                        <Text style={styles.addFriendText}>Add Friend</Text>
+                                        <Text style={styles.addFriendText}>
+                                            {requestedIds.includes(user.id) ? 'Requested' : 'Add Friend'}
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
                             </TouchableOpacity>
@@ -202,6 +240,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 8,
         alignItems: 'center',
+    },
+    addFriendButtonDisabled: {
+        opacity: 0.5,
     },
     buyContainer: {
         flexDirection: 'row',
@@ -304,4 +345,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default FriendAcceptPage;
+export default FriendAddPage;
