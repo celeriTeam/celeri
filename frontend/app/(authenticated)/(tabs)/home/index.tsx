@@ -350,6 +350,8 @@ const HomeTab: React.FC = () => {
                             let statusText = group.isGameActive ? 'Active' : 'Inactive';
                             let statusColor = group.isGameActive ? '#74FF6D' : '#a7a7a7';
 
+                            // console.log("tea2", groupID, group.isResultAvailable);
+
                             if (!group.isGameActive && group.isResultAvailable) {
                                 statusText = 'Game Ended - See Results';
                                 statusColor = 'orange';
