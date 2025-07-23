@@ -105,7 +105,7 @@ export const get1v1History = async (userID: string) => {
         })
     );
 
-    console.log('1v1 History:', history);
+    // console.log('1v1 History:', history);
     return history;
 };
 

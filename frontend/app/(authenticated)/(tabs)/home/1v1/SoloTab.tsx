@@ -339,7 +339,7 @@ const SoloTab: React.FC<Props> = ({
                                 style={[styles.playerImage, { borderColor: '#7464FF', }]}
                             />
                             <Text style={styles.playerName}>{current1v1?.userInfo?.opponentUsername}</Text>
-                            <Text style={styles.playerSteps}>{userSteps} steps</Text>
+                            <Text style={styles.playerSteps}>{opponentSteps} steps</Text>
                         </View>
                     </View>
                     <View>
