@@ -1,4 +1,4 @@
-require('dotenv').config()
+// require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 
@@ -8,12 +8,10 @@ const port = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
-import postgres from 'postgres'
+const postgres = require('postgres')
 
 const connectionString = process.env.DATABASE_URL
 const sql = postgres(connectionString)
-
-export default sql
 
 // POST /add-user
 app.post('/add-user', async (req, res) => {
@@ -50,6 +48,11 @@ app.get('/user-info', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// GET /
+app.get('/', (req, res) => {
+  res.send('Server is up and running!')
 })
 
 app.listen(port, () => {
