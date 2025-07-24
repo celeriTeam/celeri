@@ -229,7 +229,6 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                     ) : (
                         <Text style={styles.noUsersText}>Seems like you don't want friends. Add them.</Text>
                     )}
-                    <View style={{ height: 20 }} />
                 </ScrollView>
             </View>
         </View>
@@ -319,7 +318,8 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        flex: 0.45,
+        // flex: 1,
+        height: '95%',
     },
     row: {
         flexDirection: 'row',
