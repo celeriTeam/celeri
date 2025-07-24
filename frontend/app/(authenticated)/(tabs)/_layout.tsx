@@ -167,7 +167,7 @@ function InnerAuthenticatedLayout() {
             backgroundColor: '#1b2c1c',
             borderTopWidth: 0,
             paddingBottom: insets.bottom, // this accounts for the bottom safe area
-            paddingTop: 0,
+            paddingTop: Platform.OS === 'ios' ? verticalScale(10) : 0, // Adjust padding for iOS
             height: (isTabBarVisible ? verticalScale(60) : 0) + insets.bottom, // <-- THE MAGIC
           },
           tabBarShowLabel: false,
