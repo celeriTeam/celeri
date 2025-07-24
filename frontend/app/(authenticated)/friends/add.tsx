@@ -59,11 +59,10 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
-
                 // we want to exclude IDs from already requested, incoming requests, and already friends
 
                 // 1) Grab the current user’s doc and pull out the three arrays
-                const meRef = doc(db, 'users', userID)
+                const meRef = doc(db, 'users', uid)
                 const meSnap = await getDoc(meRef)
                 const meData = meSnap.data() || {}
 
@@ -77,10 +76,10 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                 const usersArray: User[] = [];
 
                 // 3) Build the list, skipping self & anyone in those arrays
-                
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    if (doc.id === userID) return                                 // skip yourself
+                    if (doc.id === uid) return                                 // skip yourself
                     if (outgoing.includes(doc.id)) return                       // skip already‐sent
                     if (incoming.includes(doc.id)) return                       // skip already‐received
                     if (friends.includes(doc.id)) return                        // skip already friends
@@ -199,7 +198,7 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 30,
+        padding: 20,
     },
     title: {
         fontFamily: 'Lexend',
@@ -272,7 +271,7 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        flex: 1,
+        flex: 0.92,
     },
     row: {
         flexDirection: 'row',

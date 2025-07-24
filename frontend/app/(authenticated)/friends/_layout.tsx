@@ -11,6 +11,7 @@ import {
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { UserProvider } from '../../UserProvider';
 
 export default function FriendsLayout() {
   const router = useRouter()
@@ -27,61 +28,63 @@ export default function FriendsLayout() {
     >
 
         <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-            {/* ─── BACK + TABS HEADER ───────────────── */}
-            <View style={styles.header}>
-                <View style={styles.topRow}>
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        style={styles.backBtn}
-                        hitSlop={{ top: 50, bottom: 50, left: 50, right: 50 }}
-                    >
-                        <Image
-                            source={require('@assets/icons/back.png')}
-                            style={styles.backIcon}
-                        />
-                    </TouchableOpacity>
-                    <View style={styles.titleWrapper}>
-                        <Text style={styles.titleText}>Friends</Text>
+            <UserProvider>
+                {/* ─── BACK + TABS HEADER ───────────────── */}
+                <View style={styles.header}>
+                    <View style={styles.topRow}>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={styles.backBtn}
+                            hitSlop={{ top: 50, bottom: 50, left: 50, right: 50 }}
+                        >
+                            <Image
+                                source={require('@assets/icons/back.png')}
+                                style={styles.backIcon}
+                            />
+                        </TouchableOpacity>
+                        <View style={styles.titleWrapper}>
+                            <Text style={styles.titleText}>Friends</Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.tabContainer}>
+                        <TouchableOpacity
+                            style={[styles.tab, { borderBottomColor: selectedTab === 'Accept' ? '#74FF6D' : 'transparent', }]}
+                            onPress={() => {
+                                setSelectedTab('Accept')
+                                router.replace('/friends');
+                            }}
+                        >
+                            <Text style={[styles.tabText, { color: selectedTab === 'Accept' ? '#74FF6D' : '#fff', }]}>Accept</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, { borderBottomColor: selectedTab === 'List' ? '#74FF6D' : 'transparent', }]}
+                            onPress={() => {
+                                setSelectedTab('List')
+                                router.replace('/friends/list')
+                            }}
+                            activeOpacity={1}
+                        >
+                            <Text style={[styles.tabText, { color: selectedTab === 'List' ? '#74FF6D' : '#fff', }]}>List</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, { borderBottomColor: selectedTab === 'Add' ? '#74FF6D' : 'transparent', }]}
+                            onPress={() => {
+                                setSelectedTab('Add')
+                                router.replace('/friends/add')
+                            }}
+                            activeOpacity={1}
+                        >
+                            <Text style={[styles.tabText, { color: selectedTab === 'Add' ? '#74FF6D' : '#fff', }]}>Add</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={styles.tabContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, { borderBottomColor: selectedTab === 'Accept' ? '#74FF6D' : 'transparent', }]}
-                        onPress={() => {
-                            setSelectedTab('Accept')
-                            router.push('/friends');
-                        }}
-                    >
-                        <Text style={[styles.tabText, { color: selectedTab === 'Accept' ? '#74FF6D' : '#fff', }]}>Accept</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, { borderBottomColor: selectedTab === 'List' ? '#74FF6D' : 'transparent', }]}
-                        onPress={() => {
-                            setSelectedTab('List')
-                            router.push('/friends/list')
-                        }}
-                        activeOpacity={1}
-                    >
-                        <Text style={[styles.tabText, { color: selectedTab === 'List' ? '#74FF6D' : '#fff', }]}>List</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, { borderBottomColor: selectedTab === 'Add' ? '#74FF6D' : 'transparent', }]}
-                        onPress={() => {
-                            setSelectedTab('Add')
-                            router.push('/friends/add')
-                        }}
-                        activeOpacity={1}
-                    >
-                        <Text style={[styles.tabText, { color: selectedTab === 'Add' ? '#74FF6D' : '#fff', }]}>Add</Text>
-                    </TouchableOpacity>
+                {/* ─── PAGE CONTENT ─────────────────────── */}
+                <View style={{ flex: 1 }}>
+                    <Slot />
                 </View>
-            </View>
-
-            {/* ─── PAGE CONTENT ─────────────────────── */}
-            <View style={{ flex: 1 }}>
-                <Slot />
-            </View>
+            </UserProvider>
         </SafeAreaView>
     </LinearGradient>
   )

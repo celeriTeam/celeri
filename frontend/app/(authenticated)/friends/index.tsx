@@ -5,15 +5,22 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useRouter } from 'expo-router'
 import { useUser } from '../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { 
+  collection,
+  getDocs,
+  getDoc,
+  doc,
+  getFirestore
+} from 'firebase/firestore'
 import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
-import { create1v1Request } from '@/backend/src/1v1Requests';
+
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
-dayjs.extend(relativeTime);
+import { acceptRequest, cancelRequest } from '@/backend/src/friends';
+
 
 const db = getFirestore(app);
 
@@ -39,37 +46,52 @@ type Props = {
     setUserSearchModalVisible: (visible: boolean) => void;
 };
 
-const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
+const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const { userID, username } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
-    const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [userExpanded, setUserExpanded] = useState<string | null>(null);
-
+    const [acceptedIDs, setAcceptedIDs] = useState<string[]>([]);
+    const [cancelledIDs, setCancelledIDs] = useState<string[]>([]);
+    const [outgoingRequests, setOutgoingRequests] = useState<User[]>([]);
+    const [incomingRequests, setIncomingRequests] = useState<User[]>([]);
     const router = useRouter()
+
+    console.log("pretest2");
 
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
-                const querySnapshot = await getDocs(collection(db, 'users'));
-                const usersArray: User[] = [];
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (userID === doc.id) return; // Skip the current user
-                    usersArray.push({
-                        id: doc.id,
-                        name: data.name || 'Unknown',
+
+                const meRef = doc(db, 'users', uid)
+                const meSnap = await getDoc(meRef)
+                const meData = meSnap.data() || {}
+
+                // 1) grab the ID arrays
+                const outgoingIDs = meData.outgoingRequests || [];
+                const incomingIDs = meData.incomingRequests || [];
+
+                // 2) helper to turn an ID into a User object
+                const fetchUserByID = async (id: string): Promise<User> => {
+                    const snap = await getDoc(doc(db, 'users', id));
+                    const data = snap.exists() ? snap.data() : {};
+                    return {
+                        id,
+                        name:     data.name     || 'Unknown',
                         username: data.username || 'Unknown',
-                        pfp: data.profileImageUrl || '',
-                    });
-                });
+                        pfp:      data.profileImageUrl || '',
+                    };
+                };
+
+                // 3) fetch all outgoing / incoming users in parallel
+                const outgoingUsers = await Promise.all(outgoingIDs.map(fetchUserByID));
+                const incomingUsers = await Promise.all(incomingIDs.map(fetchUserByID));
 
 
-                // for search functionality
-                setCurrentGroupUsersArray(usersArray);
-                setFilteredUsers(usersArray);
+                // 4) update your state
+                setOutgoingRequests(outgoingUsers);
+                setIncomingRequests(incomingUsers);
+
             } catch (error) {
                 console.error('Error fetching users:', error);
             } finally {
@@ -81,40 +103,37 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     }, [userID]);
     
 
-    const handleSearch = (text: string) => {
-        const query = text.toLowerCase();
-
-        const filtered = currentGroupUsersArray.filter(user => {
-            const nameMatch = user.name?.toLowerCase().includes(query);
-            const usernameMatch = user.username?.toLowerCase().includes(query);
-            return nameMatch || usernameMatch;
-        });
-
-        setFilteredUsers(filtered);
-    };
-
     const handleUserPress = (user: User) => {
         // go to profile 
     };
 
-    const handleAddFriend = (text: string) => {
-        // go to profile 
+    const handleAcceptRequest = async (acceptedID: string) => {
+        try {
+            await acceptRequest(userID, acceptedID); // bit confusing, but you are the one who accepted. acceptedID is the one who sent the request
+            setAcceptedIDs(prev => [...prev, acceptedID]);
+        } catch (error) {
+            console.error("handleAddFriend Error: ", error);
+            Alert.alert('Error', 'Unable to send friend request.');
+        }
+    };
+
+    const handleCancelRequest = async (cancelledID: string) => {
+        try {
+            await cancelRequest(userID, cancelledID);
+            setCancelledIDs(prev => [...prev, cancelledID]);
+        } catch (error) {
+            console.error("handleAddFriend Error: ", error);
+            Alert.alert('Error', 'Unable to send friend request.');
+        }
     };
 
     return (
         <View style={styles.container}>
+            <Text style={styles.subtitleText}> {`Incoming Requests (${incomingRequests.length})`}</Text>
             <View style={styles.scrollContainer}>
-                <TextInput
-                    style={styles.searchBar}
-                    placeholder="Search users..."
-                    placeholderTextColor="#ffffffaa"
-                    onChangeText={handleSearch}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                />
                 <ScrollView>
-                    {filteredUsers.length > 0 || currentGroupUsersArray.length === 0 ? (
-                        filteredUsers.map((user) => (
+                    {incomingRequests.length > 0 ? (
+                        incomingRequests.map((user) => (
                             <TouchableOpacity key={user.id} style={styles.memberItem } onPress={() => handleUserPress(user)} activeOpacity={0.7}>
                             
                                 <View style={styles.memberInfo}>
@@ -138,18 +157,77 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                                     </View>
                                 
 
-                                    {/* right side: Add Friend button */}
+                                    {/* right side: Accept Friend button */}
                                     <TouchableOpacity
-                                        style={styles.addFriendButton}
-                                        onPress={() => handleAddFriend(user.id)}
+                                        style={[
+                                            styles.addFriendButton,
+                                            acceptedIDs.includes(user.id) && styles.addFriendButtonDisabled
+                                        ]}
+                                        onPress={() => handleAcceptRequest(user.id)}
+                                        disabled={acceptedIDs.includes(user.id)}
                                     >
-                                        <Text style={styles.addFriendText}>Add Friend</Text>
+                                        <Text style={styles.addFriendText}>
+                                            {acceptedIDs.includes(user.id) ? 'Accepted' : 'Accept'}
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
                             </TouchableOpacity>
                         ))
                     ) : (
-                        <Text style={styles.noUsersText}>No users found.</Text>
+                        <Text style={styles.noUsersText}>Nobody wants to be friends with you.</Text>
+                    )}
+                </ScrollView>
+            </View>
+
+            {/* ─── spacer between Incoming & Outgoing ─── */}
+            <View style={{ height: 20 }} />     
+
+            <Text style={styles.subtitleText}> {`Outgoing Requests (${outgoingRequests.length})`}</Text>
+            <View style={styles.scrollContainer}>
+                <ScrollView>
+                    {outgoingRequests.length > 0 ? (
+                        outgoingRequests.map((user) => (
+                            <TouchableOpacity key={user.id} style={styles.memberItem } onPress={() => handleUserPress(user)} activeOpacity={0.7}>
+                            
+                                <View style={styles.memberInfo}>
+                                    {/* left side: avatar + name */}
+                                    <View style={styles.memberLeft}>
+
+                                        <Image
+                                            source={
+                                                user.pfp ?
+                                                    { uri: user?.pfp }
+                                                    : require('@components/blank-profile-picture.png')
+                                            }
+                                            style={styles.profilePic}
+                                        />
+                                        <View>
+                                            <View style={[styles.row, { justifyContent: 'space-between', width: '100%' }]}>
+                                                <Text style={styles.memberName}>{user?.name}</Text>
+                                            </View>
+                                            <Text style={styles.memberUserName}>@{user?.username}</Text>
+                                        </View>
+                                    </View>
+                                
+
+                                    {/* right side: Cancel Requeest button */}
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.addFriendButton,
+                                            cancelledIDs.includes(user.id) && styles.addFriendButtonDisabled
+                                        ]}
+                                        onPress={() => handleCancelRequest(user.id)}
+                                        disabled={cancelledIDs.includes(user.id)}
+                                    >
+                                        <Text style={styles.addFriendText}>
+                                            {cancelledIDs.includes(user.id) ? 'Cancelled' : 'Cancel'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <Text style={styles.noUsersText}>Seems like you don't want friends. Add them.</Text>
                     )}
                     <View style={{ height: 20 }} />
                 </ScrollView>
@@ -161,7 +239,7 @@ const FriendAcceptPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 30,
+        padding: 20,
     },
     title: {
         fontFamily: 'Lexend',
@@ -173,6 +251,13 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         color: '#fff',
         fontSize: 13,
+    },
+    subtitleText: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 15,
+        paddingBottom: 10,
+        paddingLeft: 5,
     },
     diamonds: {
         flexDirection: "row",
@@ -203,6 +288,9 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
     },
+    addFriendButtonDisabled: {
+        opacity: 0.5,
+    },
     buyContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -231,7 +319,7 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        flex: 1,
+        flex: 0.45,
     },
     row: {
         flexDirection: 'row',
@@ -304,4 +392,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default FriendAcceptPage;
+export default FriendAddPage;
