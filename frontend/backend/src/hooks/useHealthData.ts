@@ -34,10 +34,7 @@ const permissions: HealthKitPermissions = {
 
 
 const useHealthData = () => {
-<<<<<<< HEAD
-=======
     // console.log("useHealthData is running");
->>>>>>> 54f2f72f (final frontend fixes for 1v1)
     const [prevData, setPrevData] = useState<any>(null);
     const [steps, setSteps] = useState(0);
     const [averageSteps, setAverageSteps] = useState<number[]>([]);
@@ -311,12 +308,8 @@ const useHealthData = () => {
                     startDate: start.toISOString(),
                     endDate: end.toISOString(),
                 };
-<<<<<<< HEAD
-                console.log("start and end", options.startDate, options.endDate);
-=======
                 console.log('startdate: ', options.startDate);
                 console.log('enddate: ', options.endDate);
->>>>>>> 54f2f72f (final frontend fixes for 1v1)
 
                 AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
                 // AppleHealthKit.getSamples(options, (err, results) => {
@@ -336,13 +329,7 @@ const useHealthData = () => {
                             console.log("sum, ", sum);
                             return sum;
                         }, 0);
-<<<<<<< HEAD
-
-                        console.log("total, ", total);
-                        console.log("results, ", results);
-=======
                         console.log('results', results);
->>>>>>> 54f2f72f (final frontend fixes for 1v1)
                         resolve(Math.floor(total));
                     }
                 });
