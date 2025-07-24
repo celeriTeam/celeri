@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        // flex: 1,
-        height: '95%',
+        flex: 1,
+        // height: '95%',
     },
     row: {
         flexDirection: 'row',
