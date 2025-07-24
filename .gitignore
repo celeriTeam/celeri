@@ -1,0 +1,8 @@
+node_modules/
+
+# macOS
+.DS_Store
+
+# Server
+/node_server/node_modules/
+/node_server/.env
