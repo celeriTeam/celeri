@@ -441,13 +441,13 @@ const useHealthData = () => {
             try {
                 newsUpdateLock.current = true;
 
-                // Update Firebase and news
-                // await setStepsFirebase(
-                //     userID,
-                //     healthData.currentData.dailySteps,
-                //     healthData.currentData.weeklyAverageSteps,
-                //     healthData.currentData.stepsFromWeekBefore
-                // );
+                //Update Firebase and news
+                await setStepsFirebase(
+                    userID,
+                    healthData.currentData.dailySteps,
+                    healthData.currentData.weeklyAverageSteps,
+                    healthData.currentData.stepsFromWeekBefore
+                );
     
                 console.log("UPDATING NEWS");
                 await newsFunctions(
