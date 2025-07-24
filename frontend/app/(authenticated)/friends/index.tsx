@@ -53,10 +53,7 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const [cancelledIDs, setCancelledIDs] = useState<string[]>([]);
     const [outgoingRequests, setOutgoingRequests] = useState<User[]>([]);
     const [incomingRequests, setIncomingRequests] = useState<User[]>([]);
-    const router = useRouter()
-
-    console.log("pretest2");
-
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
@@ -239,6 +236,7 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        // height: '45%',
         padding: 20,
     },
     title: {
