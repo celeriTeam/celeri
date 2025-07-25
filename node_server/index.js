@@ -27,8 +27,8 @@ app.post('/add-user', async (req, res) => {
 // GET /data
 app.get('/data', async (req, res) => {
   try {
-    const result = await sql.query('SELECT user_id, steps FROM steps_competition ORDER BY steps DESC')
-    res.status(200).json(result.rows)
+    const result = await sql`SELECT user_id, steps, created_at FROM steps_competition ORDER BY steps DESC`
+    res.status(200).json(result)
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -38,9 +38,9 @@ app.get('/data', async (req, res) => {
 app.get('/user-info', async (req, res) => {
   const { user_id } = req.query
   try {
-    const result = await sql.query('SELECT user_id, steps FROM steps_competition ORDER BY steps DESC')
-    const rank = result.rows.findIndex(row => row.user_id === user_id)
-    const user = result.rows[rank]
+    const result = await sql`SELECT user_id, steps FROM steps_competition ORDER BY steps DESC`
+    const rank = result.findIndex(user => user.user_id === user_id)
+    const user = result[rank]
     res.status(200).json({
       ...user,
       rank: rank !== -1 ? rank + 1 : null,
