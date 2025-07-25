@@ -17,8 +17,48 @@ const sql = postgres(connectionString)
 app.post('/add-user', async (req, res) => {
   const { user_id } = req.body
   try {
-    await sql`INSERT INTO steps_competition (user_id, steps) VALUES (${user_id}, 0) ON CONFLICT (user_id) DO NOTHING`
+    const result = await sql`
+      INSERT INTO steps_competition (user_id, steps) 
+      SELECT ${user_id}, 0
+      WHERE NOT EXISTS (
+        SELECT 1 FROM steps_competition WHERE user_id = ${user_id}
+      )
+      RETURNING id
+    `
+
+    if (result.length === 0) {
+      res.status(400).json({ error: 'User already exists' })
+      return
+    }
+
     res.status(200).json({ success: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+// POST /update-steps
+app.post('/update-steps', async (req, res) => {
+  const { user_id, steps } = req.body
+  try {
+    const existingUser = await sql`
+      SELECT steps FROM steps_competition WHERE user_id = ${user_id}
+    `;
+
+    if (existingUser.length === 0) {
+      return res.status(400).json({ success: false, error: 'User not found' });
+    }
+
+    const currentSteps = existingUser[0].steps;
+    const updatedSteps = Math.max(currentSteps, steps);
+
+    await sql`
+      UPDATE steps_competition 
+      SET steps = ${updatedSteps}
+      WHERE user_id = ${user_id}
+    `;
+
+    res.status(200).json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
