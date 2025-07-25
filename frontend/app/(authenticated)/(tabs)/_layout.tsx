@@ -180,6 +180,10 @@ function InnerAuthenticatedLayout() {
               iconSource = require('@assets/icons/home.png');
               width = focused ? 24 : 22;
               height = focused ? 26 : 24;
+            } else if (route.name === 'competition/index') {
+              iconSource = require('@assets/icons/shoe.png');
+              width = focused ? 22 : 20;
+              height = focused ? 25 : 23;
             } else if (route.name === 'profile') {
               iconSource = require('@assets/icons/profile.png');
               width = focused ? 22 : 20;
@@ -206,6 +210,7 @@ function InnerAuthenticatedLayout() {
         tabBar={(props) => <TabBar {...props} />}
       >
         <Tabs.Screen name="home" options={{ title: 'Home' }} />
+        <Tabs.Screen name="competition" options={{ title: 'Competition' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
         <Tabs.Screen name="bugReports/index" options={{ title: 'Bug Reports' }} />
       </Tabs>
