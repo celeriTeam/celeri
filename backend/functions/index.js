@@ -996,7 +996,12 @@ exports.send1v1RequestNotification = onCall(async (req) => {
       token: token,
     };
 
-    await admin.messaging().send(message);
+    try {
+      const response = await admin.messaging().send(message);
+      console.log("Notification sent successfully:", response);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
   }
 
   return {success: true};
@@ -1018,7 +1023,12 @@ exports.send1v1StartedNotification = onCall(async (req) => {
       token: token,
     };
 
-    await admin.messaging().send(message);
+    try {
+      const response = await admin.messaging().send(message);
+      console.log("Notification sent successfully:", response);
+    } catch (error) {
+      console.error("Error sending notification:", error);
+    }
   }
 
   return {success: true};
@@ -1066,7 +1076,12 @@ const handleExpired1v1s = async (db, now) => {
         },
       };
 
-      await admin.messaging().send(silentMessage1);
+      try {
+        const response = await admin.messaging().send(silentMessage1);
+        console.log("Silent notif sent successfully:", response);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
 
       const notif1 = {
         token: token,
@@ -1075,7 +1090,12 @@ const handleExpired1v1s = async (db, now) => {
           body: "See the results!",
         },
       };
-      await admin.messaging().send(notif1);
+      try {
+        const response = await admin.messaging().send(notif1);
+        console.log("Notification sent successfully:", response);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
     }
 
     // user2 tokens:
@@ -1088,7 +1108,12 @@ const handleExpired1v1s = async (db, now) => {
         },
       };
 
-      await admin.messaging().send(silentMessage2);
+      try {
+        const response = await admin.messaging().send(silentMessage2);
+        console.log("Silent notif sent successfully:", response);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
 
       const notif2 = {
         token: token,
@@ -1097,7 +1122,12 @@ const handleExpired1v1s = async (db, now) => {
           body: "See the results!",
         },
       };
-      await admin.messaging().send(notif2);
+      try {
+        const response = await admin.messaging().send(notif2);
+        console.log("Notification sent successfully:", response);
+      } catch (error) {
+        console.error("Error sending notification:", error);
+      }
     }
 
     // 5. Mark duel as processed

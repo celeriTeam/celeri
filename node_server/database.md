@@ -9,6 +9,21 @@ CREATE TABLE steps_competition (
   created_at TIMESTAMP DEFAULT NOW(),
   steps INTEGER DEFAULT 0
 );
+
+CREATE TABLE competitions (
+  id SERIAL PRIMARY KEY,
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE competition_steps (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  steps INTEGER DEFAULT 0,
+  competition_id INTEGER REFERENCES competitions(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ## TO WORK ON:

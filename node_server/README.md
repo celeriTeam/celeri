@@ -9,6 +9,7 @@
 - Create a .env file
 
     DATABASE_URL=postgresql://postgres.lnuyvumdykytqanmvzou:Celeritas123!@aws-0-us-east-2.pooler.supabase.com:6543/postgres
+    GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json
 
 
 ### Running the node server locally
@@ -19,4 +20,4 @@
 
 - Run the node server
 
-    node index.js
+    npm run dev
