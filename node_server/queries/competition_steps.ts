@@ -108,6 +108,9 @@ router.get('/data', async (req, res) => {
 router.get('/user-info', async (req, res) => {
   const { user_id } = req.query
   try {
+    if (!user_id || typeof user_id !== 'string') {
+      return res.status(400).json({ error: 'Correct User ID is required' });
+    }
     // Grab current competition:
     const competition = await grabCurrentCompetition();
 
@@ -115,17 +118,29 @@ router.get('/user-info', async (req, res) => {
       return res.status(400).json({ error: 'No active competition' });
     }
     const result = await sql`
-      SELECT user_id, steps 
-      FROM competition_steps 
-      WHERE competition_id = ${competition.id}
+      WITH ranked AS (
+        SELECT 
+          *,
+          RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
+          COUNT(*) OVER (PARTITION BY competition_id) AS total_users
+        FROM competitions AS comp
+        JOIN competition_steps AS s
+        ON comp.id = s.competition_id
+        WHERE comp.id = ${competition.id}
+      )
+      SELECT 
+        user_id,
+        steps,
+        (total_users - asc_rank + 1) AS rank
+      FROM ranked
+      WHERE user_id = ${user_id};
     `;
 
-    const rank = result.findIndex(user => user.user_id === user_id)
-    const user = result[rank]
-    res.status(200).json({
-      ...user,
-      rank: rank !== -1 ? rank + 1 : null,
-    })
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.status(200).json(result[0]);
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
