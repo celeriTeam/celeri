@@ -1,15 +1,14 @@
-// const databaseUrl = 'https://celeri.onrender.com';
-const databaseUrl = 'http://localhost:3000';
-// COMPETITIONS API
-const fetchCompetitions = async () => {
-    const response = await fetch(`${databaseUrl}/competitions/current-competition`);
-    if (!response.ok) {
-        const err = await response.text();
-        console.error('Failed to add user:', err);
-    }
-    return response.json();
-}
+const params = new URLSearchParams(window.location.search);
+const env = params.get("env");
 
+const databaseUrl = env === "dev"
+? 'http://localhost:3000'
+: 'https://celeri.onrender.com';
+
+console.log("Using server:", databaseUrl);
+
+
+// COMPETITIONS API
 const startCompetition = async () => {
     try {
         const response = await fetch(`${databaseUrl}/competitions/start-competition`, {
@@ -27,6 +26,24 @@ const startCompetition = async () => {
     } catch (error) {
         console.error('Network error:', error);
     }
+}
+
+const fetchCurrentCompetition = async () => {
+    const response = await fetch(`${databaseUrl}/competitions/current-competition`);
+    if (!response.ok) {
+        const err = await response.text();
+        console.error('Failed to fetch current competition:', err);
+    }
+    return response.json();
+}
+
+const fetchAllCompetitions = async () => {
+    const response = await fetch(`${databaseUrl}/competitions/all-competitions`);
+    if (!response.ok) {
+        const err = await response.text();
+        console.error('Failed to fetch competitions:', err);
+    }
+    return response.json();
 }
 
 // COMPETITION STEPS API
@@ -90,18 +107,12 @@ const getUserInfo = async (user_id: string) => {
 //     addUser(`user_${i+3}`);
 // }
 
-const fetchCompetitionsButton = document.getElementById('fetch-competitions-button') as HTMLButtonElement;
-const fetchCompetitionsContainer = document.getElementById('competitions-container') as HTMLDivElement;
 const startCompetitionButton = document.getElementById('start-competition-button') as HTMLButtonElement;
 const startCompetitionContainer = document.getElementById('start-competition-container') as HTMLDivElement;
-
-fetchCompetitionsButton.addEventListener('click', async () => {
-    await fetchCompetitions().then(data => {
-        fetchCompetitionsContainer.innerHTML = JSON.stringify(data, null, 2);
-    }).catch(error => {
-        console.error('Error fetching competitions:', error);
-    });
-});
+const fetchCurrentCompetitionButton = document.getElementById('current-competition-button') as HTMLButtonElement;
+const currentCompetitionContainer = document.getElementById('current-competition-container') as HTMLDivElement;
+const fetchAllCompetitionsButton = document.getElementById('all-competitions-button') as HTMLButtonElement;
+const allCompetitionsContainer = document.getElementById('all-competitions-container') as HTMLDivElement;
 
 startCompetitionButton.addEventListener('click', async () => {
     const result = await startCompetition();
@@ -111,6 +122,62 @@ startCompetitionButton.addEventListener('click', async () => {
     } else {
         startCompetitionContainer.innerHTML = 'Competition already active';
     }
+});
+
+fetchCurrentCompetitionButton.addEventListener('click', async () => {
+    await fetchCurrentCompetition().then(data => {
+        currentCompetitionContainer.innerHTML = JSON.stringify(data, null, 2);
+    }).catch(error => {
+        console.error('Error fetching competitions:', error);
+    });
+});
+
+fetchAllCompetitionsButton.addEventListener('click', async () => {
+    try {
+    const data = await fetchAllCompetitions();
+
+    // Group by competition_id
+    const grouped = data.reduce((acc: any, entry: any) => {
+      const { competition_id } = entry;
+      if (!acc[competition_id]) acc[competition_id] = [];
+      acc[competition_id].push(entry);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Generate HTML
+    let html = '';
+
+    for (const [competition_id, entries] of Object.entries(grouped) as [string, any[]][]) {
+      const { start_time, end_time, is_active } = entries[0];
+
+      html += `
+        <details>
+          <summary><strong>Competition ID:</strong> ${competition_id}</summary>
+          <ul>
+            <li><strong>Start Time:</strong> ${new Date(start_time).toLocaleString()}</li>
+            <li><strong>End Time:</strong> ${new Date(end_time).toLocaleString()}</li>
+            <li><strong>Active:</strong> ${is_active}</li>
+            <li><strong>Participants:</strong>
+              <ul>
+                ${entries.map(user => `
+                  <li>
+                    <strong>User:</strong> ${user.user_id} |
+                    <strong>Steps:</strong> ${user.steps} |
+                    <strong>Rank:</strong> ${user.rank}
+                  </li>
+                `).join('')}
+              </ul>
+            </li>
+          </ul>
+        </details><br/>
+      `;
+    }
+
+    allCompetitionsContainer.innerHTML = html;
+  } catch (error) {
+    console.error('Error fetching competitions:', error);
+    allCompetitionsContainer.innerHTML = '<p style="color:red">Failed to load competitions.</p>';
+  }
 });
 
 const addUserButton = document.getElementById('add-user-button') as HTMLButtonElement;
@@ -164,7 +231,7 @@ fetchUserInfoButton.addEventListener('click', async () => {
         if (userInfo) {
             userInfoContainer.innerHTML = JSON.stringify(userInfo, null, 2);
         } else {
-            userInfoContainer.innerHTML = 'User not found';
+            userInfoContainer.innerHTML = 'User not found or competition not active';
         }
     } else {
         console.error('Please enter a user ID for info');
