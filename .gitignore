@@ -1,0 +1,10 @@
+node_modules/
+
+# macOS
+.DS_Store
+
+# Server
+/node_server/node_modules/
+/node_server/.env
+/node_server/dist/
+/node_server/serviceAccountKey.json
