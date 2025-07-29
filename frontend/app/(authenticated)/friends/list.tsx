@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useRouter } from 'expo-router'
+import { usePathname, useRouter } from 'expo-router'
 import { useUser } from '../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { app } from "@firebaseConfig";
@@ -110,8 +110,13 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         setFilteredUsers(filtered);
     };
 
+    const pathname = usePathname()
+
     const handleUserPress = (user: User) => {
-        // go to profile 
+        router.replace({
+            pathname: '/(authenticated)/(tabs)/profile/publicProfile',
+            params: { targetUserID: user.id, from: pathname },
+        })
     };
 
     const handleRemoveFriend = async (removedID: string) => {

@@ -4,7 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { User } from "firebase/auth";
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getUserName } from '@backend/src/users';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '../../UserProvider';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';

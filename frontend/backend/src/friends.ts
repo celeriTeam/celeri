@@ -92,3 +92,67 @@ export const removeFriend = async (removerID: string, removedID: string): Promis
         return undefined;
     }
 }
+
+/*********************************************** FRIEND PROFILE FUNCTIONS ********************************************/
+
+export interface PublicProfileData {
+  averageSteps: number[]
+  steps: number
+  name: string
+  username: string
+  profileImageUrl: string
+  friendStatus: string
+}
+
+export const fetchPublicProfileData = async (userID: string, targetUserID: string): Promise<PublicProfileData | undefined> => {
+    try {
+
+        const userRef = doc(db, 'users', targetUserID)
+        const snap = await getDoc(userRef)
+
+        if (!snap.exists()) {
+            console.warn(`No user found with ID "${targetUserID}"`)
+            return undefined
+        }
+
+        const data = snap.data()
+
+        const incoming = Array.isArray(data.incomingRequests)
+        ? (data.incomingRequests as string[])
+        : []
+        const outgoing = Array.isArray(data.outgoingRequests)
+        ? (data.outgoingRequests as string[])
+        : []
+        const friends = Array.isArray(data.friendsList)
+        ? (data.friendsList as string[])
+        : []
+
+        // Determine friendStatus
+        let friendStatus = 'request'
+        if (userID) {
+            if (incoming.includes(userID)) {
+                friendStatus = 'cancel'
+            } else if (friends.includes(userID)) {
+                friendStatus = 'remove'
+            } else if (outgoing.includes(userID)) {
+                friendStatus = 'accept'
+            }
+        }
+        return {
+            averageSteps: Array.isArray(data.averageSteps)
+                ? (data.averageSteps as number[])
+                : [],
+            steps: data.steps as number,
+            name: data.name as string,
+            username: data.username as string,
+            profileImageUrl: data.profileImageUrl as string,
+            friendStatus: friendStatus as string,
+        }
+
+
+    } catch (error) {
+        console.error("fetchPublicProfileData - error: ", error);
+        return undefined;
+
+    }
+}
