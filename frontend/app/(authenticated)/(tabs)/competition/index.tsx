@@ -63,7 +63,7 @@ const CompetitionLandingPage: React.FC = () => {
                                     style={styles.closeButtonIcon}
                                 />
                             </TouchableOpacity>
-                            <RaceRulesPager />
+                            <RaceRulesPager closeModal={() => setModalVisible(false)} />
                         </LinearGradient>
                     </View>
                 </View>
