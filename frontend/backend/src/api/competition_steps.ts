@@ -1,11 +1,17 @@
 import { api } from '../api';
 
 export const addCompetitionUser = async (user_id: string) => {
+<<<<<<< HEAD
     console.log("testing twohalf");
     const response = await api.post(`/competition-steps/add-user`, {
         params: { user_id }
     });
     console.log("testing three");
+=======
+    const response = await api.post(`/competition-steps/add-user`,
+        { user_id }
+    );
+>>>>>>> refs/remotes/origin/main
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to add user:', err);
@@ -16,9 +22,9 @@ export const addCompetitionUser = async (user_id: string) => {
 };
 
 export const addCompetitionSteps = async (user_id: string, steps: number) => {
-    const response = await api.post(`/competition-steps/update-steps`, {
-        params: { user_id, steps }
-    });
+    const response = await api.post(`/competition-steps/update-steps`,
+        { user_id, steps }
+    );
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to add steps:', err);
