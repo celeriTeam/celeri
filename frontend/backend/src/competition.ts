@@ -62,3 +62,43 @@ export const setUserInCompetition = async (userId: string): Promise<void> => {
         console.log("Error setting inCompetition:", error);
     }
 };
+
+export const getUserProfile = async (userId: string) => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+        const data = userSnap.data();
+        return {
+            username: data.username || '',
+            profileImageUrl: data.profileImageUrl || '',
+        };
+    }
+    return {
+        username: '',
+        profileImageUrl: '',
+    };
+};
+
+export const getUserProfilesBatch = async (userIds: string[]) => {
+    if (userIds.length === 0) return [];
+    // Firestore 'in' queries are limited to 10 items per query
+    const batches = [];
+    for (let i = 0; i < userIds.length; i += 10) {
+        const batchIds = userIds.slice(i, i + 10);
+        const q = query(collection(db, 'users'), where('__name__', 'in', batchIds));
+        batches.push(getDocs(q));
+    }
+    const results = await Promise.all(batches);
+    // Flatten and map to desired structure
+    return results.flatMap(snapshot =>
+        snapshot.docs.map(docSnap => {
+            const data = docSnap.data();
+            return {
+                userId: docSnap.id,
+                username: data.username || '',
+                // Map to profileImageUrl for consistency
+                profileImageUrl: data.profileImageUrl || data.profilePicture || data.profilePic || '',
+            };
+        })
+    );
+};

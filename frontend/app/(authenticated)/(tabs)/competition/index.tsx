@@ -23,7 +23,6 @@ const CompetitionLandingPage: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [hasConsented, setHasConsented] = useState<boolean | null>(null);
-    const [timeLeft, setTimeLeft] = useState<string | null>(null);
     const { userID } = useUser();
     const router = useRouter();
 
@@ -51,48 +50,17 @@ const CompetitionLandingPage: React.FC = () => {
         checkConsent();
     }, [userID]);
 
-    // Fetch current game and set up timer
     useEffect(() => {
         const getCurrentGame = async () => {
             setLoading(true);
             try {
                 const game = await fetchCurrentCompetition();
                 setCurrentGame(game && game.is_active ? game : null);
-
-                // Set up timer if end_time exists
-                if (game && game.end_time) {
-                    updateTimer(game.end_time);
-                    const interval = setInterval(() => updateTimer(game.end_time), 1000);
-                    return () => clearInterval(interval);
-                } else {
-                    setTimeLeft(null);
-                }
             } catch (e) {
                 setCurrentGame(null);
-                setTimeLeft(null);
             }
             setLoading(false);
         };
-
-        // Helper to update timer
-        const updateTimer = (endTimeStr: string) => {
-            const endTime = new Date(endTimeStr).getTime();
-            const now = Date.now();
-            const diff = endTime - now;
-            if (diff <= 0) {
-                setTimeLeft("00:00:00");
-                return;
-            }
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-            setTimeLeft(
-                `${hours.toString().padStart(2, '0')}:` +
-                `${minutes.toString().padStart(2, '0')}:` +
-                `${seconds.toString().padStart(2, '0')}`
-            );
-        };
-
         getCurrentGame();
     }, []);
 
@@ -117,11 +85,6 @@ const CompetitionLandingPage: React.FC = () => {
             style={styles.container}
         >
             <View style={styles.content}>
-                {timeLeft && (
-                    <Text style={{ color: '#fff', fontSize: 28, marginBottom: 20 }}>
-                        Time left: {timeLeft}
-                    </Text>
-                )}
                 <TouchableOpacity
                     style={joinButton(currentGame)}
                     onPress={handleJoinGame}
