@@ -1,66 +1,93 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { Image } from 'expo-image';
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
-import { useUser } from '../../../UserProvider';
-import messaging from '@react-native-firebase/messaging';
-import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
-import useHealthData from '@/backend/src/hooks/useHealthData';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LineChart } from 'react-native-chart-kit';
-import { Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet } from 'react-native-size-scaling';
-
-const { width, height } = Dimensions.get('window');
-
-// Guidelines based on my test device (iPhone 16):
-const guidelineBaseWidth = 393;   // 1179 / 3
-const guidelineBaseHeight = 852;  // 2556 / 3
-
-// Scale functions to calculate sizes proportionate to the device dimensions
-const scale = (size: number) => (width / guidelineBaseWidth) * size;
-const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
-const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
-
-const databaseUrl = 'https://celeri.onrender.com';
+import { fetchCurrentCompetition } from '@/backend/src/api';
+import { useUser } from '@/app/UserProvider';
 
 const CompetitionGamePage: React.FC = () => {
-    const [data, setData] = useState<string>('');
+    const [timeLeft, setTimeLeft] = useState<string>('00:00:00');
+    const { userID, username, profilePicture } = useUser();
 
-    const users = async () => {
-        const response = await fetch(`${databaseUrl}/data`);
-        const response_json = await response.json();
-        return response_json;
-    };
-
-    const grabData = async () => {
-        users().then(data => {
-            setData(JSON.stringify(data, null, 2));
-        }).catch(error => {
-            console.error('Error fetching data:', error);
-        });
+    // Timer update helper
+    const updateTimer = (endTimeStr: string) => {
+        const endTime = new Date(endTimeStr).getTime();
+        const now = Date.now();
+        const diff = endTime - now;
+        if (diff <= 0) {
+            setTimeLeft("00:00:00");
+            return;
+        }
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeLeft(
+            `${hours.toString().padStart(2, '0')}:` +
+            `${minutes.toString().padStart(2, '0')}:` +
+            `${seconds.toString().padStart(2, '0')}`
+        );
     };
 
     useEffect(() => {
-        grabData();
+        let interval: NodeJS.Timeout;
+        const setup = async () => {
+            const game = await fetchCurrentCompetition();
+            if (game && game.end_time) {
+                updateTimer(game.end_time);
+                interval = setInterval(() => updateTimer(game.end_time), 1000);
+            }
+        };
+        setup();
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, []);
 
     return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-                <View style={{ padding: 50, }} />
-                <Text style={{ color: '#fff' }}>{data}</Text>
-            </LinearGradient>
+        <LinearGradient
+            colors={['#000000', '#024405']}
+            style={{
+                flex: 1,
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+            }}
+        >
+            <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                    color: '#fff',
+                    fontFamily: 'Lexend',
+                    fontSize: 60,
+                    textAlign: 'center',
+                }}>
+                    {timeLeft}
+                </Text>
+                <Image
+                    source={
+                        profilePicture
+                            ? { uri: profilePicture }
+                            : require('@components/blank-profile-picture.png')
+                    }
+                    style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        marginTop: 20,
+                        marginBottom: 10,
+                    }}
+                />
+                <Text style={{
+                    color: '#fff',
+                    fontFamily: 'Lexend-Bold',
+                    fontSize: 18,
+                    textAlign: 'center',
+                }}>
+                    {username}
+                </Text>
+            </View>
+        </LinearGradient>
     );
-}
+};
 
 export default CompetitionGamePage;
