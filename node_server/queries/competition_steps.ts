@@ -92,10 +92,22 @@ router.get('/data', async (req, res) => {
     }
 
     const result = await sql`
-      SELECT user_id, steps, created_at 
-      FROM competition_steps 
-      WHERE competition_id = ${competition.id}
-      ORDER BY steps DESC
+      WITH ranked AS (
+        SELECT 
+          *,
+          RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
+          COUNT(*) OVER (PARTITION BY competition_id) AS total_users
+        FROM competitions AS comp
+        JOIN competition_steps AS s
+        ON comp.id = s.competition_id
+        WHERE comp.id='7de1bb40-32ff-470b-92e5-5ac8b58fdfa4'
+      )
+      SELECT 
+        user_id,
+        steps,
+        (total_users - asc_rank + 1) AS rank
+      FROM ranked
+      ORDER BY steps desc;
     `;
 
     res.status(200).json(result)
