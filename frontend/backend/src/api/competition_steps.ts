@@ -1,14 +1,17 @@
 import { api } from '../api';
 
 export const addCompetitionUser = async (user_id: string) => {
+    console.log("testing twohalf");
     const response = await api.post(`/competition-steps/add-user`, {
         params: { user_id }
     });
+    console.log("testing three");
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to add user:', err);
         return null;
     }
+    console.log("test", response.data);
     return response.data;
 };
 

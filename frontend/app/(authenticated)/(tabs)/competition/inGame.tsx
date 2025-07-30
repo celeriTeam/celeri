@@ -56,7 +56,7 @@ const CompetitionGamePage: React.FC = () => {
                         };
                     })
                 );
-                userInfos.sort((a, b) => (a.rank ?? 9999) - (b.rank ?? 9999));
+                userInfos.sort((a: { rank: any; }, b: { rank: any; }) => (a.rank ?? 9999) - (b.rank ?? 9999));
                 setLeaderboard(userInfos);
             } catch (e) {
                 console.error('Error fetching leaderboard:', e);

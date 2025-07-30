@@ -67,6 +67,8 @@ const CompetitionLandingPage: React.FC = () => {
 
     // Join Game handler
     const handleJoinGame = async () => {
+        console.log("testing one");
+        if (loading) return; // Prevent multiple clicks while loading
         if (!userID) return;
         if (!hasConsented) {
             Alert.alert(
@@ -75,6 +77,7 @@ const CompetitionLandingPage: React.FC = () => {
             );
             return;
         }
+        console.log("testing two");
         await addCompetitionUser(userID);
         await setUserInCompetition(userID);
         router.replace('/(authenticated)/(tabs)/competition/inGame');
