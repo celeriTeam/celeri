@@ -168,37 +168,138 @@ const CompetitionGamePage: React.FC = () => {
                 <View style={styles.tabContentContainer}>
                     {selectedTab === 'ViewOne' ? (
                         <ScrollView
-                            style={styles.scrollView}
+                            style={{ flex: 1, width: '100%' }}
                             contentContainerStyle={{
-                                flexDirection: 'row',
-                                flexWrap: 'wrap',
-                                justifyContent: 'center',
-                                alignItems: 'flex-end',
-                                paddingBottom: 20,
+                                alignItems: 'center',
+                                paddingVertical: 20,
+                                paddingTop: 120,
+                                minHeight: 400,
                             }}
-                            horizontal={false}
+                            showsVerticalScrollIndicator={true}
                         >
-                            {leaderboard.map((user, idx) => (
-                                <View key={user.userId || user.id || idx} style={styles.stickFigureContainer}>
-                                    <View style={styles.stickFigureWrapper}>
-                                        <Image
-                                            source={require('@assets/images/stickfigure.png')}
-                                            style={{ width: 70, height: 110 }}
-                                        />
-                                        <Image
-                                            source={
-                                                user.profileImageUrl
-                                                    ? { uri: user.profileImageUrl }
-                                                    : require('@components/blank-profile-picture.png')
-                                            }
-                                            style={styles.stickFigureFace}
-                                        />
+                            {/* Track and Markers */}
+                            {(() => {
+                                // Track settings
+                                const TRACK_WIDTH = 100;
+                                const STICK_WIDTH = 70;
+                                const TRACK_LEFT = 50;
+                                const MARKER_INTERVAL = 500;
+                                const BOTTOM_MARGIN = 60;
+                                const TOP_MARGIN = 30;
+                                const STICK_HEIGHT = 110;
+
+                                // Find max steps
+                                const maxSteps = Math.max(...leaderboard.map(u => u.steps ?? 0), 1000);
+                                // Track height grows with maxSteps, 1 step = 0.15px, but at least 400px
+                                const pxPerStep = 0.15;
+                                const trackHeight = Math.max((maxSteps * pxPerStep) + TOP_MARGIN + BOTTOM_MARGIN, 400);
+
+                                // Markers
+                                const markerCount = Math.ceil(maxSteps / MARKER_INTERVAL) + 2;
+
+                                // Generate a consistent random X offset for each user based on their userId
+                                const getRandomX = (userId: string | number) => {
+                                    // Simple hash for deterministic "random" based on userId
+                                    let hash = 0;
+                                    const str = String(userId);
+                                    for (let i = 0; i < str.length; i++) {
+                                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                                    }
+                                    // Range: -10 to 40 px
+                                    return 10 + (Math.abs(hash) % 120);
+                                };
+
+                                return (
+                                    <View style={{
+                                        width: TRACK_WIDTH + 80,
+                                        height: trackHeight,
+                                        flexDirection: 'row',
+                                        position: 'relative',
+                                    }}>
+                                        {/* Step Markers - moved to absolute far left */}
+                                        <View style={{
+                                            position: 'absolute',
+                                            left: -70,
+                                            top: 0,
+                                            bottom: 0,
+                                            width: 50,
+                                            justifyContent: 'flex-end',
+                                            alignItems: 'flex-end',
+                                        }}>
+                                            {Array.from({ length: markerCount }).map((_, i) => {
+                                                const steps = i * MARKER_INTERVAL;
+                                                const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
+                                                return (
+                                                    <View key={i} style={{
+                                                        position: 'absolute',
+                                                        left: 0,
+                                                        width: 50,
+                                                        top: y - 8,
+                                                        flexDirection: 'row',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'flex-end',
+                                                    }}>
+                                                        <Text style={{
+                                                            color: '#fff',
+                                                            fontSize: 12,
+                                                            fontFamily: 'Lexend',
+                                                            width: 32,
+                                                            textAlign: 'right',
+                                                            marginRight: 2,
+                                                        }}>{steps}</Text>
+                                                        <View style={{
+                                                            width: 20,
+                                                            height: 2,
+                                                            backgroundColor: '#74FF6D',
+                                                            marginLeft: 2,
+                                                        }} />
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                        {/* Stick Figures */}
+                                        <View style={{
+                                            marginLeft: TRACK_LEFT,
+                                            width: TRACK_WIDTH,
+                                            height: trackHeight,
+                                            position: 'relative',
+                                        }}>
+                                            {leaderboard.map((user, idx) => {
+                                                const steps = user.steps ?? 0;
+                                                const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
+                                                const x = getRandomX(user.userId || user.id);
+                                                return (
+                                                    <View
+                                                        key={user.userId || user.id || idx}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: x,
+                                                            top: y - STICK_HEIGHT,
+                                                            alignItems: 'center',
+                                                        }}
+                                                    >
+                                                        <Image
+                                                            source={require('@assets/images/stickfigure.png')}
+                                                            style={{ width: 70, height: 110, tintColor: '#fff' }}
+                                                        />
+                                                        <Image
+                                                            source={
+                                                                user.profileImageUrl
+                                                                    ? { uri: user.profileImageUrl }
+                                                                    : require('@components/blank-profile-picture.png')
+                                                            }
+                                                            style={styles.stickFigureFace}
+                                                        />
+                                                        <Text style={styles.stickFigureUsername}>
+                                                            {user.username?.slice(0, 10) || user.userId}
+                                                        </Text>
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
                                     </View>
-                                    <Text style={styles.stickFigureUsername}>
-                                        {user.username?.slice(0, 10) || user.userId}
-                                    </Text>
-                                </View>
-                            ))}
+                                );
+                            })()}
                         </ScrollView>
                     ) : (
                         <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
