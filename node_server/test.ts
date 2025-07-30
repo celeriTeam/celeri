@@ -239,3 +239,13 @@ fetchUserInfoButton.addEventListener('click', async () => {
 });
 
 grabData(); // Initial data fetch on page load
+
+export {
+    fetchCurrentCompetition,
+    fetchAllCompetitions,
+    startCompetition,
+    addUser,
+    addSteps,
+    users,
+    getUserInfo,
+};

@@ -1,34 +1,83 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { Image } from 'expo-image';
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
-import { useUser } from '../../../UserProvider';
-import messaging from '@react-native-firebase/messaging';
-import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
-import useHealthData from '@/backend/src/hooks/useHealthData';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LineChart } from 'react-native-chart-kit';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
+import { addUser, fetchCurrentCompetition } from '@backend/src/api'; 
+import { useUser } from '@/app/UserProvider';
+import { useRouter } from 'expo-router';
+import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
 
 const { width, height } = Dimensions.get('window');
 
-// Guidelines based on my test device (iPhone 16):
-const guidelineBaseWidth = 393;   // 1179 / 3
-const guidelineBaseHeight = 852;  // 2556 / 3
+const guidelineBaseWidth = 393;
+const guidelineBaseHeight = 852;
 
-// Scale functions to calculate sizes proportionate to the device dimensions
 const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const CompetitionLandingPage: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
+    const [currentGame, setCurrentGame] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+    const { userID } = useUser();
+    const router = useRouter();
+
+    // Check inCompetition before page loads
+    useEffect(() => {
+        const checkInCompetition = async () => {
+            if (userID) {
+                const inComp = await isUserInCompetition(userID);
+                if (inComp) {
+                    router.replace('/(authenticated)/(tabs)/competition/inGame');
+                }
+            }
+        };
+        checkInCompetition();
+    }, [userID]);
+
+    // Check consent before page loads
+    useEffect(() => {
+        const checkConsent = async () => {
+            if (userID) {
+                const consented = await hasUserConsented(userID);
+                setHasConsented(consented);
+            }
+        };
+        checkConsent();
+    }, [userID]);
+
+    useEffect(() => {
+        const getCurrentGame = async () => {
+            setLoading(true);
+            try {
+                const game = await fetchCurrentCompetition();
+                setCurrentGame(game && game.is_active ? game : null);
+            } catch (e) {
+                setCurrentGame(null);
+            }
+            setLoading(false);
+        };
+        getCurrentGame();
+    }, []);
+
+    // Join Game handler
+    const handleJoinGame = async () => {
+        if (!userID) return;
+        if (!hasConsented) {
+            Alert.alert(
+                "Consent Required",
+                "You need to agree to our Consent form before joining the game."
+            );
+            return;
+        }
+        await addUser(userID);
+        await setUserInCompetition(userID);
+        router.replace('/(authenticated)/(tabs)/competition/inGame');
+    };
 
     return (
         <LinearGradient
@@ -36,10 +85,21 @@ const CompetitionLandingPage: React.FC = () => {
             style={styles.container}
         >
             <View style={styles.content}>
-                <Button
-                    title="Open Modal"
+                <TouchableOpacity
+                    style={joinButton(currentGame)}
+                    onPress={handleJoinGame}
+                    disabled={!currentGame || loading}
+                >
+                    <Text style={joinButtonText(currentGame)}>
+                        {loading ? "Loading..." : "Join Game"}
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.submitButton}
                     onPress={() => setModalVisible(true)}
-                />
+                >
+                    <Text style={styles.submitButtonText}>Rules & Consent</Text>
+                </TouchableOpacity>
             </View>
 
             <Modal
@@ -48,20 +108,14 @@ const CompetitionLandingPage: React.FC = () => {
                 animationType="fade"
                 onRequestClose={() => setModalVisible(false)}
             >
-                {/* Modal content goes here */}
-                
                 <View style={styles.modalOverlay} >
-                    <View style={[styles.modalContainer, { height: '75%', }]}>
-                        {/* Close button */}
+                    <View style={[styles.modalContainer, { height: '75%' }]}>
                         <LinearGradient
                             colors={['#000000', '#024405']}
                             style={styles.insideContainer}
                         >
                             <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
-                                <Image
-                                    source={require('@assets/icons/x.png')}
-                                    style={styles.closeButtonIcon}
-                                />
+                                <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
                             </TouchableOpacity>
                             <RaceRulesPager closeModal={() => setModalVisible(false)} />
                         </LinearGradient>
@@ -85,20 +139,27 @@ const styles = ScaledStyleSheet.create({
     },
     content: {
         padding: moderateScale(50),
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    modalContent: {
-        fontFamily: 'Lexend',
-        color: '#fff',
+    submitButton: {
+        borderRadius: 20,
+        width: 220,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        alignSelf: 'center',
+        backgroundColor: '#fff',
+    },
+    submitButtonText: {
         fontSize: 20,
-        margin: 20,
-        
+        fontFamily: 'Lexend',
     },
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // semi-transparent background
-        
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContainer: {
         width: '90%',
@@ -114,10 +175,30 @@ const styles = ScaledStyleSheet.create({
         right: scale(10),
         zIndex: 1,
     },
-    closeButtonIcon: {
-        width: scale(20),
-        height: scale(20),
-    },
+});
+
+// Move these outside of ScaledStyleSheet.create
+import type { ViewStyle } from 'react-native';
+
+const joinButton = (currentGame: any): ViewStyle => ({
+    borderRadius: 30,
+    width: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 18,
+    alignSelf: 'center',
+    backgroundColor: currentGame ? '#fff' : '#888',
+    marginBottom: 30,
+    opacity: currentGame ? 1 : 0.6,
+});
+
+import type { TextStyle } from 'react-native';
+
+const joinButtonText = (currentGame: any): TextStyle => ({
+    fontSize: 24,
+    fontFamily: 'Lexend',
+    color: currentGame ? '#000' : '#444',
+    fontWeight: 'bold',
 });
 
 export default CompetitionLandingPage;
