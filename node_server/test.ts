@@ -38,9 +38,9 @@ const startCompetition = async () => {
 
 // COMPETITION STEPS API
 const addCompetitionUser = async (user_id: string) => {
-    const response = await api.post(`/competition-steps/add-user`, {
-        params: { user_id }
-    });
+    const response = await api.post(`/competition-steps/add-user`,
+        { user_id }
+    );
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to add user:', err);
@@ -50,9 +50,9 @@ const addCompetitionUser = async (user_id: string) => {
 };
 
 const addCompetitionSteps = async (user_id: string, steps: number) => {
-    const response = await api.post(`/competition-steps/update-steps`, {
-        params: { user_id, steps }
-    });
+    const response = await api.post(`/competition-steps/update-steps`,
+        { user_id, steps }
+    );
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to add steps:', err);
