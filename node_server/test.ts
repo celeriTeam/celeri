@@ -1,5 +1,6 @@
 const params = new URLSearchParams(window.location.search);
 const env = params.get("env");
+import axios from 'https://cdn.jsdelivr.net/npm/axios@1.6.8/+esm';
 
 const databaseUrl = env === "dev"
 ? 'http://localhost:3000'
@@ -7,100 +8,77 @@ const databaseUrl = env === "dev"
 
 console.log("Using server:", databaseUrl);
 
+const api = axios.create({
+    baseURL: databaseUrl,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
 // COMPETITIONS API
-const startCompetition = async () => {
-    try {
-        const response = await fetch(`${databaseUrl}/competitions/start-competition`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-        if (!response.ok) {
-            const err = await response.text();
-            console.error('Failed to start competition:', err);
-            return null;
-        }
-        return response.json();
-    } catch (error) {
-        console.error('Network error:', error);
-    }
-}
-
 const fetchCurrentCompetition = async () => {
-    const response = await fetch(`${databaseUrl}/competitions/current-competition`);
-    if (!response.ok) {
-        const err = await response.text();
-        console.error('Failed to fetch current competition:', err);
-    }
-    return response.json();
-}
+    const response = await api.get(`/competitions/current-competition`);
+    return response.data;
+};
 
 const fetchAllCompetitions = async () => {
-    const response = await fetch(`${databaseUrl}/competitions/all-competitions`);
-    if (!response.ok) {
-        const err = await response.text();
-        console.error('Failed to fetch competitions:', err);
+    const response = await api.get(`/competitions/all-competitions`);
+    return response.data;
+};
+
+const startCompetition = async () => {
+    const response = await api.post(`/competitions/start-competition`);
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to start competition:', err);
+        return null;
     }
-    return response.json();
-}
+    return response.data;
+};
 
 // COMPETITION STEPS API
-const addUser = async (user_id: string) => {
-    try {
-        const response = await fetch(`${databaseUrl}/competition-steps/add-user`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ user_id }),
-        })
-        console.log('Response:', response);
-        if (!response.ok) {
-            const err = await response.text();
-            console.error('Failed to add user:', err);
-        }
-        return response.json();
-    } catch (error) {
-        console.error('Network error:', error)
+const addCompetitionUser = async (user_id: string) => {
+    const response = await api.post(`/competition-steps/add-user`, {
+        params: { user_id }
+    });
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to add user:', err);
+        return null;
     }
-}
+    return response.data;
+};
 
-const addSteps = async (user_id: string, steps: number) => {
-    try {
-        const response = await fetch(`${databaseUrl}/competition-steps/update-steps`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ user_id, steps }),
-        })
-        console.log('Response:', response);
-        if (!response.ok) {
-            const err = await response.text();
-            console.error('Failed to add steps:', err);
-        }
-    } catch (error) {
-        console.error('Error adding steps:', error);
+const addCompetitionSteps = async (user_id: string, steps: number) => {
+    const response = await api.post(`/competition-steps/update-steps`, {
+        params: { user_id, steps }
+    });
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to add steps:', err);
+        return null;
     }
+    return response.data;
+};
+
+const getCompetitionData = async () => {
+    const response = await api.get(`/competition-steps/data`);
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to fetch competition data:', err);
+        return null;
+    }
+    return response.data;
 }
 
-const users = async () => {
-    const response = await fetch(`${databaseUrl}/competition-steps/data`);
-    const data = await response.json();
-    return data;
-}
-
-const getUserInfo = async (user_id: string) => {
-    const response = await fetch(`${databaseUrl}/competition-steps/user-info?user_id=${user_id}`);
-    if (!response.ok) {
-        const err = await response.text();
+const getCompetitionUserInfo = async (user_id: string) => {
+    const response = await api.get(`/competition-steps/user-info?user_id=${user_id}`);
+    if (response.status !== 200) {
+        const err = await response.data;
         console.error('Failed to fetch user info:', err);
         return null;
     }
-    const data = await response.json();
-    return data;
+    return response.data;
 }
 
 // for (let i = 0; i < 10; i++) {
@@ -188,7 +166,7 @@ const fetchUserInfoButton = document.getElementById('fetch-user-info-button') as
 const userInfoContainer = document.getElementById('user-info-container') as HTMLDivElement;
 
 const grabData = async () => {
-    users().then(data => {
+    getCompetitionData().then(data => {
         dataContainer.innerHTML = JSON.stringify(data, null, 2);
     }).catch(error => {
         console.error('Error fetching data:', error);
@@ -199,7 +177,7 @@ addUserButton.addEventListener('click', async () => {
     const userId = (document.getElementById('user-id-input') as HTMLInputElement).value.trim();
     console.log('User ID:', userId);
     if (userId) {
-        await addUser(userId);
+        await addCompetitionUser(userId);
         await grabData();
     } else {
         console.error('Please enter a user ID');
@@ -211,7 +189,7 @@ addStepsButton.addEventListener('click', async () => {
     const steps = parseInt((document.getElementById('user-steps-input') as HTMLInputElement).value.trim(), 10);
     console.log('User ID:', userId, 'Steps:', steps);
     if (userId && !isNaN(steps)) {
-        await addSteps(userId, steps);
+        await addCompetitionSteps(userId, steps);
         await grabData();
     } else {
         console.error('Please enter a valid user ID and steps');
@@ -227,7 +205,7 @@ fetchUserInfoButton.addEventListener('click', async () => {
     const userId = (document.getElementById('user-id-info') as HTMLInputElement).value.trim();
     console.log('User ID for info:', userId);
     if (userId) {
-        const userInfo = await getUserInfo(userId);
+        const userInfo = await getCompetitionUserInfo(userId);
         if (userInfo) {
             userInfoContainer.innerHTML = JSON.stringify(userInfo, null, 2);
         } else {
@@ -239,13 +217,3 @@ fetchUserInfoButton.addEventListener('click', async () => {
 });
 
 grabData(); // Initial data fetch on page load
-
-export {
-    fetchCurrentCompetition,
-    fetchAllCompetitions,
-    startCompetition,
-    addUser,
-    addSteps,
-    users,
-    getUserInfo,
-};

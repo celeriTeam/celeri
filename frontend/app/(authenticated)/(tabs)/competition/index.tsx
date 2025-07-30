@@ -4,7 +4,8 @@ import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
-import { addUser, fetchCurrentCompetition } from '@backend/src/api'; 
+import { fetchCurrentCompetition } from '@backend/src/api/competitions';
+import { addCompetitionUser } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
@@ -74,7 +75,7 @@ const CompetitionLandingPage: React.FC = () => {
             );
             return;
         }
-        await addUser(userID);
+        await addCompetitionUser(userID);
         await setUserInCompetition(userID);
         router.replace('/(authenticated)/(tabs)/competition/inGame');
     };

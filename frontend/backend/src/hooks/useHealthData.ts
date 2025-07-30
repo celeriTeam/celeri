@@ -18,6 +18,8 @@ import { newsFunctions } from '../news';
 import { set } from 'date-fns';
 import { get } from 'http';
 import { get1v1StartTime, update1v1Steps } from '../1v1';
+import { fetchCurrentCompetition } from '../api/competitions';
+import { addCompetitionSteps, getCompetitionUserInfo } from '../api/competition_steps';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -394,6 +396,27 @@ const useHealthData = () => {
         await update1v1Steps(userID, current1v1ID, stepsMap);
     };
 
+    // get competition steps
+    const getCompetitionSteps = async (userID: string) => {
+        try {
+            const currentCompetition = await fetchCurrentCompetition();
+            const competitionUserData = await getCompetitionUserInfo(userID);
+            if (!currentCompetition || !competitionUserData) { // make sure user is in active competition
+                return;
+            }
+
+            const startTime = new Date(currentCompetition.start_time);
+            const endTime = new Date(currentCompetition.end_time);
+
+            const competitionSteps = await getStepCountForRange(startTime, endTime);
+
+            await addCompetitionSteps(userID, competitionSteps);
+        } catch (error) {
+            console.error("Error fetching competition steps:", error);
+            return null;
+        }
+    };
+
     // Grabbing all health data
     const fetchAllHealthData = async (userID: string) => {
         try {
@@ -498,6 +521,7 @@ const useHealthData = () => {
 
             await setStepsLastUpdate(userID, new Date());
             await get1v1Steps(userID);
+            await getCompetitionSteps(userID);
 
             return healthData.currentData;
         }

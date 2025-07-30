@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { fetchCurrentCompetition, users, getUserInfo } from '@/backend/src/api';
+import { fetchCurrentCompetition } from '@backend/src/api/competitions';
+import { getCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 
@@ -34,7 +35,7 @@ const CompetitionGamePage: React.FC = () => {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const allUsers = await users();
+                const allUsers = await getCompetitionData();
                 if (!allUsers) return;
                 const userIds = allUsers.map((u: any) => u.user_id || u.id);
 
@@ -44,7 +45,7 @@ const CompetitionGamePage: React.FC = () => {
                 // Get user info (steps, rank) for each
                 const userInfos = await Promise.all(
                     userIds.map(async (userId: string) => {
-                        const info = await getUserInfo(userId);
+                        const info = await getCompetitionUserInfo(userId);
                         type Profile = { username?: string; profileImageUrl?: string };
                         const profile: Profile = profiles.find((p: any) => p.userId === userId) || {};
                         return {
