@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { addCompetitionUser } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
+import messaging from '@react-native-firebase/messaging';
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,20 +28,40 @@ const CompetitionLandingPage: React.FC = () => {
     const { userID } = useUser();
     const router = useRouter();
 
-    // Check inCompetition before page loads
-    useEffect(() => {
-        const checkInCompetition = async () => {
-            if (userID) {
-                const inComp = await isUserInCompetition(userID);
-                if (inComp) {
-                    router.replace('/(authenticated)/(tabs)/competition/inGame');
-                }
-            }
-        };
-        checkInCompetition();
-    }, [userID]);
+    // 1) central fetch + nav logic
 
-    // Check consent before page loads
+    const getCurrentGame = useCallback(async () => {
+        setLoading(true);
+        try {
+        const game = await fetchCurrentCompetition();
+        if (game?.is_active) {
+            setCurrentGame(game);
+            router.replace('/(authenticated)/(tabs)/competition/inGame');
+        } else {
+            setCurrentGame(null);
+        }
+        } catch {
+        setCurrentGame(null);
+        } finally {
+        setLoading(false);
+        }
+    }, [router]);
+
+    // 2) initial load + redirect if already in comp
+    useEffect(() => {
+        if (userID) {
+        isUserInCompetition(userID).then(inComp => {
+            if (inComp) {
+            router.replace('/(authenticated)/(tabs)/competition/inGame');
+            } else {
+            getCurrentGame();
+            }
+        });
+        }
+    }, [userID, getCurrentGame, router]);
+
+
+    // 3. Check consent before page loads
     useEffect(() => {
         const checkConsent = async () => {
             if (userID) {
@@ -51,21 +72,22 @@ const CompetitionLandingPage: React.FC = () => {
         checkConsent();
     }, [userID]);
 
+    // 4) silent‐push listener in foreground
     useEffect(() => {
-        const getCurrentGame = async () => {
-            setLoading(true);
-            try {
-                const game = await fetchCurrentCompetition();
-                setCurrentGame(game && game.is_active ? game : null);
-            } catch (e) {
-                setCurrentGame(null);
-            }
-            setLoading(false);
-        };
-        getCurrentGame();
-    }, []);
 
-    // Join Game handler
+        // listen while in foreground
+        const unsubscribe = messaging().onMessage(remoteMsg => {
+            console.log('Received foreground message:', remoteMsg);
+            if (remoteMsg.data?.type === 'COMPETITION_STARTED') {
+                getCurrentGame();
+            }
+        });
+
+        return unsubscribe; // cleans up the listener on unmount
+    }, [getCurrentGame]);
+
+
+    // 5. Join Game handler
     const handleJoinGame = async () => {
         console.log("testing one");
         if (loading) return; // Prevent multiple clicks while loading

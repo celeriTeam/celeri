@@ -1,6 +1,9 @@
 import express from 'express'
 import sql from '../db/sql.js'
 
+const admin = require('../firebaseAdmin')  
+
+
 const router = express.Router()
 
 const grabCurrentCompetition = async () => {
@@ -25,13 +28,22 @@ router.post('/start-competition', async (req, res) => {
         const now = new Date();
         const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
 
-        const result = await sql`
+        const [result] = await sql`
             INSERT INTO competitions (start_time, end_time)
             VALUES (${now.toISOString()}, ${oneHourLater.toISOString()})
             RETURNING *
         `;
 
-        res.status(200).json({ success: true, competition: result[0] });
+        // Enable "Join Game" through a silent notif
+        await admin.messaging().send({
+        topic: 'allUsers',
+        data: {
+            type:          'COMPETITION_STARTED',
+            competitionId: result.id.toString(),
+        }
+        })
+
+        res.status(200).json({ success: true, competition: result });
     } catch (err: any) {
         res.status(500).json({ error: err.message })
     }
