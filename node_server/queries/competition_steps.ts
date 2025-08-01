@@ -100,7 +100,7 @@ router.get('/data', async (req, res) => {
         FROM competitions AS comp
         JOIN competition_steps AS s
         ON comp.id = s.competition_id
-        WHERE comp.id='7de1bb40-32ff-470b-92e5-5ac8b58fdfa4'
+        WHERE comp.id= ${competition.id}
       )
       SELECT 
         user_id,
@@ -149,7 +149,7 @@ router.get('/user-info', async (req, res) => {
     `;
 
     if (result.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(400).json({ error: 'User not found' });
     }
     
     res.status(200).json(result[0]);

@@ -1,7 +1,7 @@
 import express from 'express'
 import sql from '../db/sql.js'
 
-const admin = require('../firebaseAdmin')  
+import admin from 'firebase-admin';
 
 const router = express.Router()
 
@@ -59,7 +59,7 @@ router.get('/current-competition', async (req, res) => {
         `;
 
         if (!competition) {
-            return res.status(200).json({ error: 'No active competition found' });
+            return res.status(400).json({ error: 'No active competition found' });
         }
 
         res.status(200).json(competition);
