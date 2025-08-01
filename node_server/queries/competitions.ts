@@ -3,7 +3,6 @@ import sql from '../db/sql.js'
 
 const admin = require('../firebaseAdmin')  
 
-
 const router = express.Router()
 
 const grabCurrentCompetition = async () => {
