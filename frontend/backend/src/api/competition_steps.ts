@@ -1,46 +1,62 @@
+import axios from 'axios';
 import { api } from '../api';
 
 export const addCompetitionUser = async (user_id: string) => {
-    const response = await api.post(`/competition-steps/add-user`,
-        { user_id }
-    );
-    if (response.status !== 200) {
-        const err = await response.data;
-        console.error('Failed to add user:', err);
-        return null;
+    try {
+        const response = await api.post(`/competition-steps/add-user`,
+            { user_id }
+        );
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to add user:', error);
+            return null;
+        }
     }
-    console.log("test", response.data);
-    return response.data;
 };
 
 export const addCompetitionSteps = async (user_id: string, steps: number) => {
-    const response = await api.post(`/competition-steps/update-steps`,
-        { user_id, steps }
-    );
-    if (response.status !== 200) {
-        const err = await response.data;
-        console.error('Failed to add steps:', err);
-        return null;
+    try {
+        const response = await api.post(`/competition-steps/update-steps`,
+            { user_id, steps }
+        );
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to add steps:', error);
+            return null;
+        }
     }
-    return response.data;
 };
 
 export const getCompetitionData = async () => {
-    const response = await api.get(`/competition-steps/data`);
-    if (response.status !== 200) {
-        const err = await response.data;
-        console.error('Failed to fetch competition data:', err);
-        return null;
+    try {
+        const response = await api.get(`/competition-steps/data`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch competition data:', error);
+            return null;
+        }
     }
-    return response.data;
 }
 
 export const getCompetitionUserInfo = async (user_id: string) => {
-    const response = await api.get(`/competition-steps/user-info?user_id=${user_id}`);
-    if (response.status !== 200) {
-        const err = await response.data;
-        console.error('Failed to fetch user info:', err);
-        return null;
+    try {
+        const response = await api.get(`/competition-steps/user-info?user_id=${user_id}`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch user info:', error);
+            return null;
+        }
     }
-    return response.data;
 }

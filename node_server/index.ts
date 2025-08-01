@@ -14,9 +14,9 @@ app.use(express.json())
 
 app.use('/', router)
 
+// Initialize all jobs
+runAllJobs();
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`)
 })
-
-// Initialize all jobs
-runAllJobs();
