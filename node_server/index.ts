@@ -2,7 +2,8 @@ import dotenv from 'dotenv'
 import express from 'express'
 import cors from 'cors'
 import router from './queries/index.js'
-import './stepSyncJob.js'; // This will start the step sync job in the background
+import './jobs/stepSyncJob.js'; // This will start the step sync job in the background
+import './config/firebaseAdmin.js'; // Initialize Firebase Admin
 
 dotenv.config()
 

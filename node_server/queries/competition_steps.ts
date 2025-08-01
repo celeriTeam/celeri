@@ -15,7 +15,7 @@ const grabCurrentCompetition = async () => {
 
 // POST /add-user
 router.post('/add-user', async (req, res) => {
-  const { user_id } = req.body
+  const { user_id } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -36,17 +36,17 @@ router.post('/add-user', async (req, res) => {
     `;
 
     if (result.length === 0) {
-      return res.status(400).json({ error: 'User already exists' })
+      return res.status(400).json({ error: 'User already exists' });
     }
-    res.status(200).json({ success: true })
+    res.status(200).json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
 })
 
 // POST /update-steps
 router.post('/update-steps', async (req, res) => {
-  const { user_id, steps } = req.body
+  const { user_id, steps } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -77,7 +77,7 @@ router.post('/update-steps', async (req, res) => {
 
     res.status(200).json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
 })
 
@@ -110,15 +110,15 @@ router.get('/data', async (req, res) => {
       ORDER BY steps desc;
     `;
 
-    res.status(200).json(result)
+    res.status(200).json(result);
   } catch (err: any) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
 })
 
 // GET /user-info?user_id=abc
 router.get('/user-info', async (req, res) => {
-  const { user_id } = req.query
+  const { user_id } = req.query;
   try {
     if (!user_id || typeof user_id !== 'string') {
       return res.status(400).json({ error: 'Correct User ID is required' });
@@ -154,12 +154,12 @@ router.get('/user-info', async (req, res) => {
     
     res.status(200).json(result[0]);
   } catch (err: any) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: err.message });
   }
 })
 
 router.get('/', (req, res) => {
-  res.send('Competition Steps API is up and running!')
+  res.send('Competition Steps API is up and running!');
 })
 
 export default router
