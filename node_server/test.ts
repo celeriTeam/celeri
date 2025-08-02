@@ -36,6 +36,16 @@ const startCompetition = async () => {
     return response.data;
 };
 
+const endCompetition = async () => {
+    const response = await api.post(`/competitions/end-competition`);
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to end competition:', err);
+        return null;
+    }
+    return response.data;
+};
+
 // COMPETITION STEPS API
 const addCompetitionUser = async (user_id: string) => {
     const response = await api.post(`/competition-steps/add-user`,
@@ -91,6 +101,8 @@ const fetchCurrentCompetitionButton = document.getElementById('current-competiti
 const currentCompetitionContainer = document.getElementById('current-competition-container') as HTMLDivElement;
 const fetchAllCompetitionsButton = document.getElementById('all-competitions-button') as HTMLButtonElement;
 const allCompetitionsContainer = document.getElementById('all-competitions-container') as HTMLDivElement;
+const endCompetitionButton = document.getElementById('end-competition-button') as HTMLButtonElement;
+const endCompetitionContainer = document.getElementById('end-competition-container') as HTMLDivElement;
 
 startCompetitionButton.addEventListener('click', async () => {
     const result = await startCompetition();
@@ -213,6 +225,16 @@ fetchUserInfoButton.addEventListener('click', async () => {
         }
     } else {
         console.error('Please enter a user ID for info');
+    }
+});
+
+endCompetitionButton.addEventListener('click', async () => {
+    const result = await endCompetition();
+    if (result) {
+        endCompetitionContainer.innerHTML = JSON.stringify(result, null, 2);
+        await grabData();
+    } else {
+        endCompetitionContainer.innerHTML = 'No active competition to end';
     }
 });
 
