@@ -79,6 +79,19 @@ router.post('/end-competition', async (req, res) => {
     }
 })
 
+// POST /end-competition
+router.post('/end-competition', async (req, res) => {
+    try {
+        const endedId = await endCurrentCompetition();
+        if (!endedId) {
+            return res.status(400).json({ error: 'No active competition to end' });
+        }
+        res.status(200).json({ success: true, endedCompetitionId: endedId });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+})
+
 // GET /current-competition
 router.get('/current-competition', async (req, res) => {
     try {

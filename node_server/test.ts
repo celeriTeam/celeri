@@ -69,6 +69,16 @@ const endCompetition = async () => {
     return response.data;
 };
 
+const endCompetition = async () => {
+    const response = await api.post(`/competitions/end-competition`);
+    if (response.status !== 200) {
+        const err = await response.data;
+        console.error('Failed to end competition:', err);
+        return null;
+    }
+    return response.data;
+};
+
 // COMPETITION STEPS API
 const addCompetitionUser = async (user_id: string) => {
     try {
