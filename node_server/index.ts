@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import router from './queries/index.js'
 import { runAllJobs } from './jobs/index.js'
+import './config/firebaseAdmin.js'
 
 dotenv.config()
 
