@@ -14,23 +14,14 @@ const grabCurrentCompetition = async () => {
     return competition;
 }
 
-// End the current active competition
-const endCurrentCompetition = async () => {
-    const [competition] = await sql`
-        SELECT id FROM competitions 
-        WHERE is_active = true 
-        AND NOW() BETWEEN start_time AND end_time
-        LIMIT 1
-    `;
-    if (!competition) return null;
-
+const endCompetition = async (competition_id: string) => {
     await sql`
-        UPDATE competitions
-        SET is_active = false
-        WHERE id = ${competition.id}
+        UPDATE competitions 
+        SET is_active = false 
+        WHERE id = ${competition_id}
     `;
-    return competition.id;
-};
+    return;
+}
 
 // POST /start-competition
 router.post('/start-competition', async (req, res) => {
@@ -60,19 +51,6 @@ router.post('/start-competition', async (req, res) => {
         });
 
         res.status(200).json({ success: true, competition: result });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-})
-
-// POST /end-competition
-router.post('/end-competition', async (req, res) => {
-    try {
-        const endedId = await endCurrentCompetition();
-        if (!endedId) {
-            return res.status(400).json({ error: 'No active competition to end' });
-        }
-        res.status(200).json({ success: true, endedCompetitionId: endedId });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
@@ -128,13 +106,26 @@ router.get('/all-competitions', async (req, res) => {
 router.post('/end-competition', async (req, res) => {
   const { competition_id } = req.body;
     try {
-        await sql`
-            UPDATE competitions 
-            SET is_active = false 
-            WHERE id = ${competition_id}
-        `;
+        await endCompetition(competition_id);
 
         res.status(200).json({ success: true });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+})
+
+// POST /end-current-competition
+router.post('/end-current-competition', async (req, res) => {
+    try {
+        const competition = await grabCurrentCompetition();
+
+        if (!competition) {
+            return res.status(400).json({ error: 'No active competition to end' });
+        };
+
+        await endCompetition(competition.id);
+        
+        res.status(200).json({ success: true, endedCompetitionId: competition.id });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
