@@ -60,6 +60,7 @@ const startCompetition = async () => {
 };
 
 const endCurrentCompetition = async () => {
+    console.log("Ending current competition...");
     const response = await api.post(`/competitions/end-current-competition`);
     if (response.status !== 200) {
         const err = await response.data;
