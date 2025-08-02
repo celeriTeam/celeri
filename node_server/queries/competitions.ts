@@ -1,7 +1,6 @@
 import express from 'express'
-import sql from '../db/sql.js'
-
 import admin from 'firebase-admin';
+import sql from '../db/sql.js'
 
 const router = express.Router()
 
@@ -53,12 +52,12 @@ router.post('/start-competition', async (req, res) => {
 
         // Enable "Join Game" through a silent notif
         await admin.messaging().send({
-        topic: 'allUsers',
-        data: {
-            type:          'COMPETITION_STARTED',
-            competitionId: result.id.toString(),
-        }
-        })
+            topic: 'allUsers',
+            data: {
+                type: 'COMPETITION_STARTED',
+                competitionId: result.id.toString(),
+            }
+        });
 
         res.status(200).json({ success: true, competition: result });
     } catch (err: any) {
@@ -82,12 +81,7 @@ router.post('/end-competition', async (req, res) => {
 // GET /current-competition
 router.get('/current-competition', async (req, res) => {
     try {
-        const [competition] = await sql`
-            SELECT * FROM competitions 
-            WHERE is_active = true 
-            AND NOW() BETWEEN start_time AND end_time
-            LIMIT 1
-        `;
+        const competition = await grabCurrentCompetition();
 
         if (!competition) {
             return res.status(400).json({ error: 'No active competition found' });
