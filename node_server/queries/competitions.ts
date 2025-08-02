@@ -15,6 +15,24 @@ const grabCurrentCompetition = async () => {
     return competition;
 }
 
+// End the current active competition
+const endCurrentCompetition = async () => {
+    const [competition] = await sql`
+        SELECT id FROM competitions 
+        WHERE is_active = true 
+        AND NOW() BETWEEN start_time AND end_time
+        LIMIT 1
+    `;
+    if (!competition) return null;
+
+    await sql`
+        UPDATE competitions
+        SET is_active = false
+        WHERE id = ${competition.id}
+    `;
+    return competition.id;
+};
+
 // POST /start-competition
 router.post('/start-competition', async (req, res) => {
     try {
@@ -43,6 +61,19 @@ router.post('/start-competition', async (req, res) => {
         })
 
         res.status(200).json({ success: true, competition: result });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+})
+
+// POST /end-competition
+router.post('/end-competition', async (req, res) => {
+    try {
+        const endedId = await endCurrentCompetition();
+        if (!endedId) {
+            return res.status(400).json({ error: 'No active competition to end' });
+        }
+        res.status(200).json({ success: true, endedCompetitionId: endedId });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
