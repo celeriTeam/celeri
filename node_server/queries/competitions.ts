@@ -69,19 +69,7 @@ router.post('/start-competition', async (req, res) => {
 // POST /end-competition
 router.post('/end-competition', async (req, res) => {
     try {
-        const endedId = await endCurrentCompetition();
-        if (!endedId) {
-            return res.status(400).json({ error: 'No active competition to end' });
-        }
-        res.status(200).json({ success: true, endedCompetitionId: endedId });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-})
-
-// POST /end-competition
-router.post('/end-competition', async (req, res) => {
-    try {
+        console.log("Ending current competition...");
         const endedId = await endCurrentCompetition();
         if (!endedId) {
             return res.status(400).json({ error: 'No active competition to end' });
@@ -141,26 +129,6 @@ router.get('/all-competitions', async (req, res) => {
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
-})
-
-// POST /end-competition
-router.post('/end-competition', async (req, res) => {
-  const { competition_id } = req.body;
-    try {
-        await sql`
-            UPDATE competitions 
-            SET is_active = false 
-            WHERE id = ${competition_id}
-        `;
-
-        res.status(200).json({ success: true });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-})
-
-router.get('/', (req, res) => {
-    res.send('Competitions API is up and running!');
 })
 
 export default router
