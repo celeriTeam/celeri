@@ -59,8 +59,8 @@ const startCompetition = async () => {
     }
 };
 
-const endCompetition = async () => {
-    const response = await api.post(`/competitions/end-competition`);
+const endCurrentCompetition = async () => {
+    const response = await api.post(`/competitions/end-current-competition`);
     if (response.status !== 200) {
         const err = await response.data;
         console.error('Failed to end competition:', err);
@@ -268,7 +268,7 @@ fetchUserInfoButton.addEventListener('click', async () => {
 });
 
 endCompetitionButton.addEventListener('click', async () => {
-    const result = await endCompetition();
+    const result = await endCurrentCompetition();
     if (result) {
         endCompetitionContainer.innerHTML = JSON.stringify(result, null, 2);
         await grabData();
