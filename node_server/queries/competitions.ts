@@ -102,6 +102,7 @@ router.get('/all-competitions', async (req, res) => {
     }
 })
 
+
 // POST /end-competition
 router.post('/end-competition', async (req, res) => {
   const { competition_id } = req.body;
