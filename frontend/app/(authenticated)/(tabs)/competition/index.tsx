@@ -33,32 +33,33 @@ const CompetitionLandingPage: React.FC = () => {
     const getCurrentGame = useCallback(async () => {
         setLoading(true);
         try {
-        const game = await fetchCurrentCompetition();
-        if (game?.is_active) {
-            setCurrentGame(game);
-            router.replace('/(authenticated)/(tabs)/competition/inGame');
-        } else {
-            setCurrentGame(null);
-        }
+            const game = await fetchCurrentCompetition();
+            console.log('Fetched game:', game);
+            if (game?.is_active) {
+                setCurrentGame(game); // Enable "Join Game" button
+            } else {
+                setCurrentGame(null); // Disable button
+            }
         } catch {
-        setCurrentGame(null);
+            setCurrentGame(null);
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
-    }, [router]);
+    }, []);
 
     // 2) initial load + redirect if already in comp
     useEffect(() => {
-        if (userID) {
+        if (!userID) return;
+
+        // Check if user is already in the competition
         isUserInCompetition(userID).then(inComp => {
             if (inComp) {
-            router.replace('/(authenticated)/(tabs)/competition/inGame');
+                router.replace('/(authenticated)/(tabs)/competition/inGame');
             } else {
-            getCurrentGame();
+                getCurrentGame();
             }
         });
-        }
-    }, [userID, getCurrentGame, router]);
+    }, [userID, router, getCurrentGame]);
 
 
     // 3. Check consent before page loads
@@ -79,6 +80,7 @@ const CompetitionLandingPage: React.FC = () => {
         const unsubscribe = messaging().onMessage(remoteMsg => {
             console.log('Received foreground message:', remoteMsg);
             if (remoteMsg.data?.type === 'COMPETITION_STARTED') {
+                console.log('Competition started notification received');
                 getCurrentGame();
             }
         });

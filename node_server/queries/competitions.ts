@@ -6,7 +6,7 @@ const router = express.Router()
 
 const grabCurrentCompetition = async () => {
     const [competition] = await sql`
-        SELECT id FROM competitions 
+        SELECT * FROM competitions 
         WHERE is_active = true 
         AND NOW() BETWEEN start_time AND end_time
         LIMIT 1
@@ -59,6 +59,7 @@ router.post('/start-competition', async (req, res) => {
 // GET /current-competition
 router.get('/current-competition', async (req, res) => {
     try {
+        console.log('Fetching current competition..., inside competitions.ts');
         const competition = await grabCurrentCompetition();
 
         if (!competition) {
@@ -118,6 +119,7 @@ router.post('/end-competition', async (req, res) => {
 // POST /end-current-competition
 router.post('/end-current-competition', async (req, res) => {
     try {
+        console.log('Ending current competition..., inside competitions.ts');
         const competition = await grabCurrentCompetition();
 
         if (!competition) {
