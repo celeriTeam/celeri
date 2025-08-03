@@ -216,6 +216,19 @@ const dataContainer = document.getElementById('data-container') as HTMLDivElemen
 const addStepsButton = document.getElementById('add-steps-button') as HTMLButtonElement;
 const fetchUserInfoButton = document.getElementById('fetch-user-info-button') as HTMLButtonElement;
 const userInfoContainer = document.getElementById('user-info-container') as HTMLDivElement;
+const sendWaitingMessageButton = document.getElementById('send-waiting-message-button') as HTMLButtonElement;
+const waitingMessageInput = document.getElementById('waiting-message-input') as HTMLInputElement;
+const waitingMessageContainer = document.getElementById('waiting-message-container') as HTMLDivElement;
+
+const sendWaitingMessage = async (message: string) => {
+    try {
+        const response = await api.post(`/competitions/send-waiting-message`, { message });
+        return response.data;
+    } catch (error: any) {
+        console.error('Failed to send waiting message:', error);
+        return null;
+    }
+};
 
 const grabData = async () => {
     getCompetitionData().then(data => {
@@ -275,6 +288,20 @@ endCompetitionButton.addEventListener('click', async () => {
         await grabData();
     } else {
         endCompetitionContainer.innerHTML = 'No active competition to end';
+    }
+});
+
+sendWaitingMessageButton.addEventListener('click', async () => {
+    const message = waitingMessageInput.value.trim();
+    if (!message) {
+        waitingMessageContainer.innerHTML = 'Please enter a message.';
+        return;
+    }
+    const result = await sendWaitingMessage(message);
+    if (result) {
+        waitingMessageContainer.innerHTML = JSON.stringify(result, null, 2);
+    } else {
+        waitingMessageContainer.innerHTML = 'Failed to send waiting message.';
     }
 });
 

@@ -134,6 +134,33 @@ router.post('/end-current-competition', async (req, res) => {
     }
 })
 
+// POST /send-waiting-message
+router.post('/send-waiting-message', async (req, res) => {
+    const { message } = req.body;
+    try {
+        // 1. Create a new competition document with waitingMessage using admin.firestore()
+        const competitionDoc = await admin.firestore()
+            .collection('competitions')
+            .add({
+                waitingMessage: message,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+        // 2. Send a silent notification with the message
+        await admin.messaging().send({
+            topic: 'allUsers',
+            data: {
+                type: 'WAITING_MESSAGE',
+                message: message,
+            }
+        });
+
+        res.status(200).json({ success: true, docId: competitionDoc.id, message });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 router.get('/', (req, res) => {
     res.send('Competitions API is up and running!');
 })

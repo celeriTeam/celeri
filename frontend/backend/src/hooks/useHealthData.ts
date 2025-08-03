@@ -399,6 +399,7 @@ const useHealthData = () => {
     // get competition steps
     const getCompetitionSteps = async (userID: string) => {
         try {
+            console.log("Fetching competition steps for user:", userID);
             const currentCompetition = await fetchCurrentCompetition();
             const competitionUserData = await getCompetitionUserInfo(userID);
             if (!currentCompetition || !competitionUserData) { // make sure user is in active competition
@@ -409,7 +410,7 @@ const useHealthData = () => {
             const endTime = new Date(currentCompetition.end_time);
 
             const competitionSteps = await getStepCountForRange(startTime, endTime);
-
+            console.log("Competition steps fetched:", competitionSteps);
             await addCompetitionSteps(userID, competitionSteps);
         } catch (error) {
             console.error("Error fetching competition steps:", error);
@@ -484,6 +485,7 @@ const useHealthData = () => {
                 await setStepsLastUpdate(userID, new Date());
                 await setLastLogin(userID, new Date());
                 await get1v1Steps(userID);
+                await getCompetitionSteps(userID);
 
             } catch (error) {
                 console.error("Error updating Firebase and news:", error);
