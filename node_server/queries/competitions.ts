@@ -1,6 +1,7 @@
 import express from 'express'
 import admin from 'firebase-admin';
 import sql from '../db/sql.js'
+import { endCompetitionById } from '../jobs/endCompetitionJob.js';
 
 const router = express.Router()
 
@@ -12,15 +13,6 @@ const grabCurrentCompetition = async () => {
         LIMIT 1
     `;
     return competition;
-}
-
-const endCompetition = async (competition_id: string) => {
-    await sql`
-        UPDATE competitions 
-        SET is_active = false 
-        WHERE id = ${competition_id}
-    `;
-    return;
 }
 
 // POST /start-competition
@@ -108,7 +100,11 @@ router.get('/all-competitions', async (req, res) => {
 router.post('/end-competition', async (req, res) => {
   const { competition_id } = req.body;
     try {
-        await endCompetition(competition_id);
+        await sql`
+            UPDATE competitions 
+            SET is_active = false 
+            WHERE id = ${competition_id}
+        `;
 
         res.status(200).json({ success: true });
     } catch (err: any) {
@@ -126,7 +122,7 @@ router.post('/end-current-competition', async (req, res) => {
             return res.status(400).json({ error: 'No active competition to end' });
         };
 
-        await endCompetition(competition.id);
+        await endCompetitionById(competition.id);
         
         res.status(200).json({ success: true, endedCompetitionId: competition.id });
     } catch (err: any) {
