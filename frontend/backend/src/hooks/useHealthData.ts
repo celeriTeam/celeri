@@ -402,7 +402,7 @@ const useHealthData = () => {
             console.log("Fetching competition steps for user:", userID);
             const currentCompetition = await fetchCurrentCompetition();
             const competitionUserData = await getCompetitionUserInfo(userID);
-            if (!currentCompetition || !competitionUserData) { // make sure user is in active competition
+            if (currentCompetition.error || competitionUserData.error) { // make sure user is in active competition
                 return;
             }
 

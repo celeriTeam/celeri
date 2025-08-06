@@ -30,7 +30,6 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 // Register for push notifications function
 async function registerForPushNotificationsAsync(userID: string) {
   if (Device.isDevice) {
-      console.log("check point one!!");
 
       // Request permission for notifications
       const authStatus = await messaging().requestPermission();
@@ -42,7 +41,7 @@ async function registerForPushNotificationsAsync(userID: string) {
           console.log('Push notification permissions denied.');
           return;
       } else {
-        console.log('Authorization status:', authStatus);
+        // console.log('Authorization status:', authStatus);
       }
       
       // Retrieve Firebase push token (ensure Firebase is initialized)
@@ -50,8 +49,6 @@ async function registerForPushNotificationsAsync(userID: string) {
           await messaging().registerDeviceForRemoteMessages();
           const token = await messaging().getToken()
           await saveTokenToDatabase(token, userID);
-
-          console.log('Firebase push token:', token);
 
           // Subscribe Firebase token to topic
           await subscribeTokenToTopic(token, 'allUsers');

@@ -60,3 +60,17 @@ export const getCompetitionUserInfo = async (user_id: string) => {
         }
     }
 }
+
+export const getCompetitionHasSeenResults = async (user_id: string) => {
+    try {
+        const response = await api.get(`/competition-steps/has-seen-results?user_id=${user_id}`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch competition has seen results:', error);
+            return null;
+        }
+    }
+}

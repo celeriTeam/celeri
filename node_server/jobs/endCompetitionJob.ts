@@ -78,7 +78,15 @@ export const endCompetitionById = async (competitionId: number) => {
                 }
             }
         }
-        // change user competition boolean in firebase
+        
+        // Enable "Join Game" through a silent notif
+        await admin.messaging().send({
+            topic: 'allUsers',
+            data: {
+                type: 'TOGGLE_COMPETITION',
+                competitionId: competitionId.toString(),
+            }
+        });
     } catch (err) {
         console.error('Error ending competition by ID:', err);
     }

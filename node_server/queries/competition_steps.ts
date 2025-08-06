@@ -159,6 +159,34 @@ router.get('/user-info', async (req, res) => {
   }
 })
 
+// GET /has-seen-results?user_id=abc
+router.get('/has-seen-results', async (req, res) => {
+  const { user_id } = req.query;
+  try {
+    console.log('hasseenresults: ', user_id);
+    if (!user_id || typeof user_id !== 'string') {
+      return res.status(400).json({ error: 'Correct User ID is required' });
+    }
+    
+    const result = await sql`
+      SELECT cs.competition_id
+      FROM competition_steps cs
+      JOIN competitions c ON c.id = cs.competition_id
+      WHERE cs.user_id = ${user_id}
+        AND c.is_active = false
+        AND cs.has_seen_results = false;
+    `;
+
+    if (result.length === 0) {
+      return res.status(400).json({ error: 'Seen all competitions' });
+    }
+    
+    res.status(200).json(result[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+})
+
 router.get('/', (req, res) => {
   res.send('Competition Steps API is up and running!');
 })
