@@ -37,7 +37,7 @@ router.post('/start-competition', async (req, res) => {
         await admin.messaging().send({
             topic: 'allUsers',
             data: {
-                type: 'COMPETITION_STARTED',
+                type: 'TOGGLE_COMPETITION',
                 competitionId: result.id.toString(),
             }
         });
@@ -59,6 +59,42 @@ router.get('/current-competition', async (req, res) => {
         }
 
         res.status(200).json(competition);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+})
+
+// GET /data?=competition_id=abc
+router.get('/data', async (req, res) => {
+    const { competition_id } = req.query;
+    try {
+        if (!competition_id || typeof competition_id !== 'string') {
+            return res.status(400).json({ error: 'Correct Competition ID is required' });
+        }
+        const competition_data = await sql`
+            WITH ranked AS (
+                SELECT 
+                    *,
+                    RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
+                    COUNT(*) OVER (PARTITION BY competition_id) AS total_users
+                FROM competitions AS comp
+                JOIN competition_steps AS s
+                ON comp.id = s.competition_id
+            )
+            SELECT 
+                competition_id,
+                start_time,
+                end_time,
+                is_active,
+                user_id,
+                steps,
+                (total_users - asc_rank + 1) AS rank
+            FROM ranked
+            WHERE competition_id=${competition_id}
+            ORDER BY competition_id, rank;
+        `;
+
+        res.status(200).json(competition_data);
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
@@ -98,7 +134,7 @@ router.get('/all-competitions', async (req, res) => {
 
 // POST /end-competition
 router.post('/end-competition', async (req, res) => {
-  const { competition_id } = req.body;
+    const { competition_id } = req.body;
     try {
         await sql`
             UPDATE competitions 

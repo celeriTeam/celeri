@@ -15,6 +15,20 @@ export const fetchCurrentCompetition = async () => {
     }
 };
 
+export const fetchCompetition = async (competition_id: string) => {
+    try {
+        const response = await api.get(`/competitions/data?competition_id=${competition_id}`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch competition:', error);
+            return null;
+        }
+    }
+};
+
 export const fetchAllCompetitions = async () => {
     try {
         const response = await api.get(`/competitions/all-competitions`);

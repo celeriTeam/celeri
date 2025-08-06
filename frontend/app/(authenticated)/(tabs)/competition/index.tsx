@@ -4,8 +4,8 @@ import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
-import { fetchCurrentCompetition } from '@backend/src/api/competitions';
-import { addCompetitionUser } from '@backend/src/api/competition_steps';
+import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/competitions';
+import { addCompetitionUser, getCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
@@ -25,6 +25,7 @@ const CompetitionLandingPage: React.FC = () => {
     const [currentGame, setCurrentGame] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+    const [showResults, setShowResults] = useState<any | false>(false);
     const { userID } = useUser();
     const router = useRouter();
 
@@ -39,6 +40,14 @@ const CompetitionLandingPage: React.FC = () => {
                 setCurrentGame(game); // Enable "Join Game" button
             } else {
                 setCurrentGame(null); // Disable button
+            }
+            const isResults = await getCompetitionHasSeenResults(userID);
+            if (isResults?.competition_id) {
+                const prevCompetition = await fetchCompetition(isResults.competition_id);
+                console.log('prevcomp: ', prevCompetition);
+                setShowResults(prevCompetition);
+            } else {
+                setShowResults(false);
             }
         } catch {
             setCurrentGame(null);
@@ -79,7 +88,7 @@ const CompetitionLandingPage: React.FC = () => {
         // listen while in foreground
         const unsubscribe = messaging().onMessage(remoteMsg => {
             console.log('Received foreground message:', remoteMsg);
-            if (remoteMsg.data?.type === 'COMPETITION_STARTED') {
+            if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
                 console.log('Competition started notification received');
                 getCurrentGame();
             }
@@ -105,6 +114,12 @@ const CompetitionLandingPage: React.FC = () => {
         await addCompetitionUser(userID);
         await setUserInCompetition(userID);
         router.replace('/(authenticated)/(tabs)/competition/inGame');
+    };
+
+    const handleResultsClose = async () => {
+        setShowResults(false);
+        
+        // change has_seen on backend
     };
 
     return (
@@ -146,6 +161,29 @@ const CompetitionLandingPage: React.FC = () => {
                                 <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
                             </TouchableOpacity>
                             <RaceRulesPager closeModal={() => setModalVisible(false)} />
+                        </LinearGradient>
+                    </View>
+                </View>
+            </Modal>
+            
+            <Modal
+                visible={!!showResults}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowResults(false)}
+            >
+                <View style={styles.modalOverlay} >
+                    <View style={[styles.modalContainer, { height: '75%' }]}>
+                        <LinearGradient
+                            colors={['#000000', '#024405']}
+                            style={styles.insideContainer}
+                        >
+                            <TouchableOpacity style={styles.modalCloseButton} onPress={handleResultsClose}>
+                                <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
+                            </TouchableOpacity>
+                            <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
+                                <Text style={{ color: '#fff' }}>{JSON.stringify(showResults, null, 2)}</Text>
+                            </View>
                         </LinearGradient>
                     </View>
                 </View>
