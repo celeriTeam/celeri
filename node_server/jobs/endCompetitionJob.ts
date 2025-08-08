@@ -73,7 +73,7 @@ export const endCompetitionById = async (competitionId: number) => {
                     await admin.messaging().send(endNotification);
                 } catch (error: any) {
                     if (error.code === 'messaging/registration-token-not-registered') {
-                        console.log(`Invalid token detected for user ${user_id}`);
+                        // console.log(`Invalid token detected for user ${user_id}`);
                     }
                 }
             }

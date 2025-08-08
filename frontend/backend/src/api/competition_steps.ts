@@ -74,3 +74,19 @@ export const getCompetitionHasSeenResults = async (user_id: string) => {
         }
     }
 }
+
+export const setCompetitionHasSeenResults = async (user_id: string, competition_id: string) => {
+    try {
+        const response = await api.post(`/competition-steps/has-seen-results`,
+            { user_id, competition_id }
+        );
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to set competition has seen results:', error);
+            return null;
+        }
+    }
+}
