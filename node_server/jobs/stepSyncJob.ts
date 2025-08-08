@@ -40,7 +40,7 @@ export const runStepSyncJob = async () => {
                     await admin.messaging().send(silentMessage);
                 } catch (error: any) {
                     if (error.code === 'messaging/registration-token-not-registered') {
-                        console.log(`Invalid token detected for user ${user_id}`);
+                        // console.log(`Invalid token detected for user ${user_id}`);
                     }
                 }
             }

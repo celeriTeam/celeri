@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
 import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/competitions';
-import { addCompetitionUser, getCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
+import { addCompetitionUser, getCompetitionHasSeenResults, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
@@ -117,9 +117,10 @@ const CompetitionLandingPage: React.FC = () => {
     };
 
     const handleResultsClose = async () => {
+        const competition_id = showResults[0].competition_id;
         setShowResults(false);
-        
-        // change has_seen on backend
+        // console.log('competition id: ', competition_id);
+        setCompetitionHasSeenResults(userID, competition_id);
     };
 
     return (
@@ -182,7 +183,10 @@ const CompetitionLandingPage: React.FC = () => {
                                 <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
                             </TouchableOpacity>
                             <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
-                                <Text style={{ color: '#fff' }}>{JSON.stringify(showResults, null, 2)}</Text>
+                                <ResultsModal
+                                    results={showResults}
+                                />
+                                {/* <Text style={{ color: '#fff' }}>{JSON.stringify(showResults, null, 2)}</Text> */}
                             </View>
                         </LinearGradient>
                     </View>
@@ -259,6 +263,7 @@ const joinButton = (currentGame: any): ViewStyle => ({
 });
 
 import type { TextStyle } from 'react-native';
+import ResultsModal from './resultsModal';
 
 const joinButtonText = (currentGame: any): TextStyle => ({
     fontSize: 24,

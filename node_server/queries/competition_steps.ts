@@ -14,6 +14,38 @@ const grabCurrentCompetition = async () => {
   return competition;
 }
 
+const silentNotif = async (user_id: string) => {
+  const userDoc = await admin.firestore().collection('users').doc(user_id).get();
+  if (!userDoc.exists) {
+    console.log(`User document not found for user_id: ${user_id}`);
+    return;
+  }
+  const tokens = userDoc.data()?.tokens || [];
+
+  // Update user comp status in firebase
+  const userRef = admin.firestore().collection('users').doc(user_id);
+  await userRef.update({ inCompetition: false });
+
+  // Send notifs
+  for (const token of tokens) {
+    const silentMessage = {
+      token,
+      data: {
+        type: "silent",
+        action: "fetchSteps"
+      }
+    };
+
+    try {
+      await admin.messaging().send(silentMessage);
+    } catch (error: any) {
+      if (error.code === 'messaging/registration-token-not-registered') {
+        // console.log(`Invalid token detected for user ${user_id}`);
+      }
+    }
+  }
+}
+
 // POST /add-user
 router.post('/add-user', async (req, res) => {
   const { user_id } = req.body;
@@ -37,6 +69,7 @@ router.post('/add-user', async (req, res) => {
     `;
 
     if (result.length === 0) {
+      silentNotif(user_id);
       return res.status(400).json({ error: 'User already exists' });
     }
     res.status(200).json({ success: true });
@@ -64,6 +97,7 @@ router.post('/update-steps', async (req, res) => {
     `;
 
     if (existingUser.length === 0) {
+      silentNotif(user_id);
       return res.status(400).json({ success: false, error: 'User not found' });
     }
 
@@ -182,6 +216,26 @@ router.get('/has-seen-results', async (req, res) => {
     }
     
     res.status(200).json(result[0]);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+})
+
+// POST /has-seen-results
+router.post('/has-seen-results', async (req, res) => {
+  const { user_id, competition_id } = req.body;
+  try {
+    if (!user_id || typeof user_id !== 'string') {
+      return res.status(400).json({ error: 'Correct User ID is required' });
+    }
+
+    await sql`
+      UPDATE competition_steps 
+      SET has_seen_results = true
+      WHERE user_id = ${user_id}
+      AND competition_id = ${competition_id}
+    `
+    res.status(200).json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

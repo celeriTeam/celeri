@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCurrentCompetition } from '@backend/src/api/competitions';
 import { getCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
+import messaging from '@react-native-firebase/messaging';
+import { useRouter } from 'expo-router';
 
 const CompetitionGamePage: React.FC = () => {
+    const { userID, username, profileImageUrl } = useUser();
     const [timeLeft, setTimeLeft] = useState<string>('00:00:00');
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [selectedTab, setSelectedTab] = useState<'ViewOne' | 'ViewTwo'>('ViewOne');
-    const { userID, username, profileImageUrl } = useUser();
+    const [refreshing, setRefreshing] = useState(false);
+    const router = useRouter();
 
     // Timer update helper
     const updateTimer = (endTimeStr: string) => {
@@ -32,42 +36,74 @@ const CompetitionGamePage: React.FC = () => {
     };
 
     // Fetch leaderboard
+    const fetchLeaderboard = async () => {
+        try {
+            const allUsers = await getCompetitionData();
+            if (!allUsers) return;
+            const userIds = allUsers.map((u: any) => u.user_id || u.id);
+
+            // Batch fetch profiles
+            const profiles = await getUserProfilesBatch(userIds);
+
+            // Get user info (steps, rank) for each
+            const userInfos = await Promise.all(
+                userIds.map(async (userId: string) => {
+                    const info = await getCompetitionUserInfo(userId);
+                    type Profile = { username?: string; profileImageUrl?: string };
+                    const profile: Profile = profiles.find((p: any) => p.userId === userId) || {};
+                    return {
+                        ...info,
+                        username: profile.username || '',
+                        profileImageUrl: profile.profileImageUrl || '',
+                        userId,
+                    };
+                })
+            );
+            userInfos.sort((a: { rank: any; }, b: { rank: any; }) => (a.rank ?? 9999) - (b.rank ?? 9999));
+            setLeaderboard(userInfos);
+        } catch (e) {
+            console.error('Error fetching leaderboard:', e);
+        }
+    };
+
     useEffect(() => {
-        const fetchLeaderboard = async () => {
-            try {
-                const allUsers = await getCompetitionData();
-                if (!allUsers) return;
-                const userIds = allUsers.map((u: any) => u.user_id || u.id);
-
-                // Batch fetch profiles
-                const profiles = await getUserProfilesBatch(userIds);
-
-                // Get user info (steps, rank) for each
-                const userInfos = await Promise.all(
-                    userIds.map(async (userId: string) => {
-                        const info = await getCompetitionUserInfo(userId);
-                        type Profile = { username?: string; profileImageUrl?: string };
-                        const profile: Profile = profiles.find((p: any) => p.userId === userId) || {};
-                        return {
-                            ...info,
-                            username: profile.username || '',
-                            profileImageUrl: profile.profileImageUrl || '',
-                            userId,
-                        };
-                    })
-                );
-                userInfos.sort((a: { rank: any; }, b: { rank: any; }) => (a.rank ?? 9999) - (b.rank ?? 9999));
-                setLeaderboard(userInfos);
-            } catch (e) {
-                console.error('Error fetching leaderboard:', e);
-            }
-        };
         fetchLeaderboard();
     }, []);
+
+    const refreshGameData = useCallback(async () => {
+        console.log('received silent notif');
+        const game = await fetchCurrentCompetition();
+        if (game.error) {
+            router.replace('/(authenticated)/(tabs)/competition');
+        }
+        if (game && game.end_time) {
+            updateTimer(game.end_time);
+        }
+        await fetchLeaderboard();
+    }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await refreshGameData();
+        setRefreshing(false);
+    };
+
+    useEffect(() => {
+        const unsubscribe = messaging().onMessage(remoteMsg => {
+            console.log('Received foreground message in-game:', remoteMsg);
+            if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
+                console.log('Game data change notification received');
+                refreshGameData();
+            }
+        });
+
+        return unsubscribe;
+    }, [refreshGameData]);
 
     useEffect(() => {
         let interval: NodeJS.Timeout;
         const setup = async () => {
+            await refreshGameData();
             const game = await fetchCurrentCompetition();
             if (game && game.end_time) {
                 updateTimer(game.end_time);
@@ -78,7 +114,7 @@ const CompetitionGamePage: React.FC = () => {
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, []);
+    }, [refreshGameData]);
 
     // Find current user's leaderboard entry
     const currentUserEntry = leaderboard.find(u => u.userId === userID);
@@ -102,271 +138,279 @@ const CompetitionGamePage: React.FC = () => {
             <Text style={styles.timer}>
                 {timeLeft}
             </Text>
-            {/* User profile row */}
-            <View style={styles.profileRow}>
-                <Image
-                    source={
-                        profileImageUrl
-                            ? { uri: profileImageUrl }
-                            : require('@components/blank-profile-picture.png')
-                    }
-                    style={styles.profileImage}
-                />
-                <View style={styles.profileInfo}>
-                    <Text style={styles.profileName}>
-                        {username}
-                    </Text>
-                    <Text style={styles.profileSteps}>
-                        {currentUserEntry?.steps ?? 0} steps
-                    </Text>
-                    <Text style={styles.profileRank}>
-                        {getOrdinal(currentUserRank)} out of {totalPlayers} players
-                    </Text>
+            <ScrollView
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+                }
+                contentContainerStyle={{ flexGrow: 1, width: '100%' }}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* User profile row */}
+                <View style={styles.profileRow}>
+                    <Image
+                        source={
+                            profileImageUrl
+                                ? { uri: profileImageUrl }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profileImage}
+                    />
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.profileName}>
+                            {username}
+                        </Text>
+                        <Text style={styles.profileSteps}>
+                            {currentUserEntry?.steps ?? 0} steps
+                        </Text>
+                        <Text style={styles.profileRank}>
+                            {getOrdinal(currentUserRank)} out of {totalPlayers} players
+                        </Text>
+                    </View>
                 </View>
-            </View>
-            <View style={styles.leaderboardContainer}>
-                <Text style={styles.leaderboardTitle}>
-                    Leaderboard
-                </Text>
-                {/* Tab Switcher */}
-                <View style={styles.tabSwitcher}>
-                    <TouchableOpacity
-                        style={[
-                            styles.tabButton,
-                            selectedTab === 'ViewOne' && styles.tabButtonActive
-                        ]}
-                        onPress={() => setSelectedTab('ViewOne')}
-                        activeOpacity={1}
-                    >
-                        <Text style={[
-                            styles.tabButtonText,
-                            selectedTab === 'ViewOne' && styles.tabButtonTextActive
-                        ]}>Game View</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[
-                            styles.tabButton,
-                            selectedTab === 'ViewTwo' && styles.tabButtonActive
-                        ]}
-                        onPress={() => setSelectedTab('ViewTwo')}
-                        activeOpacity={1}
-                    >
-                        <Text style={[
-                            styles.tabButtonText,
-                            selectedTab === 'ViewTwo' && styles.tabButtonTextActive
-                        ]}>List View</Text>
-                    </TouchableOpacity>
-                </View>
-                {/* Line for showing selected tab */}
-                <View style={[
-                    styles.tabUnderline,
-                    selectedTab === 'ViewTwo'
-                        ? styles.tabUnderlineRight
-                        : styles.tabUnderlineLeft
-                ]} />
-                {/* Content Container */}
-                <View style={styles.tabContentContainer}>
-                    {selectedTab === 'ViewOne' ? (
-                        <ScrollView
-                            style={{ flex: 1, width: '100%' }}
-                            contentContainerStyle={{
-                                alignItems: 'center',
-                                paddingVertical: 20,
-                                paddingTop: 120,
-                                minHeight: 400,
-                            }}
-                            showsVerticalScrollIndicator={true}
+                <View style={styles.leaderboardContainer}>
+                    <Text style={styles.leaderboardTitle}>
+                        Leaderboard
+                    </Text>
+                    {/* Tab Switcher */}
+                    <View style={styles.tabSwitcher}>
+                        <TouchableOpacity
+                            style={[
+                                styles.tabButton,
+                                selectedTab === 'ViewOne' && styles.tabButtonActive
+                            ]}
+                            onPress={() => setSelectedTab('ViewOne')}
+                            activeOpacity={1}
                         >
-                            {/* Track and Markers */}
-                            {(() => {
-                                // Track settings
-                                const TRACK_WIDTH = 100;
-                                const STICK_WIDTH = 70;
-                                const TRACK_LEFT = 50;
-                                const MARKER_INTERVAL = 500;
-                                const BOTTOM_MARGIN = 60;
-                                const TOP_MARGIN = 30;
-                                const STICK_HEIGHT = 110;
+                            <Text style={[
+                                styles.tabButtonText,
+                                selectedTab === 'ViewOne' && styles.tabButtonTextActive
+                            ]}>Game View</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.tabButton,
+                                selectedTab === 'ViewTwo' && styles.tabButtonActive
+                            ]}
+                            onPress={() => setSelectedTab('ViewTwo')}
+                            activeOpacity={1}
+                        >
+                            <Text style={[
+                                styles.tabButtonText,
+                                selectedTab === 'ViewTwo' && styles.tabButtonTextActive
+                            ]}>List View</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {/* Line for showing selected tab */}
+                    <View style={[
+                        styles.tabUnderline,
+                        selectedTab === 'ViewTwo'
+                            ? styles.tabUnderlineRight
+                            : styles.tabUnderlineLeft
+                    ]} />
+                    {/* Content Container */}
+                    <View style={styles.tabContentContainer}>
+                        {selectedTab === 'ViewOne' ? (
+                            <ScrollView
+                                style={{ flex: 1, width: '100%' }}
+                                contentContainerStyle={{
+                                    alignItems: 'center',
+                                    paddingVertical: 20,
+                                    paddingTop: 120,
+                                    minHeight: 400,
+                                }}
+                                showsVerticalScrollIndicator={true}
+                            >
+                                {/* Track and Markers */}
+                                {(() => {
+                                    // Track settings
+                                    const TRACK_WIDTH = 100;
+                                    const STICK_WIDTH = 70;
+                                    const TRACK_LEFT = 50;
+                                    const MARKER_INTERVAL = 500;
+                                    const BOTTOM_MARGIN = 60;
+                                    const TOP_MARGIN = 30;
+                                    const STICK_HEIGHT = 110;
 
-                                // Find max steps
-                                const maxSteps = Math.max(...leaderboard.map(u => u.steps ?? 0), 1000);
-                                // Track height grows with maxSteps, 1 step = 0.15px, but at least 400px
-                                const pxPerStep = 0.15;
-                                const trackHeight = Math.max((maxSteps * pxPerStep) + TOP_MARGIN + BOTTOM_MARGIN, 400);
+                                    // Find max steps
+                                    const maxSteps = Math.max(...leaderboard.map(u => u.steps ?? 0), 1000);
+                                    // Track height grows with maxSteps, 1 step = 0.15px, but at least 400px
+                                    const pxPerStep = 0.15;
+                                    const trackHeight = Math.max((maxSteps * pxPerStep) + TOP_MARGIN + BOTTOM_MARGIN, 400);
 
-                                // Markers
-                                const markerCount = Math.ceil(maxSteps / MARKER_INTERVAL) + 2;
+                                    // Markers
+                                    const markerCount = Math.ceil(maxSteps / MARKER_INTERVAL) + 2;
 
-                                // Generate a consistent random X offset for each user based on their userId
-                                const getRandomX = (userId: string | number) => {
-                                    // Simple hash for deterministic "random" based on userId
-                                    let hash = 0;
-                                    const str = String(userId);
-                                    for (let i = 0; i < str.length; i++) {
-                                        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                                    }
-                                    // Range: -10 to 40 px
-                                    return 10 + (Math.abs(hash) % 120);
-                                };
+                                    // Generate a consistent random X offset for each user based on their userId
+                                    const getRandomX = (userId: string | number) => {
+                                        // Simple hash for deterministic "random" based on userId
+                                        let hash = 0;
+                                        const str = String(userId);
+                                        for (let i = 0; i < str.length; i++) {
+                                            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                                        }
+                                        // Range: -10 to 40 px
+                                        return 10 + (Math.abs(hash) % 120);
+                                    };
 
-                                return (
-                                    <View style={{
-                                        width: TRACK_WIDTH + 80,
-                                        height: trackHeight,
-                                        flexDirection: 'row',
-                                        position: 'relative',
-                                    }}>
-                                        {/* Step Markers - moved to absolute far left */}
+                                    return (
                                         <View style={{
-                                            position: 'absolute',
-                                            left: -70,
-                                            top: 0,
-                                            bottom: 0,
-                                            width: 50,
-                                            justifyContent: 'flex-end',
-                                            alignItems: 'flex-end',
-                                        }}>
-                                            {Array.from({ length: markerCount }).map((_, i) => {
-                                                const steps = i * MARKER_INTERVAL;
-                                                const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
-                                                return (
-                                                    <View key={i} style={{
-                                                        position: 'absolute',
-                                                        left: 0,
-                                                        width: 50,
-                                                        top: y - 8,
-                                                        flexDirection: 'row',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'flex-end',
-                                                    }}>
-                                                        <Text style={{
-                                                            color: '#fff',
-                                                            fontSize: 12,
-                                                            fontFamily: 'Lexend',
-                                                            width: 32,
-                                                            textAlign: 'right',
-                                                            marginRight: 2,
-                                                        }}>{steps}</Text>
-                                                        <View style={{
-                                                            width: 20,
-                                                            height: 2,
-                                                            backgroundColor: '#74FF6D',
-                                                            marginLeft: 2,
-                                                        }} />
-                                                    </View>
-                                                );
-                                            })}
-                                        </View>
-                                        {/* Stick Figures */}
-                                        <View style={{
-                                            marginLeft: TRACK_LEFT,
-                                            width: TRACK_WIDTH,
+                                            width: TRACK_WIDTH + 80,
                                             height: trackHeight,
+                                            flexDirection: 'row',
                                             position: 'relative',
                                         }}>
-                                            {leaderboard.map((user, idx) => {
-                                                const steps = user.steps ?? 0;
-                                                const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
-                                                const x = getRandomX(user.userId || user.id);
-                                                return (
-                                                    <View
-                                                        key={user.userId || user.id || idx}
-                                                        style={{
+                                            {/* Step Markers - moved to absolute far left */}
+                                            <View style={{
+                                                position: 'absolute',
+                                                left: -70,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: 50,
+                                                justifyContent: 'flex-end',
+                                                alignItems: 'flex-end',
+                                            }}>
+                                                {Array.from({ length: markerCount }).map((_, i) => {
+                                                    const steps = i * MARKER_INTERVAL;
+                                                    const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
+                                                    return (
+                                                        <View key={i} style={{
                                                             position: 'absolute',
-                                                            left: x,
-                                                            top: y - STICK_HEIGHT,
+                                                            left: 0,
+                                                            width: 50,
+                                                            top: y - 8,
+                                                            flexDirection: 'row',
                                                             alignItems: 'center',
-                                                        }}
-                                                    >
-                                                        <Image
-                                                            source={require('@assets/images/stickfigure.png')}
-                                                            style={{ width: 70, height: 110, tintColor: '#fff' }}
-                                                        />
-                                                        <Image
-                                                            source={
-                                                                user.profileImageUrl
-                                                                    ? { uri: user.profileImageUrl }
-                                                                    : require('@components/blank-profile-picture.png')
-                                                            }
-                                                            style={styles.stickFigureFace}
-                                                        />
-                                                        <Text style={styles.stickFigureUsername}>
-                                                            {user.username?.slice(0, 10) || user.userId}
-                                                        </Text>
-                                                    </View>
-                                                );
-                                            })}
+                                                            justifyContent: 'flex-end',
+                                                        }}>
+                                                            <Text style={{
+                                                                color: '#fff',
+                                                                fontSize: 12,
+                                                                fontFamily: 'Lexend',
+                                                                width: 32,
+                                                                textAlign: 'right',
+                                                                marginRight: 2,
+                                                            }}>{steps}</Text>
+                                                            <View style={{
+                                                                width: 20,
+                                                                height: 2,
+                                                                backgroundColor: '#74FF6D',
+                                                                marginLeft: 2,
+                                                            }} />
+                                                        </View>
+                                                    );
+                                                })}
+                                            </View>
+                                            {/* Stick Figures */}
+                                            <View style={{
+                                                marginLeft: TRACK_LEFT,
+                                                width: TRACK_WIDTH,
+                                                height: trackHeight,
+                                                position: 'relative',
+                                            }}>
+                                                {leaderboard.map((user, idx) => {
+                                                    const steps = user.steps ?? 0;
+                                                    const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
+                                                    const x = getRandomX(user.userId || user.id);
+                                                    return (
+                                                        <View
+                                                            key={user.userId || user.id || idx}
+                                                            style={{
+                                                                position: 'absolute',
+                                                                left: x,
+                                                                top: y - STICK_HEIGHT,
+                                                                alignItems: 'center',
+                                                            }}
+                                                        >
+                                                            <Image
+                                                                source={require('@assets/images/stickfigure.png')}
+                                                                style={{ width: 70, height: 110, tintColor: '#fff' }}
+                                                            />
+                                                            <Image
+                                                                source={
+                                                                    user.profileImageUrl
+                                                                        ? { uri: user.profileImageUrl }
+                                                                        : require('@components/blank-profile-picture.png')
+                                                                }
+                                                                style={styles.stickFigureFace}
+                                                            />
+                                                            <Text style={styles.stickFigureUsername}>
+                                                                {user.username?.slice(0, 10) || user.userId}
+                                                            </Text>
+                                                        </View>
+                                                    );
+                                                })}
+                                            </View>
                                         </View>
-                                    </View>
-                                );
-                            })()}
-                        </ScrollView>
-                    ) : (
-                        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
-                            {/* Podium for Top 3 */}
-                            <View style={styles.podiumRow}>
-                                {[1, 0, 2].map((podiumIdx, i) => {
-                                    const user = leaderboard[podiumIdx];
-                                    if (!user) return <View key={i} style={styles.podiumEmpty} />;
-                                    return (
-                                        <View key={user.userId || user.id || i} style={[
-                                            styles.podiumUser,
-                                            podiumIdx === 0 && styles.podiumUserFirst
-                                        ]}>
+                                    );
+                                })()}
+                            </ScrollView>
+                        ) : (
+                            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
+                                {/* Podium for Top 3 */}
+                                <View style={styles.podiumRow}>
+                                    {[1, 0, 2].map((podiumIdx, i) => {
+                                        const user = leaderboard[podiumIdx];
+                                        if (!user) return <View key={i} style={styles.podiumEmpty} />;
+                                        return (
+                                            <View key={user.userId || user.id || i} style={[
+                                                styles.podiumUser,
+                                                podiumIdx === 0 && styles.podiumUserFirst
+                                            ]}>
+                                                <Image
+                                                    source={
+                                                        user.profileImageUrl
+                                                            ? { uri: user.profileImageUrl }
+                                                            : require('@components/blank-profile-picture.png')
+                                                    }
+                                                    style={[
+                                                        styles.podiumImage,
+                                                        podiumIdx === 0 && styles.podiumImageFirst
+                                                    ]}
+                                                />
+                                                <View style={styles.podiumBadge}>
+                                                    <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
+                                                </View>
+                                                <Text style={styles.podiumUsername}>{user.username?.slice(0, 10) || user.userId}</Text>
+                                                <Text style={styles.podiumSteps}>{user.steps ?? 0} steps</Text>
+                                            </View>
+                                        );
+                                    })}
+                                </View>
+                                {/* Rest of leaderboard */}
+                                <View>
+                                    {leaderboard.slice(3).map((user, idx) => (
+                                        <View
+                                            key={user.userId || user.id || idx}
+                                            style={[
+                                                styles.leaderboardRow,
+                                                user.userId === userID && styles.leaderboardRowCurrent
+                                            ]}
+                                        >
+                                            <Text style={[
+                                                styles.leaderboardRank,
+                                                user.userId === userID && styles.leaderboardRankCurrent
+                                            ]}>{idx + 4}</Text>
                                             <Image
                                                 source={
                                                     user.profileImageUrl
                                                         ? { uri: user.profileImageUrl }
                                                         : require('@components/blank-profile-picture.png')
                                                 }
-                                                style={[
-                                                    styles.podiumImage,
-                                                    podiumIdx === 0 && styles.podiumImageFirst
-                                                ]}
+                                                style={styles.leaderboardAvatar}
                                             />
-                                            <View style={styles.podiumBadge}>
-                                                <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
-                                            </View>
-                                            <Text style={styles.podiumUsername}>{user.username?.slice(0, 10) || user.userId}</Text>
-                                            <Text style={styles.podiumSteps}>{user.steps ?? 0} steps</Text>
+                                            <Text style={styles.leaderboardUsername}>{user.username?.slice(0, 12) || user.userId}</Text>
+                                            <Text style={[
+                                                styles.leaderboardSteps,
+                                                user.userId === userID && styles.leaderboardStepsCurrent
+                                            ]}>{user.steps ?? 0} steps</Text>
                                         </View>
-                                    );
-                                })}
-                            </View>
-                            {/* Rest of leaderboard */}
-                            <View>
-                                {leaderboard.slice(3).map((user, idx) => (
-                                    <View
-                                        key={user.userId || user.id || idx}
-                                        style={[
-                                            styles.leaderboardRow,
-                                            user.userId === userID && styles.leaderboardRowCurrent
-                                        ]}
-                                    >
-                                        <Text style={[
-                                            styles.leaderboardRank,
-                                            user.userId === userID && styles.leaderboardRankCurrent
-                                        ]}>{idx + 4}</Text>
-                                        <Image
-                                            source={
-                                                user.profileImageUrl
-                                                    ? { uri: user.profileImageUrl }
-                                                    : require('@components/blank-profile-picture.png')
-                                            }
-                                            style={styles.leaderboardAvatar}
-                                        />
-                                        <Text style={styles.leaderboardUsername}>{user.username?.slice(0, 12) || user.userId}</Text>
-                                        <Text style={[
-                                            styles.leaderboardSteps,
-                                            user.userId === userID && styles.leaderboardStepsCurrent
-                                        ]}>{user.steps ?? 0} steps</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </ScrollView>
-                    )}
+                                    ))}
+                                </View>
+                            </ScrollView>
+                        )}
+                    </View>
                 </View>
-            </View>
+            </ScrollView>
         </LinearGradient>
     );
 };
@@ -485,7 +529,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
         paddingVertical: 15,
         minHeight: 120,
-        width: '100%',
+        // width: '100%',
         justifyContent: 'flex-start',
         alignItems: 'stretch',
     },
