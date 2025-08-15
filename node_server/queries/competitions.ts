@@ -72,26 +72,17 @@ router.get('/data', async (req, res) => {
             return res.status(400).json({ error: 'Correct Competition ID is required' });
         }
         const competition_data = await sql`
-            WITH ranked AS (
-                SELECT 
-                    *,
-                    RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
-                    COUNT(*) OVER (PARTITION BY competition_id) AS total_users
-                FROM competitions AS comp
-                JOIN competition_steps AS s
-                ON comp.id = s.competition_id
-            )
             SELECT 
-                competition_id,
+                id,
                 start_time,
                 end_time,
                 is_active,
-                user_id,
-                steps,
-                (total_users - asc_rank + 1) AS rank
-            FROM ranked
-            WHERE competition_id=${competition_id}
-            ORDER BY competition_id, rank;
+                first_place_winner,
+                median_winner,
+                referral_winner
+            FROM competitions
+            WHERE id=${competition_id}
+            LIMIT 1;
         `;
 
         res.status(200).json(competition_data);

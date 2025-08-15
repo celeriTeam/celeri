@@ -14,41 +14,77 @@ const grabCurrentCompetition = async () => {
   return competition;
 }
 
-const silentNotif = async (user_id: string) => {
+const rankings = async (competition_id: string) => {
+  const result = await sql`
+    WITH ranked AS (
+      SELECT 
+        *,
+        RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
+        COUNT(*) OVER (PARTITION BY competition_id) AS total_users
+      FROM competitions AS comp
+      JOIN competition_steps AS s
+      ON comp.id = s.competition_id
+      WHERE comp.id= ${competition_id}
+    )
+    SELECT 
+      user_id,
+      steps,
+      (total_users - asc_rank + 1) AS rank
+    FROM ranked
+    ORDER BY steps desc;
+  `;
+  /**
+   * const competition_data = await sql`
+            WITH ranked AS (
+                SELECT 
+                    *,
+                    RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
+                    COUNT(*) OVER (PARTITION BY competition_id) AS total_users
+                FROM competitions AS comp
+                JOIN competition_steps AS s
+                ON comp.id = s.competition_id
+            )
+            SELECT 
+                competition_id,
+                start_time,
+                end_time,
+                is_active,
+                user_id,
+                steps,
+                (total_users - asc_rank + 1) AS rank
+            FROM ranked
+            WHERE competition_id=${competition_id}
+            ORDER BY competition_id, rank;
+        `;
+   */
+  return result;
+}
+
+const silentNotif = async (user_id: string, competition_id: string) => {
   const userDoc = await admin.firestore().collection('users').doc(user_id).get();
   if (!userDoc.exists) {
     console.log(`User document not found for user_id: ${user_id}`);
     return;
   }
-  const tokens = userDoc.data()?.tokens || [];
 
-  // Update user comp status in firebase
-  const userRef = admin.firestore().collection('users').doc(user_id);
-  await userRef.update({ inCompetition: false });
-
-  // Send notifs
-  for (const token of tokens) {
-    const silentMessage = {
-      token,
+  try {
+    await admin.messaging().send({
+      topic: 'allUsers',
       data: {
-        type: "silent",
-        action: "fetchSteps"
+        type: 'TOGGLE_COMPETITION',
+        competitionId: competition_id,
       }
-    };
-
-    try {
-      await admin.messaging().send(silentMessage);
-    } catch (error: any) {
-      if (error.code === 'messaging/registration-token-not-registered') {
-        // console.log(`Invalid token detected for user ${user_id}`);
-      }
+    });
+  } catch (error: any) {
+    if (error.code === 'messaging/registration-token-not-registered') {
+      // console.log(`Invalid token detected for user ${user_id}`);
     }
   }
 }
 
 // POST /add-user
 router.post('/add-user', async (req, res) => {
-  const { user_id } = req.body;
+  const { user_id, referral_id = null } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -58,8 +94,8 @@ router.post('/add-user', async (req, res) => {
     }
 
     const result = await sql`
-      INSERT INTO competition_steps (user_id, steps, competition_id) 
-      SELECT ${user_id}, 0, ${competition.id}
+      INSERT INTO competition_steps (user_id, steps, competition_id, referral) 
+      SELECT ${user_id}, 0, ${competition.id}, ${referral_id}
       WHERE NOT EXISTS (
         SELECT 1 FROM competition_steps 
         WHERE user_id = ${user_id}
@@ -69,9 +105,9 @@ router.post('/add-user', async (req, res) => {
     `;
 
     if (result.length === 0) {
-      silentNotif(user_id);
       return res.status(400).json({ error: 'User already exists' });
     }
+    silentNotif(user_id, competition.id);
     res.status(200).json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -97,10 +133,10 @@ router.post('/update-steps', async (req, res) => {
     `;
 
     if (existingUser.length === 0) {
-      silentNotif(user_id);
       return res.status(400).json({ success: false, error: 'User not found' });
     }
 
+    silentNotif(user_id, competition.id);
     const currentSteps = existingUser[0].steps;
     const updatedSteps = Math.max(currentSteps, steps);
 
@@ -116,8 +152,8 @@ router.post('/update-steps', async (req, res) => {
   }
 })
 
-// GET /data
-router.get('/data', async (req, res) => {
+// GET /current-data
+router.get('/current-data', async (req, res) => {
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -126,24 +162,23 @@ router.get('/data', async (req, res) => {
       return res.status(400).json({ error: 'No active competition' });
     }
 
-    const result = await sql`
-      WITH ranked AS (
-        SELECT 
-          *,
-          RANK() OVER (PARTITION BY competition_id ORDER BY steps ASC) AS asc_rank,
-          COUNT(*) OVER (PARTITION BY competition_id) AS total_users
-        FROM competitions AS comp
-        JOIN competition_steps AS s
-        ON comp.id = s.competition_id
-        WHERE comp.id= ${competition.id}
-      )
-      SELECT 
-        user_id,
-        steps,
-        (total_users - asc_rank + 1) AS rank
-      FROM ranked
-      ORDER BY steps desc;
-    `;
+    const result = await rankings(competition.id);
+
+    res.status(200).json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+})
+
+// GET /data?=competition_id=abc
+router.get('/data', async (req, res) => {
+  const { competition_id } = req.query;
+  try {
+    if (!competition_id || typeof competition_id !== 'string') {
+      return res.status(400).json({ error: 'Correct Competition ID is required' });
+    }
+
+    const result = await rankings(competition_id);
 
     res.status(200).json(result);
   } catch (err: any) {
@@ -240,6 +275,51 @@ router.post('/has-seen-results', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 })
+
+// GET /referrals?=competition_id=abc
+router.get('/referrals', async (req, res) => {
+  const { competition_id } = req.query;
+  try {
+    if (!competition_id || typeof competition_id !== 'string') {
+      return res.status(400).json({ error: 'Correct Competition ID is required' });
+    }
+    const referral_data = await sql`
+      WITH referral_counts AS (
+        SELECT
+          referral AS user_id,
+          COUNT(*) AS referral_count
+        FROM competition_steps
+        WHERE competition_id = ${competition_id}
+        AND referral IS NOT NULL
+        GROUP BY referral
+      ),
+      ranked AS (
+        SELECT
+          *,
+          RANK() OVER (ORDER BY referral_count DESC) AS base_rank
+        FROM referral_counts
+      ),
+      custom_ranked AS (
+        SELECT
+          r.user_id,
+          r.referral_count,
+          (
+            SELECT COUNT(*)
+            FROM ranked r2
+            WHERE r2.referral_count > r.referral_count
+          ) + 1 AS rank
+        FROM ranked r
+      )
+      SELECT rank, user_id, referral_count
+      FROM custom_ranked
+      ORDER BY rank;
+    `;
+
+    res.status(200).json(referral_data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get('/', (req, res) => {
   res.send('Competition Steps API is up and running!');

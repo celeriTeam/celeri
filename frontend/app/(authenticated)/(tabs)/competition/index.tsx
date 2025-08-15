@@ -5,10 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
 import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/competitions';
-import { addCompetitionUser, getCompetitionHasSeenResults, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
+import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, getReferralsData, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
-import { isUserInCompetition, setUserInCompetition, hasUserConsented } from '@backend/src/competition';
+import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 
 const { width, height } = Dimensions.get('window');
@@ -26,6 +26,8 @@ const CompetitionLandingPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [hasConsented, setHasConsented] = useState<boolean | null>(null);
     const [showResults, setShowResults] = useState<any | false>(false);
+    const [prevData, setPrevData] = useState<any>({});
+    const [referralResults, setReferralResults] = useState<any[]>([]);
     const { userID } = useUser();
     const router = useRouter();
 
@@ -43,9 +45,16 @@ const CompetitionLandingPage: React.FC = () => {
             }
             const isResults = await getCompetitionHasSeenResults(userID);
             if (isResults?.competition_id) {
+                console.log('isResults: ', isResults?.competition_id);
+                const prevCompetitionData = await getCompetitionData(isResults.competition_id);
                 const prevCompetition = await fetchCompetition(isResults.competition_id);
-                console.log('prevcomp: ', prevCompetition);
-                setShowResults(prevCompetition);
+                const referralsData = await getReferralsData(isResults.competition_id)
+                console.log('prevcomp: ', prevCompetitionData);
+                console.log('prevdata: ', prevCompetition[0]);
+                console.log('referralsdata: ', referralsData);
+                setShowResults(prevCompetitionData);
+                setPrevData(prevCompetition[0]);
+                setReferralResults(referralsData);
             } else {
                 setShowResults(false);
             }
@@ -62,6 +71,7 @@ const CompetitionLandingPage: React.FC = () => {
 
         // Check if user is already in the competition
         isUserInCompetition(userID).then(inComp => {
+            console.log('...', inComp);
             if (inComp) {
                 router.replace('/(authenticated)/(tabs)/competition/inGame');
             } else {
@@ -111,13 +121,14 @@ const CompetitionLandingPage: React.FC = () => {
             return;
         }
         console.log("testing two");
-        await addCompetitionUser(userID);
+        const referralId: string | null = await getReferral(userID);
+        await addCompetitionUser(userID, referralId);
         await setUserInCompetition(userID);
         router.replace('/(authenticated)/(tabs)/competition/inGame');
     };
 
     const handleResultsClose = async () => {
-        const competition_id = showResults[0].competition_id;
+        const competition_id = prevData.id;
         setShowResults(false);
         // console.log('competition id: ', competition_id);
         setCompetitionHasSeenResults(userID, competition_id);
@@ -185,6 +196,8 @@ const CompetitionLandingPage: React.FC = () => {
                             <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
                                 <ResultsModal
                                     results={showResults}
+                                    prevData={prevData}
+                                    referralResults={referralResults}
                                 />
                                 {/* <Text style={{ color: '#fff' }}>{JSON.stringify(showResults, null, 2)}</Text> */}
                             </View>

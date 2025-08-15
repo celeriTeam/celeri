@@ -2,22 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCurrentCompetition } from '@backend/src/api/competitions';
-import { getCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
+import { getCurrentCompetitionData, getCompetitionUserInfo, getReferralsData } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { useRouter } from 'expo-router';
 
+type Results = {
+    user_id: string,
+    steps: number,
+    rank: string
+};
+
+type ReferralResults = {
+    rank: number,
+    user_id: string,
+    referral_count: number
+};
+
+type Profile = { username?: string; profileImageUrl?: string };
+
 const CompetitionGamePage: React.FC = () => {
     const { userID, username, profileImageUrl } = useUser();
     const [timeLeft, setTimeLeft] = useState<string>('00:00:00');
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
-    const [selectedTab, setSelectedTab] = useState<'ViewOne' | 'ViewTwo'>('ViewOne');
+    const [referralsLeaderboard, setReferralsLeaderboard] = useState<any[]>([]);
+    const [selectedTab, setSelectedTab] = useState<'VisualSteps' | 'Steps' | 'Referrals'>('VisualSteps');
     const [refreshing, setRefreshing] = useState(false);
+    const [winners, updateWinners] = useState<string[]>([])
     const router = useRouter();
+
+    const resultsToDisplay = selectedTab === 'Referrals'
+    ? referralsLeaderboard
+    : leaderboard;
 
     // Timer update helper
     const updateTimer = (endTimeStr: string) => {
+        // console.log('end time: ', endTimeStr);
         const endTime = new Date(endTimeStr).getTime();
         const now = Date.now();
         const diff = endTime - now;
@@ -38,7 +59,8 @@ const CompetitionGamePage: React.FC = () => {
     // Fetch leaderboard
     const fetchLeaderboard = async () => {
         try {
-            const allUsers = await getCompetitionData();
+            const allUsers = await getCurrentCompetitionData();
+            console.log('all users: ', allUsers);
             if (!allUsers) return;
             const userIds = allUsers.map((u: any) => u.user_id || u.id);
 
@@ -48,19 +70,54 @@ const CompetitionGamePage: React.FC = () => {
             // Get user info (steps, rank) for each
             const userInfos = await Promise.all(
                 userIds.map(async (userId: string) => {
-                    const info = await getCompetitionUserInfo(userId);
-                    type Profile = { username?: string; profileImageUrl?: string };
                     const profile: Profile = profiles.find((p: any) => p.userId === userId) || {};
                     return {
-                        ...info,
+                        user_id: userId,
                         username: profile.username || '',
                         profileImageUrl: profile.profileImageUrl || '',
-                        userId,
+                        steps: allUsers.find((r: Results) => r.user_id === userId)?.steps || 0,
+                        rank: allUsers.find((r: Results) => r.user_id === userId)?.rank || '-1'
                     };
                 })
             );
-            userInfos.sort((a: { rank: any; }, b: { rank: any; }) => (a.rank ?? 9999) - (b.rank ?? 9999));
             setLeaderboard(userInfos);
+
+            // referrals
+            const currentCompetition = await fetchCurrentCompetition();
+            const referralsData = await getReferralsData(currentCompetition.id);
+            if (referralsData) {
+                const userIds = referralsData.map((u: any) => u.user_id || u.id);
+                const referralProfiles = await getUserProfilesBatch(userIds);
+                const referralUserInfos = await Promise.all(
+                    userIds.map(async (userId: string) => {
+                        const profile: Profile = referralProfiles.find((p: any) => p.userId === userId) || {};
+                        return {
+                            user_id: userId,
+                            username: profile.username || '',
+                            profileImageUrl: profile.profileImageUrl || '',
+                            referral_count: referralsData.find((r: ReferralResults) => r.user_id === userId)?.referral_count || 0,
+                            rank: referralsData.find((r: ReferralResults) => r.user_id === userId)?.rank || '-1'
+                        };
+                    })
+                );
+                setReferralsLeaderboard(referralUserInfos);
+            }
+
+            if (userInfos.length > 0) {
+                const firstPlaceUserId = userInfos[0].user_id;
+
+                // Median index: if even, pick the first in second half
+                const medianIndex = Math.floor(userInfos.length / 2);
+                const medianUserId = userInfos[medianIndex].user_id;
+
+                console.log('First place user ID:', firstPlaceUserId);
+                console.log('Median place user ID:', medianUserId);
+                const fetchedWinners = referralsData
+                    ? [firstPlaceUserId, medianUserId, referralsData[0].user_id]
+                    : [firstPlaceUserId, medianUserId];
+                updateWinners(fetchedWinners);
+                
+            }
         } catch (e) {
             console.error('Error fetching leaderboard:', e);
         }
@@ -71,7 +128,6 @@ const CompetitionGamePage: React.FC = () => {
     }, []);
 
     const refreshGameData = useCallback(async () => {
-        console.log('received silent notif');
         const game = await fetchCurrentCompetition();
         if (game.error) {
             router.replace('/(authenticated)/(tabs)/competition');
@@ -90,9 +146,7 @@ const CompetitionGamePage: React.FC = () => {
 
     useEffect(() => {
         const unsubscribe = messaging().onMessage(remoteMsg => {
-            console.log('Received foreground message in-game:', remoteMsg);
             if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
-                console.log('Game data change notification received');
                 refreshGameData();
             }
         });
@@ -117,8 +171,8 @@ const CompetitionGamePage: React.FC = () => {
     }, [refreshGameData]);
 
     // Find current user's leaderboard entry
-    const currentUserEntry = leaderboard.find(u => u.userId === userID);
-    const currentUserRank = leaderboard.findIndex(u => u.userId === userID) + 1;
+    const currentUserEntry = leaderboard.find(u => u.user_id === userID);
+    const currentUserRank = leaderboard.findIndex(u => u.user_id === userID) + 1;
     const totalPlayers = leaderboard.length;
 
     // Helper for ordinal suffix
@@ -142,8 +196,9 @@ const CompetitionGamePage: React.FC = () => {
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
                 }
-                contentContainerStyle={{ flexGrow: 1, width: '100%' }}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1 }}
+                style={{ flex: 1, width: '100%' }}
             >
                 {/* User profile row */}
                 <View style={styles.profileRow}>
@@ -176,40 +231,50 @@ const CompetitionGamePage: React.FC = () => {
                         <TouchableOpacity
                             style={[
                                 styles.tabButton,
-                                selectedTab === 'ViewOne' && styles.tabButtonActive
                             ]}
-                            onPress={() => setSelectedTab('ViewOne')}
+                            onPress={() => setSelectedTab('VisualSteps')}
                             activeOpacity={1}
                         >
                             <Text style={[
                                 styles.tabButtonText,
-                                selectedTab === 'ViewOne' && styles.tabButtonTextActive
+                                selectedTab === 'VisualSteps' && styles.tabButtonTextActive
                             ]}>Game View</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[
                                 styles.tabButton,
-                                selectedTab === 'ViewTwo' && styles.tabButtonActive
                             ]}
-                            onPress={() => setSelectedTab('ViewTwo')}
+                            onPress={() => setSelectedTab('Steps')}
                             activeOpacity={1}
                         >
                             <Text style={[
                                 styles.tabButtonText,
-                                selectedTab === 'ViewTwo' && styles.tabButtonTextActive
+                                selectedTab === 'Steps' && styles.tabButtonTextActive
                             ]}>List View</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.tabButton,
+                            ]}
+                            onPress={() => setSelectedTab('Referrals')}
+                            activeOpacity={1}
+                        >
+                            <Text style={[
+                                styles.tabButtonText,
+                                selectedTab === 'Referrals' && styles.tabButtonTextActive
+                            ]}>Referrals</Text>
                         </TouchableOpacity>
                     </View>
                     {/* Line for showing selected tab */}
                     <View style={[
                         styles.tabUnderline,
-                        selectedTab === 'ViewTwo'
-                            ? styles.tabUnderlineRight
-                            : styles.tabUnderlineLeft
+                        selectedTab === 'VisualSteps' && styles.tabUnderlineLeft,
+                        selectedTab === 'Steps' && styles.tabUnderlineMiddle,
+                        selectedTab === 'Referrals' && styles.tabUnderlineRight
                     ]} />
                     {/* Content Container */}
                     <View style={styles.tabContentContainer}>
-                        {selectedTab === 'ViewOne' ? (
+                        {selectedTab === 'VisualSteps' ? (
                             <ScrollView
                                 style={{ flex: 1, width: '100%' }}
                                 contentContainerStyle={{
@@ -310,10 +375,10 @@ const CompetitionGamePage: React.FC = () => {
                                                 {leaderboard.map((user, idx) => {
                                                     const steps = user.steps ?? 0;
                                                     const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
-                                                    const x = getRandomX(user.userId || user.id);
+                                                    const x = getRandomX(user.user_id || user.id);
                                                     return (
                                                         <View
-                                                            key={user.userId || user.id || idx}
+                                                            key={user.user_id || user.id || idx}
                                                             style={{
                                                                 position: 'absolute',
                                                                 left: x,
@@ -333,8 +398,11 @@ const CompetitionGamePage: React.FC = () => {
                                                                 }
                                                                 style={styles.stickFigureFace}
                                                             />
-                                                            <Text style={styles.stickFigureUsername}>
-                                                                {user.username?.slice(0, 10) || user.userId}
+                                                            <Text style={[
+                                                                    styles.stickFigureUsername,
+                                                                    winners.includes(user.user_id) && {color: '#7eff77ff', fontFamily: 'Lexend-Bold',}
+                                                                ]}>
+                                                                {user.username?.slice(0, 25) || user.user_id}
                                                             </Text>
                                                         </View>
                                                     );
@@ -345,68 +413,82 @@ const CompetitionGamePage: React.FC = () => {
                                 })()}
                             </ScrollView>
                         ) : (
-                            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
-                                {/* Podium for Top 3 */}
-                                <View style={styles.podiumRow}>
-                                    {[1, 0, 2].map((podiumIdx, i) => {
-                                        const user = leaderboard[podiumIdx];
-                                        if (!user) return <View key={i} style={styles.podiumEmpty} />;
-                                        return (
-                                            <View key={user.userId || user.id || i} style={[
-                                                styles.podiumUser,
-                                                podiumIdx === 0 && styles.podiumUserFirst
-                                            ]}>
+                            selectedTab === 'Referrals' && referralsLeaderboard.length === 0 ? (
+                                <View>
+                                    <Text>No referrals in this competition.</Text>
+                                </View>
+                            ) : (
+                                <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
+                                    {/* Podium for Top 3 */}
+                                    <View style={styles.podiumRow}>
+                                        {[1, 0, 2].map((podiumIdx, i) => {
+                                            const user = resultsToDisplay[podiumIdx];
+                                            if (!user) return <View key={i} style={styles.podiumEmpty} />;
+                                            return (
+                                                <View key={user.user_id || user.id || i} style={[
+                                                    styles.podiumUser,
+                                                    podiumIdx === 0 && styles.podiumUserFirst
+                                                ]}>
+                                                    <Image
+                                                        source={
+                                                            user.profileImageUrl
+                                                                ? { uri: user.profileImageUrl }
+                                                                : require('@components/blank-profile-picture.png')
+                                                        }
+                                                        style={[
+                                                            styles.podiumImage,
+                                                            podiumIdx === 0 && styles.podiumImageFirst
+                                                        ]}
+                                                    />
+                                                    <View style={styles.podiumBadge}>
+                                                        <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
+                                                    </View>
+                                                    <Text style={[
+                                                        styles.podiumUsername, 
+                                                        winners.includes(user.user_id) && {color: '#7eff77ff', fontFamily: 'Lexend-Bold',}
+                                                    ]}>{user.username?.slice(0, 25) || user.user_id}</Text>
+                                                    <Text style={styles.podiumSteps}>
+                                                        {selectedTab === 'Referrals' ? `${user?.referral_count ?? 0} referrals` : `${user?.steps ?? 0} steps`}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                    {/* Rest of leaderboard */}
+                                    <View>
+                                        {resultsToDisplay.slice(3).map((user, idx) => (
+                                            <View
+                                                key={user.user_id || user.id || idx}
+                                                style={[
+                                                    styles.leaderboardRow,
+                                                    user.user_id === userID && styles.leaderboardRowCurrent
+                                                ]}
+                                            >
+                                                <Text style={[
+                                                    styles.leaderboardRank,
+                                                    user.user_id === userID && styles.leaderboardRankCurrent
+                                                ]}>{idx + 4}</Text>
                                                 <Image
                                                     source={
                                                         user.profileImageUrl
                                                             ? { uri: user.profileImageUrl }
                                                             : require('@components/blank-profile-picture.png')
                                                     }
-                                                    style={[
-                                                        styles.podiumImage,
-                                                        podiumIdx === 0 && styles.podiumImageFirst
-                                                    ]}
+                                                    style={styles.leaderboardAvatar}
                                                 />
-                                                <View style={styles.podiumBadge}>
-                                                    <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
-                                                </View>
-                                                <Text style={styles.podiumUsername}>{user.username?.slice(0, 10) || user.userId}</Text>
-                                                <Text style={styles.podiumSteps}>{user.steps ?? 0} steps</Text>
+                                                <Text style={[
+                                                    styles.leaderboardUsername,
+                                                    winners.includes(user.user_id) && {color: '#7eff77ff', fontFamily: 'Lexend-Bold',}
+                                                ]}>{user.username?.slice(0, 25) || user.user_id}</Text>
+                                                <Text style={[
+                                                    styles.leaderboardSteps,
+                                                    user.user_id === userID && styles.leaderboardStepsCurrent
+                                                ]}>{selectedTab === 'Referrals' ? `${user?.referral_count ?? 0} referrals` : `${user?.steps ?? 0} steps`}</Text>
                                             </View>
-                                        );
-                                    })}
-                                </View>
-                                {/* Rest of leaderboard */}
-                                <View>
-                                    {leaderboard.slice(3).map((user, idx) => (
-                                        <View
-                                            key={user.userId || user.id || idx}
-                                            style={[
-                                                styles.leaderboardRow,
-                                                user.userId === userID && styles.leaderboardRowCurrent
-                                            ]}
-                                        >
-                                            <Text style={[
-                                                styles.leaderboardRank,
-                                                user.userId === userID && styles.leaderboardRankCurrent
-                                            ]}>{idx + 4}</Text>
-                                            <Image
-                                                source={
-                                                    user.profileImageUrl
-                                                        ? { uri: user.profileImageUrl }
-                                                        : require('@components/blank-profile-picture.png')
-                                                }
-                                                style={styles.leaderboardAvatar}
-                                            />
-                                            <Text style={styles.leaderboardUsername}>{user.username?.slice(0, 12) || user.userId}</Text>
-                                            <Text style={[
-                                                styles.leaderboardSteps,
-                                                user.userId === userID && styles.leaderboardStepsCurrent
-                                            ]}>{user.steps ?? 0} steps</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </ScrollView>
+                                        ))}
+                                    </View>
+                                </ScrollView>
+                            )
                         )}
                     </View>
                 </View>
@@ -508,14 +590,17 @@ const styles = StyleSheet.create({
         color: '#74FF6D',
     },
     tabUnderline: {
-        borderBottomWidth: 1,
+        borderBottomWidth: 1.5,
         borderBottomColor: '#74FF6D',
-        width: '47%',
-        top: -1,
+        width: '31%',
+        top: -2,
     },
     tabUnderlineLeft: {
         alignSelf: 'flex-start',
         left: 10,
+    },
+    tabUnderlineMiddle: {
+        alignSelf: 'center',
     },
     tabUnderlineRight: {
         alignSelf: 'flex-end',
