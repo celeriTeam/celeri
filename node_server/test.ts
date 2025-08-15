@@ -103,9 +103,9 @@ const addCompetitionSteps = async (user_id: string, steps: number) => {
     }
 };
 
-const getCompetitionData = async () => {
+const getCurrentCompetitionData = async () => {
     try {
-        const response = await api.get(`/competition-steps/data`);
+        const response = await api.get(`/competition-steps/current-data`);
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
@@ -231,7 +231,7 @@ const sendWaitingMessage = async (message: string) => {
 };
 
 const grabData = async () => {
-    getCompetitionData().then(data => {
+    getCurrentCompetitionData().then(data => {
         dataContainer.innerHTML = JSON.stringify(data, null, 2);
     }).catch(error => {
         console.error('Error fetching data:', error);

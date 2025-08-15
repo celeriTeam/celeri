@@ -189,7 +189,7 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
                 You agree to indemnify Celeri for claims arising from your
                 breach or participation.{'\n\n'}
                 11. Contact{'\n'}
-                Questions? Email us at support@[yourapp].com.{'\n\n'}
+                Questions? Email us at appceleri@gmail.com.{'\n\n'}
                 By tapping “I agree,” you confirm that you have read,
                 understood, and agree to all of the above Terms & Conditions. {'\n\n'}
               </Text>

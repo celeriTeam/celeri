@@ -1,6 +1,35 @@
 import admin from "firebase-admin";
 import sql from '../db/sql.js';
 
+const referalWinner = async (competition_id: string): Promise<string | null> => {
+    const result = await sql`
+        WITH referral_counts AS (
+            SELECT
+                referral,
+                COUNT(*) AS count
+            FROM competition_steps
+            WHERE competition_id = ${competition_id}
+            AND referral IS NOT NULL
+            GROUP BY referral
+        ),
+        ranked_referrals AS (
+            SELECT
+                referral,
+                count,
+                RANK() OVER (ORDER BY count DESC) AS rank
+            FROM referral_counts
+        )
+        SELECT
+            CASE
+                WHEN COUNT(*) = 1 THEN MAX(referral)
+                ELSE NULL
+            END AS most_frequent_referral
+        FROM ranked_referrals
+        WHERE rank = 1;
+    `
+    return result[0]?.most_frequent_referral ?? null;
+};
+
 export const runEndCompetitionJob = async () => {
     try {
         const expiredCompetitions = await sql`
@@ -24,9 +53,24 @@ export const runEndCompetitionJob = async () => {
 
 export const endCompetitionById = async (competitionId: number) => {
     try {
+        // set winners
+        const userList = await sql`
+            SELECT * FROM competition_steps
+            WHERE competition_id = ${competitionId}
+            ORDER BY steps desc
+        `
+        const firstPlaceUserId = userList[0].user_id;
+
+        const medianIndex = Math.floor(userList.length / 2);
+        const medianUserId = userList[medianIndex].user_id;
+
+        const referralUserId = await referalWinner(competitionId.toString());
         await sql`
             UPDATE competitions 
-            SET is_active = false 
+            SET is_active = false,
+            first_place_winner=${firstPlaceUserId},
+            median_winner=${medianUserId},
+            referral_winner=${referralUserId}
             WHERE id = ${competitionId}
         `;
 
@@ -48,7 +92,10 @@ export const endCompetitionById = async (competitionId: number) => {
 
             // Update user comp status in firebase
             const userRef = admin.firestore().collection('users').doc(user_id);
-            await userRef.update({ inCompetition: false });
+            await userRef.update({ 
+                inCompetition: false,
+                referral: null,
+            });
 
             // Send notifs
             for (const token of tokens) {

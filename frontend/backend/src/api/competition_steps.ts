@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { api } from '../api';
 
-export const addCompetitionUser = async (user_id: string) => {
+export const addCompetitionUser = async (user_id: string, referral_id: string | null) => {
     try {
         const response = await api.post(`/competition-steps/add-user`,
-            { user_id }
+            { user_id, referral_id }
         );
         return response.data;
     } catch (error: any) {
@@ -33,9 +33,23 @@ export const addCompetitionSteps = async (user_id: string, steps: number) => {
     }
 };
 
-export const getCompetitionData = async () => {
+export const getCurrentCompetitionData = async () => {
     try {
-        const response = await api.get(`/competition-steps/data`);
+        const response = await api.get(`/competition-steps/current-data`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch competition data:', error);
+            return null;
+        }
+    }
+}
+
+export const getCompetitionData = async (competition_id: string) => {
+    try {
+        const response = await api.get(`/competition-steps/data?competition_id=${competition_id}`);
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
@@ -86,6 +100,20 @@ export const setCompetitionHasSeenResults = async (user_id: string, competition_
             return error.response.data;
         } else {
             console.error('Failed to set competition has seen results:', error);
+            return null;
+        }
+    }
+}
+
+export const getReferralsData = async (competition_id: string) => {
+    try {
+        const response = await api.get(`/competition-steps/referrals?competition_id=${competition_id}`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch referrals data:', error);
             return null;
         }
     }

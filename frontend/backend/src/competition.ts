@@ -24,7 +24,8 @@ export const writeConsentForm = async (userId: string, payment: string, referral
         // Update the payment and consent fields
         await updateDoc(userRef, {
             payment: payment,
-            consent: true
+            consent: true,
+            referral: referral,
         });
     } catch (error) {
         console.log("Error writing consent form:", error);
@@ -102,3 +103,19 @@ export const getUserProfilesBatch = async (userIds: string[]) => {
         })
     );
 };
+
+// GET referral id
+export const getReferral = async (id: string): Promise<string | null> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", id));
+        if (userDoc.exists() && userDoc.data()?.referral !== undefined) {
+            return userDoc.data()?.referral;
+        } else {
+            console.error("getSteps - error: No such document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("getSteps - Error fetching user document:", error);
+        return null;
+    }
+}

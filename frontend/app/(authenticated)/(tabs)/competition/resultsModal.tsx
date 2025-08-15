@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCurrentCompetition } from '@backend/src/api/competitions';
-import { getCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
+import { getCurrentCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 
@@ -16,23 +16,54 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 type Results = {
-    competition_id: string,
-    start_time: string,
-    end_time: string,
-    is_active: boolean,
     user_id: string,
     steps: number,
     rank: string
 };
 
-type Props = {
-    results: Results[];
+type PrevData = {
+    competition_id: string,
+    start_time: string,
+    end_time: string,
+    is_active: boolean,
+    first_place_winner: string | null,
+    median_winner: string | null,
+    referral_winner: string | null,
 };
 
-const ResultsModal: React.FC<Props> = ({ results }) => {
+type ReferralResults = {
+    rank: number,
+    user_id: string,
+    referral_count: number
+};
+
+type Props = {
+    results: Results[];
+    prevData: PrevData;
+    referralResults: ReferralResults[];
+};
+
+type UserInfo = {
+    user_id: string,
+    username?: string,
+    profileImageUrl?: string,
+}
+
+type Profile = { username?: string; profileImageUrl?: string };
+
+const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) => {
     const { userID, name } = useUser();
     const [resultsWithUserInfo, setResultsWithUserInfo] = useState<any[]>([]);
+    const [referralResultsWithUserInfo, setReferralResultsWithUserInfo] = useState<any[]>([]);
     const [userInfo, setUserInfo] = useState<any>(null);
+    const [firstPlaceUserInfo, setFirstPlaceUserInfo] = useState<UserInfo | null>(null);
+    const [medianUserInfo, setMedianUserInfo] = useState<UserInfo | null>(null);
+    const [referralUserInfo, setReferralUserInfo] = useState<UserInfo | null>(null);
+    const [selectedTab, setSelectedTab] = useState<'Steps' | 'Referrals'>('Steps');
+
+    const resultsToDisplay = selectedTab === 'Steps'
+    ? resultsWithUserInfo
+    : referralResultsWithUserInfo;
 
     const grabUsersInfo = async () => {
         try {
@@ -44,7 +75,6 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
             // Get user info (steps, rank) for each
             const userInfos = await Promise.all(
                 userIds.map(async (userId: string) => {
-                    type Profile = { username?: string; profileImageUrl?: string };
                     const profile: Profile = profiles.find((p: any) => p.userId === userId) || {};
                     if (userId === userID) {
                         setUserInfo({
@@ -64,6 +94,50 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
                 })
             );
             setResultsWithUserInfo(userInfos);
+
+            if (referralResults) {
+                const userIds = referralResults.map((u: any) => u.user_id || u.id);
+                const referralProfiles = await getUserProfilesBatch(userIds);
+                const referralUserInfos = await Promise.all(
+                    userIds.map(async (userId: string) => {
+                        const profile: Profile = referralProfiles.find((p: any) => p.userId === userId) || {};
+                        return {
+                            user_id: userId,
+                            username: profile.username || '',
+                            profileImageUrl: profile.profileImageUrl || '',
+                            referral_count: referralResults.find((r: ReferralResults) => r.user_id === userId)?.referral_count || 0,
+                            rank: referralResults.find((r: ReferralResults) => r.user_id === userId)?.rank || '-1'
+                        };
+                    })
+                );
+                setReferralResultsWithUserInfo(referralUserInfos);
+            }
+
+            // Winners
+            if (prevData.first_place_winner) {
+                const profile: Profile = profiles.find((p: any) => p.userId === prevData.first_place_winner) || {};
+                setFirstPlaceUserInfo({
+                    user_id: prevData.first_place_winner,
+                    username: profile.username || '',
+                    profileImageUrl: profile.profileImageUrl || ''
+                })
+            }
+            if (prevData.median_winner) {
+                const profile: Profile = profiles.find((p: any) => p.userId === prevData.median_winner) || {};
+                setMedianUserInfo({
+                    user_id: prevData.median_winner,
+                    username: profile.username || '',
+                    profileImageUrl: profile.profileImageUrl || ''
+                })
+            }
+            if (prevData.referral_winner) {
+                const profile: Profile = profiles.find((p: any) => p.userId === prevData.referral_winner) || {};
+                setReferralUserInfo({
+                    user_id: prevData.referral_winner,
+                    username: profile.username || '',
+                    profileImageUrl: profile.profileImageUrl || ''
+                })
+            }
         } catch (err) {
             console.error('Error fetching user info in results modal:', err);
         }
@@ -71,101 +145,194 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
 
     useEffect (() => {
         grabUsersInfo();
-    }, [results, userID]);
+    }, [results, userID, prevData, referralResultsWithUserInfo]);
 
     return (
-        <View style={{ marginTop: 20, }}>
-            {/* Competition times (based on first item) */}
-            {/* {results[0] && (
-                <View style={{ alignItems: 'center', marginVertical: 10 }}>
-                    <Text>Competition Start: {formatTime(leaderboard[0].start_time)}</Text>
-                    <Text>Competition End: {formatTime(leaderboard[0].end_time)}</Text>
-                </View>
-            )} */}
-
+        <View style={{ height: '100%' }}>
             <Text style={styles.header}>Hey {name}! Here are the results of the competition:</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Competition times (based on first item) */}
+                {/* {results[0] && (
+                    <View style={{ alignItems: 'center', marginVertical: 10 }}>
+                        <Text>Competition Start: {formatTime(leaderboard[0].start_time)}</Text>
+                        <Text>Competition End: {formatTime(leaderboard[0].end_time)}</Text>
+                    </View>
+                )} */}
+                <View style={{ marginTop: 10 }} />
 
-            <View style={styles.profileRow}>
-                <Image
-                    source={
-                        userInfo?.profileImageUrl
-                            ? { uri: userInfo?.profileImageUrl }
-                            : require('@components/blank-profile-picture.png')
-                    }
-                    style={styles.profileImage}
-                />
-                <View style={styles.profileInfo}>
-                    <Text style={styles.profileName}>
-                        {userInfo?.username}
-                    </Text>
-                    <Text style={styles.profileSteps}>
-                        {userInfo?.steps ?? 0} steps
-                    </Text>
-                    <Text style={styles.profileRank}>
-                        {userInfo?.rank !== '-1' ? `Rank: ${userInfo?.rank}` : 'Rank: N/A'}
-                    </Text>
+
+                <View style={styles.profileRow}>
+                    <Image
+                        source={
+                            userInfo?.profileImageUrl
+                                ? { uri: userInfo?.profileImageUrl }
+                                : require('@components/blank-profile-picture.png')
+                        }
+                        style={styles.profileImage}
+                    />
+                    <View style={styles.profileInfo}>
+                        <Text style={styles.profileName}>
+                            {userInfo?.username}
+                        </Text>
+                        <Text style={styles.profileSteps}>
+                            {userInfo?.steps ?? 0} steps
+                        </Text>
+                        <Text style={styles.profileRank}>
+                            {userInfo?.rank !== '-1' ? `Rank: ${userInfo?.rank}` : 'Rank: N/A'}
+                        </Text>
+                    </View>
                 </View>
-            </View>
-            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
-                {/* Podium for Top 3 */}
-                <View style={styles.podiumRow}>
-                    {[1, 0, 2].map((podiumIdx, i) => {
-                        const user = resultsWithUserInfo[podiumIdx];
-                        if (!user) return <View key={i} style={styles.podiumEmpty} />;
-                        return (
-                            <View key={user?.user_id || i} style={[
-                                styles.podiumUser,
-                                podiumIdx === 0 && styles.podiumUserFirst
-                            ]}>
-                                <Image
-                                    source={
-                                        user?.profileImageUrl
-                                            ? { uri: user?.profileImageUrl }
-                                            : require('@components/blank-profile-picture.png')
-                                    }
-                                    style={[
-                                        styles.podiumImage,
-                                        podiumIdx === 0 && styles.podiumImageFirst
-                                    ]}
-                                />
-                                <View style={styles.podiumBadge}>
-                                    <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
-                                </View>
-                                <Text style={styles.podiumUsername}>{user?.username?.slice(0, 10) || user?.user_id}</Text>
-                                <Text style={styles.podiumSteps}>{user?.steps ?? 0} steps</Text>
-                            </View>
-                        );
-                    })}
-                </View>
-                <View>
-                    {resultsWithUserInfo.slice(3).map((user, idx) => (
-                        <View
-                            key={user.user_id || idx}
-                            style={[
-                                styles.leaderboardRow,
-                                user.user_id === userID && styles.leaderboardRowCurrent
-                            ]}
-                        >
-                            <Text style={[
-                                styles.leaderboardRank,
-                                user.user_id === userID && styles.leaderboardRankCurrent
-                            ]}>{idx + 4}</Text>
+                <View style={styles.winnerContainer}>
+                    <View style={styles.winnerRow}>
+                        <Text style={styles.winnerText}>First Place Winner</Text>
+                        <View style={styles.row}>
                             <Image
                                 source={
-                                    user.profileImageUrl
-                                        ? { uri: user.profileImageUrl }
+                                    firstPlaceUserInfo?.profileImageUrl
+                                        ? { uri: firstPlaceUserInfo?.profileImageUrl }
                                         : require('@components/blank-profile-picture.png')
                                 }
-                                style={styles.leaderboardAvatar}
+                                style={styles.winnerPfp}
                             />
-                            <Text style={styles.leaderboardUsername}>{user.username?.slice(0, 12) || user.user_id}</Text>
-                            <Text style={[
-                                styles.leaderboardSteps,
-                                user.user_id === userID && styles.leaderboardStepsCurrent
-                            ]}>{user.steps ?? 0} steps</Text>
+                            <Text style={styles.winnerUsername}>{firstPlaceUserInfo?.username || 'None'}</Text>
                         </View>
-                    ))}
+                    </View>
+                    <View style={styles.winnerRow}>
+                        <Text style={styles.winnerText}>Median Winner</Text>
+                        <View style={styles.row}>
+                            <Image
+                                source={
+                                    medianUserInfo?.profileImageUrl
+                                        ? { uri: medianUserInfo?.profileImageUrl }
+                                        : require('@components/blank-profile-picture.png')
+                                }
+                                style={styles.winnerPfp}
+                            />
+                            <Text style={styles.winnerUsername}>{medianUserInfo?.username || 'None'}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.winnerRow}>
+                        <Text style={styles.winnerText}>Referrals Winner</Text>
+                        <View style={styles.row}>
+                            <Image
+                                source={
+                                    referralUserInfo?.profileImageUrl
+                                        ? { uri: referralUserInfo?.profileImageUrl }
+                                        : require('@components/blank-profile-picture.png')
+                                }
+                                style={styles.winnerPfp}
+                            />
+                            <Text style={styles.winnerUsername}>{referralUserInfo?.username || 'None'}</Text>
+                        </View>
+                    </View>
                 </View>
+                <View style={styles.tabSwitcher}>
+                    <TouchableOpacity
+                        style={[
+                            styles.tabButton,
+                        ]}
+                        onPress={() => setSelectedTab('Steps')}
+                        activeOpacity={1}
+                    >
+                        <Text style={[
+                            styles.tabButtonText,
+                            selectedTab === 'Steps' && styles.tabButtonTextActive
+                        ]}>Steps</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.tabButton,
+                        ]}
+                        onPress={() => setSelectedTab('Referrals')}
+                        activeOpacity={1}
+                    >
+                        <Text style={[
+                            styles.tabButtonText,
+                            selectedTab === 'Referrals' && styles.tabButtonTextActive
+                        ]}>Referrals</Text>
+                    </TouchableOpacity>
+                </View>
+                {/* Line for showing selected tab */}
+                <View style={[
+                    styles.tabUnderline,
+                    selectedTab === 'Referrals'
+                        ? styles.tabUnderlineRight
+                        : styles.tabUnderlineLeft
+                ]} />
+                <View style={styles.scrollView}>
+                    {selectedTab === 'Referrals' && referralResultsWithUserInfo.length === 0 ? (
+                        <View>
+                            <Text>No referrals in this competition.</Text>
+                        </View>
+                    ) : (
+                        <>
+                            {/* Podium for Top 3 */}
+                            <View style={styles.podiumRow}>
+                                {[1, 0, 2].map((podiumIdx, i) => {
+                                    const user = resultsToDisplay[podiumIdx];
+                                    if (!user) return <View key={i} style={styles.podiumEmpty} />;
+                                    return (
+                                        <View key={user?.user_id || i} style={[
+                                            styles.podiumUser,
+                                            podiumIdx === 0 && styles.podiumUserFirst
+                                        ]}>
+                                            <Image
+                                                source={
+                                                    user?.profileImageUrl
+                                                        ? { uri: user?.profileImageUrl }
+                                                        : require('@components/blank-profile-picture.png')
+                                                }
+                                                style={[
+                                                    styles.podiumImage,
+                                                    podiumIdx === 0 && styles.podiumImageFirst
+                                                ]}
+                                            />
+                                            <View style={styles.podiumBadge}>
+                                                <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
+                                            </View>
+                                            <Text style={styles.podiumUsername}>{user?.username?.slice(0, 10) || user?.user_id}</Text>
+                                            <Text style={styles.podiumSteps}>
+                                                {selectedTab === 'Steps' ? `${user?.steps ?? 0} steps` : `${user?.referral_count ?? 0} referrals`}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                            <View>
+                                {resultsToDisplay.slice(3).map((user, idx) => (
+                                    <View
+                                        key={user.user_id || idx}
+                                        style={[
+                                            styles.leaderboardRow,
+                                            user.user_id === userID && styles.leaderboardRowCurrent
+                                        ]}
+                                    >
+                                        <Text style={[
+                                            styles.leaderboardRank,
+                                            user.user_id === userID && styles.leaderboardRankCurrent
+                                        ]}>{idx + 4}</Text>
+                                        <Image
+                                            source={
+                                                user.profileImageUrl
+                                                    ? { uri: user.profileImageUrl }
+                                                    : require('@components/blank-profile-picture.png')
+                                            }
+                                            style={styles.leaderboardAvatar}
+                                        />
+                                        <Text style={styles.leaderboardUsername}>{user.username?.slice(0, 12) || user.user_id}</Text>
+                                        <Text style={[
+                                            styles.leaderboardSteps,
+                                            user.user_id === userID && styles.leaderboardStepsCurrent
+                                        ]}>
+                                            {selectedTab === 'Steps' ? `${user?.steps ?? 0} steps` : `${user?.referral_count ?? 0} referrals`}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        </>
+                    )}
+                </View>
+                <View style={{ marginTop: 10 }} />
             </ScrollView>
         </View>
     )
@@ -176,8 +343,9 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontFamily: 'Lexend',
         fontSize: 15,
-        paddingBottom: 25,
         marginHorizontal: 5,
+        marginTop: -30,
+        marginBottom: 10,
     },
     profileRow: {
         alignItems: 'center',
@@ -234,10 +402,63 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: '#00000080',
         borderRadius: 10,
-        marginTop: 20,
+        marginTop: 10,
         maxHeight: '70%',
         padding: 10,
         paddingTop: 25,
+    },
+    tabSwitcher: {
+        flexDirection: 'row',
+        backgroundColor: '#65656580',
+        borderRadius: 10,
+        width: '100%',
+        marginTop: 10,
+    },
+    tabButton: {
+        flex: 1,
+        padding: 10,
+        alignItems: 'center',
+        borderRadius: 15,
+        borderBottomColor: 'transparent',
+        borderBottomWidth: 2,
+    },
+    tabButtonActive: {
+        borderBottomColor: '#74FF6D',
+        borderBottomWidth: 2,
+    },
+    tabButtonText: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'Lexend',
+    },
+    tabButtonTextActive: {
+        color: '#74FF6D',
+    },
+    tabUnderline: {
+        borderBottomWidth: 1.5,
+        borderBottomColor: '#74FF6D',
+        width: '47%',
+        top: -2,
+    },
+    tabUnderlineLeft: {
+        alignSelf: 'flex-start',
+        left: 10,
+    },
+    tabUnderlineRight: {
+        alignSelf: 'flex-end',
+        right: 10,
+    },
+    tabContentContainer: {
+        flex: 1,
+        backgroundColor: '#65656580',
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        marginTop: 8,
+        paddingVertical: 15,
+        minHeight: 120,
+        // width: '100%',
+        justifyContent: 'flex-start',
+        alignItems: 'stretch',
     },
     podiumRow: {
         flexDirection: 'row',
@@ -337,6 +558,37 @@ const styles = StyleSheet.create({
     leaderboardStepsCurrent: {
         color: '#fff',
     },
+    winnerContainer: {
+
+    },
+    winnerRow: {
+
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 5,
+        marginBottom: 15,
+        marginLeft: 10,
+    },
+    winnerText: {
+        fontFamily: 'Lexend',
+        fontSize: 15,
+        color: '#fff',
+    },
+    winnerPfp: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 10,
+        borderWidth: 1.5,
+        borderColor: '#fff',
+    },
+    winnerUsername: {
+        fontFamily: 'Lexend',
+        fontSize: 13,
+        color: '#fff',
+    }
 });
 
 export default ResultsModal;
