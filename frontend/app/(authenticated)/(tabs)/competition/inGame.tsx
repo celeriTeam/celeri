@@ -7,6 +7,7 @@ import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { useRouter } from 'expo-router';
+import { getFriendsList } from '@/backend/src/users';
 
 type Results = {
     user_id: string,
@@ -29,12 +30,20 @@ const CompetitionGamePage: React.FC = () => {
     const [referralsLeaderboard, setReferralsLeaderboard] = useState<any[]>([]);
     const [selectedTab, setSelectedTab] = useState<'VisualSteps' | 'Steps' | 'Referrals'>('VisualSteps');
     const [refreshing, setRefreshing] = useState(false);
-    const [winners, updateWinners] = useState<string[]>([])
+    const [winners, updateWinners] = useState<string[]>([]);
+    const [friendsToggle, setFriendsToggle] = useState<boolean>(false);
+    const [friendsList, setFriendsList] = useState<any[]>([]);
     const router = useRouter();
 
     const resultsToDisplay = selectedTab === 'Referrals'
-    ? referralsLeaderboard
-    : leaderboard;
+        ? referralsLeaderboard
+        : leaderboard;
+
+    const filteredResults = friendsToggle
+        ? resultsToDisplay.filter(user =>
+            friendsList.includes(user.user_id) || user.user_id === userID
+        )
+        : resultsToDisplay;
 
     // Timer update helper
     const updateTimer = (endTimeStr: string) => {
@@ -85,7 +94,7 @@ const CompetitionGamePage: React.FC = () => {
             // referrals
             const currentCompetition = await fetchCurrentCompetition();
             const referralsData = await getReferralsData(currentCompetition.id);
-            if (referralsData) {
+            if (referralsData.length > 0) {
                 const userIds = referralsData.map((u: any) => u.user_id || u.id);
                 const referralProfiles = await getUserProfilesBatch(userIds);
                 const referralUserInfos = await Promise.all(
@@ -112,7 +121,7 @@ const CompetitionGamePage: React.FC = () => {
 
                 console.log('First place user ID:', firstPlaceUserId);
                 console.log('Median place user ID:', medianUserId);
-                const fetchedWinners = referralsData
+                const fetchedWinners = referralsData.length > 0
                     ? [firstPlaceUserId, medianUserId, referralsData[0].user_id]
                     : [firstPlaceUserId, medianUserId];
                 updateWinners(fetchedWinners);
@@ -123,8 +132,18 @@ const CompetitionGamePage: React.FC = () => {
         }
     };
 
+    const fetchFriendsList = async () => {
+        try {
+            const response = await getFriendsList(userID);
+            setFriendsList(response);
+        } catch (err) {
+            console.error('Error fetching friends list:', err);
+        }
+    };
+
     useEffect(() => {
         fetchLeaderboard();
+        fetchFriendsList();
     }, []);
 
     const refreshGameData = useCallback(async () => {
@@ -223,9 +242,21 @@ const CompetitionGamePage: React.FC = () => {
                     </View>
                 </View>
                 <View style={styles.leaderboardContainer}>
-                    <Text style={styles.leaderboardTitle}>
-                        Leaderboard
-                    </Text>
+                    <View style={{  flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                        <Text style={styles.leaderboardTitle}>
+                            Leaderboard
+                        </Text>
+                        <TouchableOpacity 
+                            style={{ marginLeft: 'auto', marginRight: 5, }} 
+                            onPress={() => setFriendsToggle(!friendsToggle)} 
+                            activeOpacity={1}
+                        >
+                            <Image
+                                source={require('@assets/icons/friends.png')}
+                                style={[styles.friendsImage, friendsToggle && { tintColor: '#7eff77ff' }]}
+                            />
+                        </TouchableOpacity>
+                    </View>
                     {/* Tab Switcher */}
                     <View style={styles.tabSwitcher}>
                         <TouchableOpacity
@@ -372,7 +403,7 @@ const CompetitionGamePage: React.FC = () => {
                                                 height: trackHeight,
                                                 position: 'relative',
                                             }}>
-                                                {leaderboard.map((user, idx) => {
+                                                {filteredResults.map((user, idx) => {
                                                     const steps = user.steps ?? 0;
                                                     const y = trackHeight - BOTTOM_MARGIN - (steps / maxSteps) * (trackHeight - TOP_MARGIN - BOTTOM_MARGIN);
                                                     const x = getRandomX(user.user_id || user.id);
@@ -415,14 +446,14 @@ const CompetitionGamePage: React.FC = () => {
                         ) : (
                             selectedTab === 'Referrals' && referralsLeaderboard.length === 0 ? (
                                 <View>
-                                    <Text>No referrals in this competition.</Text>
+                                    <Text style={{ color: '#fff', fontFamily: 'Lexend', alignSelf: 'center', margin: 10, }}>No referrals in this competition.</Text>
                                 </View>
                             ) : (
                                 <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 20 }}>
                                     {/* Podium for Top 3 */}
                                     <View style={styles.podiumRow}>
                                         {[1, 0, 2].map((podiumIdx, i) => {
-                                            const user = resultsToDisplay[podiumIdx];
+                                            const user = filteredResults[podiumIdx];
                                             if (!user) return <View key={i} style={styles.podiumEmpty} />;
                                             return (
                                                 <View key={user.user_id || user.id || i} style={[
@@ -441,7 +472,7 @@ const CompetitionGamePage: React.FC = () => {
                                                         ]}
                                                     />
                                                     <View style={styles.podiumBadge}>
-                                                        <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
+                                                        <Text style={styles.podiumBadgeText}>{user?.rank ?? podiumIdx + 1}</Text>
                                                     </View>
                                                     <Text style={[
                                                         styles.podiumUsername, 
@@ -456,7 +487,7 @@ const CompetitionGamePage: React.FC = () => {
                                     </View>
                                     {/* Rest of leaderboard */}
                                     <View>
-                                        {resultsToDisplay.slice(3).map((user, idx) => (
+                                        {filteredResults.slice(3).map((user, idx) => (
                                             <View
                                                 key={user.user_id || user.id || idx}
                                                 style={[
@@ -562,6 +593,11 @@ const styles = StyleSheet.create({
         fontFamily: 'Lexend',
         fontSize: 24,
         marginBottom: 10,
+    },
+    friendsImage: {
+        width: 24,
+        height: 24,
+        tintColor: '#ffffffaa',
     },
     tabSwitcher: {
         flexDirection: 'row',

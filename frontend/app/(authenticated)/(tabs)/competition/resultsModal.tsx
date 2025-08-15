@@ -5,6 +5,7 @@ import { fetchCurrentCompetition } from '@backend/src/api/competitions';
 import { getCurrentCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
+import { getFriendsList } from '@/backend/src/users';
 
 const { width, height } = Dimensions.get('window');
 
@@ -60,10 +61,18 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
     const [medianUserInfo, setMedianUserInfo] = useState<UserInfo | null>(null);
     const [referralUserInfo, setReferralUserInfo] = useState<UserInfo | null>(null);
     const [selectedTab, setSelectedTab] = useState<'Steps' | 'Referrals'>('Steps');
+    const [friendsToggle, setFriendsToggle] = useState<boolean>(false);
+    const [friendsList, setFriendsList] = useState<any[]>([]);
 
     const resultsToDisplay = selectedTab === 'Steps'
-    ? resultsWithUserInfo
-    : referralResultsWithUserInfo;
+        ? resultsWithUserInfo
+        : referralResultsWithUserInfo;
+
+    const filteredResults = friendsToggle
+        ? resultsToDisplay.filter(user =>
+            friendsList.includes(user.user_id) || user.user_id === userID
+        )
+        : resultsToDisplay;
 
     const grabUsersInfo = async () => {
         try {
@@ -95,7 +104,7 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
             );
             setResultsWithUserInfo(userInfos);
 
-            if (referralResults) {
+            if (referralResults.length > 0) {
                 const userIds = referralResults.map((u: any) => u.user_id || u.id);
                 const referralProfiles = await getUserProfilesBatch(userIds);
                 const referralUserInfos = await Promise.all(
@@ -111,6 +120,14 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                     })
                 );
                 setReferralResultsWithUserInfo(referralUserInfos);
+                if (prevData.referral_winner) {
+                    const profile: Profile = referralProfiles.find((p: any) => p.userId === prevData.referral_winner) || {};
+                    setReferralUserInfo({
+                        user_id: prevData.referral_winner,
+                        username: profile.username || '',
+                        profileImageUrl: profile.profileImageUrl || ''
+                    })
+                }
             }
 
             // Winners
@@ -130,21 +147,23 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                     profileImageUrl: profile.profileImageUrl || ''
                 })
             }
-            if (prevData.referral_winner) {
-                const profile: Profile = profiles.find((p: any) => p.userId === prevData.referral_winner) || {};
-                setReferralUserInfo({
-                    user_id: prevData.referral_winner,
-                    username: profile.username || '',
-                    profileImageUrl: profile.profileImageUrl || ''
-                })
-            }
         } catch (err) {
             console.error('Error fetching user info in results modal:', err);
+        }
+    };
+    
+    const fetchFriendsList = async () => {
+        try {
+            const response = await getFriendsList(userID);
+            setFriendsList(response);
+        } catch (err) {
+            console.error('Error fetching friends list:', err);
         }
     };
 
     useEffect (() => {
         grabUsersInfo();
+        fetchFriendsList();
     }, [results, userID, prevData, referralResultsWithUserInfo]);
 
     return (
@@ -214,18 +233,34 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                     <View style={styles.winnerRow}>
                         <Text style={styles.winnerText}>Referrals Winner</Text>
                         <View style={styles.row}>
-                            <Image
-                                source={
-                                    referralUserInfo?.profileImageUrl
-                                        ? { uri: referralUserInfo?.profileImageUrl }
-                                        : require('@components/blank-profile-picture.png')
-                                }
-                                style={styles.winnerPfp}
-                            />
-                            <Text style={styles.winnerUsername}>{referralUserInfo?.username || 'None'}</Text>
+                            {referralUserInfo === null ? (
+                                <Text style={[styles.winnerUsername, { color: '#ffffffaa' }]}>None</Text>
+                            ) : (
+                                <>
+                                    <Image
+                                        source={
+                                            referralUserInfo?.profileImageUrl
+                                                ? { uri: referralUserInfo?.profileImageUrl }
+                                                : require('@components/blank-profile-picture.png')
+                                        }
+                                        style={styles.winnerPfp}
+                                    />
+                                    <Text style={styles.winnerUsername}>{referralUserInfo?.username || 'None'}</Text>
+                                </>
+                            )}
                         </View>
                     </View>
                 </View>
+                <TouchableOpacity 
+                    style={{ marginLeft: 'auto', marginRight: 5, marginTop: -20, }} 
+                    onPress={() => setFriendsToggle(!friendsToggle)} 
+                    activeOpacity={1}
+                >
+                    <Image
+                        source={require('@assets/icons/friends.png')}
+                        style={[styles.friendsImage, friendsToggle && { tintColor: '#7eff77ff' }]}
+                    />
+                </TouchableOpacity>
                 <View style={styles.tabSwitcher}>
                     <TouchableOpacity
                         style={[
@@ -262,14 +297,14 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                 <View style={styles.scrollView}>
                     {selectedTab === 'Referrals' && referralResultsWithUserInfo.length === 0 ? (
                         <View>
-                            <Text>No referrals in this competition.</Text>
+                            <Text style={{ color: '#fff', fontFamily: 'Lexend', alignSelf: 'center', margin: 10, }}>No referrals in this competition.</Text>
                         </View>
                     ) : (
                         <>
                             {/* Podium for Top 3 */}
                             <View style={styles.podiumRow}>
                                 {[1, 0, 2].map((podiumIdx, i) => {
-                                    const user = resultsToDisplay[podiumIdx];
+                                    const user = filteredResults[podiumIdx];
                                     if (!user) return <View key={i} style={styles.podiumEmpty} />;
                                     return (
                                         <View key={user?.user_id || i} style={[
@@ -288,7 +323,7 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                                                 ]}
                                             />
                                             <View style={styles.podiumBadge}>
-                                                <Text style={styles.podiumBadgeText}>{podiumIdx + 1}</Text>
+                                                <Text style={styles.podiumBadgeText}>{user?.rank ?? podiumIdx + 1}</Text>
                                             </View>
                                             <Text style={styles.podiumUsername}>{user?.username?.slice(0, 10) || user?.user_id}</Text>
                                             <Text style={styles.podiumSteps}>
@@ -299,7 +334,7 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
                                 })}
                             </View>
                             <View>
-                                {resultsToDisplay.slice(3).map((user, idx) => (
+                                {filteredResults.slice(3).map((user, idx) => (
                                     <View
                                         key={user.user_id || idx}
                                         style={[
@@ -406,6 +441,11 @@ const styles = StyleSheet.create({
         maxHeight: '70%',
         padding: 10,
         paddingTop: 25,
+    },
+    friendsImage: {
+        width: 24,
+        height: 24,
+        tintColor: '#ffffffaa',
     },
     tabSwitcher: {
         flexDirection: 'row',

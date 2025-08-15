@@ -635,3 +635,19 @@ export const setIsIn1v1 = async (userID: string, isIn1v1: boolean): Promise<void
         console.error('setIsIn1v1 - Error updating isIn1v1:', error);
     }
 }
+
+export const getFriendsList = async (userID: string): Promise<string[]> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userID));
+        if (userDoc.exists() && userDoc.data()?.friendsList) {
+            const friendsList = userDoc.data()?.friendsList;
+            return friendsList;
+        } else {
+            console.error("getLastLogin - error: No such document!");
+            return [];
+        }
+    } catch (error) {
+        console.error('getFriendsList - Error getting friends list:', error);
+        return [];
+    }
+}
