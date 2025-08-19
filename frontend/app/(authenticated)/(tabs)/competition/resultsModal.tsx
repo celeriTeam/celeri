@@ -33,7 +33,7 @@ type PrevData = {
 };
 
 type ReferralResults = {
-    rank: number,
+    rank: string,
     user_id: string,
     referral_count: number
 };
@@ -164,7 +164,7 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
     useEffect (() => {
         grabUsersInfo();
         fetchFriendsList();
-    }, [results, userID, prevData, referralResultsWithUserInfo]);
+    }, [results, referralResults, userID, prevData, referralResultsWithUserInfo]);
 
     return (
         <View style={{ height: '100%' }}>

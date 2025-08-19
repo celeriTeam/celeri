@@ -287,7 +287,7 @@ router.get('/referrals', async (req, res) => {
       WITH referral_counts AS (
         SELECT
           referral AS user_id,
-          COUNT(*) AS referral_count
+          COUNT(*)::INT AS referral_count
         FROM competition_steps
         WHERE competition_id = ${competition_id}
         AND referral IS NOT NULL
