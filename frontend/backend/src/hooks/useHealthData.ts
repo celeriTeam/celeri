@@ -9,11 +9,12 @@ import AppleHealthKit, {
     HealthObserver,
     HealthUnit,
 } from "react-native-health";
-import { 
-  initialize as healthConnectInitialize,
-  requestPermission as healthConnectRequestPermission,
-  readRecords
-} from 'react-native-health-connect';
+// REMOVE the static Health Connect import:
+// import { 
+//   initialize as healthConnectInitialize,
+//   requestPermission as healthConnectRequestPermission,
+//   readRecords
+// } from 'react-native-health-connect';
 import { newsFunctions } from '../news';
 import { set } from 'date-fns';
 import { get } from 'http';
@@ -34,6 +35,24 @@ const permissions: HealthKitPermissions = {
     },
 };
 
+// Add below imports section:
+const isAndroid = Platform.OS === 'android';
+
+// Dynamic Health Connect refs (undefined on iOS or if not installed)
+let healthConnectInitialize: undefined | (() => Promise<boolean>);
+let healthConnectRequestPermission: any;
+let healthConnectReadRecords: any;
+
+if (isAndroid) {
+  try {
+    const hc = require('react-native-health-connect');
+    healthConnectInitialize = hc.initialize;
+    healthConnectRequestPermission = hc.requestPermission;
+    healthConnectReadRecords = hc.readRecords;
+  } catch (e) {
+    console.warn('[health-connect] not available:', (e as Error)?.message);
+  }
+}
 
 const useHealthData = () => {
     // console.log("useHealthData is running");
@@ -64,29 +83,21 @@ const useHealthData = () => {
                     resolve(flooredSteps);
                 });
             });
-        } else if (Platform.OS === 'android') {
+        } else if (isAndroid) {
+            if (!healthConnectReadRecords) return 0;
             try {
                 console.log('fetching android steps...');
                 const date = new Date(options.date || Date.now());
-                const startOfDay = new Date(date);
-                startOfDay.setHours(0, 0, 0, 0);
-    
-                const endOfDay = new Date(date);
-                endOfDay.setHours(23, 59, 59, 999);
-    
-                // Use readRecords to get steps for today
-                const results = await readRecords('Steps', {
-                    timeRangeFilter: {
-                        operator: 'between',
-                        startTime: startOfDay.toISOString(),
-                        endTime: endOfDay.toISOString(),
-                    }
+                const startOfDay = new Date(date); startOfDay.setHours(0,0,0,0);
+                const endOfDay = new Date(date); endOfDay.setHours(23,59,59,999);
+                const results = await healthConnectReadRecords('Steps', {
+                  timeRangeFilter: {
+                    operator: 'between',
+                    startTime: startOfDay.toISOString(),
+                    endTime: endOfDay.toISOString(),
+                  }
                 });
-
-                console.log('Android steps results:', results);
-    
-                // Sum up the steps from all records
-                const totalSteps = results.records.reduce((sum, record) => sum + record.count, 0);
+                const totalSteps = results.records.reduce((sum: number, r: any) => sum + (r.count || 0), 0);
                 return totalSteps;
             } catch (error) {
                 console.log('Error reading Android steps:', error);
@@ -173,10 +184,10 @@ const useHealthData = () => {
                     }
                 });
             });
-        } else if (Platform.OS === 'android') {
+        } else if (isAndroid) {
+            if (!healthConnectReadRecords) return 0;
             try {
-                // Read step records from Health Connect
-                const results = await readRecords('Steps', {
+                const results = await healthConnectReadRecords('Steps', {
                     timeRangeFilter: {
                         operator: 'between',
                         startTime: stepsLastUpdate.toISOString(),
@@ -185,7 +196,7 @@ const useHealthData = () => {
                 });
 
                 // Sort records by start time
-                const sortedRecords = results.records.sort((a, b) =>
+                const sortedRecords = results.records.sort((a: { startTime: string | number | Date; }, b: { startTime: string | number | Date; }) =>
                     new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
                 );
 
@@ -336,23 +347,24 @@ const useHealthData = () => {
                     }
                 });
             });
-        } else {
+        } else if (isAndroid) {
+            if (!healthConnectReadRecords) return 0;
             try {
-                const records = await readRecords('Steps', {
-                    timeRangeFilter: {
-                        operator: 'between',
-                        startTime: start.toISOString(),
-                        endTime: end.toISOString()
-                    }
-                });
-                return records.records.reduce((sum, r) => sum + r.count, 0);
+              const records = await healthConnectReadRecords('Steps', {
+                timeRangeFilter: {
+                  operator: 'between',
+                  startTime: start.toISOString(),
+                  endTime: end.toISOString()
+                }
+              });
+              return records.records.reduce((sum: number, r: any) => sum + r.count, 0);
             } catch (err) {
-                console.log("Android steps error:", err);
-                return 0;
+              console.log("Android steps error:", err);
+              return 0;
             }
         }
+        return 0;
     };
-
     const get1v1Steps = async (userID: string) => {
         const { startTime, current1v1ID } = await get1v1StartTime(userID);
         if (startTime === null || current1v1ID === null) return;
@@ -545,32 +557,29 @@ const useHealthData = () => {
                     resolve(true);
                 });
             });
-        } else if (Platform.OS === 'android') {
+        } else if (isAndroid) {
+            if (!healthConnectInitialize || !healthConnectRequestPermission) {
+              console.log('Health Connect APIs unavailable');
+              setHasPermissions(false);
+              return false;
+            }
             try {
-                console.log('trying to initialize Health Connect on android...');
-                const initialized = await healthConnectInitialize();
-                if (!initialized) {
-                    console.log('Health Connect not available');
-                    return false;
-                }
-
-                const granted = await healthConnectRequestPermission([
-                    { accessType: 'read', recordType: 'Steps' }
-                ]);
-                const hasStepsPermission = granted.some(p => 
-                  p.recordType === 'Steps' && p.accessType === 'read'
-                );
-
-                // if (!granted) {
-                //     console.log('Health Connect permission denied');
-                //     return false;
-                // }
-
-                setHasPermissions(hasStepsPermission);
-                return hasStepsPermission;
-            } catch (error) {
-                console.log('Android Health Connect error:', error);
+              const initialized = await healthConnectInitialize();
+              if (!initialized) {
+                console.log('Health Connect not initialized');
+                setHasPermissions(false);
                 return false;
+              }
+              const granted = await healthConnectRequestPermission([
+                { accessType: 'read', recordType: 'Steps' }
+              ]);
+              const hasSteps = granted?.some((p: any) => p.recordType === 'Steps' && p.accessType === 'read');
+              setHasPermissions(!!hasSteps);
+              return !!hasSteps;
+            } catch (e) {
+              console.log('Android Health Connect error:', e);
+              setHasPermissions(false);
+              return false;
             }
         }
         return false;

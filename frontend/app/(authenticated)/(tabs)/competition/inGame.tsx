@@ -8,6 +8,7 @@ import { getUserProfilesBatch } from '@/backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { useRouter } from 'expo-router';
 import { getFriendsList } from '@/backend/src/users';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native'; // <-- added
 
 type Results = {
     user_id: string,
@@ -33,6 +34,7 @@ const CompetitionGamePage: React.FC = () => {
     const [winners, updateWinners] = useState<string[]>([]);
     const [friendsToggle, setFriendsToggle] = useState<boolean>(false);
     const [friendsList, setFriendsList] = useState<any[]>([]);
+    const [liveSteps, setLiveSteps] = useState(0); // <-- added
     const router = useRouter();
 
     const resultsToDisplay = selectedTab === 'Referrals'
@@ -202,6 +204,25 @@ const CompetitionGamePage: React.FC = () => {
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
 
+    useEffect(() => {
+        // Listen only on iOS (session started previously in index.tsx)
+        const stepSession = NativeModules.StepSession;
+        if (Platform.OS !== 'ios' || !stepSession) return;
+        const emitter = new NativeEventEmitter(stepSession);
+        const stepSub = emitter.addListener('StepUpdate', (e: any) => {
+            const steps = typeof e?.steps === 'number' ? e.steps : 0;
+            setLiveSteps(steps);
+            console.log('[StepSession] Live steps update:', steps);
+        });
+        const endSub = emitter.addListener('SessionEnded', (e: any) => {
+            console.log('[StepSession] Session ended:', e);
+        });
+        return () => {
+            stepSub.remove();
+            endSub.remove();
+        };
+    }, []);
+
     return (
         <LinearGradient
             colors={['#000000', '#024405']}
@@ -211,6 +232,12 @@ const CompetitionGamePage: React.FC = () => {
             <Text style={styles.timer}>
                 {timeLeft}
             </Text>
+
+            {Platform.OS === 'ios' && (
+                <Text style={styles.liveSteps}>
+                    Live Steps: {liveSteps}
+                </Text>
+            )}
             <ScrollView
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
@@ -791,6 +818,12 @@ const styles = StyleSheet.create({
         marginTop: 4,
         textAlign: 'center',
         maxWidth: 70,
+    },
+    liveSteps: {
+        color: '#74FF6D',
+        fontFamily: 'Lexend',
+        fontSize: 16,
+        marginBottom: 6,
     },
 });
 

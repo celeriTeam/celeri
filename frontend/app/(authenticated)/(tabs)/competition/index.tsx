@@ -10,6 +10,8 @@ import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
+import { NativeModules, AppState, Platform } from 'react-native';
+const { StepSession } = NativeModules;
 
 const { width, height } = Dimensions.get('window');
 
@@ -121,6 +123,30 @@ const CompetitionLandingPage: React.FC = () => {
             return;
         }
         console.log("testing two");
+
+        // 2) Permissions
+
+        if (Platform.OS === 'ios') {
+            const ok = await StepSession?.ensurePermissions();
+            console.log('ensurePermissions result:', ok);
+            if (!ok) {
+                Alert.alert('Permissions', 'Health permissions denied');
+                return;
+            }
+
+            const startAt = new Date();
+            const endAt = new Date(startAt.getTime() + 60 * 60 * 1000); // +1 hour
+
+            await StepSession.start({
+                startAtIso: startAt.toISOString(),
+                endAtIso: endAt.toISOString(),
+                uploadUrl: 'https://example.com/steps', // replace with real endpoint or leave placeholder
+                authHeader: null,
+                competitionId: currentGame?.id ?? 'temp'
+            });
+        }
+
+
         const referralId: string | null = await getReferral(userID);
         await addCompetitionUser(userID, referralId);
         await setUserInCompetition(userID);
