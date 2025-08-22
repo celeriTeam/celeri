@@ -78,7 +78,8 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
 export const get1v1History = async (userID: string) => {
     const historyQuery = query(
         collection(db, '1v1s'),
-        where('processed', '==', true)
+        where('processed', '==', true),
+        where('participants', 'array-contains', userID)
     );
 
     const historySnapshot = await getDocs(historyQuery);
@@ -107,6 +108,42 @@ export const get1v1History = async (userID: string) => {
 
     // console.log('1v1 History:', history);
     return history;
+};
+
+export const get1v1Results = async (userID: string) => {
+    try {
+        // check hasSeenResults[userID]: if true, return null
+        const resultsQuery = query(
+            collection(db, '1v1s'),
+            where('participants', 'array-contains', userID),
+            where("hasSeenResults", "array-contains", { userId: userID, seen: false })
+        );
+        if (!resultsQuery) {
+            return null;
+        }
+        const resultsSnapshot = await getDocs(resultsQuery);
+        const resultsDoc = resultsSnapshot.docs[0];
+        const isCurrentUserA = resultsDoc.data().participants[0] === userID;
+        const opponentDoc = await getDoc(doc(db, 'users', resultsDoc.data().participants[isCurrentUserA ? 1 : 0]));
+        const currentUserDoc = await getDoc(doc(db, 'users', userID));
+        return {
+            current1v1ID: resultsDoc.id, 
+            startTime: resultsDoc.data().startTime,
+            endTime: resultsDoc.data().endTime,
+            participants: resultsDoc.data().participants,
+            progress: resultsDoc.data().progress,
+            userInfo: {
+                currentUserPfp: currentUserDoc.data()?.profileImageUrl || "",
+                opponentName: opponentDoc.data()?.name || "",
+                opponentUsername: opponentDoc.data()?.username || "",
+                opponentPfp: opponentDoc.data()?.profileImageUrl || ""
+            }
+        };
+
+    } catch (err) {
+         console.error("get1v1Results - Error fetching user document: ", err);
+         return null;
+    }
 };
 
 export const get1v1StartTime = async (userID: string) => {
@@ -151,6 +188,10 @@ export const create1v1 = async (Request1v1ID: string) => {
     // set the following:
     // startTime: timestamp,
 	// endTime: null,
+    // hasSeenResults: [
+    //  { userId: userA, seen: boolean },
+    //  { userId: userB, seen: boolean }
+    // ],
 	// lastSynced: {
 	// 	userA: timestamp,
 	// 	userB: timestamp
@@ -216,6 +257,10 @@ export const create1v1 = async (Request1v1ID: string) => {
             }
         },
         processed: false,
+        hasSeenResults: [
+            { userId: senderID, seen: false },
+            { userId: receiverID, seen: false }
+        ],
     }
 
     const new1v1Ref = await addDoc(collection(db, '1v1s'), new1v1Data);
@@ -224,4 +269,27 @@ export const create1v1 = async (Request1v1ID: string) => {
         current1v1ID: new1v1Ref.id,
         ...new1v1Data,
     };
+};
+
+export const set1v1HasSeenResults = async (userID: string, duelID: string) => {
+    try {
+        const duelRef = doc(db, '1v1s', duelID);
+        const duelDoc = await getDoc(duelRef);
+        if (!duelDoc.exists()) {
+            return;
+        }
+
+        const duelData = duelDoc.data();
+        const hasSeenResults = duelData.hasSeenResults || [];
+
+        const updatedResults = hasSeenResults.map((entry: { userID: string; seen: boolean }) =>
+            entry.userID === userID ? { ...entry, seen: true } : entry
+        );
+
+        await updateDoc(duelRef, {
+            hasSeenResults: updatedResults,
+        });
+    } catch (err) {
+        return;
+    }
 };
