@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, getFirestore } from 'firebase/firestore';
 import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -46,10 +46,17 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
     const [userExpanded, setUserExpanded] = useState<string | null>(null);
+    const [friends, setFriends] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
+                // get friends
+                const meRef = doc(db, "users", userID);
+                const meSnap = await getDoc(meRef);
+                const meData = meSnap.data() || {};
+                const friendsList: string[] = meData.friendsList || [];
+                setFriends(friendsList);
                 const querySnapshot = await getDocs(collection(db, 'users'));
                 const usersArray: User[] = [];
 
@@ -68,6 +75,15 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                 });
 
 
+                // ✅ Sort friends first
+                const sorted = usersArray.sort((a, b) => {
+                    const aFriend = friends.includes(a.id);
+                    const bFriend = friends.includes(b.id);
+                    if (aFriend && !bFriend) return -1;
+                    if (!aFriend && bFriend) return 1;
+                    return 0;
+                });
+
                 // for search functionality
                 setCurrentGroupUsersArray(usersArray);
                 setFilteredUsers(usersArray);
@@ -79,7 +95,7 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         };
 
         fetchData(userID);
-    }, [userID]);
+    }, [userID, friends]);
     
 
     const handleChallenge = async (id: string) => {
@@ -124,7 +140,15 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
             return nameMatch || usernameMatch;
         });
 
-        setFilteredUsers(filtered);
+        const sorted = filtered.sort((a, b) => {
+            const aFriend = friends.includes(a.id);
+            const bFriend = friends.includes(b.id);
+            if (aFriend && !bFriend) return -1;
+            if (!aFriend && bFriend) return 1;
+            return 0;
+        });
+
+        setFilteredUsers(sorted);
     };
 
     const handleUserPress = (user: User) => {
@@ -161,7 +185,12 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                                     />
                                     <View>
                                         <View style={[styles.row, { justifyContent: 'space-between', width: '92%' }]}>
-                                            <Text style={styles.memberName}>{user?.name}</Text>
+                                            <Text style={styles.memberName}>
+                                                {user?.name}{" "}
+                                                {friends.includes(user.id) && ( 
+                                                    <Text style={{ color: "#7eff77bb", fontSize: 10 }}>(Friend)</Text> 
+                                                )}
+                                            </Text>
                                             <Text style={styles.memberLastLogin}>{user?.lastLogin}</Text>
                                         </View>
                                         <Text style={styles.memberUserName}>@{user?.username}</Text>
