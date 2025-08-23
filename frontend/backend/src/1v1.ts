@@ -116,12 +116,12 @@ export const get1v1Results = async (userID: string) => {
         const resultsQuery = query(
             collection(db, '1v1s'),
             where('participants', 'array-contains', userID),
-            where("hasSeenResults", "array-contains", { userId: userID, seen: false })
+            where(`hasSeenResults.${userID}`, "==", false)
         );
-        if (!resultsQuery) {
+        const resultsSnapshot = await getDocs(resultsQuery);
+        if (resultsSnapshot.empty) {
             return null;
         }
-        const resultsSnapshot = await getDocs(resultsQuery);
         const resultsDoc = resultsSnapshot.docs[0];
         const isCurrentUserA = resultsDoc.data().participants[0] === userID;
         const opponentDoc = await getDoc(doc(db, 'users', resultsDoc.data().participants[isCurrentUserA ? 1 : 0]));
@@ -188,10 +188,10 @@ export const create1v1 = async (Request1v1ID: string) => {
     // set the following:
     // startTime: timestamp,
 	// endTime: null,
-    // hasSeenResults: [
-    //  { userId: userA, seen: boolean },
-    //  { userId: userB, seen: boolean }
-    // ],
+    // hasSeenResults: {
+    //  userA: boolean,
+    //  userB: boolean
+    // },
 	// lastSynced: {
 	// 	userA: timestamp,
 	// 	userB: timestamp
@@ -257,10 +257,10 @@ export const create1v1 = async (Request1v1ID: string) => {
             }
         },
         processed: false,
-        hasSeenResults: [
-            { userId: senderID, seen: false },
-            { userId: receiverID, seen: false }
-        ],
+        hasSeenResults: {
+            [senderID]: false,
+            [receiverID]: false
+        },
     }
 
     const new1v1Ref = await addDoc(collection(db, '1v1s'), new1v1Data);
@@ -278,18 +278,19 @@ export const set1v1HasSeenResults = async (userID: string, duelID: string) => {
         if (!duelDoc.exists()) {
             return;
         }
-
+        
         const duelData = duelDoc.data();
         const hasSeenResults = duelData.hasSeenResults || [];
 
-        const updatedResults = hasSeenResults.map((entry: { userID: string; seen: boolean }) =>
-            entry.userID === userID ? { ...entry, seen: true } : entry
-        );
+        const updatedResults = {
+            ...hasSeenResults,
+            [userID]: true,
+        };
 
         await updateDoc(duelRef, {
             hasSeenResults: updatedResults,
         });
     } catch (err) {
-        return;
+        console.error("Failed to update hasSeenResults:", err);
     }
 };
