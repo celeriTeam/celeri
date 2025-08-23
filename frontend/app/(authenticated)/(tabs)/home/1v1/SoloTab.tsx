@@ -54,7 +54,7 @@ const SoloTab: React.FC<Props> = ({
     const [selectedTab, setSelectedTab] = useState('Received');
     const [storeModal, setStoreModal] = useState(false);
     const [historyModal, setHistoryModal] = useState(false);
-    const [showResults, setShowResults] = useState<any | false>(false);
+    const [showResults, setShowResults] = useState<any | null>(null);
     const [userSearchModal, setUserSearchModal] = useState(false);
     const [requestModalVisible, setRequestModalVisible] = useState<any>({});
     const [timeLeftString, setTimeLeftString] = useState<string>('00:00:00');
@@ -146,30 +146,22 @@ const SoloTab: React.FC<Props> = ({
         return hours + minutes / 60 + seconds / 3600;
     };
     
-    const refreshGameData = useCallback(async () => {
-        const game = {}; // await grab1v1();
-        setCurrent1v1(game);
-        if (!game) {
+    const grabResults = async () => {
+        if (!current1v1) {
             const results = await get1v1Results(userID);
-            setShowResults(results || false);
+            setShowResults(results || null);
         };
-    }, []);
+    };
 
-    // 1v1 silent notif foreground change
-    // useEffect(() => {
-    //     const unsubscribe = messaging().onMessage(remoteMsg => {
-    //         if (remoteMsg.data?.type === 'TOGGLE_1V1') {
-    //             refreshGameData();
-    //         }
-    //     });
-
-    //     return unsubscribe;
-    // }, [refreshGameData]);
+    useEffect(() => {
+        grabResults();
+    }, [current1v1]);
     
     const handleResultsClose = async () => {
+        if (!showResults) return;
         const duelId = showResults.current1v1ID;
-        setShowResults(false);
-        // console.log('competition id: ', competition_id);
+        setShowResults(null);
+        console.log('duelId: ', duelId);
         set1v1HasSeenResults(userID, duelId);
     };
 
@@ -474,31 +466,6 @@ const SoloTab: React.FC<Props> = ({
                             </ScrollView>
                         )}
                     </View>
-                    <Modal
-                        visible={!!showResults}
-                        transparent={true}
-                        animationType="fade"
-                        onRequestClose={() => setShowResults(false)}
-                    >
-                        <View style={styles.modalOverlay} >
-                            <View style={[styles.modalContainer, { height: '75%' }]}>
-                                <LinearGradient
-                                    colors={['#000000', '#024405']}
-                                    style={styles.insideContainer}
-                                >
-                                    <TouchableOpacity style={styles.modalCloseButton} onPress={handleResultsClose}>
-                                        <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
-                                    </TouchableOpacity>
-                                    <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
-                                        <ResultsModal
-                                            results={showResults}
-                                        />
-                                        {/* <Text style={{ color: '#fff' }}>{JSON.stringify(showResults, null, 2)}</Text> */}
-                                    </View>
-                                </LinearGradient>
-                            </View>
-                        </View>
-                    </Modal>
                 </>
             )}
             
@@ -616,6 +583,32 @@ const SoloTab: React.FC<Props> = ({
                         </View>
                     </View>
                 </TouchableOpacity>
+            </Modal>
+
+            {/* Results Modal */}
+            <Modal
+                visible={!!showResults}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowResults(null)}
+            >
+                <View style={styles.modalOverlay} >
+                    <View style={[styles.modalContainer, { height: '75%' }]}>
+                        <LinearGradient
+                            colors={['#000000', '#024405']}
+                            style={styles.insideContainer}
+                        >
+                            <TouchableOpacity style={styles.modalCloseButton} onPress={handleResultsClose}>
+                                <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
+                            </TouchableOpacity>
+                            <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
+                                {showResults!== null && (
+                                    <ResultsModal results={showResults} />
+                                )}
+                            </View>
+                        </LinearGradient>
+                    </View>
+                </View>
             </Modal>
         </>
     );

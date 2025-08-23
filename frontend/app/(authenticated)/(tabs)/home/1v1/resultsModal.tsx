@@ -48,28 +48,36 @@ type Profile = { username?: string; profileImageUrl?: string };
 const ResultsModal: React.FC<Props> = ({ results }) => {
     const { userID, name } = useUser();
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
-    const [updatedResults, setUpdatedResults] = useState<Results>(results);
+    const [updatedResults, setUpdatedResults] = useState<Results | null>(results);
     const [opponentID, setOpponentID] = useState<string>("");
     const [userSteps, setUserSteps] = useState<number>(0);
     const [opponentSteps, setOpponentSteps] = useState<number>(0);
     const [winner, setWinner] = useState<"User" | "Opponent" | null>(null);
 
-    useEffect(() => {
+    const setInfo = async () => {
         setUpdatedResults(results);
-        setOpponentID(results.participants.find((id: string) => id !== userID) || "");
-        setUserSteps(results?.progress?.[userID]?.[24] ?? 0);
-        setOpponentSteps(results?.progress?.[opponentID]?.[24] ?? 0);
-        if (userSteps > opponentSteps) {
+        const currentOpponentID = results ? results.participants.find((id: string) => id !== userID) || "" : "";
+        setOpponentID(currentOpponentID);
+        const currentUserSteps = results?.progress?.[userID]?.[24] ?? 0;
+        const currentOpponentSteps = results?.progress?.[currentOpponentID]?.[24] ?? 0;
+        setUserSteps(currentUserSteps);
+        setOpponentSteps(currentOpponentSteps);
+        if (currentUserSteps > currentOpponentSteps) {
             setWinner("User");
-        } else if (opponentSteps > userSteps) {
+        } else if (currentOpponentSteps > currentUserSteps) {
             setWinner("Opponent");
         }
+    };
+
+    useEffect(() => {
+        setInfo();
     }, [results])
 
     const StepsChart = ({ current1v1 }: { current1v1: any }) => {
+        if (!current1v1 || !results) {
+            return ( <View /> );
+        }
         const labels = ["0", "4h", "8h", "12h", "16h", "20h", "24h"];
-
-        const opponentID = current1v1.participants.find((id: string) => id !== userID);
 
         const getStepsArray = (userId: string) => {
             const progress = current1v1.progress[userId] || {};
@@ -86,123 +94,156 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
                 {
                     data: userSteps,
                     color: () => "#FF6060",
-                    strokeWidth: 1,
+                    strokeWidth: 2,
                 },
                 {
                     data: opponentSteps,
                     color: () => "#7464FF",
-                    strokeWidth: 1,
+                    strokeWidth: 2,
                 }
             ]
         };
 
         return (
-            <LineChart
-                data={data}
-                width={width * 0.7}
-                height={verticalScale(200)}
-                fromZero
-                withVerticalLabels
-                withDots
-                withInnerLines
-                yAxisInterval={1}
-                chartConfig={{
-                    backgroundColor: 'rgba(2, 68, 5, 1)',
-                    backgroundGradientFrom: 'rgba(2, 68, 5, 1)',
-                    backgroundGradientTo: 'rgba(2, 68, 5, 1)',
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                    propsForDots: {
-                        r: "4",
-                        strokeWidth: "1",
-                        stroke: "#fff",
-                    },
-                    propsForBackgroundLines: {
-                        strokeWidth: 0.5,
-                        stroke: "rgba(255,255,255,0.1)",
-                    },
-                    propsForLabels: {
-                        fontFamily: "Lexend",
-                        fontSize: 9,
-                    },
-                    style: {
-                        borderRadius: 12,
-                    }
-                }}
-                style={{
-                    marginVertical: 8,
-                    borderRadius: 14,
-                    paddingTop: 15,
-                    paddingBottom: 5,
-                    backgroundColor: 'rgba(2, 68, 5, 1)',
-                }}
-                decorator={() => {
-                    return tooltipPos.visible ? (
-                        <View style={{
-                            position: 'absolute',
-                            left: tooltipPos.x - 20,
-                            top: tooltipPos.y - 25,
-                            backgroundColor: 'rgba(0,0,0,0.7)',
-                            padding: 5,
-                            borderRadius: 5
-                        }}>
-                            <Text style={{ fontFamily: 'Lexend', fontSize: 11, color: '#fff', includeFontPadding: false }}>
-                                {tooltipPos.value}
-                            </Text>
-                        </View>
-                    ) : null;
-                }}
-                onDataPointClick={({ x, y, value }) => {
-                    setTooltipPos({
-                        x: x,
-                        y: y,
-                        value: value,
-                        visible: true
-                    });
-                }}
-            />
+            <View>
+                <View style={{ alignItems: 'center' }}>
+                    {/* Y–axis title (rotated) */}
+                    <Text style={{
+                        position: 'absolute',
+                        left: 0,                  // adjust to taste
+                        transform: [{ rotate: '-90deg' }],
+                        fontFamily: 'Lexend',
+                        fontSize: 14,
+                        color: '#fff',
+                        zIndex: 1,
+                        top: (verticalScale(100)),
+                    }}>
+                        Steps
+                    </Text>
+
+                    <LineChart
+                        data={data}
+                        width={width * 0.7}
+                        height={verticalScale(200)}
+                        fromZero
+                        withVerticalLabels
+                        withDots
+                        withInnerLines
+                        yAxisInterval={1}
+                        chartConfig={{
+                            backgroundColor: 'rgba(2, 68, 5, 1)',
+                            backgroundGradientFrom: 'rgba(2, 68, 5, 1)',
+                            backgroundGradientTo: 'rgba(2, 68, 5, 1)',
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(81, 186, 81, ${opacity})`,
+                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                            propsForDots: {
+                                r: "5",
+                                strokeWidth: "2",
+                                stroke: "#fff",
+                            },
+                            propsForBackgroundLines: {
+                                strokeWidth: 1,
+                                stroke: "rgba(255,255,255,0.1)",
+                            },
+                            propsForLabels: {
+                                fontFamily: "Lexend",
+                                fontSize: 11,
+                            },
+                            style: {
+                                borderRadius: 16,
+                            }
+                        }}
+                        style={{
+                            marginTop: 8,
+                            borderRadius: 16,
+                            paddingTop: 20,
+                            backgroundColor: 'rgba(2, 68, 5, 1)',
+                            zIndex: 0,
+                        }}
+                        decorator={() => {
+                            return tooltipPos.visible ? (
+                                <View style={{
+                                    position: 'absolute',
+                                    left: tooltipPos.x - 20,
+                                    top: tooltipPos.y - 25,
+                                    backgroundColor: 'rgba(0,0,0,0.7)',
+                                    padding: 5,
+                                    borderRadius: 5
+                                }}>
+                                    <Text style={{ fontFamily: 'Lexend', fontSize: 16, color: '#fff', includeFontPadding: false }}>
+                                        {tooltipPos.value}
+                                    </Text>
+                                </View>
+                            ) : null;
+                        }}
+                        onDataPointClick={({ x, y, value }) => {
+                            setTooltipPos({
+                                x: x,
+                                y: y,
+                                value: value,
+                                visible: true
+                            });
+                        }}
+                    />
+
+                    {/* X–axis title */}
+                    <Text style={{
+                        alignSelf: 'center',
+                        fontFamily: 'Lexend',
+                        fontSize: 14,
+                        color: '#fff',
+                        zIndex: 1,
+                    }}>
+                        Time (hours)
+                    </Text>
+                </View>
+            </View>
         );
     };
+
+    if (!updatedResults) {
+        return (
+            <View></View>
+        )
+    }
 
     return (
         <View style={{ height: '100%' }}>
             <Text style={styles.header}>Hey {name}! Here are the results of the 1v1:</Text>
             <View>
                 <Text style={styles.date}>
-                    {dayjs(results.endTime.toDate()).format('MMM D, YYYY')}
+                    {dayjs(updatedResults?.endTime.toDate()).format('MMM D, YYYY')}
                 </Text>
-                <View style={styles.playerContainer}>
-                    <View style={styles.row}>
-                        <View style={[styles.rowSide, { opacity: winner === "User" ? 1 : 0.5 }]}>
-                            <Image
-                                source={results?.userInfo?.currentUserPfp ?
-                                    { uri: results?.userInfo?.currentUserPfp } :
-                                    require('@components/blank-profile-picture.png')
-                                }
-                                style={[styles.profileImage, { marginRight: 10, borderColor: "#FF606080", }]}
-                            />
-                            <View>
-                                <Text style={styles.player}>You</Text>
-                                <Text style={styles.steps}>{userSteps} steps</Text>
-                            </View>
-                        </View>
-                        <View style={[styles.rowSide, { opacity: winner === "Opponent" ? 1 : 0.5}]}>
-                            <View>
-                                <Text style={[styles.player, { textAlign: 'right', }]}>{results?.userInfo?.opponentUsername}</Text>
-                                <Text style={[styles.steps, { textAlign: 'right', }]}>{opponentSteps} steps</Text>
-                            </View>
-                            <Image
-                                source={results?.userInfo?.opponentPfp ?
-                                    { uri: results?.userInfo?.opponentPfp } :
-                                    require('@components/blank-profile-picture.png')
-                                }
-                                style={[styles.profileImage, { marginLeft: 10, borderColor: "#7464FF80", }]}
-                            />
+                <View style={[styles.row, { marginBottom: 10, }]}>
+                    <View style={[styles.rowSide, { opacity: winner === "User" ? 1 : 0.5 }]}>
+                        <Image
+                            source={updatedResults?.userInfo?.currentUserPfp ?
+                                { uri: updatedResults?.userInfo?.currentUserPfp } :
+                                require('@components/blank-profile-picture.png')
+                            }
+                            style={[styles.profileImage, { marginRight: 10, borderColor: "#FF606080", }]}
+                        />
+                        <View style={{ paddingVertical: 7, }}>
+                            <Text style={styles.player}>You</Text>
+                            <Text style={styles.steps}>{userSteps} steps</Text>
                         </View>
                     </View>
-                    <StepsChart current1v1={results} />
+                    <View style={[styles.rowSide, { opacity: winner === "Opponent" ? 1 : 0.5}]}>
+                        <View style={{ paddingVertical: 7, }}>
+                            <Text style={[styles.player, { textAlign: 'right', }]}>{updatedResults?.userInfo?.opponentUsername}</Text>
+                            <Text style={[styles.steps, { textAlign: 'right', }]}>{opponentSteps} steps</Text>
+                        </View>
+                        <Image
+                            source={updatedResults?.userInfo?.opponentPfp ?
+                                { uri: updatedResults?.userInfo?.opponentPfp } :
+                                require('@components/blank-profile-picture.png')
+                            }
+                            style={[styles.profileImage, { marginLeft: 10, borderColor: "#7464FF80", }]}
+                        />
+                    </View>
                 </View>
+                <StepsChart current1v1={updatedResults} />
             </View>
         </View>
     )
@@ -215,40 +256,13 @@ const styles = StyleSheet.create({
         fontSize: 15,
         marginHorizontal: 5,
         marginTop: -30,
-        marginBottom: 10,
+        marginBottom: 50,
     },
     date: {
         fontFamily: "Lexend",
         color: '#ffffff80',
         fontSize: 10,
-        marginBottom: 5,
-    },
-    flatList: {
-        marginTop: 10,
-        width: '100%',
-    },
-    betsContainer: {
-        backgroundColor: '#5BE35C32',
-        borderRadius: 15,
-        padding: 10,
-    },
-    wonEarningsText: {
-        fontFamily: "Lexend",
-        color: '#74FF6D',
-        fontSize: 15,
-        marginRight: 5,
-    },
-    lostEarningsText: {
-        fontFamily: "Lexend",
-        color: '#FF6060',
-        fontSize: 15,
-        marginRight: 5,
-    },
-    drawEarningsText: {
-        fontFamily: "Lexend",
-        color: '#fff',
-        fontSize: 15,
-        marginRight: 5,
+        marginBottom: 20,
     },
     row: {
         flexDirection: 'row',
@@ -260,32 +274,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    carrotIcon: {
-        textAlign: 'right',
-        color: '#888',
-    },
-    triangleText: {
-        marginHorizontal: 8,
-        fontSize: 14,
-        opacity: 0.8,
-    },
-    horizontalLine: {
-        borderBottomColor: '#ffffff80',
-        borderBottomWidth: 1,
-        marginVertical: 10,
-        width: '100%',
-        alignSelf: 'center',
-    },
-    winnerIcon: {
-        width: 7,
-        height: 33,
-        position: 'absolute',
-        left: -20,
-    },
     profileImage: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         borderWidth: 1,
     },
     playerContainer: {
@@ -300,13 +292,13 @@ const styles = StyleSheet.create({
     },
     player: {
         fontFamily: "Lexend",
-        fontSize: 11,
+        fontSize: 13,
         color: '#fff',
         flex: 1,
     },
     steps: {
         fontFamily: "Lexend",
-        fontSize: 9,
+        fontSize: 10,
         color: '#ffffffaa',
     },
 });
