@@ -63,20 +63,4 @@
   return [super application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
 }
 
-- (void)application:(UIApplication *)application
-handleEventsForBackgroundURLSession:(NSString *)identifier
-  completionHandler:(void (^)(void))completionHandler
-{
-  // Nothing to do here because we don’t keep a reference,
-  // but we MUST call completionHandler after tasks enumerate.
-  // Recreate the same session identifier so iOS hands off tasks.
-  NSURLSessionConfiguration *cfg =
-    [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:
-      [NSBundle.mainBundle.bundleIdentifier stringByAppendingString:@".steps.bg"]];
-  NSURLSession *session = [NSURLSession sessionWithConfiguration:cfg delegate:nil delegateQueue:nil];
-  [session getAllTasksWithCompletionHandler:^(__unused NSArray<__kindof NSURLSessionTask *> * _Nonnull tasks) {
-    completionHandler();
-  }];
-}
-
 @end
