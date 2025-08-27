@@ -24,9 +24,12 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {}
     },
-    "production": {}
+    "production": {
+      "ios": {}
+    }
   },
   "submit": {
     "production": {}

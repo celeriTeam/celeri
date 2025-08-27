@@ -9,6 +9,9 @@ import messaging from '@react-native-firebase/messaging';
 import { useRouter } from 'expo-router';
 import { getFriendsList } from '@/backend/src/users';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native'; // <-- added
+import { Alert } from 'react-native';
+
+const { StepSession } = NativeModules;
 
 type Results = {
     user_id: string,
@@ -205,22 +208,29 @@ const CompetitionGamePage: React.FC = () => {
     };
 
     useEffect(() => {
+        if (Platform.OS !== 'ios') return;
+            if (!StepSession) {
+            console.warn('StepSession is undefined — not linked or wrong target.');
+            return;
+            }
+            const emitter = new NativeEventEmitter(StepSession);
+            const sub = emitter.addListener('TestEvent', (e) => Alert.alert('Event', JSON.stringify(e)));
+            return () => sub.remove();
         // Listen only on iOS (session started previously in index.tsx)
-        const stepSession = NativeModules.StepSession;
-        if (Platform.OS !== 'ios' || !stepSession) return;
-        const emitter = new NativeEventEmitter(stepSession);
-        const stepSub = emitter.addListener('StepUpdate', (e: any) => {
-            const steps = typeof e?.steps === 'number' ? e.steps : 0;
-            setLiveSteps(steps);
-            console.log('[StepSession] Live steps update:', steps);
-        });
-        const endSub = emitter.addListener('SessionEnded', (e: any) => {
-            console.log('[StepSession] Session ended:', e);
-        });
-        return () => {
-            stepSub.remove();
-            endSub.remove();
-        };
+        // if (Platform.OS !== 'ios' || !stepSession) return;
+        // const emitter = new NativeEventEmitter(stepSession);
+        // const stepSub = emitter.addListener('StepUpdate', (e: any) => {
+        //     const steps = typeof e?.steps === 'number' ? e.steps : 0;
+        //     setLiveSteps(steps);
+        //     console.log('[StepSession] Live steps update:', steps);
+        // });
+        // const endSub = emitter.addListener('SessionEnded', (e: any) => {
+        //     console.log('[StepSession] Session ended:', e);
+        // });
+        // return () => {
+        //     stepSub.remove();
+        //     endSub.remove();
+        // };
     }, []);
 
     return (

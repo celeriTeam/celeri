@@ -2,8 +2,6 @@
 // import Foundation
 // import HealthKit
 
-// TEST
-
 // @objc(StepSession)
 // final class StepSession: RCTEventEmitter {
 //   // MARK: - Types
@@ -17,13 +15,20 @@
 
 //   // MARK: - HealthKit
 //   private let healthStore = HKHealthStore()
-//   private var session: HKWorkoutSession?
-//   private var builder: HKLiveWorkoutBuilder?
+//   private var workoutSessionMode = false
+//   private var stepQuery: HKQuery?
+//   private var observerQuery: HKObserverQuery?
 //   private var anchor: HKQueryAnchor?
 //   private var startDate: Date?
 //   private var stepsSinceStart: Int = 0
 //   private var minuteTimer: DispatchSourceTimer?
 //   private var isRunningFlag = false
+  
+//   // iOS 17+ workout session properties
+//   #if os(iOS)
+//   @available(iOS 17.0, *)
+//   private var session: HKWorkoutSession?
+//   #endif
 
 //   // MARK: - Background URLSession
 //   private lazy var bgSession: URLSession = {
@@ -47,8 +52,16 @@
 //   func ensurePermissions(_ resolve: @escaping RCTPromiseResolveBlock,
 //                          rejecter reject: @escaping RCTPromiseRejectBlock) {
 //     let stepType = HKObjectType.quantityType(forIdentifier: .stepCount)!
-//     let toShare: Set = [HKObjectType.workoutType()]
-//     let toRead: Set = [stepType]
+    
+//     // Always request step read permissions
+//     var toShare: Set<HKSampleType> = []
+//     var toRead: Set<HKObjectType> = [stepType]
+    
+//     // On iOS 17+, also request workout permissions
+//     if #available(iOS 17.0, *) {
+//       toShare.insert(HKObjectType.workoutType())
+//     }
+    
 //     healthStore.requestAuthorization(toShare: toShare, read: toRead) { ok, err in
 //       if let err = err { reject("perm_error", err.localizedDescription, err); return }
 //       resolve(ok)
@@ -61,7 +74,9 @@
 //              resolver resolve: @escaping RCTPromiseResolveBlock,
 //              rejecter reject: @escaping RCTPromiseRejectBlock) {
 //     guard !isRunningFlag else { resolve(true); return }
+    
 //     do {
+//       // Parse options
 //       let data = try JSONSerialization.data(withJSONObject: options, options: [])
 //       let opts = try JSONDecoder().decode(StartOptions.self, from: data)
 //       currentOpts = opts
@@ -72,27 +87,59 @@
 //       startDate = start
 //       stepsSinceStart = 0
 //       lastUploadMinute = -1
-
+      
+//       // Use workout session if iOS 17+ available
+//       if #available(iOS 17.0, *) {
+//         startWorkoutSession(start: start, resolve: resolve, reject: reject)
+//       } else {
+//         // Fallback for earlier iOS versions - just use queries
+//         startStepTracking(from: start)
+//         installMinuteTimer()
+//         enableBackgroundDelivery()
+//         isRunningFlag = true
+//         resolve(true)
+//       }
+//     } catch {
+//       reject("start_error", error.localizedDescription, error)
+//     }
+//   }
+  
+//   // iOS 17+ workout session start
+//   @available(iOS 17.0, *)
+//   private func startWorkoutSession(start: Date, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
+//     do {
 //       // Workout configuration
 //       let cfg = HKWorkoutConfiguration()
 //       cfg.activityType = .walking
 //       cfg.locationType = .indoor
 
-//       session = try HKWorkoutSession(healthStore: healthStore, configuration: cfg)
-//       builder = session!.associatedWorkoutBuilder()
-//       builder!.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: cfg)
-
-//       // Start
+//       // CORRECT INITIALIZER: Don't use healthStore parameter
+//       session = try HKWorkoutSession(configuration: cfg)
+      
+//       // Add the session to the health store
+//       healthStore.start(session!)
+    
+//       // Handle state changes
+//       session!.delegate = self
+  
+//       // Start workout
 //       session!.startActivity(with: start)
-//       builder!.beginCollection(withStart: start) { [weak self] _, _ in
-//         self?.installStepStream(from: start)
-//         self?.installMinuteTimer()
-//         self?.enableBackgroundDelivery()
-//         self?.isRunningFlag = true
-//         resolve(true)
-//       }
+//       workoutSessionMode = true
+  
+//       // Still use our step query for consistent counting
+//       startStepTracking(from: start)
+//       installMinuteTimer()
+//       enableBackgroundDelivery()
+//       isRunningFlag = true
+//       resolve(true)
 //     } catch {
-//       reject("start_error", error.localizedDescription, error)
+//       // If workout session fails, fall back to query-only approach
+//       print("Workout session failed, falling back: \(error.localizedDescription)")
+//       startStepTracking(from: start)
+//       installMinuteTimer()
+//       enableBackgroundDelivery() 
+//       isRunningFlag = true
+//       resolve(true)
 //     }
 //   }
 
@@ -100,12 +147,28 @@
 //   @objc
 //   func stop(_ resolve: @escaping RCTPromiseResolveBlock,
 //             rejecter reject: @escaping RCTPromiseRejectBlock) {
-//     minuteTimer?.cancel(); minuteTimer = nil
-//     builder?.endCollection(withEnd: Date()) { [weak self] _, _ in
-//       self?.session?.end()
-//       self?.isRunningFlag = false
-//       resolve(true)
+//     minuteTimer?.cancel()
+//     minuteTimer = nil
+    
+//     if let query = stepQuery {
+//       healthStore.stop(query)
+//       stepQuery = nil
 //     }
+    
+//     if let observer = observerQuery {
+//       healthStore.stop(observer)
+//       observerQuery = nil
+//     }
+    
+//     // End workout session if available and active
+//     if #available(iOS 17.0, *), workoutSessionMode, let session = session {
+//       healthStore.end(session)  // Use healthStore.end instead of session.end()
+//       self.session = nil
+//       workoutSessionMode = false
+//     }
+    
+//     isRunningFlag = false
+//     resolve(true)
 //   }
 
 //   @objc
@@ -113,20 +176,23 @@
 //     resolve(isRunningFlag)
 //   }
 
-//   // MARK: - Internals
-//   private func installStepStream(from start: Date) {
+//   // MARK: - Step Tracking (works on all iOS versions)
+//   private func startStepTracking(from start: Date) {
 //     let type = HKObjectType.quantityType(forIdentifier: .stepCount)!
 //     let predicate = HKQuery.predicateForSamples(withStart: start, end: nil, options: .strictStartDate)
 
-//     let q = HKAnchoredObjectQuery(type: type, predicate: predicate, anchor: anchor, limit: HKObjectQueryNoLimit) { [weak self] _, samples, _, newAnchor, _ in
+//     let query = HKAnchoredObjectQuery(type: type, predicate: predicate, anchor: anchor, limit: HKObjectQueryNoLimit) { [weak self] _, samples, _, newAnchor, _ in
 //       self?.anchor = newAnchor
 //       self?.consume(samples: samples)
 //     }
-//     q.updateHandler = { [weak self] _, samples, _, newAnchor, _ in
+    
+//     query.updateHandler = { [weak self] _, samples, _, newAnchor, _ in
 //       self?.anchor = newAnchor
 //       self?.consume(samples: samples)
 //     }
-//     healthStore.execute(q)
+    
+//     stepQuery = query
+//     healthStore.execute(query)
 //   }
 
 //   private func consume(samples: [HKSample]?) {
@@ -143,12 +209,17 @@
 //   private func enableBackgroundDelivery() {
 //     let type = HKObjectType.quantityType(forIdentifier: .stepCount)!
 //     healthStore.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
-//     let obs = HKObserverQuery(sampleType: type, predicate: nil) { [weak self] _, completion, _ in
+    
+//     let observer = HKObserverQuery(sampleType: type, predicate: nil) { [weak self] _, completion, _ in
 //       // When woken, run another anchored fetch to catch up
-//       if let start = self?.startDate { self?.installStepStream(from: start) }
+//       if let start = self?.startDate, self?.isRunningFlag == true {
+//         self?.startStepTracking(from: start)
+//       }
 //       completion()
 //     }
-//     healthStore.execute(obs)
+    
+//     observerQuery = observer
+//     healthStore.execute(observer)
 //   }
 
 //   private func installMinuteTimer() {
@@ -192,11 +263,25 @@
 //       bgSession.uploadTask(with: req, fromFile: tmp).resume()
 //     }
 //   }
-
-  
 // }
 
 // // MARK: - URLSession delegates
 // extension StepSession: URLSessionDelegate, URLSessionTaskDelegate {
 //   // Add hooks if you want logging; not required for functionality
+// }
+
+// // MARK: - HKWorkoutSessionDelegate
+// @available(iOS 17.0, *)
+// extension StepSession: HKWorkoutSessionDelegate {
+//   func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
+//     print("Workout session state changed: \(fromState.rawValue) -> \(toState.rawValue)")
+//   }
+  
+//   func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
+//     print("Workout session failed: \(error.localizedDescription)")
+//     // Fallback to regular step tracking if workout session fails
+//     if let start = startDate, isRunningFlag {
+//       startStepTracking(from: start)
+//     }
+//   }
 // }

@@ -21,6 +21,8 @@
           "fetch",
           "remote-notification"
         ],
+        "NSHealthShareUsageDescription": "We read your step count for competitions.",
+        "NSHealthUpdateUsageDescription": "We create workout sessions to track steps.",
         "CFBundleDisplayName": "Celeri"
       },
       "buildNumber": "4"
@@ -57,8 +59,9 @@
         "expo-build-properties",
         {
           "ios": {
-            "newArchEnabled": true,
-            "useFrameworks": "static"
+            "deploymentTarget": "17.0",
+            "useFrameworks": "static",
+            "newArchEnabled": true
           },
           "android": {
             "kotlinVersion": "1.9.25"

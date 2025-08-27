@@ -1,36 +1,3 @@
-// ios/<YourApp>/StepSession/StepSession.m
-#import "StepSession.h"
-
-@implementation StepSession
-
-RCT_EXPORT_MODULE(); // JS name defaults to "StepSession"
-
-- (NSArray<NSString *> *)supportedEvents
-{
-  return @[@"TestEvent"];
-}
-
-RCT_REMAP_METHOD(ping,
-                 pingWithResolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject)
-{
-  resolve(@{ @"ok": @YES, @"platform": @"ios" });
-}
-
-RCT_EXPORT_METHOD(fireTestEvent)
-{
-  [self sendEventWithName:@"TestEvent" body:@{ @"message": @"hello from native" }];
-}
-
-// Optional: run on background thread if you like; safe to omit for this test
-+ (BOOL)requiresMainQueueSetup
-{
-  return NO;
-}
-
-@end
-
-
 // // ios/<YourApp>/StepSession/StepSession.m
 // #import <React/RCTBridgeModule.h>
 // #import <React/RCTEventEmitter.h>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Alert, NativeEventEmitter } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
@@ -11,6 +11,22 @@ import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { NativeModules, AppState, Platform } from 'react-native';
+import { EventEmitter, requireNativeModule } from 'expo-modules-core';
+
+
+
+import LiveHealthkit from '@/modules/live-healthkit';
+
+const native = requireNativeModule('LiveHealthkit');
+
+// See what's really there
+// console.log('LiveHealthkit keys:', Object.getOwnPropertyNames(native));
+// console.log('typeof hello:', typeof native.hello);
+// console.log('typeof requestAuthorization:', typeof native.requestAuthorization);
+// console.log('typeof startWorkoutSession:', typeof native.startWorkoutSession);
+// console.log('typeof stopWorkoutSession:', typeof native.stopWorkoutSession);
+
+
 const { StepSession } = NativeModules;
 
 const { width, height } = Dimensions.get('window');
@@ -30,8 +46,26 @@ const CompetitionLandingPage: React.FC = () => {
     const [showResults, setShowResults] = useState<any | false>(false);
     const [prevData, setPrevData] = useState<any>({});
     const [referralResults, setReferralResults] = useState<any[]>([]);
+    const [stepCount, setStepCount] = useState(0);
     const { userID } = useUser();
     const router = useRouter();
+
+    useEffect(() => {
+        if (Platform.OS !== 'ios') return;
+
+        // 1) Get the module (this throws if not linked — good!)
+       const testLiveHealthkit = async () => {
+            try {
+                const mod = LiveHealthkit ?? requireNativeModule('LiveHealthkit');
+                const val = await mod.hello(); // Now properly awaited
+                console.log('hello ->', val); // Should show "Hello world! 👋"
+            } catch (err) {
+                console.warn('LiveHealthkit not available:', err);
+            }
+        };
+
+        testLiveHealthkit();
+    }, []);
 
     // 1) central fetch + nav logic
 
@@ -127,23 +161,23 @@ const CompetitionLandingPage: React.FC = () => {
         // 2) Permissions
 
         if (Platform.OS === 'ios') {
-            const ok = await StepSession?.ensurePermissions();
-            console.log('ensurePermissions result:', ok);
-            if (!ok) {
-                Alert.alert('Permissions', 'Health permissions denied');
-                return;
-            }
+            // const ok = await StepSession?.ensurePermissions();
+            // console.log('ensurePermissions result:', ok);
+            // if (!ok) {
+            //     Alert.alert('Permissions', 'Health permissions denied');
+            //     return;
+            // }
 
-            const startAt = new Date();
-            const endAt = new Date(startAt.getTime() + 60 * 60 * 1000); // +1 hour
+            // const startAt = new Date();
+            // const endAt = new Date(startAt.getTime() + 60 * 60 * 1000); // +1 hour
 
-            await StepSession.start({
-                startAtIso: startAt.toISOString(),
-                endAtIso: endAt.toISOString(),
-                uploadUrl: 'https://example.com/steps', // replace with real endpoint or leave placeholder
-                authHeader: null,
-                competitionId: currentGame?.id ?? 'temp'
-            });
+            // await StepSession.start({
+            //     startAtIso: startAt.toISOString(),
+            //     endAtIso: endAt.toISOString(),
+            //     uploadUrl: 'https://example.com/steps', // replace with real endpoint or leave placeholder
+            //     authHeader: null,
+            //     competitionId: currentGame?.id ?? 'temp'
+            // });
         }
 
 
@@ -159,6 +193,63 @@ const CompetitionLandingPage: React.FC = () => {
         // console.log('competition id: ', competition_id);
         setCompetitionHasSeenResults(userID, competition_id);
     };
+
+    useEffect(() => {
+        if (Platform.OS !== 'ios') return;
+
+        try {
+            // Test hello function
+            const testModule = async () => {
+                try {
+                    const hello = await LiveHealthkit.hello();
+                    console.log('LiveHealthkit says:', hello);
+                } catch (err) {
+                    console.error('LiveHealthkit test failed:', err);
+                }
+            };
+            testModule();
+
+            // Listen for test events
+            const testSub = LiveHealthkit.addListener('onChange', (event) => {
+                console.log('TEST EVENT RECEIVED:', event);
+            });
+
+            // Listen for step updates
+            const stepSub = LiveHealthkit.addListener('onMinuteSteps', (event) => {
+                console.log('STEP UPDATE RECEIVED:', event);
+                setStepCount(Number(event.value));
+            });
+            
+            // Trigger test events
+            LiveHealthkit.emitTest();
+            
+            // Start workout session
+            // const startSession = async () => {
+            //   try {
+            //     const authorized = await LiveHealthkit.requestAuthorization();
+            //     if (authorized) {
+            //       await LiveHealthkit.startWorkoutSession();
+            //       console.log('Workout session started');
+            //     } else {
+            //       console.warn('Health permissions denied');
+            //     }
+            //   } catch (err) {
+            //     console.error('Failed to start workout:', err);
+            //   }
+            // };
+            
+            // // Start the session
+            // startSession();
+
+            // return () => {
+            //   testSub.remove();
+            //   stepSub.remove();
+            //   LiveHealthkit.stopWorkoutSession().catch(console.error);
+            // };
+        } catch (err) {
+            console.error('LiveHealthkit setup failed:', err);
+        }
+    }, []);
 
     return (
         <LinearGradient
@@ -231,6 +322,7 @@ const CompetitionLandingPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
+            <Text style={styles.stepCount}>{stepCount} steps</Text>
         </LinearGradient>
     );
 };
@@ -283,6 +375,13 @@ const styles = ScaledStyleSheet.create({
         top: verticalScale(10),
         right: scale(10),
         zIndex: 1,
+    },
+    stepCount: {
+        color: '#fff',
+        fontSize: 18,
+        position: 'absolute',
+        bottom: 50,
+        left: '50%',
     },
 });
 
