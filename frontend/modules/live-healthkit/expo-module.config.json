@@ -1,0 +1,17 @@
+{
+  "platforms": [
+    "apple",
+    "android",
+    "web"
+  ],
+  "apple": {
+    "modules": [
+      "LiveHealthkitModule"
+    ]
+  },
+  "android": {
+    "modules": [
+      "expo.modules.livehealthkit.LiveHealthkitModule"
+    ]
+  }
+}
