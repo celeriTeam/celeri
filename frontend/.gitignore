@@ -56,4 +56,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# @end expo-cli
+# @end expo-cli.DS_Store
