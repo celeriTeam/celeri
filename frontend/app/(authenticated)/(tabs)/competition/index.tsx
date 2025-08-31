@@ -39,8 +39,8 @@ const CompetitionLandingPage: React.FC = () => {
     const [hasConsented, setHasConsented] = useState<boolean | null>(null);
     const [showResults, setShowResults] = useState<any | false>(false);
     const [prevData, setPrevData] = useState<any>({});
-    const [referralResults, setReferralResults] = useState<any[]>([]);
     const [stepCount, setStepCount] = useState(0);
+    const [referralResults, setReferralResults] = useState<any | false>(false);
     const { userID } = useUser();
     const router = useRouter();
 
@@ -78,7 +78,7 @@ const CompetitionLandingPage: React.FC = () => {
                 console.log('isResults: ', isResults?.competition_id);
                 const prevCompetitionData = await getCompetitionData(isResults.competition_id);
                 const prevCompetition = await fetchCompetition(isResults.competition_id);
-                const referralsData = await getReferralsData(isResults.competition_id)
+                const referralsData = await getReferralsData(isResults.competition_id);
                 console.log('prevcomp: ', prevCompetitionData);
                 console.log('prevdata: ', prevCompetition[0]);
                 console.log('referralsdata: ', referralsData);

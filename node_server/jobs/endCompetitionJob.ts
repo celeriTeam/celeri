@@ -59,10 +59,10 @@ export const endCompetitionById = async (competitionId: number) => {
             WHERE competition_id = ${competitionId}
             ORDER BY steps desc
         `
-        const firstPlaceUserId = userList[0].user_id;
+        const firstPlaceUserId = userList.length > 0 ? userList[0].user_id : null;
 
         const medianIndex = Math.floor(userList.length / 2);
-        const medianUserId = userList[medianIndex].user_id;
+        const medianUserId = userList.length > 0 ? userList[medianIndex].user_id : null;
 
         const referralUserId = await referalWinner(competitionId.toString());
         await sql`

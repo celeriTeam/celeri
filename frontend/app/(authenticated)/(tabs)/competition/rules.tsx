@@ -1,13 +1,22 @@
 // RaceRulesPager.tsx
 import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '@/app/UserProvider';
-
+import { 
+  collection,
+  getDocs,
+  getDoc,
+  doc,
+  getFirestore
+} from 'firebase/firestore';
+import { app } from "@firebaseConfig";
 import { writeConsentForm, hasUserConsented } from '@/backend/src/competition';
+
+const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -24,24 +33,96 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 
 import { useRouter } from 'expo-router';
 
+type User = {
+  id: string;
+  name: string;
+  username: string;
+  pfp: string;
+};
 
 const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) => {
   const { userID } = useUser();
   const [currentPage, setCurrentPage] = useState(0);
   const [payment, setPayment] = useState('');
   const [referral, setReferral] = useState('');
+  const [referralId, setReferralId] = useState('');
   const [hasConsented, setHasConsented] = useState<boolean | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [friends, setFriends] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     const checkConsent = async () => {
       if (userID) {
         const consented = await hasUserConsented(userID);
-        setHasConsented(consented);
+        setHasConsented(false);
       }
     };
     checkConsent();
   }, [userID]);
+
+  // set user list
+  useEffect(() => {
+    const fetchUsers = async () => {
+      // 1) Get current user friends
+      const meRef = doc(db, "users", userID);
+      const meSnap = await getDoc(meRef);
+      const meData = meSnap.data() || {};
+      const friendsList: string[] = meData.friendsList || [];
+      setFriends(friendsList);
+
+      // 2) Get all users
+      const querySnapshot = await getDocs(collection(db, "users"));
+      const usersArray: User[] = [];
+
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (docSnap.id === userID) return; // skip yourself
+        usersArray.push({
+          id: docSnap.id,
+          name: data.name || "Unknown",
+          username: data.username || "Unknown",
+          pfp: data.profileImageUrl || "",
+        });
+      });
+
+      setAllUsers(usersArray);
+      setFilteredUsers(usersArray); // initial state
+    };
+
+    fetchUsers();
+  }, [userID]);
+
+  // 3) Update filtered users on search
+  const handleSearch = (text: string) => {
+    setReferral(text);
+    const foundUser = allUsers.find(u => u.username === text);
+    setReferralId(foundUser ? foundUser.id : '');
+
+    if (!text.trim()) {
+      setFilteredUsers(allUsers);
+      return;
+    }
+
+    const lower = text.toLowerCase();
+    const results = allUsers.filter(
+      (u) =>
+        u.username.toLowerCase().includes(lower) ||
+        u.name.toLowerCase().includes(lower)
+    );
+
+    // Sort so friends appear first
+    const sorted = results.sort((a, b) => {
+      const aFriend = friends.includes(a.id);
+      const bFriend = friends.includes(b.id);
+      if (aFriend && !bFriend) return -1;
+      if (!aFriend && bFriend) return 1;
+      return 0;
+    });
+
+    setFilteredUsers(sorted);
+  };
 
   const handleSubmit = async () => {
     if (!payment.trim()) {
@@ -49,7 +130,7 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
       return;
     }
     try {
-      await writeConsentForm(userID, payment, referral);
+      await writeConsentForm(userID, payment, referralId);
       Alert.alert('Success', 'Consent form filled out', [
         {
           text: 'OK',
@@ -120,18 +201,58 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
             />
 
             <Text style={styles.questionText}>
-              Did someone refer you? If so, write their username here.
+              Did someone refer you? If so, find their username here:
             </Text>
             <TextInput
               style={[styles.input, hasConsented ? { opacity: 0.5 } : {}]}
-              placeholder="Referrer's username"
+              placeholder="Start typing..."
               placeholderTextColor="#ccc"
               value={referral}
-              onChangeText={hasConsented ? undefined : setReferral}
+              onChangeText={hasConsented ? undefined : handleSearch}
               autoCapitalize="none"
               editable={!hasConsented}
               selectTextOnFocus={!hasConsented}
             />
+
+            {/* User list */}
+            {!hasConsented && referral.length > 0 && (
+            <ScrollView
+              style={{
+                maxHeight: 200,
+                backgroundColor: "#111",
+                borderRadius: 8,
+                marginTop: 8,
+              }}
+            >
+              {filteredUsers.map((user) => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 10,
+                    borderBottomColor: "#333",
+                    borderBottomWidth: 1,
+                  }}
+                  onPress={() => {
+                    setReferral(user.username); // pick this user
+                    setFilteredUsers([]); // close dropdown
+                  }}
+                >
+                  <Image
+                    source={user.pfp ? { uri: user.pfp } : require("@components/blank-profile-picture.png")}
+                    style={{ width: 35, height: 35, borderRadius: 20, marginRight: 10 }}
+                  />
+                  <Text style={{ color: "#fff" }}>
+                    {user.username}{" "}
+                    {friends.includes(user.id) && (
+                      <Text style={{ color: "#7eff77ff" }}> (Friend)</Text>
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
           </View>
         </View>
 

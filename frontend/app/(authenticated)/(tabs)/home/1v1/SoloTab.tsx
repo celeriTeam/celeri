@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
 import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -12,11 +12,13 @@ import { TextInput } from 'react-native-gesture-handler';
 import { create1v1Request, update1v1Requests } from '@/backend/src/1v1Requests';
 import UserSearchPage from './UserSearch';
 import Store1v1Page from './Store';
-import { create1v1 } from '@/backend/src/1v1';
+import { create1v1, get1v1Results, set1v1HasSeenResults } from '@/backend/src/1v1';
 import { setIsIn1v1 } from '@/backend/src/users';
 import { LineChart } from 'react-native-chart-kit';
 import History1v1s from './History1v1s';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { LinearGradient } from 'expo-linear-gradient';
+import ResultsModal from './resultsModal';
 
 dayjs.extend(relativeTime);
 
@@ -52,6 +54,7 @@ const SoloTab: React.FC<Props> = ({
     const [selectedTab, setSelectedTab] = useState('Received');
     const [storeModal, setStoreModal] = useState(false);
     const [historyModal, setHistoryModal] = useState(false);
+    const [showResults, setShowResults] = useState<any | null>(null);
     const [userSearchModal, setUserSearchModal] = useState(false);
     const [requestModalVisible, setRequestModalVisible] = useState<any>({});
     const [timeLeftString, setTimeLeftString] = useState<string>('00:00:00');
@@ -141,6 +144,25 @@ const SoloTab: React.FC<Props> = ({
     const getHoursLeft = () => {
         const [hours, minutes, seconds] = timeLeftString.split(":").map(Number);
         return hours + minutes / 60 + seconds / 3600;
+    };
+    
+    const grabResults = async () => {
+        if (!current1v1) {
+            const results = await get1v1Results(userID);
+            setShowResults(results || null);
+        };
+    };
+
+    useEffect(() => {
+        grabResults();
+    }, [current1v1]);
+    
+    const handleResultsClose = async () => {
+        if (!showResults) return;
+        const duelId = showResults.current1v1ID;
+        setShowResults(null);
+        console.log('duelId: ', duelId);
+        set1v1HasSeenResults(userID, duelId);
     };
 
     const StepsChart = () => {
@@ -562,6 +584,32 @@ const SoloTab: React.FC<Props> = ({
                     </View>
                 </TouchableOpacity>
             </Modal>
+
+            {/* Results Modal */}
+            <Modal
+                visible={!!showResults}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowResults(null)}
+            >
+                <View style={styles.modalOverlay} >
+                    <View style={[styles.modalContainer, { height: '75%' }]}>
+                        <LinearGradient
+                            colors={['#000000', '#024405']}
+                            style={styles.insideContainer}
+                        >
+                            <TouchableOpacity style={styles.modalCloseButton} onPress={handleResultsClose}>
+                                <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
+                            </TouchableOpacity>
+                            <View style={{ marginTop: 50, paddingHorizontal: 10, }} >
+                                {showResults!== null && (
+                                    <ResultsModal results={showResults} />
+                                )}
+                            </View>
+                        </LinearGradient>
+                    </View>
+                </View>
+            </Modal>
         </>
     );
 };
@@ -724,6 +772,12 @@ const styles = StyleSheet.create({
         position: 'relative',
         borderWidth: moderateScale(1),
         borderColor: '#4A4A4A',
+        borderRadius: moderateScale(15),
+    },
+    insideContainer: {
+        flex: 1,
+        width: '100%',
+        borderWidth: moderateScale(1),
         borderRadius: moderateScale(15),
     },
     modalCloseButton: {
