@@ -12,19 +12,13 @@ import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferra
 import messaging from '@react-native-firebase/messaging';
 import { NativeModules, AppState, Platform } from 'react-native';
 import { EventEmitter, requireNativeModule } from 'expo-modules-core';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
-import LiveHealthkit from '@/modules/live-healthkit';
+//import LiveHealthkit from '@/modules/live-healthkit';
 
 const native = requireNativeModule('LiveHealthkit');
-
-// See what's really there
-// console.log('LiveHealthkit keys:', Object.getOwnPropertyNames(native));
-// console.log('typeof hello:', typeof native.hello);
-// console.log('typeof requestAuthorization:', typeof native.requestAuthorization);
-// console.log('typeof startWorkoutSession:', typeof native.startWorkoutSession);
-// console.log('typeof stopWorkoutSession:', typeof native.stopWorkoutSession);
 
 
 const { StepSession } = NativeModules;
@@ -54,17 +48,17 @@ const CompetitionLandingPage: React.FC = () => {
         if (Platform.OS !== 'ios') return;
 
         // 1) Get the module (this throws if not linked — good!)
-       const testLiveHealthkit = async () => {
-            try {
-                const mod = LiveHealthkit ?? requireNativeModule('LiveHealthkit');
-                const val = await mod.hello(); // Now properly awaited
-                console.log('hello ->', val); // Should show "Hello world! 👋"
-            } catch (err) {
-                console.warn('LiveHealthkit not available:', err);
-            }
-        };
+    //    const testLiveHealthkit = async () => {
+    //         try {
+    //             const mod = LiveHealthkit ?? requireNativeModule('LiveHealthkit');
+    //             const val = await mod.hello(); // Now properly awaited
+    //             console.log('hello ->', val); // Should show "Hello world! 👋"
+    //         } catch (err) {
+    //             console.warn('LiveHealthkit not available:', err);
+    //         }
+    //     };
 
-        testLiveHealthkit();
+        // testLiveHealthkit();
     }, []);
 
     // 1) central fetch + nav logic
@@ -160,31 +154,19 @@ const CompetitionLandingPage: React.FC = () => {
 
         // 2) Permissions
 
-        if (Platform.OS === 'ios') {
-            // const ok = await StepSession?.ensurePermissions();
-            // console.log('ensurePermissions result:', ok);
-            // if (!ok) {
-            //     Alert.alert('Permissions', 'Health permissions denied');
-            //     return;
-            // }
-
-            // const startAt = new Date();
-            // const endAt = new Date(startAt.getTime() + 60 * 60 * 1000); // +1 hour
-
-            // await StepSession.start({
-            //     startAtIso: startAt.toISOString(),
-            //     endAtIso: endAt.toISOString(),
-            //     uploadUrl: 'https://example.com/steps', // replace with real endpoint or leave placeholder
-            //     authHeader: null,
-            //     competitionId: currentGame?.id ?? 'temp'
-            // });
-        }
-
+        const joinAt = Date.now(); 
 
         const referralId: string | null = await getReferral(userID);
-        await addCompetitionUser(userID, referralId);
+
+
+        await addCompetitionUser(userID, referralId, joinAt);
+        await AsyncStorage.setItem(`competition:joinAt:${currentGame.id}`, String(joinAt));
+
         await setUserInCompetition(userID);
-        router.replace('/(authenticated)/(tabs)/competition/inGame');
+        router.replace({
+            pathname: '/(authenticated)/(tabs)/competition/inGame',
+            params: { joinAt: String(joinAt) }
+        });
     };
 
     const handleResultsClose = async () => {
@@ -193,63 +175,6 @@ const CompetitionLandingPage: React.FC = () => {
         // console.log('competition id: ', competition_id);
         setCompetitionHasSeenResults(userID, competition_id);
     };
-
-    useEffect(() => {
-        if (Platform.OS !== 'ios') return;
-
-        try {
-            // Test hello function
-            const testModule = async () => {
-                try {
-                    const hello = await LiveHealthkit.hello();
-                    console.log('LiveHealthkit says:', hello);
-                } catch (err) {
-                    console.error('LiveHealthkit test failed:', err);
-                }
-            };
-            testModule();
-
-            // Listen for test events
-            const testSub = LiveHealthkit.addListener('onChange', (event) => {
-                console.log('TEST EVENT RECEIVED:', event);
-            });
-
-            // Listen for step updates
-            const stepSub = LiveHealthkit.addListener('onMinuteSteps', (event) => {
-                console.log('STEP UPDATE RECEIVED:', event);
-                setStepCount(Number(event.value));
-            });
-            
-            // Trigger test events
-            LiveHealthkit.emitTest();
-            
-            // Start workout session
-            // const startSession = async () => {
-            //   try {
-            //     const authorized = await LiveHealthkit.requestAuthorization();
-            //     if (authorized) {
-            //       await LiveHealthkit.startWorkoutSession();
-            //       console.log('Workout session started');
-            //     } else {
-            //       console.warn('Health permissions denied');
-            //     }
-            //   } catch (err) {
-            //     console.error('Failed to start workout:', err);
-            //   }
-            // };
-            
-            // // Start the session
-            // startSession();
-
-            // return () => {
-            //   testSub.remove();
-            //   stepSub.remove();
-            //   LiveHealthkit.stopWorkoutSession().catch(console.error);
-            // };
-        } catch (err) {
-            console.error('LiveHealthkit setup failed:', err);
-        }
-    }, []);
 
     return (
         <LinearGradient

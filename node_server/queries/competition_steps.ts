@@ -84,7 +84,7 @@ const silentNotif = async (user_id: string, competition_id: string) => {
 
 // POST /add-user
 router.post('/add-user', async (req, res) => {
-  const { user_id, referral_id = null } = req.body;
+  const { user_id, referral_id, joinAt = null } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -94,8 +94,8 @@ router.post('/add-user', async (req, res) => {
     }
 
     const result = await sql`
-      INSERT INTO competition_steps (user_id, steps, competition_id, referral) 
-      SELECT ${user_id}, 0, ${competition.id}, ${referral_id}
+      INSERT INTO competition_steps (user_id, steps, competition_id, referral, joinAt) 
+      SELECT ${user_id}, 0, ${competition.id}, ${referral_id}, ${joinAt}
       WHERE NOT EXISTS (
         SELECT 1 FROM competition_steps 
         WHERE user_id = ${user_id}
@@ -116,7 +116,7 @@ router.post('/add-user', async (req, res) => {
 
 // POST /update-steps
 router.post('/update-steps', async (req, res) => {
-  const { user_id, steps } = req.body;
+  const { user_id, steps, minute } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -142,7 +142,8 @@ router.post('/update-steps', async (req, res) => {
 
     await sql`
       UPDATE competition_steps 
-      SET steps = ${updatedSteps}
+      SET steps = ${updatedSteps},
+          minute = ${minute}
       WHERE user_id = ${user_id}
     `;
 

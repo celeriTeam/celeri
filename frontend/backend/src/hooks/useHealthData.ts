@@ -20,7 +20,7 @@ import { set } from 'date-fns';
 import { get } from 'http';
 import { get1v1StartTime, update1v1Steps } from '../1v1';
 import { fetchCurrentCompetition } from '../api/competitions';
-import { addCompetitionSteps, getCompetitionUserInfo } from '../api/competition_steps';
+import { updateCompetitionSteps, getCompetitionUserInfo } from '../api/competition_steps';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -412,18 +412,39 @@ const useHealthData = () => {
     const getCompetitionSteps = async (userID: string) => {
         try {
             console.log("Fetching competition steps for user:", userID);
+            
+            // 1. Get competition data
             const currentCompetition = await fetchCurrentCompetition();
             const competitionUserData = await getCompetitionUserInfo(userID);
-            if (currentCompetition.error || competitionUserData.error) { // make sure user is in active competition
+            
+            if (currentCompetition.error || competitionUserData.error) { 
+                console.log("User not in active competition or competition error");
                 return;
             }
 
+            // 2. Calculate minutes since competition start
             const startTime = new Date(currentCompetition.start_time);
             const endTime = new Date(currentCompetition.end_time);
-
+            const now = new Date();
+            
+            // Calculate elapsed minutes since competition start
+            const elapsedMs = now.getTime() - startTime.getTime();
+            const elapsedMinutes = Math.floor(elapsedMs / 60000);
+            
+            // 3. Get step count for entire competition period
             const competitionSteps = await getStepCountForRange(startTime, endTime);
-            console.log("Competition steps fetched:", competitionSteps);
-            await addCompetitionSteps(userID, competitionSteps);
+            console.log(`Competition total steps from HealthKit: ${competitionSteps}, at minute ${elapsedMinutes}`);
+            
+            // 4. IMPORTANT: First check current steps in the database before updating
+            const currentUserData = await getCompetitionUserInfo(userID);
+            const currentStepsInDB = currentUserData?.steps || 0;
+            
+            if (competitionSteps > currentStepsInDB) {
+                console.log(`Updating steps: ${currentStepsInDB} → ${competitionSteps}`);
+                await updateCompetitionSteps(userID, competitionSteps, elapsedMinutes);
+            } else {
+                console.log(`Skipping update - current steps (${currentStepsInDB}) higher than HealthKit steps (${competitionSteps})`);
+            }
         } catch (error) {
             console.error("Error fetching competition steps:", error);
             return null;

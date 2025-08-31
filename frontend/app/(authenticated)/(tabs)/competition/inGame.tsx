@@ -1,15 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, AppStateStatus, AppState } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCurrentCompetition } from '@backend/src/api/competitions';
+import { updateCompetitionSteps } from '@backend/src/api/competition_steps';
 import { getCurrentCompetitionData, getCompetitionUserInfo, getReferralsData } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getFriendsList } from '@/backend/src/users';
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native'; // <-- added
 import { Alert } from 'react-native';
+import { Pedometer } from 'expo-sensors';
+import { useStepsSince } from '../../../../backend/src/hooks/useStepsSince';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { StepSession } = NativeModules;
 
@@ -37,8 +41,75 @@ const CompetitionGamePage: React.FC = () => {
     const [winners, updateWinners] = useState<string[]>([]);
     const [friendsToggle, setFriendsToggle] = useState<boolean>(false);
     const [friendsList, setFriendsList] = useState<any[]>([]);
-    const [liveSteps, setLiveSteps] = useState(0); // <-- added
     const router = useRouter();
+
+    const params = useLocalSearchParams<{ joinAt?: string }>();
+    const [joinAtMs, setJoinAtMs] = useState<number | null>(null);
+
+    useEffect(() => {
+        (async () => {
+        const comp = await fetchCurrentCompetition();
+        const key = `competition:joinAt:${comp.id}`;
+        console.log("testing key -- ", key);
+        // prefer router param; else storage; else “now” (last resort)
+        const fromParam = params.joinAt ? Number(params.joinAt) : NaN;
+        const fromStore = Number(await AsyncStorage.getItem(key));
+        const effective = Number.isFinite(fromParam) ? fromParam
+                        : Number.isFinite(fromStore) ? fromStore
+                        : Date.now();
+        setJoinAtMs(effective);
+        })();
+    }, [params.joinAt]);
+
+    const liveSteps = useStepsSince(joinAtMs ?? Date.now()); // safe until loaded
+    const liveStepsRef = useRef(0);
+
+    useEffect(() => {
+        liveStepsRef.current = liveSteps;
+    }, [liveSteps]);
+
+    // Emit at the top of each minute since joinAt
+    useEffect(() => {
+        if (!joinAtMs) return;
+        let intervalHandle: NodeJS.Timeout;
+
+        const tick = () => {
+            const currentSteps = liveStepsRef.current; // Use current value from ref
+            const elapsedMin = Math.floor((Date.now() - joinAtMs) / 60000);
+            console.log(`Sending step update: ${currentSteps} steps at minute ${elapsedMin}`);
+            updateCompetitionSteps(userID, currentSteps, elapsedMin);
+        };
+
+        // First alignment to minute boundary
+        const msToNext = 60000 - (Date.now() - joinAtMs) % 60000;
+        const t0 = setTimeout(() => {
+            tick(); // Send first update
+            intervalHandle = setInterval(tick, 60000); // Every minute after
+        }, msToNext);
+
+        // Cleanup function
+        return () => {
+            clearTimeout(t0);
+            clearInterval(intervalHandle);
+        };
+    }, [joinAtMs, userID]);
+
+    // Add a separate effect to handle background/foreground transitions
+    useEffect(() => {
+        if (!joinAtMs) return;
+        
+        const handleAppStateChange = (nextState: AppStateStatus) => {
+            if (nextState === 'active') {
+                // App came to foreground - catch up on missed minutes
+                const elapsedMin = Math.floor((Date.now() - joinAtMs) / 60000);
+                console.log(`Back to foreground - updating steps at minute ${elapsedMin}`);
+                updateCompetitionSteps(userID, liveSteps, elapsedMin);
+            }
+        };
+        
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        return () => subscription.remove();
+    }, [joinAtMs, userID, liveSteps]);
 
     const resultsToDisplay = selectedTab === 'Referrals'
         ? referralsLeaderboard
@@ -206,32 +277,6 @@ const CompetitionGamePage: React.FC = () => {
             v = n % 100;
         return n + (s[(v - 20) % 10] || s[v] || s[0]);
     };
-
-    useEffect(() => {
-        if (Platform.OS !== 'ios') return;
-            if (!StepSession) {
-            console.warn('StepSession is undefined — not linked or wrong target.');
-            return;
-            }
-            const emitter = new NativeEventEmitter(StepSession);
-            const sub = emitter.addListener('TestEvent', (e) => Alert.alert('Event', JSON.stringify(e)));
-            return () => sub.remove();
-        // Listen only on iOS (session started previously in index.tsx)
-        // if (Platform.OS !== 'ios' || !stepSession) return;
-        // const emitter = new NativeEventEmitter(stepSession);
-        // const stepSub = emitter.addListener('StepUpdate', (e: any) => {
-        //     const steps = typeof e?.steps === 'number' ? e.steps : 0;
-        //     setLiveSteps(steps);
-        //     console.log('[StepSession] Live steps update:', steps);
-        // });
-        // const endSub = emitter.addListener('SessionEnded', (e: any) => {
-        //     console.log('[StepSession] Session ended:', e);
-        // });
-        // return () => {
-        //     stepSub.remove();
-        //     endSub.remove();
-        // };
-    }, []);
 
     return (
         <LinearGradient

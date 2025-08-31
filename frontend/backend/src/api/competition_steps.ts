@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { api } from '../api';
 
-export const addCompetitionUser = async (user_id: string, referral_id: string | null) => {
+export const addCompetitionUser = async (user_id: string, referral_id: string | null, joinAt: number) => {
     try {
         const response = await api.post(`/competition-steps/add-user`,
-            { user_id, referral_id }
+            { user_id, referral_id, joinAt }
         );
         return response.data;
     } catch (error: any) {
@@ -17,15 +17,15 @@ export const addCompetitionUser = async (user_id: string, referral_id: string | 
     }
 };
 
-export const addCompetitionSteps = async (user_id: string, steps: number) => {
+export const updateCompetitionSteps = async (user_id: string, steps: number, minute: number) => {
     try {
         const response = await api.post(`/competition-steps/update-steps`,
-            { user_id, steps }
+            { user_id, steps, minute }
         );
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
-            return error.response.data;
+            return error.response.data  ;
         } else {
             console.error('Failed to add steps:', error);
             return null;
@@ -33,6 +33,17 @@ export const addCompetitionSteps = async (user_id: string, steps: number) => {
     }
 };
 
+export const setCompetitionSteps = async (user_id: string, totalSteps: number, elapsedMin: number) => {
+    try {
+        const response = await api.post(`/competition-steps/set-steps`,
+            { user_id, totalSteps, elapsedMin }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Failed to set steps:', error);
+        return null;
+    }
+};
 export const getCurrentCompetitionData = async () => {
     try {
         const response = await api.get(`/competition-steps/current-data`);
