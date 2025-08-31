@@ -4,11 +4,11 @@
     "slug": "health-bets-app",
     "version": "8.7",
     "orientation": "portrait",
-    "icon": "./assets/images/Lettuce.jpg",
+    "icon": "./assets/images/icon.png",
     "scheme": "health-bets-app",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/Lettuce.jpg",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -21,6 +21,8 @@
           "fetch",
           "remote-notification"
         ],
+        "NSHealthShareUsageDescription": "We read your step count for competitions.",
+        "NSHealthUpdateUsageDescription": "We create workout sessions to track steps.",
         "CFBundleDisplayName": "Celeri"
       },
       "buildNumber": "4"
@@ -28,7 +30,7 @@
     "android": {
       "googleServicesFile": "google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/Lettuce.jpg",
+        "foregroundImage": "./assets/images/adaptive-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.alp2goose.flex",
@@ -57,7 +59,12 @@
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "static"
+            "deploymentTarget": "17.0",
+            "useFrameworks": "static",
+            "newArchEnabled": true
+          },
+          "android": {
+            "kotlinVersion": "1.9.25"
           }
         }
       ],
@@ -71,14 +78,6 @@
       ],
       "react-native-health",
       [
-        "expo-build-properties",
-        {
-          "android": {
-            "kotlinVersion": "1.9.25"
-          }
-        }
-      ],
-      [
         "expo-health-connect",
         {
           "permissions": [
@@ -86,7 +85,10 @@
             "android.permission.health.WRITE_STEPS"
           ]
         }
-      ]
+      ],
+      "expo-asset",
+      "sentry-expo",
+      "react-native-health-connect"
     ],
     "experiments": {
       "typedRoutes": true

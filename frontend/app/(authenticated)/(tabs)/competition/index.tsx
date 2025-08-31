@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Alert, NativeEventEmitter } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
@@ -10,6 +10,18 @@ import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
+import { NativeModules, AppState, Platform } from 'react-native';
+import { EventEmitter, requireNativeModule } from 'expo-modules-core';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+
+//import LiveHealthkit from '@/modules/live-healthkit';
+
+const native = requireNativeModule('LiveHealthkit');
+
+
+const { StepSession } = NativeModules;
 
 const { width, height } = Dimensions.get('window');
 
@@ -27,9 +39,27 @@ const CompetitionLandingPage: React.FC = () => {
     const [hasConsented, setHasConsented] = useState<boolean | null>(null);
     const [showResults, setShowResults] = useState<any | false>(false);
     const [prevData, setPrevData] = useState<any>({});
+    const [stepCount, setStepCount] = useState(0);
     const [referralResults, setReferralResults] = useState<any | false>(false);
     const { userID } = useUser();
     const router = useRouter();
+
+    useEffect(() => {
+        if (Platform.OS !== 'ios') return;
+
+        // 1) Get the module (this throws if not linked — good!)
+    //    const testLiveHealthkit = async () => {
+    //         try {
+    //             const mod = LiveHealthkit ?? requireNativeModule('LiveHealthkit');
+    //             const val = await mod.hello(); // Now properly awaited
+    //             console.log('hello ->', val); // Should show "Hello world! 👋"
+    //         } catch (err) {
+    //             console.warn('LiveHealthkit not available:', err);
+    //         }
+    //     };
+
+        // testLiveHealthkit();
+    }, []);
 
     // 1) central fetch + nav logic
 
@@ -121,10 +151,22 @@ const CompetitionLandingPage: React.FC = () => {
             return;
         }
         console.log("testing two");
+
+        // 2) Permissions
+
+        const joinAt = Date.now(); 
+
         const referralId: string | null = await getReferral(userID);
-        await addCompetitionUser(userID, referralId);
+
+
+        await addCompetitionUser(userID, referralId, joinAt);
+        await AsyncStorage.setItem(`competition:joinAt:${currentGame.id}`, String(joinAt));
+
         await setUserInCompetition(userID);
-        router.replace('/(authenticated)/(tabs)/competition/inGame');
+        router.replace({
+            pathname: '/(authenticated)/(tabs)/competition/inGame',
+            params: { joinAt: String(joinAt) }
+        });
     };
 
     const handleResultsClose = async () => {
@@ -205,6 +247,7 @@ const CompetitionLandingPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
+            <Text style={styles.stepCount}>{stepCount} steps</Text>
         </LinearGradient>
     );
 };
@@ -257,6 +300,13 @@ const styles = ScaledStyleSheet.create({
         top: verticalScale(10),
         right: scale(10),
         zIndex: 1,
+    },
+    stepCount: {
+        color: '#fff',
+        fontSize: 18,
+        position: 'absolute',
+        bottom: 50,
+        left: '50%',
     },
 });
 
