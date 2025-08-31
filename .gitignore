@@ -9,3 +9,5 @@ node_modules/
 /node_server/dist/
 /node_server/serviceAccountKey.jsonnode_server/serviceAccountKey.json
 *.DS_Store
+*.DS_Store
+node_server/serviceAccountKey.json
