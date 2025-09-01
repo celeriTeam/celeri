@@ -18,7 +18,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import useHealthData from '../../../../backend/src/hooks/useHealthData';
-import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupCreatedAt, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setIsIn1v1, setStepsFirebase } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
@@ -59,7 +59,7 @@ const HomeTab: React.FC = () => {
     const averageStepsCount = sum / averageSteps.length;
     const [userID, setUserID] = useState<string>('');
     const [getGroupID, setGetGroupID] = useState<{ [groupName: string]: any }>({});
-    const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
+    const [groups, setGroups] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [selectedTab, setSelectedTab] = useState('Group');
@@ -178,57 +178,93 @@ const HomeTab: React.FC = () => {
     // }, [refreshRequestsFlag]);
 
     const fetchGroupData = async (userGroups: string[], uid: string) => {
-        const groups: { [groupID: string]: any } = {};
-        const getGroupID: { [groupName: string]: any } = {};
-        const loadingGroups = new Set(userGroups);
-        if (userGroups) {
-            setIsLoadingHome(true);
-            await Promise.all(userGroups.map(async (groupName) => {
-                const groupID = await getGroupIDFromGroupName(groupName);
-                const groupsRef = collection(db, "groups");
-                const groupDocRef = doc(groupsRef, groupID);
+        if (!userGroups || userGroups.length === 0) {
+            setGroups([]);
+            return;
+        }
 
-                const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
-                    setIsLoadingHome(true);
-                    if (docSnapshot.exists() && groupID) {
-                        const [groupImageUrl, groupName, isGameActive, isResultAvailable, isFinishedBetting, isFinishedTutorial, groupCreator] = await Promise.all([
-                            getGroupProfilePic(groupID),
-                            getGroupName(groupID),
-                            getGroupIsGameActive(groupID),
-                            getGroupIsResultAvailable(groupID, uid),
-                            checkFinishedBetting(groupID, uid),
-                            checkFinishedTutorial(groupID, uid),
-                            getGroupCreator(groupID),
-                        ]);
+        setIsLoadingHome(true);
 
-                        const userList = await getUsersInGroup(groupID); // userIDs
-                        if (groupName) {
-                            getGroupID[groupName] = groupID;
+        try {
+            const groupArr: any[] = [];
+            await Promise.all(
+                userGroups.map(async (groupName) => {
+                    const groupID = await getGroupIDFromGroupName(groupName);
+                    const groupsRef = collection(db, "groups");
+                    const groupDocRef = doc(groupsRef, groupID);
+
+                    // Real-time updates
+                    const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+                        if (docSnapshot.exists() && groupID) {
+                            const [
+                                groupImageUrl,
+                                resolvedGroupName,
+                                isGameActive,
+                                isResultAvailable,
+                                isFinishedBetting,
+                                isFinishedTutorial,
+                                groupCreator,
+                                createdAt,
+                            ] = await Promise.all([
+                                getGroupProfilePic(groupID),
+                                getGroupName(groupID),
+                                getGroupIsGameActive(groupID),
+                                getGroupIsResultAvailable(groupID, uid),
+                                checkFinishedBetting(groupID, uid),
+                                checkFinishedTutorial(groupID, uid),
+                                getGroupCreator(groupID),
+                                getGroupCreatedAt(groupID),
+                            ]);
+
+                            const userList = await getUsersInGroup(groupID);
+
+                            // Push or update group in array
+                            const groupObj = {
+                                groupID,
+                                groupImageUrl,
+                                groupName: resolvedGroupName,
+                                isGameActive,
+                                isResultAvailable,
+                                isFinishedBetting,
+                                isFinishedTutorial,
+                                userList,
+                                groupCreator,
+                                createdAt: createdAt ? new Date(createdAt) : new Date(0),
+                            };
+
+                            // Update local array by replacing existing group or adding new
+                            const idx = groupArr.findIndex((g) => g.groupID === groupID);
+                            if (idx >= 0) {
+                                groupArr[idx] = groupObj;
+                            } else {
+                                groupArr.push(groupObj);
+                            }
+
+                            // Sort before setting state
+                            const sortedGroups = [...groupArr].sort((a, b) => {
+                                // 1. Active first
+                                if (a.isGameActive && !b.isGameActive) return -1;
+                                if (!a.isGameActive && b.isGameActive) return 1;
+
+                                // 2. Pending results next
+                                if (a.isResultAvailable && !b.isResultAvailable) return -1;
+                                if (!a.isResultAvailable && b.isResultAvailable) return 1;
+
+                                // 3. CreatedAt descending
+                                return b.createdAt.getTime() - a.createdAt.getTime();
+                            });
+
+                            setGroups(sortedGroups);
                         }
-                        groups[groupID] = {
-                            groupImageUrl,
-                            groupName,
-                            isGameActive,
-                            isResultAvailable,
-                            isFinishedBetting,
-                            isFinishedTutorial,
-                            userList,
-                            groupCreator
-                        };
-                    }
-                    // Ensures all groups show at first load
-                    loadingGroups.delete(groupName);
-                    setGetGroupID({ ...getGroupID });
-                    setGroups({ ...groups });
-
-                    setIsLoadingHome(false);
-                });
-                return unsubscribeGroup;
-            }));
+                    });
+                    return unsubscribeGroup;
+                })
+            );
+        } catch (err) {
+            console.error("Error fetching groups:", err);
+        } finally {
             setIsLoadingHome(false);
         }
-        setGetGroupID(getGroupID);
-        setGroups(groups);
     };
 
     const toggleModal = () => {
@@ -243,23 +279,19 @@ const HomeTab: React.FC = () => {
         router.push('/(authenticated)/(tabs)/home/groups/JoinGroup')
     };
 
-    const goToGroup = async (groupName: string) => {
+    const goToGroup = async (group: any) => {
         if (isPressed) return; // Prevent multiple presses
         setIsPressed(true);
-        // get groupID and number of users in group;
-        const groupID: any = getGroupID[groupName];
-        const GroupUsers = groups[groupID]?.userList;
-        // console.log('groupusers: ', GroupUsers);
-        const isGameActive = groups[groupID]?.isGameActive;
-        // console.log(isGameActive);
+        const GroupUsers = group?.userList;
+        const isGameActive = group?.isGameActive;
         if (GroupUsers === null || GroupUsers === undefined) {
             console.log('HOMETAB - Failed to fetch group data');
             return;
         } else if (isGameActive) {
-            const isFinishedBetting = groups[groupID]?.isFinishedBetting;
-            const isFirstDay = groups[groupID]?.isFirstDay;
-            const isFinishedTutorial = groups[groupID]?.isFinishedTutorial;
-            const groupIDTemp = groupID;
+            const isFinishedBetting = group?.isFinishedBetting;
+            const isFirstDay = group?.isFirstDay;
+            const isFinishedTutorial = group?.isFinishedTutorial;
+            const groupIDTemp = group?.groupID;
             if (!isFinishedTutorial) {
                 router.push({
                     pathname: '/(authenticated)/(tabs)/home/bets/Welcome',
@@ -277,14 +309,12 @@ const HomeTab: React.FC = () => {
                 });
             }
         } else {
-            // console.log('navigating to invite group page');
             router.push({
                 pathname: '/(authenticated)/(tabs)/home/groups/InviteGroup',
-                params: { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: 'false', isResultAvailable: groups[groupID].isResultAvailable },
+                params: { leaderID: group?.groupLeader, groupID: group?.groupID, fromCreate: 'false', isResultAvailable: group.isResultAvailable },
             });
-            //navigation.navigate('InviteGroup', { leaderID: groups[groupID]?.groupLeader, groupID: groupID, fromCreate: false });
         }
-        setIsPressed(false); // Set the button as pressed
+        setIsPressed(false);
     }
 
     if (hasPermissions === false) {
@@ -344,7 +374,7 @@ const HomeTab: React.FC = () => {
                     <Text style={styles.subTitle}>Your Groups:</Text>
                     <ScrollView style={styles.scrollContainer}>
 
-                        {Object.entries(groups).map(([groupID, group]) => {
+                        {groups.map((group) => {
                             const memberCount = group.userList ? Object.keys(group.userList).length : 0;
 
                             let statusText = group.isGameActive ? 'Active' : 'Inactive';
@@ -359,9 +389,9 @@ const HomeTab: React.FC = () => {
 
                             return (
                                 <TouchableOpacity
-                                    key={groupID}
+                                    key={group.groupID}
                                     style={styles.groupButton}
-                                    onPress={() => goToGroup(group.groupName)}
+                                    onPress={() => goToGroup(group)}
                                 >
                                     <Image
                                         source={
