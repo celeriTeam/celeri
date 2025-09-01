@@ -134,6 +134,7 @@ const useHealthData = () => {
                 const options = {
                     startDate: stepsLastUpdate.toISOString(),
                     endDate: currentDate.toISOString(),
+                    includeManuallyAdded: false,
                 };
 
                 AppleHealthKit.getDailyStepCountSamples(options, (err, results) => {
@@ -249,6 +250,7 @@ const useHealthData = () => {
         while (currentDate <= yesterday) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
+                includeManuallyAdded: false,
             };
     
             try {
@@ -289,6 +291,7 @@ const useHealthData = () => {
         while (currentDate <= sevenDaysAgo) {
             const options: HealthInputOptions = {
                 date: currentDate.toISOString(),
+                includeManuallyAdded: false,
             };
 
             // console.log("before everyuthing", stepsFromWeekBeforeTemp);
@@ -320,6 +323,7 @@ const useHealthData = () => {
                 const options = {
                     startDate: start.toISOString(),
                     endDate: end.toISOString(),
+                    includeManuallyAdded: false,
                 };
                 console.log('startdate: ', options.startDate);
                 console.log('enddate: ', options.endDate);
