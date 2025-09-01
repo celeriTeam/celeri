@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot, orderBy, limit } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { app } from "../../firebaseConfig";
 import { Pedometer } from 'expo-sensors';
@@ -119,3 +119,28 @@ export const getReferral = async (id: string): Promise<string | null> => {
         return null;
     }
 }
+
+// GET titleMessage from waitingMessage
+export const fetchDefaultTitleMessage = async (): Promise<string> => {
+    try {
+        const competitionsRef = collection(db, 'competitions');
+        const q = query(competitionsRef, orderBy('createdAt', 'desc'), limit(1));
+        console.log("test", q);
+        const snapshot = await getDocs(q);
+        
+        if (!snapshot.empty) {
+            const competitionDoc = snapshot.docs[0];
+            const data = competitionDoc.data();
+            if (data.waitingMessage) {
+                return data.waitingMessage;
+            }
+        }
+        
+        // Default message if no competition found or no waitingMessage field
+        return "No competition details at this time.";
+    } catch (error) {
+        console.error("Error fetching title message:", error);
+        // Return default message on error
+        return "Waiting for competition to start...";
+    }
+};

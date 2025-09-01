@@ -8,7 +8,7 @@ import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/comp
 import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, getReferralsData, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
-import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
+import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral, fetchDefaultTitleMessage } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { NativeModules, AppState, Platform } from 'react-native';
 import { EventEmitter, requireNativeModule } from 'expo-modules-core';
@@ -41,6 +41,7 @@ const CompetitionLandingPage: React.FC = () => {
     const [prevData, setPrevData] = useState<any>({});
     const [stepCount, setStepCount] = useState(0);
     const [referralResults, setReferralResults] = useState<any | false>(false);
+    const [titleMessage, setTitleMessage] = useState<string>("Loading Message");
     const { userID } = useUser();
     const router = useRouter();
 
@@ -132,6 +133,16 @@ const CompetitionLandingPage: React.FC = () => {
                 console.log('Competition started notification received');
                 getCurrentGame();
             }
+            
+            // Add handling for WAITING_MESSAGE
+            if (remoteMsg.data?.type === 'WAITING_MESSAGE' && remoteMsg.data?.message) {
+                console.log('Waiting message received:', remoteMsg.data.message);
+                if (typeof remoteMsg.data.message === 'string') {
+                    setTitleMessage(remoteMsg.data.message);
+                } else {
+                    console.log("remoteMsg.data.message is not a string")
+                }
+            }
         });
 
         return unsubscribe; // cleans up the listener on unmount
@@ -176,11 +187,33 @@ const CompetitionLandingPage: React.FC = () => {
         setCompetitionHasSeenResults(userID, competition_id);
     };
 
+    // Load default title message on component mount
+    useEffect(() => {
+        const loadTitleMessage = async () => {
+            try {
+                console.log("loading title message");
+                const message = await fetchDefaultTitleMessage();
+                setTitleMessage(message);
+            } catch (error) {
+                console.error("Error loading title message:", error);
+                // Keep default message on error
+            }
+        };
+        
+        loadTitleMessage();
+    }, []);
+
     return (
         <LinearGradient
             colors={['#000000', '#024405']}
             style={styles.container}
         >
+            {/* Add title message at the top */}
+            <View style={styles.titleContainer}>
+                <Text style={styles.titleMessage}>{titleMessage}</Text>
+            </View>
+            
+            {/* Existing content */}
             <View style={styles.content}>
                 <TouchableOpacity
                     style={joinButton(currentGame)}
@@ -247,7 +280,6 @@ const CompetitionLandingPage: React.FC = () => {
                     </View>
                 </View>
             </Modal>
-            <Text style={styles.stepCount}>{stepCount} steps</Text>
         </LinearGradient>
     );
 };
@@ -307,6 +339,20 @@ const styles = ScaledStyleSheet.create({
         position: 'absolute',
         bottom: 50,
         left: '50%',
+    },
+    titleContainer: {
+        width: '100%',
+        paddingVertical: moderateScale(15),
+        paddingHorizontal: moderateScale(20),
+        alignItems: 'center',
+        marginTop: moderateScale(50),
+    },
+    titleMessage: {
+        color: '#FFFFFF',
+        fontSize: moderateScale(18),
+        fontFamily: 'Lexend',
+        textAlign: 'center',
+        fontWeight: '500',
     },
 });
 
