@@ -22,7 +22,6 @@
     "metro-resolver": "0.81.5"
   },
   "dependencies": {
-    "live-healthkit": "file:./modules/live-healthkit",
     "@chartiful/react-native-chart-builder": "^0.1.8",
     "@chartiful/react-native-horizontal-bar-graph": "^0.1.2",
     "@expo/prebuild-config": "^8.0.0",

@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //import LiveHealthkit from '@/modules/live-healthkit';
 
-const native = requireNativeModule('LiveHealthkit');
+// const native = requireNativeModule('LiveHealthkit');
 
 
 const { StepSession } = NativeModules;
