@@ -31,6 +31,7 @@
         <data android:scheme="health-bets-app"/>
         <data android:scheme="com.alp2goose.flex"/>
         <data android:scheme="exp+health-bets-app"/>
+        <data android:scheme="health-bets-app"/>
       </intent-filter>
       <intent-filter>
         <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
