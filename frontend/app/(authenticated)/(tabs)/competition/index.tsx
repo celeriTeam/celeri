@@ -127,12 +127,12 @@ const CompetitionLandingPage: React.FC = () => {
     useEffect(() => {
 
         // listen while in foreground
-        const unsubscribe = messaging().onMessage(remoteMsg => {
+        const unsubscribe = messaging().onMessage(async remoteMsg => {
             console.log('Received foreground message:', remoteMsg);
             if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
                 console.log('Competition started notification received');
                 getCurrentGame();
-            }
+            } 
             
             // Add handling for WAITING_MESSAGE
             if (remoteMsg.data?.type === 'WAITING_MESSAGE' && remoteMsg.data?.message) {
@@ -151,7 +151,6 @@ const CompetitionLandingPage: React.FC = () => {
 
     // 5. Join Game handler
     const handleJoinGame = async () => {
-        console.log("testing one");
         if (loading) return; // Prevent multiple clicks while loading
         if (!userID) return;
         if (!hasConsented) {
@@ -208,13 +207,16 @@ const CompetitionLandingPage: React.FC = () => {
             colors={['#000000', '#024405']}
             style={styles.container}
         >
-            {/* Add title message at the top */}
-            <View style={styles.titleContainer}>
-                <Text style={styles.titleMessage}>{titleMessage}</Text>
-            </View>
             
             {/* Existing content */}
             <View style={styles.content}>
+                {/* Waiting Message */}
+                {titleMessage && (
+                    <Text style={waitingMessageText}>
+                        {titleMessage}
+                    </Text>
+                )}
+                {/* Join Game Button */}
                 <TouchableOpacity
                     style={joinButton(currentGame)}
                     onPress={handleJoinGame}
@@ -224,6 +226,7 @@ const CompetitionLandingPage: React.FC = () => {
                         {loading ? "Loading..." : "Join Game"}
                     </Text>
                 </TouchableOpacity>
+                {/* Rules & Consent Button */}
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={() => setModalVisible(true)}
@@ -380,5 +383,14 @@ const joinButtonText = (currentGame: any): TextStyle => ({
     color: currentGame ? '#000' : '#444',
     fontWeight: 'bold',
 });
+
+// Add this outside your component
+const waitingMessageText: TextStyle = {
+    fontSize: 24,
+    fontFamily: 'Lexend',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+};
 
 export default CompetitionLandingPage;
