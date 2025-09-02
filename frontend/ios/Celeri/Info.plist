@@ -56,15 +56,9 @@
     <key>NSFaceIDUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
     <key>NSHealthShareUsageDescription</key>
-<<<<<<< HEAD
-    <string>We read your step count for competitions.</string>
-    <key>NSHealthUpdateUsageDescription</key>
-    <string>We create workout sessions to track steps.</string>
-=======
     <string>This app needs access to your health data to track your steps and health metrics.</string>
     <key>NSHealthUpdateUsageDescription</key>
     <string>This app needs access to your health data to update your health metrics.</string>
->>>>>>> 6010c910 (testing new pedometer)
     <key>NSMicrophoneUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSMotionUsageDescription</key>

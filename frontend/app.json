@@ -21,14 +21,9 @@
           "fetch",
           "remote-notification"
         ],
-<<<<<<< HEAD
-        "NSHealthShareUsageDescription": "We read your step count for competitions.",
-        "NSHealthUpdateUsageDescription": "We create workout sessions to track steps.",
-=======
         "NSMotionUsageDescription": "This app uses motion data to track your steps.",
         "NSHealthShareUsageDescription": "This app needs access to your health data to track your steps and health metrics.",
         "NSHealthUpdateUsageDescription": "This app needs access to your health data to update your health metrics.",
->>>>>>> 6010c910 (testing new pedometer)
         "CFBundleDisplayName": "Celeri"
       },
       "buildNumber": "4"
