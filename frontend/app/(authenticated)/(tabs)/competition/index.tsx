@@ -14,14 +14,9 @@ import { NativeModules, AppState, Platform } from 'react-native';
 import { EventEmitter, requireNativeModule } from 'expo-modules-core';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
-
-//import LiveHealthkit from '@/modules/live-healthkit';
-
+// import LiveHealthkit from '@/modules/live-healthkit';
 // const native = requireNativeModule('LiveHealthkit');
-
-
-const { StepSession } = NativeModules;
+// const { StepSession } = NativeModules;
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,25 +39,6 @@ const CompetitionLandingPage: React.FC = () => {
     const [titleMessage, setTitleMessage] = useState<string>("Loading Message");
     const { userID } = useUser();
     const router = useRouter();
-
-    useEffect(() => {
-        if (Platform.OS !== 'ios') return;
-
-        // 1) Get the module (this throws if not linked — good!)
-    //    const testLiveHealthkit = async () => {
-    //         try {
-    //             const mod = LiveHealthkit ?? requireNativeModule('LiveHealthkit');
-    //             const val = await mod.hello(); // Now properly awaited
-    //             console.log('hello ->', val); // Should show "Hello world! 👋"
-    //         } catch (err) {
-    //             console.warn('LiveHealthkit not available:', err);
-    //         }
-    //     };
-
-        // testLiveHealthkit();
-    }, []);
-
-    // 1) central fetch + nav logic
 
     const getCurrentGame = useCallback(async () => {
         setLoading(true);

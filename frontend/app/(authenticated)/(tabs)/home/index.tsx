@@ -311,7 +311,7 @@ const HomeTab: React.FC = () => {
         } else {
             router.push({
                 pathname: '/(authenticated)/(tabs)/home/groups/InviteGroup',
-                params: { leaderID: group?.groupLeader, groupID: group?.groupID, fromCreate: 'false', isResultAvailable: group.isResultAvailable },
+                params: { leaderID: group?.groupLeader, groupID: group?.groupID, fromCreate: 'false', isResultAvailable: group?.isResultAvailable },
             });
         }
         setIsPressed(false);

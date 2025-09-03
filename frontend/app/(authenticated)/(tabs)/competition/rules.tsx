@@ -56,7 +56,7 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
     const checkConsent = async () => {
       if (userID) {
         const consented = await hasUserConsented(userID);
-        setHasConsented(false);
+        setHasConsented(consented);
       }
     };
     checkConsent();

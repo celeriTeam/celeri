@@ -8,7 +8,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
+import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic, setGroupViewedResults } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps, getName } from '@backend/src/users';
 import { useUser } from '../../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
@@ -73,7 +73,6 @@ const InvitePage: React.FC = () => {
     }, [userID]);
 
     useEffect(() => {
-        console.log("InviteGroup -- isResultAvailable -- ", isResultAvailable)
         if (isResultAvailable === 'true') {
             setShowGameEndModal(true);
         }
@@ -238,6 +237,11 @@ const InvitePage: React.FC = () => {
         }
     };
 
+    const handleResultsPageClose = async () => {
+        setShowGameEndModal(false);
+        setGroupViewedResults(resolvedGroupID, userID);
+    }
+
     const copyToClipboard = () => {
         Clipboard.setString(groups[resolvedGroupID]?.groupCode || '');
         Alert.alert('Copied to Clipboard', 'Group code has been copied to your clipboard!');
@@ -394,7 +398,7 @@ const InvitePage: React.FC = () => {
                         <View style={styles.modalOverlay}>
                             <View style={[styles.gameEndModalContainer, { height: '85%', }]}>
                                 {/* Close button */}
-                                <TouchableOpacity style={styles.closeButton} onPress={() => { setShowGameEndModal(false) }}>
+                                <TouchableOpacity style={styles.closeButton} onPress={handleResultsPageClose}>
                                     <Image
                                         source={require('@assets/icons/x.png')}
                                         style={styles.closeButtonIcon}
