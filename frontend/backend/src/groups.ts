@@ -160,28 +160,29 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
 }
 
 // GET Group isResultAvailable
-export const getGroupIsResultAvailable = async (groupID: string, userID: string): Promise <boolean | undefined> =>{
-    try {
-        const groupDoc = await getDoc(doc(db, "groups", groupID));
-        if (groupDoc.exists()) {
-            const viewedResults = groupDoc.data()?.resultsHistory;
-            // console.log("getGroupIsResultAvailable, ", viewedResults)
-      
-            if (viewedResults && userID in viewedResults) {
-              return viewedResults[userID] === false;
-            }
-      
-            return false; // UserID not in map or map is empty
-          } else {
-            console.error("getGroupIsResultAvailable -- error: No such document!");
-            return undefined;
-        }
+export const getGroupIsResultAvailable = async (groupID: string, userID: string): Promise<boolean | undefined> => {
+    const groupDoc = await getDoc(doc(db, "groups", groupID));
+    if (groupDoc.exists() && groupDoc.data()?.hasPendingResults !== undefined) {
+        const hasPendingResults = groupDoc.data()?.hasPendingResults;
+        const viewedResults = groupDoc.data()?.viewedResults ?? [];
 
-    } catch (error) {
-        console.error("getGroupIsResultAvailable - Error fetching user document: ", error);
-        return undefined;
-   }
-}
+        if (hasPendingResults && viewedResults.includes(userID)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+};
+
+export const setGroupViewedResults = async (groupID: string, userID: string) => {
+    const groupDocRef = doc(db, 'groups', groupID);
+    const groupDoc = await getDoc(groupDocRef);
+    if (groupDoc.exists()) {
+        await updateDoc(groupDocRef, {
+            viewedResults: arrayUnion(userID)
+        });
+    }
+};
 
 // GET Group Creator
 export const getGroupCreator = async (groupID: string): Promise<string | undefined> => {
