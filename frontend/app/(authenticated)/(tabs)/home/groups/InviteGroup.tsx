@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 import GameEndPage from './GameEnd';
+import GameHistoryPage from './GameHistory';
 
 const db = getFirestore(app);
 
@@ -46,6 +47,7 @@ const InvitePage: React.FC = () => {
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [showGameEndModal, setShowGameEndModal] = useState(false);
+    const [showGameHistoryModal, setShowGameHistoryModal] = useState(false);
 
     const userStartRequirement = 3;
 
@@ -284,6 +286,12 @@ const InvitePage: React.FC = () => {
                         <View style={styles.titleContainer}>
                             <Text style={styles.groupNameStandalone}>{groups[resolvedGroupID]?.groupName}</Text>
                         </View>
+                        <TouchableOpacity style={{ position: 'absolute', right: 0, padding: 20 }} onPress={() => setShowGameHistoryModal(true)}>
+                            <Image
+                                source={require('../../../../../assets/icons/history.png')}
+                                style={styles.historyImage}
+                            />
+                        </TouchableOpacity>
                     </View>
                     <View style={styles.groupImageContainer}>
                         {groups[resolvedGroupID]?.groupImageUrl ? (
@@ -389,7 +397,6 @@ const InvitePage: React.FC = () => {
                     </Modal>
 
                     {/*Game end page modal */}
-
                     <Modal
                         transparent={true}
                         visible={showGameEndModal}
@@ -406,6 +413,30 @@ const InvitePage: React.FC = () => {
                                 </TouchableOpacity>
 
                                 <GameEndPage 
+                                    currentGroupUsersArray={currentGroupUsersArray}
+                                    groups={groups}
+                                />
+                            </View>
+                        </View>
+                    </Modal>
+
+                    {/*history page modal */}
+                    <Modal
+                        transparent={true}
+                        visible={showGameHistoryModal}
+                        animationType="slide"
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={[styles.gameEndModalContainer, { height: '85%', }]}>
+                                {/* Close button */}
+                                <TouchableOpacity style={styles.closeButton} onPress={() => setShowGameHistoryModal(false)}>
+                                    <Image
+                                        source={require('@assets/icons/x.png')}
+                                        style={styles.closeButtonIcon}
+                                    />
+                                </TouchableOpacity>
+
+                                <GameHistoryPage
                                     currentGroupUsersArray={currentGroupUsersArray}
                                     groups={groups}
                                 />
@@ -449,6 +480,10 @@ const styles = StyleSheet.create({
     backImage: {
         width: 19,
         height: 19,
+    },
+    historyImage: {
+        width: 28,
+        height: 28,
     },
     groupNameCreated: {
         textAlign: 'center',
@@ -573,6 +608,7 @@ const styles = StyleSheet.create({
     closeButtonIcon: {
         width: 20,
         height: 20,
+        color: '#fff'
     },
     closeButtonText: {
         fontSize: 18,

@@ -44,13 +44,14 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
         const fetchResults = async () => {
             if (resolvedGroupID) {
                 const data = await getGameResults(resolvedGroupID);
-                setResults(data);
+                const latestGame = data[0] || null;
+                setResults(latestGame);
 
                 // merge tokens into each user object in-place
                 if (data && currentGroupUsersArray.length > 0) {
                     const enrichedUsers = currentGroupUsersArray.map((user) => ({
                         ...user,
-                        tokens: data[user.id] ?? 0,
+                        tokens: latestGame?.results[user.id] ?? 0,
                     }));
 
                     const sorted = enrichedUsers.sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0));

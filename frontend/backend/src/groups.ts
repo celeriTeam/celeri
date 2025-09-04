@@ -105,6 +105,7 @@ export const getGroupCode = async (groupID: string): Promise<string | undefined>
          return undefined;
     }
 }
+
 // GET Group createdAt
 export const getGroupCreatedAt = async (groupID: string): Promise<string | undefined> => {
     try {
@@ -118,6 +119,23 @@ export const getGroupCreatedAt = async (groupID: string): Promise<string | undef
         }
     } catch (error) {
          console.error("getGroupCreatedAt - Error fetching user document: ", error);
+         return undefined;
+    }
+}
+
+// GET Group updatedAt
+export const getGroupUpdatedAt = async (groupID: string): Promise<Date | undefined> => {
+    try {
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
+        if (groupDoc.exists() && groupDoc.data()?.updatedAt){
+            const updatedAt = groupDoc.data()?.updatedAt;
+            return updatedAt.toDate();
+        } else{
+            console.error("getGroupUpdatedAt - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+         console.error("getGroupUpdatedAt - Error fetching user document: ", error);
          return undefined;
     }
 }
@@ -639,22 +657,27 @@ export const getNewsSummary = async (groupID: string, targetDate: Date): Promise
 };
 
 // GET results from the results collection
-export const getGameResults = async (groupID: string): Promise<Record<string, any> | null> => {
+export const getGameResults = async (groupID: string): Promise<any[]> => {
     try {
-      const resultsRef = collection(db, "results");
-      const q = query(resultsRef, where("groupID", "==", groupID));
-      const querySnapshot = await getDocs(q);
-  
-      if (!querySnapshot.empty) {
-        const docData = querySnapshot.docs[0].data();
-        return docData.results ?? null; // assumes `results` is the field storing the map
-      } else {
-        console.warn("No results found for groupID:", groupID);
-        return null;
-      }
+        const resultsRef = collection(db, "results");
+        const q = query(
+            resultsRef,
+            where("groupID", "==", groupID),
+            orderBy("createdAt", "desc") // newest first
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+        } else {
+            return [];
+        }
     } catch (error) {
-      console.error("Error fetching game results:", error);
-      return null;
+        console.error("Error fetching game results:", error);
+        return [];
     }
 };
 

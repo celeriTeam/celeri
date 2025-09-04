@@ -2173,6 +2173,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
 
             // end the game
             groupBatch.update(groupDocRef, {
+              updatedAt: currentTimestamp,
               isGameActive: false,
               cycleWeek: 0,
               cycleCount: 0,
@@ -2186,8 +2187,8 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               startingTokens: admin.firestore.FieldValue.delete(),
               resultsHistory: {
                 resultsID: resultDocId,
-                hasSeen: {}
-              }
+                hasSeen: {},
+              },
             });
 
 
@@ -2343,6 +2344,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
           if (cycleCount > data.totalCycles) {
             // end the game
             groupBatch.update(groupDocRef, {
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               isGameActive: false,
               cycleWeek: 0,
               cycleCount: 0,
@@ -2502,6 +2504,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
         if (cycleCount > data.totalCycles) {
           // end the game
           groupBatch.update(groupDocRef, {
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
             isGameActive: false,
             cycleDay: 0,
             cycleCount: 0,
