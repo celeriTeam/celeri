@@ -18,7 +18,7 @@ import { app } from "@firebaseConfig";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
 import useHealthData from '../../../../backend/src/hooks/useHealthData';
-import { createGroup, getGroupCreatedAt, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getUsersInGroup } from '@backend/src/groups';
+import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getGroupUpdatedAt, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups, getUserName, setIsIn1v1, setStepsFirebase } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
@@ -204,7 +204,7 @@ const HomeTab: React.FC = () => {
                                 isFinishedBetting,
                                 isFinishedTutorial,
                                 groupCreator,
-                                createdAt,
+                                updatedAt,
                             ] = await Promise.all([
                                 getGroupProfilePic(groupID),
                                 getGroupName(groupID),
@@ -213,7 +213,7 @@ const HomeTab: React.FC = () => {
                                 checkFinishedBetting(groupID, uid),
                                 checkFinishedTutorial(groupID, uid),
                                 getGroupCreator(groupID),
-                                getGroupCreatedAt(groupID),
+                                getGroupUpdatedAt(groupID),
                             ]);
 
                             const userList = await getUsersInGroup(groupID);
@@ -229,7 +229,7 @@ const HomeTab: React.FC = () => {
                                 isFinishedTutorial,
                                 userList,
                                 groupCreator,
-                                createdAt: createdAt ? new Date(createdAt) : new Date(0),
+                                updatedAt: updatedAt ?? new Date(0),
                             };
 
                             // Update local array by replacing existing group or adding new
@@ -250,8 +250,8 @@ const HomeTab: React.FC = () => {
                                 if (a.isResultAvailable && !b.isResultAvailable) return -1;
                                 if (!a.isResultAvailable && b.isResultAvailable) return 1;
 
-                                // 3. CreatedAt descending
-                                return b.createdAt.getTime() - a.createdAt.getTime();
+                                // 3. updatedAt descending
+                                return b.updatedAt.getTime() - a.updatedAt.getTime();
                             });
 
                             setGroups(sortedGroups);
@@ -372,7 +372,7 @@ const HomeTab: React.FC = () => {
             return (
                 <>
                     <Text style={styles.subTitle}>Your Groups:</Text>
-                    <ScrollView style={styles.scrollContainer}>
+                    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
 
                         {groups.map((group) => {
                             const memberCount = group.userList ? Object.keys(group.userList).length : 0;

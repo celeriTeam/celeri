@@ -113,7 +113,7 @@ const ProfilePage: React.FC = () => {
             break
         }
         } catch (err) {
-        Alert.alert('Error', 'Couldn’t update friendship status. Please try again.')
+        Alert.alert('Error', 'Couldn\'t update friendship status. Please try again.')
         }
     }
 
