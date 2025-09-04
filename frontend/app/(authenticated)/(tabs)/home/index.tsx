@@ -129,11 +129,13 @@ const HomeTab: React.FC = () => {
 
                 const current1v1History = await get1v1History(user.uid);
                 setHistory1v1s(current1v1History);
+
+                setIsLoadingHome(false);
             } else {
                 console.log('No user signed in');
+                setIsLoadingHome(false);
             }
         });
-        setIsLoadingHome(false);
 
         return () => {
             unsubscribe(); // Cleanup the auth state listener
@@ -177,13 +179,13 @@ const HomeTab: React.FC = () => {
     //     }
     // }, [refreshRequestsFlag]);
 
-    const fetchGroupData = async (userGroups: string[], uid: string) => {
+    const fetchGroupData = async (userGroups: string[], uid: string): Promise<(() => void)[]> => {
+        const unsubscribeList: (() => void)[] = [];
+
         if (!userGroups || userGroups.length === 0) {
             setGroups([]);
-            return;
+            return unsubscribeList;
         }
-
-        setIsLoadingHome(true);
 
         try {
             const groupArr: any[] = [];
@@ -262,9 +264,9 @@ const HomeTab: React.FC = () => {
             );
         } catch (err) {
             console.error("Error fetching groups:", err);
-        } finally {
-            setIsLoadingHome(false);
         }
+
+        return unsubscribeList;
     };
 
     const toggleModal = () => {

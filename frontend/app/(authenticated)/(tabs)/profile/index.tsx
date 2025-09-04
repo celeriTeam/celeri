@@ -291,7 +291,11 @@ const PersonalProfilePage: React.FC = () => {
 
                     <Text style={styles.groupsLabel}>Steps This Week</Text>
                     {averageSteps.length !== 0 ? (
-                        StepsChart({ weeklySteps: averageSteps })
+                        averageSteps.every(step => step === 0) ? (
+                            <Text style={styles.healthPermissionsText}>Health data permissions are required to use this app.{`\n`}Go to Settings to enable this.</Text>
+                        ) : (
+                            StepsChart({ weeklySteps: averageSteps })
+                        )
                     ) : (
                         <Text style={styles.text}>Loading...</Text>
                     )}
@@ -456,6 +460,14 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         textAlign: 'center',
         color: '#fff',
+    },
+    healthPermissionsText: {
+        fontFamily: "Lexend",
+        fontSize: 14,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        textAlign: 'left',
+        color: '#ffffffbb',
     },
     buttonText: {
         marginTop: 25,

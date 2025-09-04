@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, Alert, NativeEventEmitter } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Alert, NativeEventEmitter, Linking } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
@@ -28,6 +28,9 @@ const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
 const CompetitionLandingPage: React.FC = () => {
+    const { userID } = useUser();
+    const router = useRouter();
+    const { hasPermissions } = useHealthData();
     const [modalVisible, setModalVisible] = useState(false);
     const [currentGame, setCurrentGame] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -37,8 +40,6 @@ const CompetitionLandingPage: React.FC = () => {
     const [stepCount, setStepCount] = useState(0);
     const [referralResults, setReferralResults] = useState<any | false>(false);
     const [titleMessage, setTitleMessage] = useState<string>("Loading Message");
-    const { userID } = useUser();
-    const router = useRouter();
 
     const getCurrentGame = useCallback(async () => {
         setLoading(true);
@@ -178,6 +179,20 @@ const CompetitionLandingPage: React.FC = () => {
         loadTitleMessage();
     }, []);
 
+    if (hasPermissions === false) {
+        if (Platform.OS === 'android' && Platform.Version < 34) {
+            Linking.openURL('market://details?id=com.google.android.apps.healthdata');
+        }
+        return (
+            <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+                <View style={styles.safeArea}>
+                    <Text>Health data permissions are required to use this app.</Text>
+                    <Text>Go to Settings to enable this.</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <LinearGradient
             colors={['#000000', '#024405']}
@@ -264,6 +279,14 @@ const CompetitionLandingPage: React.FC = () => {
 };
 
 const styles = ScaledStyleSheet.create({
+    safeArea: {
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        marginTop: 10,
+        height: '100%',
+        width: '90%',
+        alignSelf: 'center',
+    },
     container: {
         flex: 1,
         width: '100%',
@@ -352,6 +375,8 @@ const joinButton = (currentGame: any): ViewStyle => ({
 
 import type { TextStyle } from 'react-native';
 import ResultsModal from './resultsModal';
+import useHealthData from '@/backend/src/hooks/useHealthData';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const joinButtonText = (currentGame: any): TextStyle => ({
     fontSize: 24,
