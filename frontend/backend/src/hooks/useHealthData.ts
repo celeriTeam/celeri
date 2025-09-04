@@ -577,9 +577,29 @@ const useHealthData = () => {
                         resolve(false);
                         return;
                     }
-                    console.log('Apple Health Data: Permissions received!');
-                    setHasPermissions(true);
-                    resolve(true);
+                    AppleHealthKit.getAuthStatus(permissions, (err2, results: any) => {
+                        if (err2) {
+                            console.log("Error checking HealthKit auth status:", err2);
+                            setHasPermissions(false);
+                            resolve(false);
+                            return;
+                        }
+                        console.log(AppleHealthKit.Constants.Permissions.Steps);
+                        console.log(results);
+                        
+                        // Map the numeric [1] to string "Steps"
+                        const hasSteps = Array.isArray(results?.permissions?.read) && results.permissions.read.length > 0;
+
+                        if (hasSteps) {
+                            console.log("Apple Health Data: Permissions confirmed!");
+                            setHasPermissions(true);
+                            resolve(true);
+                        } else {
+                            console.log("Apple Health Data: Permissions NOT granted.");
+                            setHasPermissions(false);
+                            resolve(false);
+                        }
+                    });
                 });
             });
         } else if (isAndroid) {
@@ -609,6 +629,16 @@ const useHealthData = () => {
         }
         return false;
     };
+
+    // double check if permissions are accepted with averageSteps:
+    useEffect(() => {
+        const isAllZeroes = averageSteps.length === 7 && averageSteps.every(step => step === 0);
+
+        if (isAllZeroes) {
+            console.log('averageSteps is [0, 0, 0, 0, 0, 0, 0]');
+            setHasPermissions(false);
+        }
+    }, [averageSteps]);
 
     useEffect(() => {
         const setupHealthKit = async () => {
