@@ -4,7 +4,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import { getGroupFromCode, addUserToGroup, getGroupIsGameActive } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../UserProvider';
 import { useRouter } from 'expo-router'
 import { StyleSheet } from 'react-native-size-scaling';
 
@@ -30,12 +30,12 @@ const JoinGroupPage: React.FC= () => {
                 if (groupInUserResponse === 'Group added successfully!') {
                     if (isGameActive) {
                         router.replace({
-                            pathname: '/(authenticated)/(tabs)/home/bets/Welcome',
+                            pathname: '/home/groups/Welcome',
                             params: { groupIDTemp: groupID },
                         });
                     } else {
                         router.replace({
-                            pathname: '/(authenticated)/(tabs)/home/groups/InviteGroup',
+                            pathname: '/home/groups/InviteGroup',
                             params: { groupID, fromCreate: "true" },
                         });
                     }

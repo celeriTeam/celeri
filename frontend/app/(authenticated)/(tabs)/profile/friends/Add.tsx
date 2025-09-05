@@ -34,7 +34,9 @@ export default function FriendsAddPage() {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [randomUsers, setRandomUsers] = useState<User[]>([]);
     const [requestedIds, setRequestedIds] = useState<string[]>([]);
+    const [searchText, setSearchText] = useState('');
     const router = useRouter();
 
     useEffect(() => {
@@ -58,10 +60,10 @@ export default function FriendsAddPage() {
                 // 3) Build the list, skipping self & anyone in those arrays
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    if (doc.id === uid) return                                 // skip yourself
-                    if (outgoing.includes(doc.id)) return                       // skip already‐sent
-                    if (incoming.includes(doc.id)) return                       // skip already‐received
-                    if (friends.includes(doc.id)) return                        // skip already friends
+                    if (doc.id === uid) return;             // skip yourself
+                    if (outgoing.includes(doc.id)) return;  // skip already‐sent
+                    if (incoming.includes(doc.id)) return;  // skip already‐received
+                    if (friends.includes(doc.id)) return;   // skip already friends
                     usersArray.push({
                         id: doc.id,
                         name: data.name || 'Unknown',
@@ -70,10 +72,12 @@ export default function FriendsAddPage() {
                     });
                 });
 
+                // sort
+                const shuffled = [...usersArray].sort(() => Math.random() - 0.5);
+                const shuffledTop20 = shuffled.slice(0, 20);
 
-                // for search functionality
                 setCurrentGroupUsersArray(usersArray);
-                setFilteredUsers(usersArray);
+                setRandomUsers(shuffledTop20);
             } catch (error) {
                 console.error('Error fetching users in Add page:', error);
             } finally {
@@ -83,9 +87,20 @@ export default function FriendsAddPage() {
 
         fetchData(userID);
     }, [userID]);
+    
+    const reshuffle = () => {
+        const shuffled = [...currentGroupUsersArray].sort(() => Math.random() - 0.5);
+        const shuffledTop20 = shuffled.slice(0, 20);
+        setRandomUsers(shuffledTop20);
+    }
 
     const handleSearch = (text: string) => {
         const query = text.toLowerCase();
+        setSearchText(query);
+        if (text.length <= 1) {
+            setFilteredUsers([]);
+            return;
+        }
 
         const filtered = currentGroupUsersArray.filter(user => {
             const nameMatch = user.name?.toLowerCase().includes(query);
@@ -162,8 +177,60 @@ export default function FriendsAddPage() {
                             </TouchableOpacity>
                         ))
                     ) : (
-                        <Text style={styles.noUsersText}>No users found.</Text>
+                        searchText.length > 2 && <Text style={styles.noUsersText}>No users found.</Text>
                     )}
+                </ScrollView>
+            </View>
+            <View style={{ padding: 10, }} />
+            <View style={styles.scrollContainer}>
+                <View style={[styles.row, { marginHorizontal: 5, marginBottom: 10, justifyContent: 'space-between' }]}>
+                    <Text style={styles.title}>Explore Users</Text>
+                    <TouchableOpacity onPress={reshuffle} activeOpacity={0.8}>
+                        <Image
+                            source={require('@assets/icons/refresh.png')}
+                            style={styles.refreshIcon}
+                        />
+                    </TouchableOpacity>
+                </View>
+                <ScrollView>
+                    {randomUsers.map((user) => (
+                        <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
+                            <View style={styles.memberInfo}>
+                                {/* left side: avatar + name */}
+                                <View style={styles.memberLeft}>
+
+                                    <Image
+                                        source={
+                                            user.pfp ?
+                                                { uri: user?.pfp }
+                                                : require('@components/blank-profile-picture.png')
+                                        }
+                                        style={styles.profilePic}
+                                    />
+                                    <View>
+                                        <View style={[styles.row, { justifyContent: 'space-between', width: '100%' }]}>
+                                            <Text style={styles.memberName}>{user?.name}</Text>
+                                        </View>
+                                        <Text style={styles.memberUserName}>@{user?.username}</Text>
+                                    </View>
+                                </View>
+
+                                {/* right side: Add Friend button */}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.addFriendButton,
+                                        requestedIds.includes(user.id) && styles.addFriendButtonDisabled
+                                    ]}
+                                    onPress={() => handleAddFriend(user.id)}
+                                    disabled={requestedIds.includes(user.id)}
+                                >
+                                    <Text style={styles.addFriendText}>
+                                        {requestedIds.includes(user.id) ? 'Requested' : 'Add Friend'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
                 </ScrollView>
             </View>
         </View>
@@ -178,33 +245,17 @@ const styles = StyleSheet.create({
     title: {
         fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: 20,
-        textAlign: 'center',
+        fontSize: 15,
     },
     text: {
         fontFamily: 'Lexend',
         color: '#fff',
         fontSize: 13,
     },
-    diamonds: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        alignItems: "center",
-        padding: 10,
-        gap: 5,
-    },
-    diamondIcon: {
-        width: 14,
-        height: 12,
-    },
-    itemContainer: {
-        backgroundColor: '#5BE35C33',
-        justifyContent: 'center',
-        marginVertical: 10,
-        borderRadius: 15,
-        paddingVertical: 10,
-        paddingLeft: 20,
-        paddingTop: 30,
+    refreshIcon: {
+        width: 18,
+        height: 18,
+        tintColor: '#fff',
     },
     addFriendButton: {
         backgroundColor: 'transparent',
@@ -246,7 +297,7 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        flex: 1,
+        flex: 0.5,
     },
     row: {
         flexDirection: 'row',
@@ -307,6 +358,8 @@ const styles = StyleSheet.create({
         color: '#ffffffaa',
         fontSize: 13,
         paddingLeft: 5,
+        marginTop: 5,
+        textAlign: 'center',
     },
     challengeButton: {
         alignItems: 'center',

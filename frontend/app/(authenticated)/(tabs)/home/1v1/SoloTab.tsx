@@ -18,7 +18,7 @@ import { LineChart } from 'react-native-chart-kit';
 import History1v1s from './History1v1s';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { LinearGradient } from 'expo-linear-gradient';
-import ResultsModal from './resultsModal';
+import ResultsModal from './Results';
 
 dayjs.extend(relativeTime);
 

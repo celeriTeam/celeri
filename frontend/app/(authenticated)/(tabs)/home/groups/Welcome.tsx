@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, createBet, getUnbetDuels } from '@/backend/src/bets';
-import BetRecapPage from './Recap';
-import WeeklyBetRecapPage from './WeeklyRecap';
+import BetRecapPage from './modals/Recap';
+import WeeklyBetRecapPage from './modals/WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -91,7 +91,7 @@ const WelcomePage: React.FC = () => {
         addToFinishedTutorial(groupID, userID);
         setTimeout(() => {
             router.replace({
-                pathname: '/(authenticated)/(tabs)/home/bets/NewHeadToHead',
+                pathname: '/home/groups/HeadToHead',
                 params: { groupIDTemp, showTutorialTemp: 'false' },
             });
         }, 0);
@@ -99,7 +99,7 @@ const WelcomePage: React.FC = () => {
 
     const handleNext = () => {
         router.replace({
-            pathname: '/(authenticated)/(tabs)/home/bets/NewHeadToHead',
+            pathname: '/home/groups/HeadToHead',
             params: { groupIDTemp, showTutorialTemp: 'true' },
         });
     }

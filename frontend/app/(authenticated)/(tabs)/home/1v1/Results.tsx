@@ -75,7 +75,7 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
 
     const StepsChart = ({ current1v1 }: { current1v1: any }) => {
         if (!current1v1 || !results) {
-            return ( <View /> );
+            return (<View />);
         }
         const labels = ["0", "4h", "8h", "12h", "16h", "20h", "24h"];
 
@@ -229,7 +229,7 @@ const ResultsModal: React.FC<Props> = ({ results }) => {
                             <Text style={styles.steps}>{userSteps} steps</Text>
                         </View>
                     </View>
-                    <View style={[styles.rowSide, { opacity: winner === "Opponent" ? 1 : 0.5}]}>
+                    <View style={[styles.rowSide, { opacity: winner === "Opponent" ? 1 : 0.5 }]}>
                         <View style={{ paddingVertical: 7, }}>
                             <Text style={[styles.player, { textAlign: 'right', }]}>{updatedResults?.userInfo?.opponentUsername}</Text>
                             <Text style={[styles.steps, { textAlign: 'right', }]}>{opponentSteps} steps</Text>

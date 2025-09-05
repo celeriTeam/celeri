@@ -14,7 +14,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { CTAButton } from "@components/CTAButton";
 import { generateGroupCode, createGroup, addGroupImage } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../UserProvider';
 import { useRouter } from 'expo-router'
 import { StyleSheet } from 'react-native-size-scaling';
 

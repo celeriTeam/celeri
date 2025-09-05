@@ -5,9 +5,9 @@ import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, get
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
-import StorePage from './Store';
-import BetHistoryPage from './BetHistory';
-import WeeklyBetHistoryPage from './WeeklyBetHistory';
+import StorePage from './modals/Store';
+import BetHistoryPage from './modals/BetHistory';
+import WeeklyBetHistoryPage from './modals/WeeklyBetHistory';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
 import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
     getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, 
@@ -18,12 +18,12 @@ import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
 import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import LiveDuelPage from './LiveDuel';
-import PropBetPage from './PropBet';
-import EditGroupPage from './EditGroup';
+import LiveDuelPage from './modals/LiveDuel';
+import PropBetPage from './modals/PropBet';
+import EditGroupPage from './modals/EditGroup';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
-import NewsPage from './News';
+import NewsPage from './modals/News';
 import BetSummaryTutorial from './tutorials/BetSummaryTutorial';
 import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
 import StoreTutorial from './tutorials/StoreTutorial';
@@ -674,15 +674,20 @@ const BetSummaryPage: React.FC = () => {
     };
 
     const createMemberButtonHandle = (id: string) => {
-        router.push({
-            pathname: '/(authenticated)/(tabs)/home/bets/publicProfile',
-            params: {
-                selectedUserIDTemp: id ?? '',
-                groupIDTemp: groupID,
-                averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [],
-                stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0,
-            },
-        });
+        // router.push({
+        //     pathname: '/(authenticated)/(tabs)/home/bets/publicProfile',
+        //     params: {
+        //         selectedUserIDTemp: id ?? '',
+        //         groupIDTemp: groupID,
+        //         averageStepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.averageSteps ?? [],
+        //         stepsTemp: currentGroupUsersArray.find((user) => user.id === id)?.todaysSteps ?? 0,
+        //     },
+        // });
+        if (id === userID) {
+            router.push('/profile');
+        } else {
+            router.push(`/home/publicProfile/${id}`);
+        }
     };
 
     const handleRightArrowPress = () => {
@@ -1291,7 +1296,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/(tabs)/home/bets/history/GainsHistory',
+                                        pathname: '/(authenticated)/(tabs)/home/groups/history/GainsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1305,7 +1310,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/(tabs)/home/bets/history/BetsHistory',
+                                        pathname: '/(authenticated)/(tabs)/home/groups/history/BetsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1319,7 +1324,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/(tabs)/home/bets/history/RaceHistory',
+                                        pathname: '/(authenticated)/(tabs)/home/groups/history/RaceHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}
@@ -1333,7 +1338,7 @@ const BetSummaryPage: React.FC = () => {
                                 onPress={() => {
                                     setHistoryDropdownVisible(false);
                                     router.push({
-                                        pathname: '/(authenticated)/(tabs)/home/bets/history/NewsHistory',
+                                        pathname: '/(authenticated)/(tabs)/home/groups/history/NewsHistory',
                                         params: { groupIDTemp: groupID },
                                     });
                                 }}

@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, createBet, getUnbetDuels } from '@/backend/src/bets';
-import BetRecapPage from './Recap';
-import WeeklyBetRecapPage from './WeeklyRecap';
+import BetRecapPage from './modals/Recap';
+import WeeklyBetRecapPage from './modals/WeeklyRecap';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setLatestBetTime, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -265,7 +265,7 @@ const NewHeadToHeadPage: React.FC = () => {
                 await addToFinishedBetting(groupID, userID);
                 setTimeout(() => {
                     router.replace({
-                        pathname: '/(authenticated)/(tabs)/home/bets/BetSummary',
+                        pathname: '/home/groups/BetSummary',
                         params: { groupIDTemp: groupID, showTutorialTemp: showTutorialTemp },
                     });
                 }, 0); // Ensures the route updates in order
@@ -514,7 +514,7 @@ const NewHeadToHeadPage: React.FC = () => {
         setSubmittedModalVisible(false);
         setTimeout(() => {
             router.replace({
-                pathname: '/(authenticated)/(tabs)/home/bets/BetSummary',
+                pathname: '/home/groups/BetSummary',
                 params: { groupIDTemp: groupID, showTutorialTemp: showTutorialTemp },
             });
         }, 0); // Ensures the route updates in order

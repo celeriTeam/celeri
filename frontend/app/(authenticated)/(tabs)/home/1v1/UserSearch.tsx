@@ -44,7 +44,9 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
     const { userID, username } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
+    const [friendsArray, setFriendsArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+    const [randomUsers, setRandomUsers] = useState<User[]>([]);
     const [userExpanded, setUserExpanded] = useState<string | null>(null);
     const [friends, setFriends] = useState<string[]>([]);
 
@@ -52,41 +54,47 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         const fetchData = async (uid: string) => {
             try {
                 // get friends
-                const meRef = doc(db, "users", userID);
+                const meRef = doc(db, "users", uid);
                 const meSnap = await getDoc(meRef);
                 const meData = meSnap.data() || {};
                 const friendsList: string[] = meData.friendsList || [];
                 setFriends(friendsList);
                 const querySnapshot = await getDocs(collection(db, 'users'));
                 const usersArray: User[] = [];
+                const friendsArray: User[] = [];
 
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     const createdAt = data.lastLogin?.toDate() || new Date();
-                    if (userID === doc.id) return; // Skip the current user
-                    usersArray.push({
+                    if (doc.id === uid) return;
+                    const newUser = {
                         id: doc.id,
                         name: data.name || 'Unknown',
                         username: data.username || 'Unknown',
                         pfp: data.profileImageUrl || '',
                         lastLogin: data.lastLogin ? formatRelativeTime(createdAt) : 'over 1 month ago',
                         isIn1v1: data.isIn1v1 || false,
-                    });
+                    };
+                    usersArray.push(newUser);
+                    if (friendsList.includes(doc.id)) {
+                        friendsArray.push(newUser);
+                    }
                 });
+                
+                // sort
+                const shuffled = [...usersArray].sort(() => Math.random() - 0.5);
+                const shuffledTop20 = shuffled.slice(0, 20);
 
-
-                // ✅ Sort friends first
-                const sorted = usersArray.sort((a, b) => {
-                    const aFriend = friends.includes(a.id);
-                    const bFriend = friends.includes(b.id);
-                    if (aFriend && !bFriend) return -1;
-                    if (!aFriend && bFriend) return 1;
+                const sortedByUsername = usersArray.sort((a, b) => {
+                    if (a.username.toLowerCase() < b.username.toLowerCase()) return -1;
+                    if (a.username.toLowerCase() > b.username.toLowerCase()) return 1;
                     return 0;
                 });
 
-                // for search functionality
-                setCurrentGroupUsersArray(usersArray);
-                setFilteredUsers(usersArray);
+                setCurrentGroupUsersArray(sortedByUsername);
+                setFriendsArray(friendsArray);
+                setFilteredUsers(friendsArray);
+                setRandomUsers(shuffledTop20);
             } catch (error) {
                 console.error('Error fetching users:', error);
             } finally {
@@ -95,8 +103,13 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         };
 
         fetchData(userID);
-    }, [userID, friends]);
+    }, [userID]);
     
+    const reshuffle = () => {
+        const shuffled = [...currentGroupUsersArray].sort(() => Math.random() - 0.5);
+        const shuffledTop20 = shuffled.slice(0, 20);
+        setRandomUsers(shuffledTop20);
+    }
 
     const handleChallenge = async (id: string) => {
         console.log('Pressed user:', id);
@@ -133,8 +146,9 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
     const handleSearch = (text: string) => {
         const query = text.toLowerCase();
+        const searchArray = (text.length > 1) ? currentGroupUsersArray : friendsArray;
 
-        const filtered = currentGroupUsersArray.filter(user => {
+        const filtered = searchArray.filter(user => {
             const nameMatch = user.name?.toLowerCase().includes(query);
             const usernameMatch = user.username?.toLowerCase().includes(query);
             return nameMatch || usernameMatch;
@@ -206,7 +220,51 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                     ) : (
                         <Text style={styles.noUsersText}>No users found.</Text>
                     )}
-                    <View style={{ height: 20 }} />
+                </ScrollView>
+            </View>
+            <View style={{ padding: 10, }} />
+            <View style={styles.scrollContainer}>
+                <View style={[styles.row, { marginHorizontal: 5, marginBottom: 10, justifyContent: 'space-between' }]}>
+                    <Text style={styles.title}>Explore Users</Text>
+                    <TouchableOpacity onPress={reshuffle} activeOpacity={0.8}>
+                        <Image
+                            source={require('@assets/icons/refresh.png')}
+                            style={styles.refreshIcon}
+                        />
+                    </TouchableOpacity>
+                </View>
+                <ScrollView>
+                    {randomUsers.map((user) => (
+                        <TouchableOpacity key={user.id} style={[styles.memberItem, { backgroundColor: user.isIn1v1 ? '#00000050' : '#00000080' }]} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
+                            <View style={styles.memberInfo}>
+                                <Image
+                                    source={
+                                        user.pfp ?
+                                            { uri: user?.pfp }
+                                            : require('@components/blank-profile-picture.png')
+                                    }
+                                    style={styles.profilePic}
+                                />
+                                <View>
+                                    <View style={[styles.row, { justifyContent: 'space-between', width: '92%' }]}>
+                                        <Text style={styles.memberName}>
+                                            {user?.name}{" "}
+                                            {friends.includes(user.id) && (
+                                                <Text style={{ color: "#7eff77bb", fontSize: 10 }}>(Friend)</Text>
+                                            )}
+                                        </Text>
+                                        <Text style={styles.memberLastLogin}>{user?.lastLogin}</Text>
+                                    </View>
+                                    <Text style={styles.memberUserName}>@{user?.username}</Text>
+                                </View>
+                            </View>
+                            {userExpanded === user.id && (
+                                <TouchableOpacity style={styles.challengeButton} onPress={() => handleChallenge(user.id)}>
+                                    <Text style={styles.text}>Send challenge</Text>
+                                </TouchableOpacity>
+                            )}
+                        </TouchableOpacity>
+                    ))}
                 </ScrollView>
             </View>
         </View>
@@ -220,58 +278,23 @@ const styles = StyleSheet.create({
     title: {
         fontFamily: 'Lexend',
         color: '#fff',
-        fontSize: 20,
-        textAlign: 'center',
+        fontSize: 15,
     },
     text: {
         fontFamily: 'Lexend',
         color: '#fff',
         fontSize: 13,
     },
-    diamonds: {
-        flexDirection: "row",
-        justifyContent: "flex-end",
-        alignItems: "center",
-        padding: 10,
-        gap: 5,
-    },
-    diamondIcon: {
-        width: 14,
-        height: 12,
-    },
-    itemContainer: {
-        backgroundColor: '#5BE35C33',
-        justifyContent: 'center',
-        marginVertical: 10,
-        borderRadius: 15,
-        paddingVertical: 10,
-        paddingLeft: 20,
-        paddingTop: 30,
-    },
-    buyContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-        paddingVertical: 10,
-    },
-    buyButton: {
-        backgroundColor: '#fff',
-        borderRadius: 18,
-        paddingVertical: 7,
-        width: '50%',
-        alignItems: 'center',
-    },
-    buyButtonText: {
-        fontFamily: 'Lexend',
-        color: '#000',
-        fontSize: 13,
+    refreshIcon: {
+        width: 18,
+        height: 18,
+        tintColor: '#fff',
     },
     scrollContainer: {
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        height: '102%',
+        height: '49%',
     },
     row: {
         flexDirection: 'row',
@@ -325,6 +348,8 @@ const styles = StyleSheet.create({
         color: '#ffffffaa',
         fontSize: 13,
         paddingLeft: 5,
+        marginTop: 5,
+        textAlign: 'center',
     },
     challengeButton: {
         alignItems: 'center',

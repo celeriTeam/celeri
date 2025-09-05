@@ -153,7 +153,7 @@ const InvitePage: React.FC = () => {
     useEffect(() => {
         if (groups && groupID && groups[resolvedGroupID]?.isGameActive) {
             router.replace({
-                pathname: '/(authenticated)/(tabs)/home/bets/Welcome',
+                pathname: '/home/groups/Welcome',
                 params: { groupIDTemp: resolvedGroupID },
             });
         }
@@ -174,7 +174,7 @@ const InvitePage: React.FC = () => {
     const handleGameSettings = () => {
         console.log("Start button pressed -- handleGameSettings")
         router.push({
-            pathname: "/(authenticated)/(tabs)/home/groups/GameSettings",
+            pathname: "/home/groups/modals/GameSettings",
             params: { groupID: resolvedGroupID, userCount: currentGroupUsersArray.length }
         });
     };
