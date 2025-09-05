@@ -1,26 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { usePathname, useRouter } from 'expo-router'
-import { useUser } from '../../UserProvider';
+import { useRouter } from 'expo-router'
+import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { 
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  getFirestore
-} from 'firebase/firestore'
+import { getDoc, doc, getFirestore } from 'firebase/firestore'
 import { app } from "@firebaseConfig";
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { TextInput } from 'react-native-gesture-handler';
-
-import { getFunctions, httpsCallable } from 'firebase/functions';
-
 import { acceptRequest, cancelRequest } from '@/backend/src/friends';
-
 
 const db = getFirestore(app);
 
@@ -42,11 +28,7 @@ type User = {
     pfp: string;
 };
 
-type Props = {
-    setUserSearchModalVisible: (visible: boolean) => void;
-};
-
-const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
+export default function FriendsAcceptPage() {
     const { userID, username } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [acceptedIDs, setAcceptedIDs] = useState<string[]>([]);
@@ -57,12 +39,14 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
+            if (!uid || typeof uid !== 'string' || uid.trim() === '') {
+                setIsLoading(false);
+                return;
+            }
             try {
-
-
-                const meRef = doc(db, 'users', uid)
-                const meSnap = await getDoc(meRef)
-                const meData = meSnap.data() || {}
+                const meRef = doc(db, 'users', uid);
+                const meSnap = await getDoc(meRef);
+                const meData = meSnap.data() || {};
 
                 // 1) grab the ID arrays
                 const outgoingIDs = meData.outgoingRequests || [];
@@ -74,9 +58,9 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                     const data = snap.exists() ? snap.data() : {};
                     return {
                         id,
-                        name:     data.name     || 'Unknown',
+                        name: data.name || 'Unknown',
                         username: data.username || 'Unknown',
-                        pfp:      data.profileImageUrl || '',
+                        pfp: data.profileImageUrl || '',
                     };
                 };
 
@@ -90,7 +74,7 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                 setIncomingRequests(incomingUsers);
 
             } catch (error) {
-                console.error('Error fetching users:', error);
+                console.error('Error fetching users in Accept page:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -98,14 +82,9 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
         fetchData(userID);
     }, [userID]);
-    
-    const pathname = usePathname()
 
     const handleUserPress = (user: User) => {
-        router.replace({
-            pathname: '/(authenticated)/(tabs)/profile/publicProfile',
-            params: { targetUserID: user.id, from: pathname },
-        })
+        router.push(`/profile/publicProfile/${user.id}`);
     };
 
     const handleAcceptRequest = async (acceptedID: string) => {
@@ -135,8 +114,8 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                 <ScrollView>
                     {incomingRequests.length > 0 ? (
                         incomingRequests.map((user) => (
-                            <TouchableOpacity key={user.id} style={styles.memberItem } onPress={() => handleUserPress(user)} activeOpacity={0.7}>
-                            
+                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
+
                                 <View style={styles.memberInfo}>
                                     {/* left side: avatar + name */}
                                     <View style={styles.memberLeft}>
@@ -156,7 +135,6 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                                             <Text style={styles.memberUserName}>@{user?.username}</Text>
                                         </View>
                                     </View>
-                                
 
                                     {/* right side: Accept Friend button */}
                                     <TouchableOpacity
@@ -181,15 +159,15 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
             </View>
 
             {/* ─── spacer between Incoming & Outgoing ─── */}
-            <View style={{ height: 20 }} />     
+            <View style={{ height: 20 }} />
 
             <Text style={styles.subtitleText}> {`Outgoing Requests (${outgoingRequests.length})`}</Text>
             <View style={styles.scrollContainer}>
                 <ScrollView>
                     {outgoingRequests.length > 0 ? (
                         outgoingRequests.map((user) => (
-                            <TouchableOpacity key={user.id} style={styles.memberItem } onPress={() => handleUserPress(user)} activeOpacity={0.7}>
-                            
+                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
+
                                 <View style={styles.memberInfo}>
                                     {/* left side: avatar + name */}
                                     <View style={styles.memberLeft}>
@@ -209,7 +187,7 @@ const FriendAddPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                                             <Text style={styles.memberUserName}>@{user?.username}</Text>
                                         </View>
                                     </View>
-                                
+
 
                                     {/* right side: Cancel Requeest button */}
                                     <TouchableOpacity
@@ -394,5 +372,3 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
 });
-
-export default FriendAddPage;

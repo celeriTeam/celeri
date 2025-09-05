@@ -38,8 +38,6 @@ const PersonalProfilePage: React.FC = () => {
     const [currentPic, setCurrentPic] = useState(profileImageUrl);
     const router = useRouter();
 
-    console.log('averagesteps: ', averageSteps);
-
     const handleLogout = async () => {
         setIsLoggingOut(true);
         const authInstance = getAuth();
@@ -232,22 +230,22 @@ const PersonalProfilePage: React.FC = () => {
         );
     };
 
-    if (loading) {
-        return (
-            <LinearGradient
-                colors={['#000000', '#024405']}
-                style={{
-                    flex: 1,
-                    width: '100%',
-                }}
-            >
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" />
-                    <Text style={{ color: '#fff' }}>Loading...</Text>
-                </View>
-            </LinearGradient>
-        );
-    }
+    // if (loading) {
+    //     return (
+    //         <LinearGradient
+    //             colors={['#000000', '#024405']}
+    //             style={{
+    //                 flex: 1,
+    //                 width: '100%',
+    //             }}
+    //         >
+    //             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    //                 <ActivityIndicator size="large" />
+    //                 <Text style={{ color: '#fff' }}>Loading...</Text>
+    //             </View>
+    //         </LinearGradient>
+    //     );
+    // }
 
     return (
         <LinearGradient
@@ -262,7 +260,7 @@ const PersonalProfilePage: React.FC = () => {
 
                     <TouchableOpacity 
                         style={styles.friendsButton}
-                        onPress={() => router.push('/friends')}
+                        onPress={() => router.push('/profile/friends')}
                     >
                         <Image
                             source={require('@assets/icons/friends.png')}

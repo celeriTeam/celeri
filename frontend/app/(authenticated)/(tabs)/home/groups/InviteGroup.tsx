@@ -13,11 +13,11 @@ import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweekl
 import { useUser } from '../../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
-import GameEndPage from './GameEnd';
+import GameResultsPage from './GameResults';
 import GameHistoryPage from './GameHistory';
 
 const db = getFirestore(app);
@@ -46,8 +46,9 @@ const InvitePage: React.FC = () => {
     const [groups, setGroups] = useState<{ [groupID: string]: any }>({});
     const [isDeleteModalVisible, setDeleteModalVisible] = useState('');
     const [isLoading, setIsLoading] = useState(true);
-    const [showGameEndModal, setShowGameEndModal] = useState(false);
+    const [showGameResultsModal, setShowGameResultsModal] = useState(false);
     const [showGameHistoryModal, setShowGameHistoryModal] = useState(false);
+    const pathname = usePathname();
 
     const userStartRequirement = 3;
 
@@ -76,7 +77,7 @@ const InvitePage: React.FC = () => {
 
     useEffect(() => {
         if (isResultAvailable === 'true') {
-            setShowGameEndModal(true);
+            setShowGameResultsModal(true);
         }
     }, [isResultAvailable]);
     
@@ -163,15 +164,11 @@ const InvitePage: React.FC = () => {
         console.log('groupid: ', resolvedGroupID);
         console.log('averagesteptemp: ', groups[resolvedGroupID]?.users[id]?.averageSteps ?? []);
         console.log('stepstemp: ', groups[resolvedGroupID]?.users[id]?.steps ?? 0);
-        router.push({
-            pathname: '/(authenticated)/(tabs)/home/bets/publicProfile',
-            params: {
-                selectedUserIDTemp: id ?? '',
-                groupIDTemp: resolvedGroupID,
-                averageStepsTemp: groups[resolvedGroupID]?.users[id]?.averageSteps ?? [],
-                stepsTemp: groups[resolvedGroupID]?.users[id]?.steps ?? 0,
-            },
-        });
+        if (id === userID) {
+            router.push('/profile');
+        } else {
+            router.push(`/home/publicProfile/${id}`);
+        }
     };
 
     const handleGameSettings = () => {
@@ -240,7 +237,7 @@ const InvitePage: React.FC = () => {
     };
 
     const handleResultsPageClose = async () => {
-        setShowGameEndModal(false);
+        setShowGameResultsModal(false);
         setGroupViewedResults(resolvedGroupID, userID);
     }
 
@@ -399,11 +396,11 @@ const InvitePage: React.FC = () => {
                     {/*Game end page modal */}
                     <Modal
                         transparent={true}
-                        visible={showGameEndModal}
+                        visible={showGameResultsModal}
                         animationType="slide"
                     >
                         <View style={styles.modalOverlay}>
-                            <View style={[styles.gameEndModalContainer, { height: '85%', }]}>
+                            <View style={[styles.gameResultsModalContainer, { height: '85%', }]}>
                                 {/* Close button */}
                                 <TouchableOpacity style={styles.closeButton} onPress={handleResultsPageClose}>
                                     <Image
@@ -412,7 +409,7 @@ const InvitePage: React.FC = () => {
                                     />
                                 </TouchableOpacity>
 
-                                <GameEndPage 
+                                <GameResultsPage 
                                     currentGroupUsersArray={currentGroupUsersArray}
                                     groups={groups}
                                 />
@@ -427,7 +424,7 @@ const InvitePage: React.FC = () => {
                         animationType="slide"
                     >
                         <View style={styles.modalOverlay}>
-                            <View style={[styles.gameEndModalContainer, { height: '85%', }]}>
+                            <View style={[styles.gameResultsModalContainer, { height: '85%', }]}>
                                 {/* Close button */}
                                 <TouchableOpacity style={styles.closeButton} onPress={() => setShowGameHistoryModal(false)}>
                                     <Image
@@ -664,7 +661,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: '80%',
     },
-    gameEndModalContainer: {
+    gameResultsModalContainer: {
         width: '90%',
         backgroundColor: '#000',
         borderWidth: 1,
