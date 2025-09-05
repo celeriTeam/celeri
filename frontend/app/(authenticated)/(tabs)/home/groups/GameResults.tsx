@@ -25,12 +25,12 @@ type User = {
     name?: string;
 };
 
-type GameEndPageProps = {
+type GameResultsPageProps = {
     currentGroupUsersArray: User[];
     groups: { [groupID: string]: any };
 };
 
-const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, groups }) => {
+const GameResultsPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArray, groups }) => {
     const { groupID } = useLocalSearchParams();
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;
     const [results, setResults] = useState<Record<string, any> | null>(null);
@@ -83,20 +83,6 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
         }
     };
 
-
-
-    const createMemberButtonHandle = (id: string) => {
-        router.push({
-            pathname: '/(authenticated)/(tabs)/home/bets/publicProfile',
-            params: {
-                selectedUserIDTemp: id ?? '',
-                groupIDTemp: groupID,
-                averageStepsTemp: groups[resolvedGroupID]?.users[id]?.averageSteps ?? [],
-                stepsTemp: groups[resolvedGroupID]?.users[id]?.steps ?? 0,
-            },
-        });
-    };
-
     const truncateString = (str: string, maxLength: number) => {
         return str.length > maxLength ? `${str.slice(0, maxLength)}...` : str;
     };
@@ -121,7 +107,7 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
             <View style={[styles.leaderboardStepsContainer, { paddingVertical: moderateScale(5), paddingBottom: moderateScale(10), }]}>
                 <View>
                     <View style={styles.leaderboardTop}>
-                        <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(sortedUsers[1]?.id)} activeOpacity={0.8}>
+                        <View style={styles.leaderboardTopStyles}>
                             <Image
                                 source={sortedUsers[1]?.pfp ?
                                     { uri: sortedUsers[1]?.pfp } :
@@ -140,8 +126,8 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
                                 />
                                 <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {sortedUsers[1]?.tokens}</Text>
                             </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]} onPress={() => createMemberButtonHandle(sortedUsers[0]?.id)} activeOpacity={0.8}>
+                        </View>
+                        <View style={[styles.leaderboardTopStyles, { marginTop: verticalScale(15), }]}>
                             <View style={{
                                 shadowColor: '#51ba51',
                                 shadowOffset: { width: 0, height: 0 },
@@ -168,8 +154,8 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
                                 />
                                 <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {sortedUsers[0]?.tokens}</Text>
                             </View>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.leaderboardTopStyles} onPress={() => createMemberButtonHandle(sortedUsers[2]?.id)} activeOpacity={0.8}>
+                        </View>
+                        <View style={styles.leaderboardTopStyles}>
                             <Image
                                 source={sortedUsers[2]?.pfp ?
                                     { uri: sortedUsers[2]?.pfp } :
@@ -188,10 +174,10 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
                                 />
                                 <Text style={[styles.leaderboardTokensText, { color: '#BEFFBB', }]}> {sortedUsers[2]?.tokens}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </View>
                     </View>
                     {sortedUsers.slice(3).map((user, index) => (
-                        <TouchableOpacity key={user.id} onPress={() => createMemberButtonHandle(user.id)} activeOpacity={0.8}>
+                        <View key={user.id}>
                             <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
                                 <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
                                 <Image
@@ -210,7 +196,7 @@ const GameEndPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, group
                                     <Text style={[styles.leaderboardTokensText, user.id === userID ? { color: '#fff', } : { color: '#BEFFBB', }]}> {user.tokens}</Text>
                                 </View>
                             </View>
-                        </TouchableOpacity>
+                        </View>
                     ))}
                 </View>
             </View>
@@ -327,4 +313,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default GameEndPage;
+export default GameResultsPage;

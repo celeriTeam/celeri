@@ -149,11 +149,8 @@ export default function AuthenticatedStack() {
                     {/* this shows your bottom‑tab navigator */}
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
-                    {/* this is the hidden route */}
-                    <Stack.Screen
-                      name="friends"
-                      options={{ title: 'Friends', headerShown: false }}
-                    />
+                    <Stack.Screen name="friends" options={{ title: 'Friends', headerShown: false }} />
+                    <Stack.Screen name="publicProfile" options={{ title: 'PublicProfile', headerShown: false }} />
                   </Stack>
                 </TabBarProvider>
             </UserProvider>

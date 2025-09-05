@@ -28,12 +28,12 @@ type User = {
     name?: string;
 };
 
-type GameEndPageProps = {
+type GameResultsPageProps = {
     currentGroupUsersArray: User[];
     groups: { [groupID: string]: any };
 };
 
-const GameHistoryPage: React.FC<GameEndPageProps> = ({ currentGroupUsersArray, groups }) => {
+const GameHistoryPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArray, groups }) => {
     const { groupID } = useLocalSearchParams();
     const { userID, loading } = useUser();
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;

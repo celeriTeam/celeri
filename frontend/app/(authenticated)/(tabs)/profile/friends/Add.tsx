@@ -1,27 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { usePathname, useRouter } from 'expo-router'
-import { useUser } from '../../UserProvider';
+import { useRouter } from 'expo-router'
+import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
+import { collection, getDocs, getDoc, doc, getFirestore } from 'firebase/firestore'
 import { app } from "@firebaseConfig";
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
-import { create1v1Request } from '@/backend/src/1v1Requests';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { removeFriend } from '@/backend/src/friends';
-
-import { 
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  getFirestore
-} from 'firebase/firestore'
-
-dayjs.extend(relativeTime);
+import { requestFriend } from '@/backend/src/friends';
 
 const db = getFirestore(app);
 
@@ -43,52 +29,53 @@ type User = {
     pfp: string;
 };
 
-type Props = {
-    setUserSearchModalVisible: (visible: boolean) => void;
-};
-
-const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
-    const { userID, username } = useUser(); 
+export default function FriendsAddPage() {
+    const { userID, username } = useUser();
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [currentGroupUsersArray, setCurrentGroupUsersArray] = useState<User[]>([]);
     const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-    const [removedIDs, setRemovedIDs] = useState<string[]>([]);
-
-    const router = useRouter()
-
+    const [requestedIds, setRequestedIds] = useState<string[]>([]);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
+                // we want to exclude IDs from already requested, incoming requests, and already friends
 
+                // 1) Grab the current user’s doc and pull out the three arrays
                 const meRef = doc(db, 'users', uid)
                 const meSnap = await getDoc(meRef)
                 const meData = meSnap.data() || {}
 
-                const friendsList = meData.friendsList || [];
+                const outgoing: string[] = meData.outgoingRequests || []
+                const incoming: string[] = meData.incomingRequests || []
+                const friends: string[] = meData.friendsList || []
 
+                // 2) Fetch *all* users
+                const querySnapshot = await getDocs(collection(db, 'users'));
+                const usersArray: User[] = [];
 
-
-
-                const fetchUserByID = async (id: string): Promise<User> => {
-                    const snap = await getDoc(doc(db, 'users', id));
-                    const data = snap.exists() ? snap.data() : {};
-                    return {
-                        id,
-                        name:     data.name     || 'Unknown',
+                // 3) Build the list, skipping self & anyone in those arrays
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (doc.id === uid) return                                 // skip yourself
+                    if (outgoing.includes(doc.id)) return                       // skip already‐sent
+                    if (incoming.includes(doc.id)) return                       // skip already‐received
+                    if (friends.includes(doc.id)) return                        // skip already friends
+                    usersArray.push({
+                        id: doc.id,
+                        name: data.name || 'Unknown',
                         username: data.username || 'Unknown',
-                        pfp:      data.profileImageUrl || '',
-                    };
-                };
-
-                const usersArray = await Promise.all(friendsList.map(fetchUserByID));
+                        pfp: data.profileImageUrl || '',
+                    });
+                });
 
 
                 // for search functionality
                 setCurrentGroupUsersArray(usersArray);
                 setFilteredUsers(usersArray);
             } catch (error) {
-                console.error('Error fetching users:', error);
+                console.error('Error fetching users in Add page:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -96,7 +83,6 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
         fetchData(userID);
     }, [userID]);
-    
 
     const handleSearch = (text: string) => {
         const query = text.toLowerCase();
@@ -110,19 +96,14 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         setFilteredUsers(filtered);
     };
 
-    const pathname = usePathname()
-
     const handleUserPress = (user: User) => {
-        router.replace({
-            pathname: '/(authenticated)/(tabs)/profile/publicProfile',
-            params: { targetUserID: user.id, from: pathname },
-        })
+        router.push(`/profile/publicProfile/${user.id}`);
     };
 
-    const handleRemoveFriend = async (removedID: string) => {
+    const handleAddFriend = async (requestedID: string) => {
         try {
-            await removeFriend(userID, removedID); // bit confusing, but you are the one who accepted. acceptedID is the one who sent the request
-            setRemovedIDs(prev => [...prev, removedID]);
+            await requestFriend(userID, requestedID);
+            setRequestedIds(prev => [...prev, requestedID]);
         } catch (error) {
             console.error("handleAddFriend Error: ", error);
             Alert.alert('Error', 'Unable to send friend request.');
@@ -131,7 +112,6 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.subtitleText}> {`Your Friends (${currentGroupUsersArray.length})`}</Text>
             <View style={styles.scrollContainer}>
                 <TextInput
                     style={styles.searchBar}
@@ -144,8 +124,7 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                 <ScrollView>
                     {filteredUsers.length > 0 || currentGroupUsersArray.length === 0 ? (
                         filteredUsers.map((user) => (
-                            <TouchableOpacity key={user.id} style={styles.memberItem } onPress={() => handleUserPress(user)} activeOpacity={0.7}>
-                            
+                            <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
                                 <View style={styles.memberInfo}>
                                     {/* left side: avatar + name */}
                                     <View style={styles.memberLeft}>
@@ -165,28 +144,26 @@ const FriendListPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
                                             <Text style={styles.memberUserName}>@{user?.username}</Text>
                                         </View>
                                     </View>
-                                
 
-                                   {/* right side: remove friend button */}
+                                    {/* right side: Add Friend button */}
                                     <TouchableOpacity
                                         style={[
                                             styles.addFriendButton,
-                                            removedIDs.includes(user.id) && styles.addFriendButtonDisabled
+                                            requestedIds.includes(user.id) && styles.addFriendButtonDisabled
                                         ]}
-                                        onPress={() => handleRemoveFriend(user.id)}
-                                        disabled={removedIDs.includes(user.id)}
+                                        onPress={() => handleAddFriend(user.id)}
+                                        disabled={requestedIds.includes(user.id)}
                                     >
                                         <Text style={styles.addFriendText}>
-                                            {removedIDs.includes(user.id) ? 'Removed' : 'Remove'}
+                                            {requestedIds.includes(user.id) ? 'Requested' : 'Add Friend'}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
                             </TouchableOpacity>
                         ))
                     ) : (
-                        <Text style={styles.noUsersText}>You have no friends.</Text>
+                        <Text style={styles.noUsersText}>No users found.</Text>
                     )}
-                    <View style={{ height: 20 }} />
                 </ScrollView>
             </View>
         </View>
@@ -197,13 +174,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-    },
-    subtitleText: {
-        fontFamily: 'Lexend',
-        color: '#fff',
-        fontSize: 15,
-        paddingBottom: 10,
-        paddingLeft: 5,
     },
     title: {
         fontFamily: 'Lexend',
@@ -227,9 +197,6 @@ const styles = StyleSheet.create({
         width: 14,
         height: 12,
     },
-    addFriendButtonDisabled: {
-        opacity: 0.5,
-    },
     itemContainer: {
         backgroundColor: '#5BE35C33',
         justifyContent: 'center',
@@ -247,6 +214,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 8,
         alignItems: 'center',
+    },
+    addFriendButtonDisabled: {
+        opacity: 0.5,
     },
     buyContainer: {
         flexDirection: 'row',
@@ -276,7 +246,7 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 10,
         backgroundColor: '#5BE35C32',
-        flex: 0.92,
+        flex: 1,
     },
     row: {
         flexDirection: 'row',
@@ -348,5 +318,3 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
 });
-
-export default FriendListPage;

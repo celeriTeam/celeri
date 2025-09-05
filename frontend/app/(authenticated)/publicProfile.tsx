@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '../UserProvider';
 import { useRouter, useLocalSearchParams, RelativePathString } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
@@ -22,108 +22,105 @@ const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
 
-type ActionState = 
-  | 'idle'      // normal, use profile.friendStatus for label
-  | 'requested' // after you’ve sent a request
-  | 'accepted'  // after you’ve accepted a request
-  | 'removed'   // after you’ve removed a friend
-  | 'canceled'  // after you’ve canceled a request
+type ActionState =
+    | 'idle'      // normal, use profile.friendStatus for label
+    | 'requested' // after you’ve sent a request
+    | 'accepted'  // after you’ve accepted a request
+    | 'removed'   // after you’ve removed a friend
+    | 'canceled'  // after you’ve canceled a request
 
 const ProfilePage: React.FC = () => {
 
-    const { from, targetUserID } = useLocalSearchParams<{
+    const { from, id } = useLocalSearchParams<{
         from?: RelativePathString
-        targetUserID: string
+        id: string
     }>()
     const { userID } = useUser();
     const router = useRouter();
 
-    const [profile, setProfile] = useState<PublicProfileData | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const [profile, setProfile] = useState<PublicProfileData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
 
-    const [actionState, setActionState] = useState<ActionState>('idle')
+    const [actionState, setActionState] = useState<ActionState>('idle');
 
 
     const loadProfile = useCallback(async () => {
-        if (!targetUserID) return
-            setLoading(true)
+        if (!id) return;
+        setLoading(true);
         try {
-            const data = await fetchPublicProfileData(userID, targetUserID)
+            const data = await fetchPublicProfileData(userID, id);
             if (data) {
-                setProfile(data)
+                setProfile(data);
             } else {
-                setError('Profile not found.')
+                setError('Profile not found.');
             }
         } catch (err: any) {
-            setError(err.message || 'Error loading profile.')
+            setError(err.message || 'Error loading profile.');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
     }, [userID])
 
     useEffect(() => {
-        loadProfile()
+        loadProfile();
     }, [loadProfile])
 
     // when profile first loads, sync actionState to reflect their status
     useEffect(() => {
         if (!loading && profile) {
-        switch (profile.friendStatus) {
-            case 'request':
-            setActionState('idle')
-            break
-            case 'cancel':
-            setActionState('requested')
-            break
-            case 'accept':
-            setActionState('idle')
-            break
-            case 'remove':
-            setActionState('accepted')
-            break
-        }
+            switch (profile.friendStatus) {
+                case 'request':
+                    setActionState('idle');
+                    break;
+                case 'cancel':
+                    setActionState('requested');
+                    break;
+                case 'accept':
+                    setActionState('idle');
+                    break;
+                case 'remove':
+                    setActionState('accepted');
+                    break;
+            }
         }
     }, [loading, profile])
 
     const handleFriendPress = async () => {
-        if (!profile) return
+        if (!profile) return;
 
         try {
-        switch (profile.friendStatus) {
-            case 'request':
-            await requestFriend(userID, targetUserID)
-            setActionState('requested')
-            break
-
-            case 'cancel':
-            await cancelRequest(userID, targetUserID)
-            setActionState('canceled')
-            break
-
-            case 'accept':
-            await acceptRequest(userID, targetUserID)
-            setActionState('accepted')
-            break
-
-            case 'remove':
-            await removeFriend(userID, targetUserID)
-            setActionState('removed')
-            break
-        }
+            switch (profile.friendStatus) {
+                case 'request':
+                    await requestFriend(userID, id);
+                    setActionState('requested');
+                    break;
+                case 'cancel':
+                    await cancelRequest(userID, id);
+                    setActionState('canceled');
+                    break;
+                case 'accept':
+                    await acceptRequest(userID, id);
+                    setActionState('accepted');
+                    break;
+                case 'remove':
+                    await removeFriend(userID, id);
+                    setActionState('removed');
+                    break;
+            }
         } catch (err) {
-        Alert.alert('Error', 'Couldn\'t update friendship status. Please try again.')
+            Alert.alert('Error', 'Couldn\'t update friendship status. Please try again.');
         }
     }
 
     const handleBack = () => {
         if (from) {
-        router.replace(from)
+            router.replace(from);
         } else if (router.canGoBack()) {
-        router.back()
+            router.back();
         } else {
-        router.push('/')   // or `/friends` if that’s your real home
+            router.push('/');   // or `/friends` if that’s your real home
         }
     }
 
@@ -263,25 +260,25 @@ const ProfilePage: React.FC = () => {
                     <TouchableOpacity
                         disabled={actionState !== 'idle'}
                         style={[
-                        styles.friendButton,
-                        actionState !== 'idle' && styles.addFriendButtonDisabled,
+                            styles.friendButton,
+                            actionState !== 'idle' && styles.addFriendButtonDisabled,
                         ]}
                         onPress={handleFriendPress}
                     >
                         <Text style={styles.friendButtonText}>
-                        {{
-                            idle: profile!.friendStatus === 'accept'
-                                ? 'Accept'
-                                : profile!.friendStatus === 'remove'
-                                ? 'Remove'
-                                : profile!.friendStatus === 'cancel'
-                                ? 'Cancel'
-                                : 'Request',
-                            requested: 'Requested',
-                            accepted:  'Accepted',
-                            removed:   'Removed',
-                            canceled:  'Canceled',
-                        }[actionState]}
+                            {{
+                                idle: profile!.friendStatus === 'accept'
+                                    ? 'Accept'
+                                    : profile!.friendStatus === 'remove'
+                                        ? 'Remove'
+                                        : profile!.friendStatus === 'cancel'
+                                            ? 'Cancel'
+                                            : 'Request',
+                                requested: 'Requested',
+                                accepted: 'Friends',
+                                removed: 'Removed',
+                                canceled: 'Canceled',
+                            }[actionState]}
                         </Text>
                     </TouchableOpacity>
 
@@ -289,13 +286,13 @@ const ProfilePage: React.FC = () => {
                         <>
                             <Text style={styles.groupsLabel}>Steps This Week</Text>
                             {profile?.averageSteps.length !== 0 ? (
-                            profile?.averageSteps.length === 1 && profile?. averageSteps[0] === 0 ? (
-                                <Text style={styles.text}>0</Text>
+                                profile?.averageSteps.length === 1 && profile?.averageSteps[0] === 0 ? (
+                                    <Text style={styles.text}>0</Text>
+                                ) : (
+                                    <StepsChart weeklySteps={profile?.averageSteps} steps={profile?.steps} />
+                                )
                             ) : (
-                                <StepsChart weeklySteps={profile?.averageSteps} steps={profile?.steps} />
-                            )
-                            ) : (
-                            <Text style={styles.text}>Loading...</Text>
+                                <Text style={styles.text}>Loading...</Text>
                             )}
                         </>
                     )}
