@@ -1,16 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Timestamp } from "firebase/firestore";
 import { getMoreDuelsSummary, getGainsSummary, getWeeklyGainsSummary } from '@/backend/src/bets';
-
 import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 
+interface Bet {
+    userID: string;
+    wager: number;
+    betOnUserID: string;
+};
 
-const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ groupID, gameType }) => {
+interface GainItem {
+    userID: string;
+    gain: number;
+    username: string;
+    profilePic: string;
+    daysAgo: number;
+};
+
+const BetHistoryPage: React.FC<{ groupID: string, gameType: string }> = ({ groupID, gameType }) => {
     const { userID, groups, loading } = useUser();
     const [expandedItems, setExpandedItems] = useState<{ [key: string]: boolean }>({});
     const [activeTab, setActiveTab] = useState<'bets' | 'gains'>('gains'); // Default to 'gains'
@@ -20,28 +31,12 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
     const [gainsDaysAgo, setGainsDaysAgo] = useState(1); // Initial daysAgo for yesterday's duels - gains
     const [gainsWeeksAgo, setGainsWeeksAgo] = useState(1); // Initial weeksAgo 
 
-    interface Bet {
-        userID: string;
-        wager: number;
-        betOnUserID: string;
-    }
-
-    interface GainItem {
-        userID: string;
-        gain: number;
-        username: string;
-        profilePic: string;
-        daysAgo: number;
-    }
-    
-
     const toggleTab = (tab: 'bets' | 'gains') => {
         setActiveTab(tab);
     };
 
     // Flatten the duels from the fetched data
     const flattenDuels = (duels: { [key: string]: any }) => Object.values(duels);
-
 
     // Function to fetch duels based on daysAgo
     const loadMoreDuels = async () => {
@@ -60,7 +55,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
     const loadMoreGains = async () => {
         console.log("Loading more gains");
         let moreGains;
-        if(gameType == "weekly" || gameType == 'biweekly'){
+        if (gameType == "weekly" || gameType == 'biweekly') {
             moreGains = await getWeeklyGainsSummary(groupID, gainsWeeksAgo * 7, groups);
             // multipled by 7 to get days 
         }
@@ -83,7 +78,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 return updatedGainHistory;
             });
 
-            if(gameType == "weekly" || gameType == 'biweekly'){
+            if (gameType == "weekly" || gameType == 'biweekly') {
                 setGainsWeeksAgo((prevGainsWeeksAgo) => prevGainsWeeksAgo + 1);
             } else {
                 setGainsDaysAgo((prevGainsDaysAgo) => prevGainsDaysAgo + 1); // Increment daysAgo for the next load
@@ -191,7 +186,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                     user: groups[groupID]?.users[b.userID]?.username,
                     wager: b.wager,
                 }));
-            const hasBet = bet.bets.some((betItem: Bet)=>
+            const hasBet = bet.bets.some((betItem: Bet) =>
                 betItem.userID === userID,
             );
             const hasUserWon = bet.bets.some((betItem: Bet) =>
@@ -204,7 +199,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 if (!userBet) return 0;
 
                 // draw
-                if(bet.winner == "draw") return 0;
+                if (bet.winner == "draw") return 0;
 
                 // User lost bet
                 if (userBet.betOnUserID !== bet.winner) {
@@ -225,17 +220,17 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                 let percentage = 0.0;
                 let amountWon = 0.0;
                 // if they are the winner and there were no bets on them, they get 100%
-                if(userID == bet.winner && totalWagersOnWinner == 0){
+                if (userID == bet.winner && totalWagersOnWinner == 0) {
                     percentage = 1.0;
                     amountWon = totalWagers;
                     return Math.floor(amountWon);
-                } else if (userID == bet.winner){
+                } else if (userID == bet.winner) {
                     percentage = 0.5;
                     amountWon = percentage * (totalWagers - totalWagersOnWinner)
                     return Math.floor(amountWon - userBet.wager);
                 } else {
 
-                //changed because now winner gets 50% by default
+                    //changed because now winner gets 50% by default
                     percentage = (userBet.wager / totalWagersOnWinner) / 2;
                     console.log("percentage", percentage);
                     amountWon = percentage * (totalWagers - totalWagersOnWinner);
@@ -276,8 +271,6 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
         }
     });
 
-    console.log("CURRENTRECAPBETS", currentRecapBets);
-
     if (loading) {
         return (
             <LinearGradient
@@ -308,18 +301,18 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             <View style={{ flex: 1, alignItems: 'flex-start', paddingTop: 3, paddingBottom: 8 }}>
                 <Text style={styles.createdAtText}>{`${daysAgo}d ago`}</Text>
             </View>
-           
+
             {gains.map((item) => (
                 <View key={`${item.userID}_${item.daysAgo}`} style={styles.row}>
                     <Image source={{ uri: item.profilePic }} style={styles.profileImage} />
                     <Text style={styles.playerGain}>{item.username}</Text>
                     <Text
                         style={[
-                            item.gain > 0 
-                                ? styles.wonGainEarningsText 
-                                : item.gain < 0 
-                                ? styles.lostGainEarningsText 
-                                : styles.zeroGainEarningsText,
+                            item.gain > 0
+                                ? styles.wonGainEarningsText
+                                : item.gain < 0
+                                    ? styles.lostGainEarningsText
+                                    : styles.zeroGainEarningsText,
                         ]}
                     >
                         {item.gain > 0 ? `+${item.gain}` : item.gain}
@@ -328,33 +321,31 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             ))}
         </View>
     );
-    
 
-    const renderBetItem = ({ item }: { item: { duelID: string, createdAt: string, player1: string, player2: string, player1pfp: string, player2pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, earnings: { hasBet: boolean, hasUserWon: boolean, earning: number } } }) => {
+    const renderBetItem = ({ item }: { item: { duelID: string, createdAt: string, player1: string, player2: string, player1pfp: string, player2pfp: string, player1Bets: { user: string, wager: number }[], player2Bets: { user: string, wager: number }[], winner: string, playerOneSteps: number, playerTwoSteps: number, earnings: { hasBet: boolean, hasUserWon: boolean, earning: number } } }) => {
         const isExpanded = expandedItems[item.duelID] || false; // check if the current duel is expanded
-    
         return (
             <View style={styles.flatList}>
                 {/* Players */}
                 <TouchableOpacity onPress={() => (item.player2Bets.length > 1 || item.player1Bets.length > 1) ? toggleItemExpansion(item.duelID) : null}
                     activeOpacity={(item.player2Bets.length > 1 || item.player1Bets.length > 1) ? 0.2 : 1}>
-                        <View style={styles.row}>
-                    {/* Created At timestamp on the left */}
-                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 8, paddingTop: 3 }}>
-                        <Text style={styles.createdAtText}>{item.createdAt}</Text>
-                    </View>
-                    {/* <View style={styles.spacer} /> */}
-                    
+                    <View style={styles.row}>
+                        {/* Created At timestamp on the left */}
+                        <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 8, paddingTop: 3 }}>
+                            <Text style={styles.createdAtText}>{item.createdAt}</Text>
+                        </View>
+                        {/* <View style={styles.spacer} /> */}
+
                         <View style={[
                             styles.statusBar,
                             (!item.earnings.hasBet || item.winner === 'draw' || item.earnings.earning === 0) ? styles.drawStatus :
-                            (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
+                                (item.earnings.hasUserWon) ? styles.winStatus : styles.loseStatus,
                         ]}>
                             <Text style={styles.statusText}>
                                 {!item.earnings.hasBet ? 'No bet' :
-                                item.winner === 'draw' ? 'Draw' :
-                                item.earnings.earning === 0 ? 'No winnings' :
-                                item.earnings.hasUserWon ? 'Win' : 'Lose'}
+                                    item.winner === 'draw' ? 'Draw' :
+                                        item.earnings.earning === 0 ? 'No winnings' :
+                                            item.earnings.hasUserWon ? 'Win' : 'Lose'}
                             </Text>
                         </View>
                         {/* Carrot Icon */}
@@ -391,7 +382,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                             <View>
                                 {item.player1Bets.map((bet, index) => (
                                     (bet.user !== item.player1) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                        <Text key={index} style={{ fontFamily: "Lexend" }}> {'\t'}{bet.user}: {bet.wager}</Text>
                                     )
                                 ))}
                             </View>
@@ -423,7 +414,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
                             <View>
                                 {item.player2Bets.map((bet, index) => (
                                     (bet.user !== item.player2) && (
-                                        <Text key={index} style={{fontFamily: "Lexend"}}> {'\t'}{bet.user}: {bet.wager}</Text>
+                                        <Text key={index} style={{ fontFamily: "Lexend" }}> {'\t'}{bet.user}: {bet.wager}</Text>
                                     )
                                 ))}
                             </View>
@@ -450,7 +441,7 @@ const BetHistoryPage: React.FC< {groupID: string, gameType: string }> = ({ group
             <Text style={styles.title}>History</Text>
             {/* Tab Buttons */}
             <View style={styles.tabContainer}>
-            <TouchableOpacity onPress={() => toggleTab('gains')}>
+                <TouchableOpacity onPress={() => toggleTab('gains')}>
                     <Text style={[styles.buttonText, activeTab === 'gains' && styles.activeButtonText]}>Gains</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => toggleTab('bets')}>
@@ -543,13 +534,13 @@ const styles = StyleSheet.create({
     },
     wonEarningsText: {
         fontFamily: "Lexend",
-		marginTop: 10,
+        marginTop: 10,
         color: 'green',
         fontSize: 30,
     },
     lostEarningsText: {
         fontFamily: "Lexend",
-		marginTop: 10,
+        marginTop: 10,
         color: 'red',
         fontSize: 30,
     },
@@ -635,10 +626,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flex: 1,
     },
-    tabContainer: { 
-        flexDirection: 'row', 
-        justifyContent: 'space-around', 
-        marginBottom: 10 
+    tabContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginBottom: 10
     },
     button: {
         padding: 10,
@@ -652,8 +643,16 @@ const styles = StyleSheet.create({
     activeButtonText: {
         color: 'green',
     },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    emptyText: { fontSize: 18, color: 'gray', fontFamily: 'Lexend_400Regular' },
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    emptyText: {
+        fontSize: 18,
+        color: 'gray',
+        fontFamily: 'Lexend_400Regular'
+    },
 });
 
 export default BetHistoryPage;

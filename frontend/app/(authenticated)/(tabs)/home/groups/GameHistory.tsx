@@ -16,7 +16,6 @@ const { width, height } = Dimensions.get('window');
 const guidelineBaseWidth = 393;   // 1179 / 3
 const guidelineBaseHeight = 852;  // 2556 / 3
 
-
 const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
 const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size) * factor;
@@ -39,8 +38,6 @@ const GameHistoryPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArra
     const resolvedGroupID = Array.isArray(groupID) ? groupID[0] : groupID;
     const [results, setResults] = useState<any[]>([]);
     const [isExpanded, setIsExpanded] = useState(null);
-
-    // const router = useRouter();
 
     useEffect(() => {
         const fetchResults = async () => {
@@ -89,7 +86,7 @@ const GameHistoryPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArra
 
     // const createMemberButtonHandle = (id: string) => {
     //     router.push({
-    //         pathname: '/(authenticated)/(tabs)/home/bets/publicProfile',
+    //         pathname: '/home/groups/publicProfile',
     //         params: {
     //             selectedUserIDTemp: id ?? '',
     //             groupIDTemp: groupID,
@@ -117,7 +114,7 @@ const GameHistoryPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArra
                     const userRank: number | null = item?.userRank;
 
                     return (
-                        <View>
+                        <View key={item.resultsID}>
                             <Text style={styles.date}>
                                 {item.startTime && typeof item.startTime.toDate === "function"
                                 ? `${dayjs(item.startTime.toDate()).format('MMM D, YYYY')} - ${dayjs(item.endTime.toDate()).format('MMM D, YYYY')}`

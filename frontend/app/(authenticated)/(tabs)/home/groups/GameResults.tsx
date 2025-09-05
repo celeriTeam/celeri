@@ -6,13 +6,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Dimensions } from 'react-native';
 import { useUser } from '../../../../UserProvider';
 
-
 const { width, height } = Dimensions.get('window');
 
 // Guidelines based on my test device (iPhone 16):
 const guidelineBaseWidth = 393;   // 1179 / 3
 const guidelineBaseHeight = 852;  // 2556 / 3
-
 
 const scale = (size: number) => (width / guidelineBaseWidth) * size;
 const verticalScale = (size: number) => (height / guidelineBaseHeight) * size;
@@ -37,7 +35,6 @@ const GameResultsPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArra
     const [sortedUsers, setSortedUsers] = useState<(User & { tokens?: number })[]>([]);
     const { userID, loading } = useUser();
     const [userRank, setUserRank] = useState<number | null>(null);
-
     const router = useRouter();
 
     useEffect(() => {

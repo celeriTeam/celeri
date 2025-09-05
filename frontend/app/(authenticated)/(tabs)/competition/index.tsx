@@ -374,7 +374,7 @@ const joinButton = (currentGame: any): ViewStyle => ({
 });
 
 import type { TextStyle } from 'react-native';
-import ResultsModal from './resultsModal';
+import ResultsModal from './Results';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

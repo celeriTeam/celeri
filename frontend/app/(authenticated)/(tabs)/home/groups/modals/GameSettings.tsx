@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
 import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps, getName } from '@backend/src/users';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../../../UserProvider';
 import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -151,7 +151,7 @@ const GameSettings: React.FC = () => {
         router.back();
         setTimeout(() => {
             router.replace({
-                pathname: '/(authenticated)/(tabs)/home/bets/Welcome',
+                pathname: '/home/groups/Welcome',
                 params: { groupIDTemp: resolvedGroupID },
             });
         }, 10);

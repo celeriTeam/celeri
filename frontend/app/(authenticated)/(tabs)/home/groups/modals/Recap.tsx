@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';

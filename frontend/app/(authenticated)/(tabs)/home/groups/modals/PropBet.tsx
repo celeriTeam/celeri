@@ -43,7 +43,12 @@ const PropBetPage: React.FC< {
     setFinishedPropBet: (isFinished: boolean) => void;
     setPropBetModalVisible: (visible: boolean) => void;
 } > = ({ groupID, userID, propBetPlayer, finishedPropBet, currentPropBet, overUnder, setFinishedPropBet, setPropBetModalVisible }) => {
-    const [selectedPropBet, setSelectedPropBet] = useState<selectedPropBet>(null);
+    const isValidPropBet = (value: any): value is selectedPropBet => {
+        return value === "over" || value === "under";
+    };
+    const [selectedPropBet, setSelectedPropBet] = useState<selectedPropBet>(
+        isValidPropBet(currentPropBet?.overUnder) ? currentPropBet?.overUnder : null
+    );
     const propBetAmount = (stepCount: number) =>  { return (stepCount < 100) ? 100 : stepCount; }
 
     return (
@@ -69,8 +74,8 @@ const PropBetPage: React.FC< {
                 </>
             )}
             {propBetPlayer.map(player => (
-                <View>
-                    <Text key={player.id} style={styles.name}>{player.name}</Text>
+                <View key={player.id}>
+                    <Text style={styles.name}>{player.name}</Text>
                     {finishedPropBet ? (
                         <View>
                             <Text style={styles.submittedText}>You've entered:</Text>

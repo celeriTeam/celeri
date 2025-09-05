@@ -274,11 +274,11 @@ const HomeTab: React.FC = () => {
     };
 
     const createGroupButtonHandle = () => {
-        router.push('/(authenticated)/(tabs)/home/groups/CreateGroup')
+        router.push('/home/CreateGroup')
     };
 
     const joinGroupButtonHandle = () => {
-        router.push('/(authenticated)/(tabs)/home/groups/JoinGroup')
+        router.push('/home/JoinGroup')
     };
 
     const goToGroup = async (group: any) => {
@@ -296,23 +296,23 @@ const HomeTab: React.FC = () => {
             const groupIDTemp = group?.groupID;
             if (!isFinishedTutorial) {
                 router.push({
-                    pathname: '/(authenticated)/(tabs)/home/bets/Welcome',
+                    pathname: '/home/groups/Welcome',
                     params: { groupIDTemp },
                 });
             } else if (!isFinishedBetting) {
                 router.push({
-                    pathname: '/(authenticated)/(tabs)/home/bets/NewHeadToHead',
+                    pathname: '/home/groups/HeadToHead',
                     params: { groupIDTemp, showTutorialTemp: 'false' },
                 });
             } else {
                 router.push({
-                    pathname: '/(authenticated)/(tabs)/home/bets/BetSummary',
+                    pathname: '/home/groups/BetSummary',
                     params: { groupIDTemp, showTutorialTemp: 'false' },
                 });
             }
         } else {
             router.push({
-                pathname: '/(authenticated)/(tabs)/home/groups/InviteGroup',
+                pathname: '/home/groups/InviteGroup',
                 params: { leaderID: group?.groupLeader, groupID: group?.groupID, fromCreate: 'false', isResultAvailable: group?.isResultAvailable },
             });
         }

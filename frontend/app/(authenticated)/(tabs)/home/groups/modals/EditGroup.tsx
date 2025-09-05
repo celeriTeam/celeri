@@ -6,7 +6,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { addGroupImage, editGroupName } from '@backend/src/groups';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../../../UserProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';

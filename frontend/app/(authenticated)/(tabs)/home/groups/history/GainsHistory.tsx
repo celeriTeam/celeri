@@ -10,7 +10,7 @@ import { useUser } from '../../../../../UserProvider';
 import Svg, { Circle, G } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import GainsHistoryTutorial from '../tutorials/GainsHistoryTutorial';
+import GainsHistoryTutorial from '../../groups/tutorials/GainsHistoryTutorial';
 
 
 const GainsHistoryPage: React.FC = () => {

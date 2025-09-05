@@ -4,7 +4,7 @@ import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } fro
 import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '../../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 
