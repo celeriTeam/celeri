@@ -127,6 +127,7 @@ export default function FriendsAddPage() {
 
     return (
         <View style={styles.container}>
+            <Text style={styles.subtitleText}> Search</Text>
             <View style={styles.scrollContainer}>
                 <TextInput
                     style={styles.searchBar}
@@ -182,16 +183,16 @@ export default function FriendsAddPage() {
                 </ScrollView>
             </View>
             <View style={{ padding: 10, }} />
+            <View style={[styles.row, { paddingBottom: 10, paddingLeft: 5, justifyContent: 'space-between' }]}>
+                <Text style={styles.title}> Explore Users</Text>
+                <TouchableOpacity onPress={reshuffle} activeOpacity={0.8} style={{ marginRight: 5, }}>
+                    <Image
+                        source={require('@assets/icons/refresh.png')}
+                        style={styles.refreshIcon}
+                    />
+                </TouchableOpacity>
+            </View>
             <View style={styles.scrollContainer}>
-                <View style={[styles.row, { marginHorizontal: 5, marginBottom: 10, justifyContent: 'space-between' }]}>
-                    <Text style={styles.title}>Explore Users</Text>
-                    <TouchableOpacity onPress={reshuffle} activeOpacity={0.8}>
-                        <Image
-                            source={require('@assets/icons/refresh.png')}
-                            style={styles.refreshIcon}
-                        />
-                    </TouchableOpacity>
-                </View>
                 <ScrollView>
                     {randomUsers.map((user) => (
                         <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => handleUserPress(user)} activeOpacity={0.7}>
@@ -252,9 +253,16 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 13,
     },
+    subtitleText: {
+        fontFamily: 'Lexend',
+        color: '#fff',
+        fontSize: 15,
+        paddingBottom: 10,
+        paddingLeft: 5,
+    },
     refreshIcon: {
-        width: 18,
-        height: 18,
+        width: 19,
+        height: 19,
         tintColor: '#fff',
     },
     addFriendButton: {
