@@ -37,11 +37,7 @@ const FriendsPage: React.FC = () => {
                 <UserProvider>
                     <View style={styles.header}>
                         <View style={styles.topRow}>
-                            <TouchableOpacity
-                                onPress={() => router.back()}
-                                style={styles.backBtn}
-                                hitSlop={{ top: 50, bottom: 50, left: 50, right: 50 }}
-                            >
+                            <TouchableOpacity onPress={() => router.back()} style={{ paddingLeft: 5, }}>
                                 <Image
                                     source={require('@assets/icons/back.png')}
                                     style={styles.backIcon}
@@ -50,6 +46,7 @@ const FriendsPage: React.FC = () => {
                             <View style={styles.titleWrapper}>
                                 <Text style={styles.titleText}>Friends</Text>
                             </View>
+                            <View style={{ paddingHorizontal: 10, }}/> 
                         </View>
 
                         <View style={styles.tabContainer}>
@@ -58,6 +55,7 @@ const FriendsPage: React.FC = () => {
                                 onPress={() => {
                                     setSelectedTab('Accept')
                                 }}
+                                activeOpacity={1}
                             >
                                 <Text style={[styles.tabText, { color: selectedTab === 'Accept' ? '#74FF6D' : '#fff', }]}>Accept</Text>
                             </TouchableOpacity>
@@ -83,7 +81,7 @@ const FriendsPage: React.FC = () => {
                     </View>
 
                     {/* ─── PAGE CONTENT ─────────────────────── */}
-                    <View style={{ flex: 1, marginTop: 30, }}>
+                    <View style={{ flex: 1, marginTop: 20, }}>
                         {renderTabContent()}
                     </View>
                 </UserProvider>
@@ -94,46 +92,35 @@ const FriendsPage: React.FC = () => {
 
 const styles = StyleSheet.create({
     header: {
-        justifyContent: 'flex-start',
+        // justifyContent: 'flex-start',
         //flexDirection: 'row',
         //alignItems: 'center',
         //backgroundColor: '#024405',
         //paddingVertical: 12,
         //paddingHorizontal: 8,
-        height: '12%',
+        // height: '12%',
         width: '90%',
         alignSelf: 'center',
-        // marginTop: 20,
     },
     topRow: {
         flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        position: 'relative',
+        marginBottom: 25,
         paddingTop: 10,
-
-    },
-    backBtn: {
-        padding: 8,
-        width: 44,
-        height: 44,
     },
     backIcon: {
-        width: 24,
-        height: 24,
-        tintColor: '#fff',
-        resizeMode: 'contain',
+        width: 21,
+        height: 21,
     },
     titleWrapper: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 16,        // same vertical offset as backBtn padding
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        zIndex: 5,      // behind the backBtn so the button remains tappable
     },
     titleText: {
         fontFamily: 'Lexend',
-        textAlign: "center",
         fontSize: 20,
         color: '#fff',
     },
