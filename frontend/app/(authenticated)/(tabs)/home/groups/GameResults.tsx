@@ -175,7 +175,7 @@ const GameResultsPage: React.FC<GameResultsPageProps> = ({ currentGroupUsersArra
                     </View>
                     {sortedUsers.slice(3).map((user, index) => (
                         <View key={user.id}>
-                            <View key={user.id} style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
+                            <View style={[styles.leaderboardTokensRow, user.id === userID ? { backgroundColor: '#4bff6c99', } : { backgroundColor: '#00000080', }]}>
                                 <Text style={[styles.leaderboardTokensNumberText, user.id === userID ? { color: '#fff', } : { color: '#a7a7a7', }]}>{index + 4}</Text>
                                 <Image
                                     source={user.pfp ?
