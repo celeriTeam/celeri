@@ -154,7 +154,6 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
             <View style={styles.scrollContainer}>
                 <FlatList
                     data={history1v1s.sort((a, b) => b.endTime.toDate().getTime() - a.endTime.toDate().getTime())}
-                    keyExtractor={(item) => item.duelID}
                     renderItem={({ item }) => {
                         const opponentID = item.participants.find((id: string) => id !== userID);
 
@@ -163,7 +162,7 @@ const History1v1sPage: React.FC<Props> = ({ history1v1s, setHistoryModal }) => {
                         const userWon = userSteps > opponentSteps;
                         const opponentWon = opponentSteps > userSteps;
                         return (
-                            <View>
+                            <View key={item.duelID}>
                                 <Text style={styles.date}>
                                     {dayjs(item.endTime.toDate()).format('MMM D, YYYY')}
                                 </Text>
