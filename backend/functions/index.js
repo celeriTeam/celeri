@@ -2163,7 +2163,6 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
 
             // Add result doc to 'results' collection to remember tokens
             const resultDocRef = admin.firestore().collection("results").doc();
-            const resultDocId = resultDocRef.id;
 
             groupBatch.set(resultDocRef, {
               createdAt: currentTimestamp,
@@ -2184,11 +2183,10 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               finishedBetting: admin.firestore.FieldValue.delete(),
               finishedRecap: admin.firestore.FieldValue.delete(),
               finishedTutorial: admin.firestore.FieldValue.delete(),
+              finishedPropBet: admin.firestore.FieldValue.delete(),
               startingTokens: admin.firestore.FieldValue.delete(),
-              resultsHistory: {
-                resultsID: resultDocId,
-                hasSeen: {},
-              },
+              hasPendingResults: true,
+              viewedResults: [],
             });
 
 
@@ -2300,6 +2298,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
           let cycleWeek = data.cycleWeek;
           let cycleCount = data.cycleCount;
           let cycleDuels = data.cycleDuels;
+          const users = data.users;
           const players = data.order;
           const numberOfPlayers = data.currentPlayersInGame;
 
@@ -2342,6 +2341,25 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
           console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
           if (cycleCount > data.totalCycles) {
+            // create a map for the results document
+            const userResultsMap = {};
+
+            players.forEach((playerId) => {
+              const playerData = users[playerId];
+              userResultsMap[playerId] = playerData ? playerData.tokens : 0;
+            });
+
+            const currentTimestamp = admin.firestore.FieldValue.serverTimestamp();
+
+            // Add result doc to 'results' collection to remember tokens
+            const resultDocRef = admin.firestore().collection("results").doc();
+
+            groupBatch.set(resultDocRef, {
+              createdAt: currentTimestamp,
+              groupID: doc.id,
+              results: userResultsMap,
+            });
+
             // end the game
             groupBatch.update(groupDocRef, {
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2361,6 +2379,8 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
               previousPlayersInGame: admin.firestore.FieldValue.delete(),
               resetDay: admin.firestore.FieldValue.delete(),
               gameType: admin.firestore.FieldValue.delete(),
+              hasPendingResults: true,
+              viewedResults: [],
             });
             // reset the tokens for each player
             const usersUpdate = {};
@@ -2462,6 +2482,7 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
         let cycleDay = data.cycleDay;
         let cycleCount = data.cycleCount;
         let cycleDuels = data.cycleDuels;
+        const users = data.users;
         const players = data.order;
         const numberOfPlayers = data.currentPlayersInGame;
 
@@ -2502,6 +2523,25 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
         console.log("cycleDuels:", JSON.stringify(cycleDuels));
 
         if (cycleCount > data.totalCycles) {
+          // create a map for the results document
+          const userResultsMap = {};
+
+          players.forEach((playerId) => {
+            const playerData = users[playerId];
+            userResultsMap[playerId] = playerData ? playerData.tokens : 0;
+          });
+
+          const currentTimestamp = admin.firestore.FieldValue.serverTimestamp();
+
+          // Add result doc to 'results' collection to remember tokens
+          const resultDocRef = admin.firestore().collection("results").doc();
+
+          groupBatch.set(resultDocRef, {
+            createdAt: currentTimestamp,
+            groupID: doc.id,
+            results: userResultsMap,
+          });
+
           // end the game
           groupBatch.update(groupDocRef, {
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -2516,7 +2556,10 @@ exports.createDuels = onSchedule("0 4,16 * * *", async (event) => {
             finishedBetting: admin.firestore.FieldValue.delete(),
             finishedRecap: admin.firestore.FieldValue.delete(),
             finishedTutorial: admin.firestore.FieldValue.delete(),
+            finishedPropBet: admin.firestore.FieldValue.delete(),
             startingTokens: admin.firestore.FieldValue.delete(),
+            hasPendingResults: true,
+            viewedResults: [],
           });
           // reset the tokens for each player
           const usersUpdate = {};
