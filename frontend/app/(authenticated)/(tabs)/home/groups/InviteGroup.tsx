@@ -102,25 +102,31 @@ const InvitePage: React.FC = () => {
 
                 const userList = await getUsersInGroup(resolvedGroupID); // userIDs
                 const users: { [userID: string]: any } = {};
-                let groupUsersArray: { id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[] = [];
                 if (userList) {
-                    await Promise.all(userList.map(async (selectedUserID) => {
-                        const [profilePic, username, name, averageSteps, steps] = await Promise.all([
-                            getProfilePic(selectedUserID),
-                            getUserName(selectedUserID),
-                            getName(selectedUserID),
-                            getAverageSteps(selectedUserID),
-                            getSteps(selectedUserID),
-                        ]);
+                    const groupUsersArray: { id: string; username: string | undefined; pfp: string | undefined; name: string | undefined; }[] = await Promise.all(
+                        userList.map(async (selectedUserID) => {
+                            const [profilePic, username, name, averageSteps, steps] = await Promise.all([
+                                getProfilePic(selectedUserID),
+                                getUserName(selectedUserID),
+                                getName(selectedUserID),
+                                getAverageSteps(selectedUserID),
+                                getSteps(selectedUserID),
+                            ]);
 
-                        users[selectedUserID] = {
-                            profilePic,
-                            username,
-                            averageSteps,
-                            steps,
-                        };
-                        groupUsersArray.push({ id: selectedUserID, username: username, pfp: profilePic, name: name });
-                    }));
+                            users[selectedUserID] = {
+                                profilePic,
+                                username,
+                                averageSteps,
+                                steps,
+                            };
+                            return {
+                                id: selectedUserID,
+                                username: username,
+                                pfp: profilePic,
+                                name: name
+                            };
+                        })
+                    );
                     setCurrentGroupUsersArray(groupUsersArray);
                 }
                 currentGroups[resolvedGroupID] = {
@@ -318,7 +324,7 @@ const InvitePage: React.FC = () => {
                     </Text>
                     <ScrollView style={styles.scrollContainer}>
                         {currentGroupUsersArray ? (
-                            currentGroupUsersArray.map((user) => (
+                            currentGroupUsersArray.map((user, idx) => (
                                 <TouchableOpacity key={user.id} style={styles.memberItem} onPress={() => createMemberButtonHandle(user.id)}>
                                     <View style={styles.row}>
                                         <Image
@@ -329,7 +335,7 @@ const InvitePage: React.FC = () => {
                                             }
                                             style={styles.profilePic}
                                         />
-                                        <Text style={styles.memberName}>{user?.name}</Text>
+                                        <Text style={styles.memberName}>{user?.name} {idx === 0 && <Text style={{ color: "#7eff77bb", fontSize: 10 }}> (Leader)</Text>}</Text>
                                     </View>
                                     <Text style={styles.memberUserName}>@{user?.username}</Text>
                                 </TouchableOpacity>
