@@ -55,6 +55,14 @@ router.get('/current-competition', async (req, res) => {
         const competition = await grabCurrentCompetition();
 
         if (!competition) {
+            const [competition2] = await sql`
+                SELECT * FROM competitions 
+                WHERE is_active = true 
+                LIMIT 1
+            `
+            if (competition2) {
+                return res.status(400).json({error: 'Currently awaiting final results', competition: competition2})
+            }
             return res.status(400).json({ error: 'No active competition found' });
         }
 

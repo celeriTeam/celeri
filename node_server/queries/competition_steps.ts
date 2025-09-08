@@ -84,7 +84,7 @@ const silentNotif = async (user_id: string, competition_id: string) => {
 
 // POST /add-user
 router.post('/add-user', async (req, res) => {
-  const { user_id, referral_id, joinAt = null } = req.body;
+  const { user_id, referral_id } = req.body;
   try {
     // Grab current competition:
     const competition = await grabCurrentCompetition();
@@ -94,8 +94,8 @@ router.post('/add-user', async (req, res) => {
     }
 
     const result = await sql`
-      INSERT INTO competition_steps (user_id, steps, competition_id, referral, joinAt) 
-      SELECT ${user_id}, 0, ${competition.id}, ${referral_id}, ${joinAt}
+      INSERT INTO competition_steps (user_id, steps, competition_id, referral) 
+      SELECT ${user_id}, 0, ${competition.id}, ${referral_id}
       WHERE NOT EXISTS (
         SELECT 1 FROM competition_steps 
         WHERE user_id = ${user_id}
@@ -110,6 +110,7 @@ router.post('/add-user', async (req, res) => {
     silentNotif(user_id, competition.id);
     res.status(200).json({ success: true });
   } catch (err: any) {
+    console.log('competition_steps/add-user: ', err.message);
     res.status(500).json({ error: err.message });
   }
 })
@@ -119,7 +120,11 @@ router.post('/update-steps', async (req, res) => {
   const { user_id, steps, minute } = req.body;
   try {
     // Grab current competition:
-    const competition = await grabCurrentCompetition();
+    const [competition] = await sql`
+      SELECT id FROM competitions 
+      WHERE is_active = true 
+      LIMIT 1
+    `;
 
     if (!competition) {
       return res.status(400).json({ error: 'No active competition' });
@@ -140,15 +145,25 @@ router.post('/update-steps', async (req, res) => {
     const currentSteps = existingUser[0].steps;
     const updatedSteps = Math.max(currentSteps, steps);
 
+    let effectiveMinute = minute;
+    if (effectiveMinute === undefined || effectiveMinute === null) {
+      const diffResult = await sql`
+        SELECT EXTRACT(EPOCH FROM (NOW() - ${competition.start_time})) / 60 AS minutes
+      `;
+      effectiveMinute = Math.floor(diffResult[0].minutes);
+    }
+
     await sql`
       UPDATE competition_steps 
       SET steps = ${updatedSteps},
-          minute = ${minute}
+          time_from_start = ${effectiveMinute}
       WHERE user_id = ${user_id}
+      AND competition_id = ${competition.id}
     `;
 
     res.status(200).json({ success: true });
   } catch (err: any) {
+    console.log('competition_steps/update-steps: ', err.message);
     res.status(500).json({ error: err.message });
   }
 })
@@ -198,6 +213,19 @@ router.get('/user-info', async (req, res) => {
     const competition = await grabCurrentCompetition();
 
     if (!competition) {
+      const [competition2] = await sql`
+        SELECT * FROM competitions 
+        WHERE is_active = true 
+        LIMIT 1
+      `
+      if (competition2) {
+        const [result] = await sql`
+          SELECT created_at, time_from_start FROM competition_steps
+          WHERE user_id=${user_id}
+          AND competition_id=${competition2.id}
+        `;
+        return res.status(400).json({ error: 'Currently awaiting final results', result: result })
+      }
       return res.status(400).json({ error: 'No active competition' });
     }
     const result = await sql`
@@ -214,7 +242,9 @@ router.get('/user-info', async (req, res) => {
       SELECT 
         user_id,
         steps,
-        (total_users - asc_rank + 1) AS rank
+        (total_users - asc_rank + 1) AS rank,
+        time_from_start,
+        created_at
       FROM ranked
       WHERE user_id = ${user_id};
     `;
@@ -317,6 +347,24 @@ router.get('/referrals', async (req, res) => {
     `;
 
     res.status(200).json(referral_data);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /tallying-results
+router.get('/tallying-results', async (req, res) => {
+  try {
+    // if NOW > end_time and is_active=true, then return true
+    const competition = await sql`
+      SELECT id FROM competitions 
+      WHERE is_active = true 
+      AND NOW() > end_time
+      LIMIT 1
+    `;
+
+    const isTallying = competition.length > 0;
+    res.status(200).json(isTallying);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

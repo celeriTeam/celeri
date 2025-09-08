@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { api } from '../api';
+import { api } from './api';
 
-export const addCompetitionUser = async (user_id: string, referral_id: string | null, joinAt: number) => {
+export const addCompetitionUser = async (user_id: string, referral_id: string | null) => {
     try {
         const response = await api.post(`/competition-steps/add-user`,
-            { user_id, referral_id, joinAt }
+            { user_id, referral_id }
         );
         return response.data;
     } catch (error: any) {
@@ -119,6 +119,20 @@ export const setCompetitionHasSeenResults = async (user_id: string, competition_
 export const getReferralsData = async (competition_id: string) => {
     try {
         const response = await api.get(`/competition-steps/referrals?competition_id=${competition_id}`);
+        return response.data;
+    } catch (error: any) {
+        if (axios.isAxiosError(error) && error.response?.status === 400) {
+            return error.response.data;
+        } else {
+            console.error('Failed to fetch referrals data:', error);
+            return null;
+        }
+    }
+}
+
+export const getCompetitionTallyingResults = async () => {
+    try {
+        const response = await api.get(`/competition-steps/tallying-results`);
         return response.data;
     } catch (error: any) {
         if (axios.isAxiosError(error) && error.response?.status === 400) {
