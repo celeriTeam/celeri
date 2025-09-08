@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import RaceRulesPager from './rules';
 import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/competitions';
-import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, getReferralsData, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
+import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, getCompetitionTallyingResults, getReferralsData, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral, fetchDefaultTitleMessage } from '@backend/src/competition';
@@ -39,7 +39,7 @@ const CompetitionLandingPage: React.FC = () => {
     const [prevData, setPrevData] = useState<any>({});
     const [stepCount, setStepCount] = useState(0);
     const [referralResults, setReferralResults] = useState<any | false>(false);
-    const [titleMessage, setTitleMessage] = useState<string>("Loading Message");
+    const [titleMessage, setTitleMessage] = useState<string>("The next competition will be in one week!");
 
     const getCurrentGame = useCallback(async () => {
         setLoading(true);
@@ -47,6 +47,7 @@ const CompetitionLandingPage: React.FC = () => {
             const game = await fetchCurrentCompetition();
             console.log('Fetched game:', game);
             if (game?.is_active) {
+                setTitleMessage("Competition is active! Join NOW")
                 setCurrentGame(game); // Enable "Join Game" button
             } else {
                 setCurrentGame(null); // Disable button
@@ -64,7 +65,14 @@ const CompetitionLandingPage: React.FC = () => {
                 setPrevData(prevCompetition[0]);
                 setReferralResults(referralsData);
             } else {
+                console.log('showing tally text');
                 setShowResults(false);
+
+                // tallying results
+                const isTallying = await getCompetitionTallyingResults();
+                if (isTallying) {
+                    setTitleMessage('Tallying results...');
+                }
             }
         } catch {
             setCurrentGame(null);
@@ -81,7 +89,7 @@ const CompetitionLandingPage: React.FC = () => {
         isUserInCompetition(userID).then(inComp => {
             console.log('...', inComp);
             if (inComp) {
-                router.replace('/(authenticated)/(tabs)/competition/inGame');
+                router.replace('/competition/Game');
             } else {
                 getCurrentGame();
             }
@@ -146,12 +154,12 @@ const CompetitionLandingPage: React.FC = () => {
         const referralId: string | null = await getReferral(userID);
 
 
-        await addCompetitionUser(userID, referralId, joinAt);
+        await addCompetitionUser(userID, referralId);
         await AsyncStorage.setItem(`competition:joinAt:${currentGame.id}`, String(joinAt));
 
         await setUserInCompetition(userID);
         router.replace({
-            pathname: '/(authenticated)/(tabs)/competition/inGame',
+            pathname: '/competition/Game',
             params: { joinAt: String(joinAt) }
         });
     };
@@ -164,20 +172,20 @@ const CompetitionLandingPage: React.FC = () => {
     };
 
     // Load default title message on component mount
-    useEffect(() => {
-        const loadTitleMessage = async () => {
-            try {
-                console.log("loading title message");
-                const message = await fetchDefaultTitleMessage();
-                setTitleMessage(message);
-            } catch (error) {
-                console.error("Error loading title message:", error);
-                // Keep default message on error
-            }
-        };
+    // useEffect(() => {
+    //     const loadTitleMessage = async () => {
+    //         try {
+    //             console.log("loading title message");
+    //             const message = await fetchDefaultTitleMessage();
+    //             setTitleMessage(message);
+    //         } catch (error) {
+    //             console.error("Error loading title message:", error);
+    //             // Keep default message on error
+    //         }
+    //     };
         
-        loadTitleMessage();
-    }, []);
+    //     loadTitleMessage();
+    // }, []);
 
     if (hasPermissions === false) {
         if (Platform.OS === 'android' && Platform.Version < 34) {
