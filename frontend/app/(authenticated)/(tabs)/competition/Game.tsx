@@ -34,6 +34,7 @@ type Profile = { username?: string; profileImageUrl?: string };
 const CompetitionGamePage: React.FC = () => {
     const { userID, username, profileImageUrl } = useUser();
     const [timeLeft, setTimeLeft] = useState<string>('00:00:00');
+    const [elapsedTime, setElapsedTime] = useState<number>(0);
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [referralsLeaderboard, setReferralsLeaderboard] = useState<any[]>([]);
     const [selectedTab, setSelectedTab] = useState<'VisualSteps' | 'Steps' | 'Referrals'>('VisualSteps');
@@ -49,6 +50,8 @@ const CompetitionGamePage: React.FC = () => {
     useEffect(() => {
         (async () => {
         const comp = await fetchCurrentCompetition();
+        const startTime = new Date(comp.start_time).getTime(); // convert timestamptz to ms
+        setElapsedTime(Math.floor((Date.now() - startTime) / 60000));
         const key = `competition:joinAt:${comp.id}`;
         console.log("testing key -- ", key);
         // prefer router param; else storage; else “now” (last resort)
@@ -75,9 +78,8 @@ const CompetitionGamePage: React.FC = () => {
 
         const tick = () => {
             const currentSteps = liveStepsRef.current; // Use current value from ref
-            const elapsedMin = Math.floor((Date.now() - joinAtMs) / 60000);
-            console.log(`Sending step update: ${currentSteps} steps at minute ${elapsedMin}`);
-            updateCompetitionSteps(userID, currentSteps, elapsedMin);
+            console.log(`Sending step update: ${currentSteps} steps at minute ${elapsedTime}`);
+            updateCompetitionSteps(userID, currentSteps, elapsedTime);
         };
 
         // First alignment to minute boundary
@@ -101,9 +103,8 @@ const CompetitionGamePage: React.FC = () => {
         const handleAppStateChange = (nextState: AppStateStatus) => {
             if (nextState === 'active') {
                 // App came to foreground - catch up on missed minutes
-                const elapsedMin = Math.floor((Date.now() - joinAtMs) / 60000);
-                console.log(`Back to foreground - updating steps at minute ${elapsedMin}`);
-                updateCompetitionSteps(userID, liveSteps, elapsedMin);
+                console.log(`Back to foreground - updating steps at minute ${elapsedTime}`);
+                updateCompetitionSteps(userID, liveSteps, elapsedTime);
             }
         };
         
@@ -225,7 +226,7 @@ const CompetitionGamePage: React.FC = () => {
     const refreshGameData = useCallback(async () => {
         const game = await fetchCurrentCompetition();
         if (game.error) {
-            router.replace('/(authenticated)/(tabs)/competition');
+            router.replace('/competition');
         }
         if (game && game.end_time) {
             updateTimer(game.end_time);

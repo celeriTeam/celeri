@@ -76,6 +76,8 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
 
     const grabUsersInfo = async () => {
         try {
+            if (!results || !Array.isArray(results)) return;
+            
             const userIds = results.map((u: any) => u.user_id || u.id);
             
             // Batch fetch profiles

@@ -418,36 +418,53 @@ const useHealthData = () => {
             console.log("Fetching competition steps for user:", userID);
             
             // 1. Get competition data
-            const currentCompetition = await fetchCurrentCompetition();
-            const competitionUserData = await getCompetitionUserInfo(userID);
-            
-            if (currentCompetition.error || competitionUserData.error) { 
+            let currentCompetition = await fetchCurrentCompetition();
+            let competitionUserData = await getCompetitionUserInfo(userID);
+            console.log('currentCompetition: ', currentCompetition);
+            console.log('competitionUserData: ', competitionUserData);
+
+            if ((currentCompetition.error || competitionUserData.error) && currentCompetition.error !== "Currently awaiting final results") { 
                 console.log("User not in active competition or competition error");
                 return;
             }
 
+            if (currentCompetition.error === "Currently awaiting final results") {
+                currentCompetition = currentCompetition.competition;
+                competitionUserData = competitionUserData.result;
+            }
+            console.log('currentCompetition: ', currentCompetition);
+
             // 2. Calculate minutes since competition start
             const startTime = new Date(currentCompetition.start_time);
+            console.log('startTime: ', startTime);
+            const userStartTime = new Date(competitionUserData.created_at);
             const endTime = new Date(currentCompetition.end_time);
             const now = new Date();
             
-            // Calculate elapsed minutes since competition start
             const elapsedMs = now.getTime() - startTime.getTime();
             const elapsedMinutes = Math.floor(elapsedMs / 60000);
             
             // 3. Get step count for entire competition period
-            const competitionSteps = await getStepCountForRange(startTime, endTime);
+            const competitionSteps = await getStepCountForRange(userStartTime, endTime);
             console.log(`Competition total steps from HealthKit: ${competitionSteps}, at minute ${elapsedMinutes}`);
             
             // 4. IMPORTANT: First check current steps in the database before updating
-            const currentUserData = await getCompetitionUserInfo(userID);
-            const currentStepsInDB = currentUserData?.steps || 0;
+            const currentStepsInDB = competitionUserData?.steps || 0;
             
             if (competitionSteps > currentStepsInDB) {
                 console.log(`Updating steps: ${currentStepsInDB} → ${competitionSteps}`);
                 await updateCompetitionSteps(userID, competitionSteps, elapsedMinutes);
             } else {
                 console.log(`Skipping update - current steps (${currentStepsInDB}) higher than HealthKit steps (${competitionSteps})`);
+            }
+
+            // 5. Handle final sync after end_time
+            if (now > endTime && competitionUserData?.time_from_start < 60) {
+                console.log("Competition ended — doing final step sync...");
+                
+                // Always force update to max steps at the end
+                await updateCompetitionSteps(userID, competitionSteps, elapsedMinutes);
+                console.log("Competition marked as updated.");
             }
         } catch (error) {
             console.error("Error fetching competition steps:", error);

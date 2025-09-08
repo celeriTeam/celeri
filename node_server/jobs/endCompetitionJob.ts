@@ -53,12 +53,60 @@ export const runEndCompetitionJob = async () => {
 
 export const endCompetitionById = async (competitionId: number) => {
     try {
+        // FIRST: CHECK IF RESULTS ARE STILL BEING GRABBED
+        const users = await sql`
+            SELECT user_id FROM competition_steps 
+            WHERE competition_id = ${competitionId}
+        `;
+
+        const isTallying = await sql`
+            SELECT 
+                CASE 
+                -- Case 1: all rows fully updated
+                WHEN NOT EXISTS (
+                    SELECT 1
+                    FROM competition_steps cs
+                    WHERE cs.competition_id = ${competitionId}
+                    AND cs.time_from_start < 60
+                ) 
+                THEN true
+
+                -- Case 2: 15+ minutes have passed since end_time
+                WHEN NOW() > (c.end_time + interval '15 minutes') 
+                THEN true
+
+                ELSE false
+                END AS is_tallying
+            FROM competitions c
+            WHERE c.id = ${competitionId};
+        `;
+        if (!isTallying) {
+            // send silent notif to alert frontend & change firebase in users, but dont end comp yet
+            await admin.messaging().send({
+                topic: 'allUsers',
+                data: {
+                    type: 'TOGGLE_COMPETITION',
+                    competitionId: competitionId.toString(),
+                }
+            });
+            for (const { user_id } of users) {
+                // Update user comp status in firebase
+                const userRef = admin.firestore().collection('users').doc(user_id);
+                await userRef.update({
+                    inCompetition: false,
+                    referral: null,
+                });
+
+            }
+            return;
+        }
+
         // set winners
         const userList = await sql`
             SELECT * FROM competition_steps
             WHERE competition_id = ${competitionId}
             ORDER BY steps desc
-        `
+        `;
         const firstPlaceUserId = userList.length > 0 ? userList[0].user_id : null;
 
         const medianIndex = Math.floor(userList.length / 2);
@@ -75,10 +123,7 @@ export const endCompetitionById = async (competitionId: number) => {
         `;
 
         // notif to each user
-        const users = await sql`
-            SELECT user_id FROM competition_steps 
-            WHERE competition_id = ${competitionId}
-        `;
+        
         console.log('Users in competition:', users);
 
         for (const { user_id } of users) {
@@ -89,10 +134,9 @@ export const endCompetitionById = async (competitionId: number) => {
                 continue; // Skip to the next user
             }
             const tokens = userDoc.data()?.tokens || [];
-
             // Update user comp status in firebase
             const userRef = admin.firestore().collection('users').doc(user_id);
-            await userRef.update({ 
+            await userRef.update({
                 inCompetition: false,
                 referral: null,
             });
