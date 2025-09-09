@@ -98,86 +98,85 @@ export const endCompetitionById = async (competitionId: number) => {
                 });
 
             }
-            return;
-        }
+        } else {
+            // set winners
+            const userList = await sql`
+                SELECT * FROM competition_steps
+                WHERE competition_id = ${competitionId}
+                ORDER BY steps desc
+            `;
+            const firstPlaceUserId = userList.length > 0 ? userList[0].user_id : null;
 
-        // set winners
-        const userList = await sql`
-            SELECT * FROM competition_steps
-            WHERE competition_id = ${competitionId}
-            ORDER BY steps desc
-        `;
-        const firstPlaceUserId = userList.length > 0 ? userList[0].user_id : null;
+            const medianIndex = Math.floor(userList.length / 2);
+            const medianUserId = userList.length > 0 ? userList[medianIndex].user_id : null;
 
-        const medianIndex = Math.floor(userList.length / 2);
-        const medianUserId = userList.length > 0 ? userList[medianIndex].user_id : null;
+            const referralUserId = await referalWinner(competitionId.toString());
+            await sql`
+                UPDATE competitions 
+                SET is_active = false,
+                first_place_winner=${firstPlaceUserId},
+                median_winner=${medianUserId},
+                referral_winner=${referralUserId}
+                WHERE id = ${competitionId}
+            `;
 
-        const referralUserId = await referalWinner(competitionId.toString());
-        await sql`
-            UPDATE competitions 
-            SET is_active = false,
-            first_place_winner=${firstPlaceUserId},
-            median_winner=${medianUserId},
-            referral_winner=${referralUserId}
-            WHERE id = ${competitionId}
-        `;
+            // notif to each user
+            
+            console.log('Users in competition:', users);
 
-        // notif to each user
-        
-        console.log('Users in competition:', users);
+            for (const { user_id } of users) {
+                // Fetch Firebase tokens for user
+                const userDoc = await admin.firestore().collection('users').doc(user_id).get();
+                if (!userDoc.exists) {
+                    console.log(`User document not found for user_id: ${user_id}`);
+                    continue; // Skip to the next user
+                }
+                const tokens = userDoc.data()?.tokens || [];
+                // Update user comp status in firebase
+                const userRef = admin.firestore().collection('users').doc(user_id);
+                await userRef.update({
+                    inCompetition: false,
+                    referral: null,
+                });
 
-        for (const { user_id } of users) {
-            // Fetch Firebase tokens for user
-            const userDoc = await admin.firestore().collection('users').doc(user_id).get();
-            if (!userDoc.exists) {
-                console.log(`User document not found for user_id: ${user_id}`);
-                continue; // Skip to the next user
-            }
-            const tokens = userDoc.data()?.tokens || [];
-            // Update user comp status in firebase
-            const userRef = admin.firestore().collection('users').doc(user_id);
-            await userRef.update({
-                inCompetition: false,
-                referral: null,
-            });
+                // Send notifs
+                for (const token of tokens) {
+                    const silentMessage = {
+                        token,
+                        data: {
+                            type: "silent",
+                            action: "fetchSteps"
+                        }
+                    };
 
-            // Send notifs
-            for (const token of tokens) {
-                const silentMessage = {
-                    token,
-                    data: {
-                        type: "silent",
-                        action: "fetchSteps"
-                    }
-                };
+                    const endNotification = {
+                        notification: {
+                            title: "Step Competition Ended",
+                            body: "The weekly step competition has concluded. Check the final results!"
+                        },
+                        token: token,
+                    };
 
-                const endNotification = {
-                    notification: {
-                        title: "Step Competition Ended",
-                        body: "The weekly step competition has concluded. Check the final results!"
-                    },
-                    token: token,
-                };
-
-                try {
-                    await admin.messaging().send(silentMessage);
-                    await admin.messaging().send(endNotification);
-                } catch (error: any) {
-                    if (error.code === 'messaging/registration-token-not-registered') {
-                        // console.log(`Invalid token detected for user ${user_id}`);
+                    try {
+                        await admin.messaging().send(silentMessage);
+                        await admin.messaging().send(endNotification);
+                    } catch (error: any) {
+                        if (error.code === 'messaging/registration-token-not-registered') {
+                            // console.log(`Invalid token detected for user ${user_id}`);
+                        }
                     }
                 }
             }
+            
+            // Enable "Join Game" through a silent notif
+            await admin.messaging().send({
+                topic: 'allUsers',
+                data: {
+                    type: 'TOGGLE_COMPETITION',
+                    competitionId: competitionId.toString(),
+                }
+            });
         }
-        
-        // Enable "Join Game" through a silent notif
-        await admin.messaging().send({
-            topic: 'allUsers',
-            data: {
-                type: 'TOGGLE_COMPETITION',
-                competitionId: competitionId.toString(),
-            }
-        });
     } catch (err) {
         console.error('Error ending competition by ID:', err);
     }
