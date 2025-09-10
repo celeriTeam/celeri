@@ -1,19 +1,13 @@
-import { Tabs, Redirect, Stack } from 'expo-router';
-import { Image, View, Text, ActivityIndicator, Dimensions, Platform } from 'react-native';
+import { Redirect, Stack } from 'expo-router';
+import { View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '../UserProvider';
-import * as Font from 'expo-font';
-import { JSX, useEffect, useState } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { app } from '@firebaseConfig';
+import { useEffect, useState } from 'react';
 import * as Device from 'expo-device';
 import messaging from '@react-native-firebase/messaging';
-import firestore from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
-import TabBar from "../../components/TabBar";
-import { useTabBar, TabBarProvider } from '../../hooks/useTabBar';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { TabBarProvider } from '../../hooks/useTabBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { db, auth, firestore } from '@/firebaseConfig';
 
 
 const { width, height } = Dimensions.get('window');
@@ -78,7 +72,7 @@ async function saveTokenToDatabase(token: string, uid: string) {
     const userId = uid;
   
     // Add the token to the users datastore
-    await firestore()
+    await db
       .collection('users')
       .doc(userId)
       .update({
@@ -100,13 +94,11 @@ async function saveTokenToDatabase(token: string, uid: string) {
   
 
 export default function AuthenticatedStack() {
-
-    const auth = getAuth(app);
     const [userID, setUserID] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = auth().onAuthStateChanged((user) => {
             if (user) {
                 console.log('There is a user. In useEffect.');
                 console.log(user);

@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Timestamp } from "firebase/firestore";
-import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary, getMorePropBets } from '@/backend/src/bets';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions } from 'react-native';
+import { getMoreWeeklyDuelsSummary, getMorePropBets } from '@/backend/src/bets';
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../../../UserProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-
-
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
-
 
 const BetsHistoryPage: React.FC = () => {
     const { userID, groups, loading } = useUser();

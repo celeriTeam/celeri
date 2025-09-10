@@ -8,7 +8,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
 import { getNewsSummary } from '@/backend/src/groups'; // Assume this function exists
 import { formatDistanceToNow } from 'date-fns'; // For relative time formatting
-import { DocumentSnapshot } from 'firebase/firestore';
 
 const NewsHistoryPage: React.FC = () => {
     const { userID, groups, loading } = useUser();

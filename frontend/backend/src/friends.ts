@@ -1,25 +1,20 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { useUser } from '../../app/UserProvider'
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { arrayUnion, arrayRemove } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 
 /*********************************************** REQUEST FRIENDS FUNCTIONS ********************************************/
 
 export const requestFriend = async (requesterID: string, requestedID: string): Promise<undefined> => {
     try {
-        const requesterDocRef = doc(db, 'users', requesterID);
-        const requestedDocRef = doc(db, "users", requestedID);
+        const requesterDocRef = db.collection('users').doc(requesterID);
+        const requestedDocRef = db.collection('users').doc(requestedID);
 
         // add the person being friended to the outgoingRequests of the requester
-        await updateDoc(requesterDocRef, {
+        await requesterDocRef.update({
             outgoingRequests: arrayUnion(requestedID),
         })
 
         // add the person who is requesting to friend to the incomingRequests of the requested
-        await updateDoc(requestedDocRef, {
+        await requestedDocRef.update({
             incomingRequests: arrayUnion(requesterID),
         })
 
@@ -31,16 +26,16 @@ export const requestFriend = async (requesterID: string, requestedID: string): P
 
 export const cancelRequest = async (cancellerID: string, cancelledID: string): Promise<undefined> => {
     try {
-        const cancellerDocRef = doc(db, 'users', cancellerID);
-        const cancelledDocRef = doc(db, 'users', cancelledID);
+        const cancellerDocRef = db.collection('users').doc(cancellerID);
+        const cancelledDocRef = db.collection('users').doc(cancelledID);
 
         // remove the cancelledID from the canceller's outgoingRequests
-        await updateDoc(cancellerDocRef, {
+        await cancellerDocRef.update({
             outgoingRequests: arrayRemove(cancelledID),
         });
 
         // remove the cancellerID from the cancelled user's incomingRequests
-        await updateDoc(cancelledDocRef, {
+        await cancelledDocRef.update({
             incomingRequests: arrayRemove(cancellerID),
         });
 
@@ -52,17 +47,17 @@ export const cancelRequest = async (cancellerID: string, cancelledID: string): P
 
 export const acceptRequest = async (accepterID: string, acceptedID: string): Promise<undefined> => { // you are the accepter, you accept the accepted persons request
     try {
-        const accepterDocRef = doc(db, 'users', accepterID);
-        const acceptedDocRef = doc(db, 'users', acceptedID);
+        const accepterDocRef = db.collection('users').doc(accepterID);
+        const acceptedDocRef = db.collection('users').doc(acceptedID);
 
         // remove the cancelledID from the canceller's outgoingRequests
-        await updateDoc(accepterDocRef, {
+        await accepterDocRef.update({
             friendsList: arrayUnion(acceptedID),
             incomingRequests: arrayRemove(acceptedID),
         });
 
         // remove the cancellerID from the cancelled user's incomingRequests
-        await updateDoc(acceptedDocRef, {
+        await acceptedDocRef.update({
             friendsList: arrayUnion(accepterID),
             outgoingRequests: arrayRemove(accepterID),
         });
@@ -75,15 +70,15 @@ export const acceptRequest = async (accepterID: string, acceptedID: string): Pro
 
 export const removeFriend = async (removerID: string, removedID: string): Promise<undefined> => { // you are the accepter, you accept the accepted persons request
     try {
-        const removerDocRef = doc(db, 'users', removerID);
-        const removedDocRef = doc(db, 'users', removedID);
+        const removerDocRef = db.collection('users').doc(removerID);
+        const removedDocRef = db.collection('users').doc(removedID);
 
         // remove the friend from the remover and the removed
-        await updateDoc(removerDocRef, {
+        await removerDocRef.update({
             friendsList: arrayRemove(removedID),
         });
 
-        await updateDoc(removedDocRef, {
+        await removedDocRef.update({
             friendsList: arrayRemove(removerID),
         });
 
@@ -107,47 +102,47 @@ export interface PublicProfileData {
 export const fetchPublicProfileData = async (userID: string, targetUserID: string): Promise<PublicProfileData | undefined> => {
     try {
 
-        const userRef = doc(db, 'users', targetUserID)
-        const snap = await getDoc(userRef)
+        const userRef = db.collection('users').doc(targetUserID);
+        const snap = await userRef.get();
 
-        if (!snap.exists()) {
-            console.warn(`No user found with ID "${targetUserID}"`)
-            return undefined
+        if (!snap.exists) {
+            console.warn(`No user found with ID "${targetUserID}"`);
+            return undefined;
         }
 
-        const data = snap.data()
+        const data = snap.data();
 
-        const incoming = Array.isArray(data.incomingRequests)
-        ? (data.incomingRequests as string[])
-        : []
-        const outgoing = Array.isArray(data.outgoingRequests)
-        ? (data.outgoingRequests as string[])
-        : []
-        const friends = Array.isArray(data.friendsList)
-        ? (data.friendsList as string[])
-        : []
+        const incoming = Array.isArray(data?.incomingRequests)
+        ? (data?.incomingRequests as string[])
+        : [];
+        const outgoing = Array.isArray(data?.outgoingRequests)
+        ? (data?.outgoingRequests as string[])
+        : [];
+        const friends = Array.isArray(data?.friendsList)
+        ? (data?.friendsList as string[])
+        : [];
 
         // Determine friendStatus
-        let friendStatus = 'request'
+        let friendStatus = 'request';
         if (userID) {
             if (incoming.includes(userID)) {
-                friendStatus = 'cancel'
+                friendStatus = 'cancel';
             } else if (friends.includes(userID)) {
-                friendStatus = 'remove'
+                friendStatus = 'remove';
             } else if (outgoing.includes(userID)) {
-                friendStatus = 'accept'
+                friendStatus = 'accept';
             }
         }
         return {
-            averageSteps: Array.isArray(data.averageSteps)
-                ? (data.averageSteps as number[])
+            averageSteps: Array.isArray(data?.averageSteps)
+                ? (data?.averageSteps as number[])
                 : [],
-            steps: data.steps as number,
-            name: data.name as string,
-            username: data.username as string,
-            profileImageUrl: data.profileImageUrl as string,
+            steps: data?.steps as number,
+            name: data?.name as string,
+            username: data?.username as string,
+            profileImageUrl: data?.profileImageUrl as string,
             friendStatus: friendStatus as string,
-        }
+        };
 
 
     } catch (error) {

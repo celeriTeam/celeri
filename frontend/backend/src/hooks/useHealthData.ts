@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate, setLastLogin } from '../users'; 
-import { getAuth } from "firebase/auth";
 import AppleHealthKit, {
     HealthInputOptions,
     HealthKitPermissions,
@@ -21,6 +20,7 @@ import { get } from 'http';
 import { get1v1StartTime, update1v1Steps } from '../1v1';
 import { fetchCurrentCompetition } from '../api/competitions';
 import { updateCompetitionSteps, getCompetitionUserInfo } from '../api/competition_steps';
+import { auth } from '@/firebaseConfig';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -510,8 +510,7 @@ const useHealthData = () => {
 
     // For foreground/UI updates
     const fetchHealthData = useCallback(async () => {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         const userID = user ? user.uid : "unknown_user";
 
         const healthData = await fetchAllHealthData(userID);
@@ -553,8 +552,7 @@ const useHealthData = () => {
 
     // For background updates
     const fetchHealthDataBackground = async () => {
-        const auth = getAuth();
-        const user = auth.currentUser;
+        const user = auth().currentUser;
         const userID = user ? user.uid : "unknown_user";
 
         const healthData = await fetchAllHealthData(userID);

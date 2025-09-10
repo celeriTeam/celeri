@@ -1,16 +1,11 @@
-import { getFirestore, doc, runTransaction, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { useUser } from '../../app/UserProvider'
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { serverTimestamp, Timestamp } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
 //for the bet summary
 export const getPowerups = async (groupID: string): Promise<Array<Array<string>>> => {
-    const groupDocRef = doc(db, 'groups', groupID);
+    const groupDocRef = db.collection('groups').doc(groupID);
 
     try {
 
@@ -20,21 +15,21 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
         const startOfDayTimestamp = Timestamp.fromDate(now);
 
         // Query the "powerups" subcollection where the creation time is after 12 AM of the current day
-        const powerupsCollectionRef = collection(groupDocRef, "powerups");
-        const q = query(powerupsCollectionRef, where("createdAt", ">=", startOfDayTimestamp));
+        const powerupsCollectionRef = groupDocRef.collection('powerups');
+        const q = powerupsCollectionRef.where("createdAt", ">=", startOfDayTimestamp);
 
-        const powerupsSnapshot = await getDocs(q);
+        const powerupsSnapshot = await q.get();
         // console.log("powerupsSnapshot, ", powerupsSnapshot);
         const powerupsArray: Array<Array<string>> = [];
 
         powerupsSnapshot.forEach((doc) => {
             // console.log("document in powerupsSnapshot: ", doc);
             const data = doc.data();
-            const powerupType = data.type || ""; // Assuming 'type' is the field for powerup type
-            const targetUserID = data.targetUserID || ""; // Assuming 'targetID' is the field for target ID
-            const targetUserName = data.targetUserName || "";
-            const userID = data.userID || ""; // Assuming 'userID' is the field for user ID
-            const duelID = data.duelID || "";
+            const powerupType = data?.type || ""; // Assuming 'type' is the field for powerup type
+            const targetUserID = data?.targetUserID || ""; // Assuming 'targetID' is the field for target ID
+            const targetUserName = data?.targetUserName || "";
+            const userID = data?.userID || ""; // Assuming 'userID' is the field for user ID
+            const duelID = data?.duelID || "";
 
             // console.log("document type: ", powerupType);
 
@@ -55,7 +50,7 @@ export const getPowerups = async (groupID: string): Promise<Array<Array<string>>
 
 
 export const buyPowerup = async (groupID: string, userID: string, targetUserID: string, powerup: string, gameType: string, targetUserName?: string,): Promise<boolean> => {
-    const groupDocRef = doc(db, 'groups', groupID);
+    const groupDocRef = db.collection('groups').doc(groupID);
     console.log("buyPowerup - powerup number: ", powerup);
     let powerupName = "none";
     // match the powerup
@@ -66,17 +61,17 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
     }
 
     try {
-        return await runTransaction(db, async (transaction) => {
+        return await db.runTransaction(async (transaction) => {
             const groupDoc = await transaction.get(groupDocRef);
-            const powerupsCollectionRef = collection(groupDocRef, "powerups");
+            const powerupsCollectionRef = groupDocRef.collection('powerups');
 
-            if (!groupDoc.exists()) {
+            if (!groupDoc.exists) {
                 console.error("Group document does not exist!");
                 return false;
             }
 
             const groupData = groupDoc.data();
-            const users = groupData.users || {};
+            const users = groupData?.users || {};
 
             // Ensure the user exists in the group
             if (!users[userID]) {
@@ -85,8 +80,8 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
             }
 
             const userData = users[userID];
-            const currentDiamonds = userData.diamonds || 0;
-            const currentSecondWind = userData.secondWind || 0;
+            const currentDiamonds = userData?.diamonds || 0;
+            const currentSecondWind = userData?.secondWind || 0;
             const duelID = await findDuelID(groupID, targetUserID, gameType);
 
             console.log("currentDiamonds: " + currentDiamonds);
@@ -95,7 +90,7 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
             if (currentDiamonds >= 3) {
                 // Update the values
                 userData.diamonds = currentDiamonds - 3;
-                //userData.secondWind = currentSecondWind + 1;
+                //userData?.secondWind = currentSecondWind + 1;
 
                 // Write the updated data back to Firestore
                 transaction.update(groupDocRef, {
@@ -111,7 +106,7 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
                     targetUserName: targetUserName,
                     duelID: duelID
                 };
-                const newDocRef = doc(powerupsCollectionRef);
+                const newDocRef = powerupsCollectionRef.doc();
                 transaction.set(newDocRef, newPowerup);
 
                 return true; // Successfully updated
@@ -132,8 +127,8 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
 export const findDuelID = async (groupID: string, targetUserID: string, gameType: string): Promise<string | null> => {
     console.log("the groupID is ", groupID);
     console.log("the targetUserID is ", targetUserID);
-    const groupDocRef = doc(db, "groups", groupID);
-    const duelCollectionRef = collection(groupDocRef, "duels");
+    const groupDocRef = db.collection('groups').doc(groupID);
+    const duelCollectionRef = groupDocRef.collection('duels');
 
     try {
         // Get the timestamp for 24 hours ago
@@ -147,30 +142,26 @@ export const findDuelID = async (groupID: string, targetUserID: string, gameType
         }
 
         // Query for documents where player1 == targetUserID or player2 == targetUserID
-        const query1 = query(
-            duelCollectionRef,
-            where("createdAt", ">=", time),
-            where("player1", "==", targetUserID)
-        );
+        const query1 = duelCollectionRef
+            .where("createdAt", ">=", time)
+            .where("player1", "==", targetUserID);
 
-            const querySnapshot = await getDocs(query1);
+            const querySnapshot = await query1.get();
             console.log("Simple Query Results:");
             querySnapshot.forEach((doc) => {
                 console.log(doc.id, "=>", doc.data());
             });
 
-        const query2 = query(
-            duelCollectionRef,
-            where("createdAt", ">=", time),
-            where("player2", "==", targetUserID)
-        );
+        const query2 = duelCollectionRef
+            .where("createdAt", ">=", time)
+            .where("player2", "==", targetUserID);
 
         console.log("QUERIES:");
         console.log(query1);
         console.log(query2);
 
         // Execute both queries
-        const [snapshot1, snapshot2] = await Promise.all([getDocs(query1), getDocs(query2)]);
+        const [snapshot1, snapshot2] = await Promise.all([query1.get(), query2.get()]);
 
         // Check results and return the first matching document ID
         if (!snapshot1.empty) {

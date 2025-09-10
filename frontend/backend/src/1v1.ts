@@ -1,19 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
-import { Subscription } from 'expo-sensors/build/Pedometer';
-import { useEffect, useState } from 'react';
-import { get } from "http";
-
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { serverTimestamp, Timestamp } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
@@ -38,13 +24,11 @@ const storage = getStorage();
 
 // get 1v1 listener
 export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
-    const current1v1Query = query(
-        collection(db, '1v1s'),
-        where('participants', 'array-contains', userID),
-        where('endTime', '>', Timestamp.now())
-    );
+    const current1v1Query = db.collection('1v1s')
+        .where('participants', 'array-contains', userID)
+        .where('endTime', '>', Timestamp.now());
 
-    const unsubscribe = onSnapshot(current1v1Query, (snapshot) => {
+    const unsubscribe = current1v1Query.onSnapshot((snapshot) => {
         if (snapshot.empty || snapshot.docs.length === 0) {
             onUpdate(null); // No active 1v1
             return;
@@ -53,8 +37,8 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
             if (!snapshot.empty) {
                 const duelDoc = snapshot.docs[0];
                 const isCurrentUserA = duelDoc.data().participants[0] === userID;
-                const opponentDoc = await getDoc(doc(db, 'users', duelDoc.data().participants[isCurrentUserA ? 1 : 0]));
-                const currentUserDoc = await getDoc(doc(db, 'users', userID));
+                const opponentDoc = await db.collection('users').doc(duelDoc.data().participants[isCurrentUserA ? 1 : 0]).get();
+                const currentUserDoc = await db.collection('users').doc(userID).get();
                 onUpdate({ 
                     current1v1ID: duelDoc.id, 
                     userInfo: {
@@ -76,13 +60,11 @@ export const get1v1 = (userID: string, onUpdate: (data: any | null) => void): ((
 };
 
 export const get1v1History = async (userID: string) => {
-    const historyQuery = query(
-        collection(db, '1v1s'),
-        where('processed', '==', true),
-        where('participants', 'array-contains', userID)
-    );
+    const historyQuery = db.collection('1v1s')
+        .where('processed', '==', true)
+        .where('participants', 'array-contains', userID);
 
-    const historySnapshot = await getDocs(historyQuery);
+    const historySnapshot = await historyQuery.get();
     if (historySnapshot.empty) {
         return []; // No history found
     }
@@ -91,8 +73,8 @@ export const get1v1History = async (userID: string) => {
         historySnapshot.docs.map(async (docSnap) => {
             const data = docSnap.data();
             const opponentID = data.participants.find((id: string) => id !== userID);
-            const opponentDoc = await getDoc(doc(db, 'users', opponentID));
-            const currentUserDoc = await getDoc(doc(db, 'users', userID));
+            const opponentDoc = await db.collection('users').doc(opponentID).get();
+            const currentUserDoc = await db.collection('users').doc(userID).get();
             return {
                 duelID: docSnap.id,
                 ...data,
@@ -113,19 +95,17 @@ export const get1v1History = async (userID: string) => {
 export const get1v1Results = async (userID: string) => {
     try {
         // check hasSeenResults[userID]: if true, return null
-        const resultsQuery = query(
-            collection(db, '1v1s'),
-            where('participants', 'array-contains', userID),
-            where(`hasSeenResults.${userID}`, "==", false)
-        );
-        const resultsSnapshot = await getDocs(resultsQuery);
+        const resultsQuery = db.collection('1v1s')
+            .where('participants', 'array-contains', userID)
+            .where(`hasSeenResults.${userID}`, "==", false);
+        const resultsSnapshot = await resultsQuery.get();
         if (resultsSnapshot.empty) {
             return null;
         }
         const resultsDoc = resultsSnapshot.docs[0];
         const isCurrentUserA = resultsDoc.data().participants[0] === userID;
-        const opponentDoc = await getDoc(doc(db, 'users', resultsDoc.data().participants[isCurrentUserA ? 1 : 0]));
-        const currentUserDoc = await getDoc(doc(db, 'users', userID));
+        const opponentDoc = await db.collection('users').doc(resultsDoc.data().participants[isCurrentUserA ? 1 : 0]).get();
+        const currentUserDoc = await db.collection('users').doc(userID).get();
         return {
             current1v1ID: resultsDoc.id, 
             startTime: resultsDoc.data().startTime,
@@ -147,12 +127,11 @@ export const get1v1Results = async (userID: string) => {
 };
 
 export const get1v1StartTime = async (userID: string) => {
-    const q = query(
-        collection(db,'1v1s'),
-        where('participants','array-contains', userID),
-        where('endTime', '>', Timestamp.now())
-    );
-    const snap = await getDocs(q);
+    const q = db.collection('1v1s')
+        .where('participants','array-contains', userID)
+        .where('endTime', '>', Timestamp.now());
+
+    const snap = await q.get();
     if (snap.empty) return { startTime: null, current1v1ID: null };
 
     const doc = snap.docs[0];
@@ -163,21 +142,21 @@ export const get1v1StartTime = async (userID: string) => {
 };
 
 export const update1v1Steps = async (userID: string, current1v1ID: string, stepsMap: { [key: string]: number }) => {
-    const duelRef = doc(db, '1v1s', current1v1ID);
-    const duelDoc = await getDoc(duelRef);
-    if (!duelDoc.exists()) {
+    const duelRef = db.collection('1v1s').doc(current1v1ID);
+    const duelDoc = await duelRef.get();
+    if (!duelDoc.exists) {
         throw new Error('Duel not found');
     }
 
     const duelData = duelDoc.data();
 
-    await updateDoc(duelRef, {
+    await duelRef.update({
         progress: {
-            ...duelData.progress,
+            ...duelData?.progress,
             [userID]: stepsMap,
         },
         lastSynced: {
-            ...duelData.lastSynced,
+            ...duelData?.lastSynced,
             [userID]: serverTimestamp()
         }
     });
@@ -219,14 +198,14 @@ export const create1v1 = async (Request1v1ID: string) => {
 	// 	}
 	// }
 
-    const requestDoc = await getDoc(doc(db, '1v1Requests', Request1v1ID));
-    if (!requestDoc.exists()) {
+    const requestDoc = await db.collection('1v1Requests').doc(Request1v1ID).get();
+    if (!requestDoc.exists) {
         throw new Error('Request not found');
     }
 
     const requestData = requestDoc.data();
-    const senderID = requestData.senderID;
-    const receiverID = requestData.receiverID;
+    const senderID = requestData?.senderID;
+    const receiverID = requestData?.receiverID;
 
     // set endTime to 24 hours after startTime
 
@@ -263,7 +242,7 @@ export const create1v1 = async (Request1v1ID: string) => {
         },
     }
 
-    const new1v1Ref = await addDoc(collection(db, '1v1s'), new1v1Data);
+    const new1v1Ref = await db.collection('1v1s').add(new1v1Data);
 
     return {
         current1v1ID: new1v1Ref.id,
@@ -273,21 +252,21 @@ export const create1v1 = async (Request1v1ID: string) => {
 
 export const set1v1HasSeenResults = async (userID: string, duelID: string) => {
     try {
-        const duelRef = doc(db, '1v1s', duelID);
-        const duelDoc = await getDoc(duelRef);
-        if (!duelDoc.exists()) {
+        const duelRef = db.collection('1v1s').doc(duelID);
+        const duelDoc = await duelRef.get();
+        if (!duelDoc.exists) {
             return;
         }
         
         const duelData = duelDoc.data();
-        const hasSeenResults = duelData.hasSeenResults || [];
+        const hasSeenResults = duelData?.hasSeenResults || [];
 
         const updatedResults = {
             ...hasSeenResults,
             [userID]: true,
         };
 
-        await updateDoc(duelRef, {
+        await duelRef.update({
             hasSeenResults: updatedResults,
         });
     } catch (err) {

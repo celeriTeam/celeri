@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Timestamp } from "firebase/firestore";
-import { getMoreWeeklyDuelsSummary, getWeeklyGainsSummary, getRacesSummary } from '@/backend/src/bets';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Modal } from 'react-native';
+import { getWeeklyGainsSummary } from '@/backend/src/bets';
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Dimensions, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
 import { useUser } from '../../../../../UserProvider';
-import Svg, { Circle, G } from 'react-native-svg';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import GainsHistoryTutorial from '../../groups/tutorials/GainsHistoryTutorial';

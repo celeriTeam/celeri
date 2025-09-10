@@ -1,31 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  useWindowDimensions,
-  TouchableOpacity,
-  SafeAreaView,
-  Image,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Keyboard,
-  ScrollView,
-  Alert
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, useWindowDimensions, TouchableOpacity, SafeAreaView, Image, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import Checkbox from 'expo-checkbox';
-import { getAuth, onAuthStateChanged, signInWithPhoneNumber} from '@react-native-firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db, auth, firestore, storage } from '@/firebaseConfig';
 
 // Define your onboarding pages content
 const onboardingPages = [
@@ -170,7 +151,7 @@ const OnboardPrimer = () => {
   };
 
   // Register and navigate to main flow
-  const registerAndGoToMainFlow = async (user = getAuth().currentUser) => {
+  const registerAndGoToMainFlow = async (user = auth().currentUser) => {
     try {
       console.log('registerAndGoToMainFlow -- Registering user and navigating to main flow');
       if (!user) {
@@ -186,16 +167,13 @@ const OnboardPrimer = () => {
       // Upload profile image
       let profileImageUrl = null;
       if (profileImage) {
-        const response = await fetch(profileImage);
-        const blob = await response.blob();
-        const storage = getStorage();
-        const storageRef = ref(storage, `profileImages/${user.uid}`);
-        await uploadBytes(storageRef, blob);
-        profileImageUrl = await getDownloadURL(storageRef);
+        const storageRef = storage().ref(`profileImages/${user.uid}`);
+        await storageRef.putFile(profileImage);
+        profileImageUrl = await storageRef.getDownloadURL();
       }
       
       // Create user document
-      await firestore().collection('users').doc(user.uid).set({
+      await db.collection('users').doc(user.uid).set({
         name,
         username,
         phoneNumber: user.phoneNumber,
@@ -216,7 +194,8 @@ const OnboardPrimer = () => {
           text: 'OK', 
           onPress: async () => {
             await AsyncStorage.removeItem('registrationInProgress');
-            router.replace('/(authenticated)/(tabs)/home') 
+            router.back();
+            router.replace('/(authenticated)/(tabs)/home');
           } 
         }]
       );
@@ -298,35 +277,35 @@ const OnboardPrimer = () => {
       console.log('Formatted phone number:', formattedNumber);
       
       // This is the correct way to call it
-      const confirmation = await signInWithPhoneNumber(getAuth(), formattedNumber);
+      const confirmation = await auth().signInWithPhoneNumber(formattedNumber);
       console.log('Phone number sign-in confirmation received');
       
       // Add this listener for automatic verification in simulators
-      const unsubscribe = onAuthStateChanged(getAuth(), async (user) => {
-        console.log('onAuthStateChanged triggered during phone verification');
-        if (user) {
-          console.log('Auto-verification detected in simulator');
-          // Check if this user already exists in Firestore
-          const userDoc = await firestore().collection('users').doc(user.uid).get();
+      // const unsubscribe = auth().onAuthStateChanged(async (user) => {
+      //   console.log('onAuthStateChanged triggered during phone verification');
+      //   if (user) {
+      //     console.log('Auto-verification detected in simulator');
+      //     // Check if this user already exists in Firestore
+      //     const userDoc = await db.collection('users').doc(user.uid).get();
           
-          if (userDoc.exists) {
-            // User already exists - show alert and navigate to login
-            Alert.alert(
-              'Account Exists',
-              'An account with this phone number already exists. Please sign in instead.',
-              [{ text: 'OK', onPress: () => router.push('/onboarding/Login') }]
-            );
-          } else {
-            // New user - verified automatically, register and go to main flow
-            console.log('New user verified via auto-verification, proceeding to main flow');
-            setPhoneVerified(true);
-            // Register user and go to main app directly
-            await registerAndGoToMainFlow(user);
-          }
-          // Unsubscribe after handling auto-verification
-          unsubscribe();
-        }
-      });
+      //     if (userDoc.exists) {
+      //       // User already exists - show alert and navigate to login
+      //       Alert.alert(
+      //         'Account Exists',
+      //         'An account with this phone number already exists. Please sign in instead.',
+      //         [{ text: 'OK', onPress: () => router.push('/onboarding/Login') }]
+      //       );
+      //     } else {
+      //       // New user - verified automatically, register and go to main flow
+      //       console.log('New user verified via auto-verification, proceeding to main flow');
+      //       setPhoneVerified(true);
+      //       // Register user and go to main app directly
+      //       await registerAndGoToMainFlow(user);
+      //     }
+      //     // Unsubscribe after handling auto-verification
+      //     unsubscribe();
+      //   }
+      // });
       
       // Still set confirmation for devices that need manual verification
       if (confirmation) {
@@ -359,7 +338,7 @@ const OnboardPrimer = () => {
       const userCredential = await confirmation.confirm(verificationCode);
       
       // Check if this user already exists in Firestore
-      const userDoc = await firestore().collection('users').doc(userCredential.user.uid).get();
+      const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
       
       if (userDoc.exists) {
         // User already exists
@@ -651,6 +630,7 @@ const OnboardPrimer = () => {
             <Text style={styles.nextButtonText}>Next</Text>
           </TouchableOpacity>
         )}
+        <View style={{ marginBottom: 50, }} />
       </SafeAreaView>
     </LinearGradient>
   );
@@ -758,7 +738,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 30,
-    marginBottom: 50,
     alignSelf: 'center',
   },
   nextButtonText: {

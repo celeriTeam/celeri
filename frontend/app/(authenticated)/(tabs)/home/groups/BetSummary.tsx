@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet, Platform } from 'react-native';
-import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, ScrollView, StyleSheet as RNStyleSheet, Platform } from 'react-native';
+import { db } from "@firebaseConfig";
+import { Timestamp } from "firebase/firestore";
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,14 +9,14 @@ import StorePage from './modals/Store';
 import BetHistoryPage from './modals/BetHistory';
 import WeeklyBetHistoryPage from './modals/WeeklyBetHistory';
 import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
-import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
-    getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, 
-    setLogin, getLastLogin, getLatestBetTime, getTutorialStatus, addDiamonds, 
-    setTutorialStatus} 
+import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic,
+    getGameType, getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, getPropBet,
+    getResetDay, setLogin, getLastLogin, getLatestBetTime, getTutorialStatus, addDiamonds, setTutorialStatus
+}
 from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
-import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
+import { checkFinishedPropBet } from '@/backend/src/bets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './modals/LiveDuel';
 import PropBetPage from './modals/PropBet';
@@ -29,8 +29,6 @@ import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
 import StoreTutorial from './tutorials/StoreTutorial';
 import CurrencyTutorial from './tutorials/CurrencyTutorial';
 import StepsTutorial from './tutorials/StepsTutorial';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 
@@ -179,8 +177,8 @@ const BetSummaryPage: React.FC = () => {
 
     const fetchGroupData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
-        const groupsRef = collection(db, "groups");
-        const groupDocRef = doc(groupsRef, groupID);
+        const groupsRef = db.collection("groups");
+        const groupDocRef = groupsRef.doc(groupID);
         console.log('fetching group data..');
 
         // Unsubscribe firebase listener functions
@@ -192,9 +190,9 @@ const BetSummaryPage: React.FC = () => {
         if (!isStoreModalVisible && !isPropBetModalVisible && 
             (currentTutorialStatus.currency || !isCurrencyModalVisible)
         ) {
-            const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+            const unsubscribeGroup = groupDocRef.onSnapshot(async (docSnapshot) => {
                 setIsLoading(true);
-                if (docSnapshot.exists() && groupID) {
+                if (docSnapshot.exists && groupID) {
                     const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, 
                         cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin, latestBetTime, tutorialStatus] = await Promise.all([
                         getGroupProfilePic(groupID),
@@ -495,14 +493,13 @@ const BetSummaryPage: React.FC = () => {
 
                     // console.log("the test continues", startDate, endDate);
 
-                    const duelsCollection = collection(groupDocRef, 'duels');
+                    const duelsCollection = groupDocRef.collection('duels');
 
-                    const duelsQuery = query(duelsCollection,
-                        where('cycleCount', '==', cycleCount),
-                        where((gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay', '==', cycle),
-                        where('createdAt', '>=', Timestamp.fromDate(startDate)),
-                        where('createdAt', '<', Timestamp.fromDate(endDate))
-                    );
+                    const duelsQuery = duelsCollection
+                        .where('cycleCount', '==', cycleCount)
+                        .where((gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay', '==', cycle)
+                        .where('createdAt', '>=', Timestamp.fromDate(startDate))
+                        .where('createdAt', '<', Timestamp.fromDate(endDate));
                     // console.log("checkpoint five");
                     // console.log("duelsQuery", duelsQuery);
 
@@ -513,7 +510,7 @@ const BetSummaryPage: React.FC = () => {
                     }
 
                     // New duels listener
-                    const unsubscribeDuels = onSnapshot(duelsQuery, (duelsSnapshot) => {
+                    const unsubscribeDuels = duelsQuery.onSnapshot((duelsSnapshot) => {
                         setIsLoading(true);
                         const todaysDuels: { [key: string]: any } = {};
                         duelsSnapshot.forEach((duelDoc) => {
@@ -597,11 +594,11 @@ const BetSummaryPage: React.FC = () => {
 
                     // Grab news data (dont need onSnapshot)
                     if (showIntroModals) {
-                        const newsCollectionRef = collection(groupDocRef, 'news');
+                        const newsCollectionRef = groupDocRef.collection('news');
                         // const lastLogin = groups[groupID]?.lastLogin;
-                        const newsQuery = query(newsCollectionRef, where('createdAt', '>', lastLogin));
+                        const newsQuery = newsCollectionRef.where('createdAt', '>', lastLogin);
                         // const newsQuery = query(newsCollectionRef);
-                        const newsSnapshot = await getDocs(newsQuery);
+                        const newsSnapshot = await newsQuery.get();
                         const currentNews: { [key: string]: any } = {};
                         newsSnapshot.forEach((newsDoc: any) => {
                             const newsData = newsDoc.data();
