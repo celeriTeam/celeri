@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,14 +21,11 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import Checkbox from 'expo-checkbox';
-import { 
-  PhoneAuthProvider,
-  signInWithCredential,
-  RecaptchaVerifier,
-  getAuth
-} from 'firebase/auth';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { app } from '@firebaseConfig';
+import { getAuth, onAuthStateChanged, signInWithPhoneNumber} from '@react-native-firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import firestore from '@react-native-firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Define your onboarding pages content
 const onboardingPages = [
@@ -51,7 +48,7 @@ const onboardingPages = [
       image: require('@assets/images/step_competition.png')
     },
     row2: {
-      image: require('@assets/images/brick_wall.png'),
+      image: require('@assets/images/glizzy_contest.png'),
       text: 'Every month, we\'ll host in-person events in NY or DC!'
     }
   },
@@ -75,18 +72,9 @@ const onboardingPages = [
   },
   {
     id: '5',
-    title: 'Win Rewards',
-    description: 'Earn points and rewards for meeting goals.',
-    image: '🎁',
-    type: 'standard'
-  },
-  {
-    id: '6',
-    title: 'Get Started',
-    description: 'Ready to begin your health journey?',
-    image: '🚀',
-    type: 'standard'
-  },
+    title: 'Verify your phone number',
+    type: 'phone-verification',
+  }
 ];
 
 const OnboardPrimer = () => {
@@ -96,7 +84,9 @@ const OnboardPrimer = () => {
   
   // Track current page and viewed pages
   const [currentPage, setCurrentPage] = useState(0);
-  const [viewedPages, setViewedPages] = useState<boolean[]>(Array(onboardingPages.length).fill(false));
+  const [viewedPages, setViewedPages] = useState<boolean[]>(
+    Array(onboardingPages.length).fill(false).map((_, index) => index === 0 ? true : false)
+  );
 
   // Account creation state variables
   const [name, setName] = useState('');
@@ -106,9 +96,8 @@ const OnboardPrimer = () => {
   const [newsConsent, setNewsConsent] = useState(true);
 
   // Phone authentication state variables
-  const recaptchaVerifier = useRef(null);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationId, setVerificationId] = useState('');
+  const [confirmation, setConfirmation] = useState<any>(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [verifyingPhone, setVerifyingPhone] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -181,12 +170,60 @@ const OnboardPrimer = () => {
   };
 
   // Register and navigate to main flow
-  const registerAndGoToMainFlow = async () => {
-    // This would incorporate the logic from Register.tsx
-    // For this example, just navigate to the main app
-    Alert.alert('Account Created', 'Your account has been created successfully!', [
-      { text: 'OK', onPress: () => router.push('/onboarding') }
-    ]);
+  const registerAndGoToMainFlow = async (user = getAuth().currentUser) => {
+    try {
+      console.log('registerAndGoToMainFlow -- Registering user and navigating to main flow');
+      if (!user) {
+        Alert.alert('Error', 'No authenticated user found.');
+        return;
+      }
+      
+      if (!name || !username || !profileImage) {
+        Alert.alert('Missing Information', 'Please complete all required fields.');
+        return;
+      }
+      
+      // Upload profile image
+      let profileImageUrl = null;
+      if (profileImage) {
+        const response = await fetch(profileImage);
+        const blob = await response.blob();
+        const storage = getStorage();
+        const storageRef = ref(storage, `profileImages/${user.uid}`);
+        await uploadBytes(storageRef, blob);
+        profileImageUrl = await getDownloadURL(storageRef);
+      }
+      
+      // Create user document
+      await firestore().collection('users').doc(user.uid).set({
+        name,
+        username,
+        phoneNumber: user.phoneNumber,
+        profileImageUrl,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+        groups: [],
+        receiveNews: newsConsent
+      });
+      
+      console.log('User document created successfully');
+      
+      // Navigate to the main app
+      Alert.alert(
+        'Account Created', 
+        'Your account has been created successfully!',
+        [{ 
+          text: 'OK', 
+          onPress: async () => {
+            await AsyncStorage.removeItem('registrationInProgress');
+            router.replace('/(authenticated)/(tabs)/home') 
+          } 
+        }]
+      );
+    } catch (error) {
+      console.error('Error creating user:', error);
+      Alert.alert('Error', 'Failed to create your account. Please try again.');
+    }
   };
 
   // Add a new function to check if the form is valid
@@ -221,6 +258,145 @@ const OnboardPrimer = () => {
     // Otherwise, update the current page normally
     handlePageChange(newIndex);
   };
+
+  // Send verification code to the phone number
+  const sendVerificationCode = async () => {
+    try {
+      // SET THIS FLAG FIRST - before any Firebase operations
+      await AsyncStorage.setItem('registrationInProgress', 'true');
+      console.log('Registration flag explicitly set before verification');
+      
+      console.log('Sending verification code to:', phoneNumber);
+      if (!phoneNumber) {
+        Alert.alert('Phone Number Required', 'Please enter your phone number.');
+        return;
+      }
+
+      // Strip all non-numeric characters except leading +
+      const strippedNumber = phoneNumber.replace(/[^\d+]/g, '');
+      
+      // Basic validation for US numbers
+      let formattedNumber = strippedNumber;
+      if (!formattedNumber.startsWith('+')) {
+        // For US numbers without country code, should have exactly 10 digits
+        const digits = formattedNumber.replace(/\D/g, '');
+        if (digits.length !== 10) {
+          Alert.alert('Invalid Number', 'Please enter a valid 10-digit US phone number.');
+          return;
+        }
+        formattedNumber = `+1${digits}`;
+      } else {
+        // If it starts with +, ensure it has enough digits after the country code
+        // For +1 (US/Canada), should have country code + 10 digits
+        if (formattedNumber.startsWith('+1') && formattedNumber.length !== 12) {
+          Alert.alert('Invalid Number', 'Please enter a valid phone number with country code.');
+          return;
+        }
+      }
+
+      setVerifyingPhone(true);
+      console.log('Formatted phone number:', formattedNumber);
+      
+      // This is the correct way to call it
+      const confirmation = await signInWithPhoneNumber(getAuth(), formattedNumber);
+      console.log('Phone number sign-in confirmation received');
+      
+      // Add this listener for automatic verification in simulators
+      const unsubscribe = onAuthStateChanged(getAuth(), async (user) => {
+        console.log('onAuthStateChanged triggered during phone verification');
+        if (user) {
+          console.log('Auto-verification detected in simulator');
+          // Check if this user already exists in Firestore
+          const userDoc = await firestore().collection('users').doc(user.uid).get();
+          
+          if (userDoc.exists) {
+            // User already exists - show alert and navigate to login
+            Alert.alert(
+              'Account Exists',
+              'An account with this phone number already exists. Please sign in instead.',
+              [{ text: 'OK', onPress: () => router.push('/onboarding/Login') }]
+            );
+          } else {
+            // New user - verified automatically, register and go to main flow
+            console.log('New user verified via auto-verification, proceeding to main flow');
+            setPhoneVerified(true);
+            // Register user and go to main app directly
+            await registerAndGoToMainFlow(user);
+          }
+          // Unsubscribe after handling auto-verification
+          unsubscribe();
+        }
+      });
+      
+      // Still set confirmation for devices that need manual verification
+      if (confirmation) {
+        setConfirmation(confirmation);
+      }
+      
+      Alert.alert(
+        'Verification code sent',
+        `We've sent a verification code to ${formattedNumber}`
+      );
+    } catch (error) {
+      console.error('Error sending verification code:', error);
+      Alert.alert('Error', 'Failed to send verification code. Please try again.');
+    } finally {
+      setVerifyingPhone(false);
+    }
+  };
+
+  // Confirm the verification code
+  const confirmVerificationCode = async () => {
+    try {
+      if (!verificationCode) {
+        Alert.alert('Verification Code Required', 'Please enter the verification code.');
+        return;
+      }
+
+      setVerifyingPhone(true);
+      
+      // Use the confirmation object's confirm method
+      const userCredential = await confirmation.confirm(verificationCode);
+      
+      // Check if this user already exists in Firestore
+      const userDoc = await firestore().collection('users').doc(userCredential.user.uid).get();
+      
+      if (userDoc.exists) {
+        // User already exists
+        Alert.alert(
+          'Account Exists',
+          'An account with this phone number already exists. Please sign in instead.',
+          [{ text: 'OK', onPress: () => router.push('/onboarding/Login') }]
+        );
+        return;
+      }
+      
+      // User verification successful - register and go to main app
+      await registerAndGoToMainFlow(userCredential.user);
+      
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      Alert.alert('Error', 'Invalid verification code. Please try again.');
+    } finally {
+      setVerifyingPhone(false);
+    }
+  };
+
+  // Set registration in progress flag when component mounts
+  useEffect(() => {
+    const setRegistrationFlag = async () => {
+      await AsyncStorage.setItem('registrationInProgress', 'true');
+      console.log('Registration in progress flag set');
+    };
+    
+    setRegistrationFlag();
+    
+    // Clear the flag when component unmounts
+    return () => {
+      AsyncStorage.removeItem('registrationInProgress')
+        .then(() => console.log('Registration flag cleared'));
+    };
+  }, []);
 
   // Render each onboarding page
   const renderPage = ({ item, index }: { item: any, index: number }) => {
@@ -299,6 +475,79 @@ const OnboardPrimer = () => {
       );
     }
     
+    // Phone verification layout
+    if (item.type === 'phone-verification') {
+      return (
+        <View style={[styles.pageContainer, { width }]}>
+          <View style={[styles.phoneVerificationContainer, { width: width - 40 }]}>
+            <Text style={styles.pageTitle}>{item.title}</Text>
+            
+            <Text style={styles.phoneInstructions}>
+              We'll send a verification code to your phone to confirm your identity.
+            </Text>
+            
+            {!confirmation ? (
+              // Phone number input
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone Number (e.g., +1 234 567 8900)"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#e0e0e0"
+                  editable={!verifyingPhone}
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.verifyButton, verifyingPhone && styles.disabledButton]}
+                  onPress={sendVerificationCode}
+                  disabled={verifyingPhone}
+                >
+                  <Text style={styles.verifyButtonText}>
+                    {verifyingPhone ? 'Sending...' : 'Send Verification Code'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Verification code input
+              <>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Verification Code"
+                  value={verificationCode}
+                  onChangeText={setVerificationCode}
+                  keyboardType="number-pad"
+                  placeholderTextColor="#e0e0e0"
+                  editable={!verifyingPhone}
+                />
+                
+                <TouchableOpacity 
+                  style={[styles.verifyButton, verifyingPhone && styles.disabledButton]}
+                  onPress={confirmVerificationCode}
+                  disabled={verifyingPhone}
+                >
+                  <Text style={styles.verifyButtonText}>
+                    {verifyingPhone ? 'Verifying...' : 'Verify Code'}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.resendButton}
+                  onPress={() => {
+                    setConfirmation(null);
+                    setVerificationCode('');
+                  }}
+                >
+                  <Text style={styles.resendButtonText}>Change Phone Number</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      );
+    }
+    
     // Special layout for the second page
     if (item.type === 'two-column') {
       return (
@@ -341,6 +590,20 @@ const OnboardPrimer = () => {
     // Standard layout for other pages
     return (
       <View style={[styles.pageContainer, { width }]}>
+        {/* Add back button only to the first page */}
+        {index === 0 && (
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={{ position: 'absolute', left: 0, padding: 16 }} 
+              onPress={() => router.back()}
+            >
+              <Image
+                source={require('@assets/icons/back.png')}
+                style={styles.backImage}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.contentContainer}>
           <Text style={styles.pageImage}>{item.image}</Text>
           <Text style={styles.pageTitle}>{item.title}</Text>
@@ -354,10 +617,6 @@ const OnboardPrimer = () => {
     <LinearGradient colors={['#000000', '#024405']} style={styles.container}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea}>
-        {/* Skip button */}
-        <TouchableOpacity style={styles.skipButton} onPress={skipOnboarding}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
         
         {/* Swipeable pages */}
         <FlatList
@@ -387,11 +646,11 @@ const OnboardPrimer = () => {
         </View>
         
         {/* Next/Done button */}
-        <TouchableOpacity style={styles.nextButton} onPress={goToNextPage}>
-          <Text style={styles.nextButtonText}>
-            {currentPage === onboardingPages.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
-        </TouchableOpacity>
+        {currentPage !== onboardingPages.length - 1 && (
+          <TouchableOpacity style={styles.nextButton} onPress={goToNextPage}>
+            <Text style={styles.nextButtonText}>Next</Text>
+          </TouchableOpacity>
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -491,17 +750,6 @@ const styles = StyleSheet.create({
   },
   indicatorActive: {
     backgroundColor: '#fff',
-  },
-  skipButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 1,
-  },
-  skipText: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Lexend',
   },
   nextButton: {
     backgroundColor: 'transparent',
@@ -623,6 +871,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lexend',
     flex: 1,
+  },
+  // Phone verification styles
+  phoneVerificationContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  phoneInstructions: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#e0e0e0',
+    fontFamily: 'Lexend',
+    marginBottom: 30,
+    lineHeight: 24,
+  },
+  verifyButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  verifyButtonText: {
+    color: '#024405',
+    fontSize: 16,
+    fontFamily: 'Lexend',
+    fontWeight: '500',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  resendButton: {
+    marginTop: 15,
+    padding: 10,
+  },
+  resendButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'Lexend',
+    textDecorationLine: 'underline',
+  },
+  header: {
+    position: 'absolute',
+    top: 90,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    zIndex: 10,
+  },
+  backImage: {
+    width: 24,
+    height: 24,
+    tintColor: '#fff',
   },
 });
 

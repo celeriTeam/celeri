@@ -5,6 +5,8 @@ import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import firestore from '@react-native-firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<"/(authenticated)/(tabs)/home" | "/onboarding" | null>(null);
@@ -32,9 +34,45 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-            setInitialRoute(user ? '/(authenticated)/(tabs)/home' : '/onboarding');
-            setIsLoading(false);
+        const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+            try {
+                // Check if registration is in progress
+                const registrationInProgress = await AsyncStorage.getItem('registrationInProgress');
+                console.log('Auth state changed, registration flag:', registrationInProgress);
+                
+                if (registrationInProgress === 'true') {
+                    console.log('Registration in progress, STAYING on current screen');
+                    setIsLoading(false);
+                    return; // Don't redirect if registration is in progress
+                }
+                
+                if (user) {
+                    // Check if this user has completed registration
+                    try {
+                        const userDoc = await firestore().collection('users').doc(user.uid).get();
+                        
+                        // Only navigate to home if user document exists (registration complete)
+                        if (userDoc.exists) {
+                            console.log("userDoc exists, navigating to home");
+                            setInitialRoute('/(authenticated)/(tabs)/home');
+                        } else {
+                            // User exists in Auth but not in Firestore - still in registration
+                            setInitialRoute('/onboarding');
+                        }
+                    } catch (error) {
+                        console.error('Error checking user registration status:', error);
+                        setInitialRoute('/onboarding');
+                    }
+                } else {
+                    // No user, go to onboarding
+                    setInitialRoute('/onboarding');
+                }
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Error in auth state change handler:', error);
+                setIsLoading(false);
+                setInitialRoute('/onboarding');
+            }
         });
 
         return () => unsubscribe();
