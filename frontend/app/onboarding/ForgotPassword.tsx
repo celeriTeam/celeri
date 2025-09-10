@@ -1,22 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError, updatePassword, sendPasswordResetEmail } from "firebase/auth";
-import { app, auth, db } from "@firebaseConfig";
+import { AuthError } from "firebase/auth";
+import { auth } from "@firebaseConfig";
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 
 const ForgotPasswordPage: React.FC = () => {
     const [email, setEmail] = useState<string | undefined>();
     const router = useRouter(); 
-
-    const auth = getAuth(app);
     
     const resetPassword = async () => {
         if (email) {
             try {
                 console.log("Trying to update user password...");
                 
-                await sendPasswordResetEmail(auth, email);
+                await auth().sendPasswordResetEmail(email);
                 Alert.alert(
                     'Success', 
                     'Password reset email sent. Please check your inbox.',

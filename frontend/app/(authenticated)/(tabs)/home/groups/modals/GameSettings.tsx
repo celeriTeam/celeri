@@ -1,15 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, TextInput, StyleSheet as RNStyleSheet, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
-import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import React, { useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
-import * as Clipboard from 'expo-clipboard';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic } from '@backend/src/groups';
-import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps, getName } from '@backend/src/users';
-import { useUser } from '../../../../../UserProvider';
-import firestore, { FieldValue } from '@react-native-firebase/firestore';
-import { createNudge } from '@/backend/src/notifs';
+import { startGame } from '@backend/src/groups';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';

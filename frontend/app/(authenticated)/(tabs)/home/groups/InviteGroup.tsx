@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, StyleSheet as RNStyleSheet, Pressable, Keyboard, Text, TouchableOpacity, Alert, Button, ActivityIndicator, Modal, TouchableWithoutFeedback, ScrollView, Dimensions, Touchable, } from 'react-native';
-import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
-import DropDownPicker from 'react-native-dropdown-picker';
+import { View, StyleSheet as RNStyleSheet, Text, TouchableOpacity, Alert, ActivityIndicator, Modal, ScrollView, Dimensions } from 'react-native';
+import { db } from "@firebaseConfig";
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { getGroupCode, getGroupName, getUsersInGroup, startGame, getGroupCreator, generateGroupCode, createGroup, addUserToGroup, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic, setGroupViewedResults } from '@backend/src/groups';
-import { getUserName, getProfilePic, addGroupToUser, getAverageSteps, getBiweeklySteps, getWeeklySteps, getSteps, getName } from '@backend/src/users';
+import { getGroupCode, getGroupName, getUsersInGroup, getGroupCreator, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic, setGroupViewedResults } from '@backend/src/groups';
+import { getUserName, getProfilePic, getAverageSteps, getSteps, getName } from '@backend/src/users';
 import { useUser } from '../../../../UserProvider';
-import firestore, { FieldValue } from '@react-native-firebase/firestore';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,8 +16,6 @@ import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 import GameResultsPage from './GameResults';
 import GameHistoryPage from './GameHistory';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 
@@ -84,14 +79,14 @@ const InvitePage: React.FC = () => {
 
     const fetchData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
-        const groupsRef = collection(db, "groups");
-        const groupDocRef = doc(groupsRef, resolvedGroupID);
+        const groupsRef = db.collection("groups");
+        const groupDocRef = groupsRef.doc(resolvedGroupID);
 
         // Unsubscribe firebase listener functions
         const unsubscribeFunctions: (() => void)[] = [];
-        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
+        const unsubscribeGroup = groupDocRef.onSnapshot(async (docSnapshot) => {
             setIsLoading(true);
-            if (docSnapshot.exists() && resolvedGroupID) {
+            if (docSnapshot.exists && resolvedGroupID) {
                 const [isGameActive, groupCode, groupName, groupImageUrl, groupCreator] = await Promise.all([
                     getGroupIsGameActive(resolvedGroupID),
                     getGroupCode(resolvedGroupID),
@@ -190,7 +185,7 @@ const InvitePage: React.FC = () => {
 
         try {
             const nudgeMessage = "They're waiting for you to start the game!"
-            const userRef = firestore().collection('users').doc(resolvedLeaderID);
+            const userRef = db.collection('users').doc(resolvedLeaderID);
             const userDoc = await userRef.get();
             const tokens = userDoc.data()?.tokens || [];
 

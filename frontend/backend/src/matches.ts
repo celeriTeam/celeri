@@ -1,18 +1,14 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion, deleteDoc, deleteField } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { serverTimestamp } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 
 /*********************************************** TROPHY FUNCTIONS ********************************************/
 
 //GET trophies from user doc, should be used in UserProvider
 export const getTrophies = async (userID: string): Promise<string> => {
     try {
-        const userDoc = await getDoc(doc(db, 'users', userID));
-        if (userDoc.exists() && userDoc.data()?.trophies){
-            return userDoc.data().trophies;
+        const userDoc = await db.collection('users').doc(userID).get();
+        if (userDoc.exists && userDoc.data()?.trophies){
+            return userDoc.data()?.trophies;
         } else {
             console.error(`getTrophies - error: No such document for user ${userID}!`);
             return '';
@@ -26,8 +22,8 @@ export const getTrophies = async (userID: string): Promise<string> => {
 //ADD or SUBTRACT trophies from user doc
 export const updateTrophies = async (userID: string, trophies: number) => {
     try {
-        const userDocRef = doc(db, 'users', userID);
-        await updateDoc(userDocRef, {
+        const userDocRef = db.collection('users').doc(userID);
+        await userDocRef.update({
             trophies: trophies
         });
     } catch (error) {
@@ -45,14 +41,14 @@ export const findMatch = async (userID: string, opponentID?: string) => {
         if (opponentID) {
             //you've chosen your opponent
             console.log(`Finding match for ${userID} against ${opponentID}`);
-            const opponentDocRef = doc(db, 'users', opponentID);
-            const opponentDoc = await getDoc(opponentDocRef);
+            const opponentDocRef = db.collection('users').doc(opponentID);
+            const opponentDoc = await opponentDocRef.get();
 
             const opponentFoundMatch = opponentDoc.data()?.findingMatch; // should be TRUE or FALSE
             if(opponentFoundMatch){
                 return;
             } else {
-                await updateDoc(opponentDocRef, {
+                await opponentDocRef.update({
                     findingMatch: false
                 });
                 createMatch(userID, opponentID);
@@ -61,18 +57,18 @@ export const findMatch = async (userID: string, opponentID?: string) => {
             //find a random person to play
             console.log(`Finding a random match for ${userID}`);
 
-            const usersRef = collection(db, 'users');
-            const matchQuery = query(usersRef, where("findingMatch", "==", true));
-            const userDocRef = doc(usersRef, userID);
+            const usersRef = db.collection('users');
+            const matchQuery = usersRef.where("findingMatch", "==", true);
+            const userDocRef = usersRef.doc(userID);
 
-            const querySnapshot = await getDocs(matchQuery);
+            const querySnapshot = await matchQuery.get();
             if (!querySnapshot.empty) {
                 // Pick the first available user
                 const randomOpponent = querySnapshot.docs[0]; 
                 const randomOpponentID = randomOpponent.id;
 
                 // Update the opponent's status
-                await updateDoc(randomOpponent.ref, {
+                await randomOpponent.ref.update({
                     findingMatch: false
                 });
 
@@ -82,7 +78,7 @@ export const findMatch = async (userID: string, opponentID?: string) => {
                 console.log("No available matches found.");
 
                 // Put yourself on the findingMatch waitlist 
-                await updateDoc(userDocRef, {
+                await userDocRef.update({
                     findingMatch: true
                 });
             }
@@ -115,7 +111,7 @@ export const createMatch = async (userID: string, opponentID: string) => {
 
         const today = new Date();
 
-        const matchRef = await addDoc(collection(db, 'matches'), {
+        const matchRef = await db.collection('matches').add({
             "user1": userID,
             "user2": opponentID,
             dailyMatches,
