@@ -1,30 +1,14 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
-import { Subscription } from 'expo-sensors/build/Pedometer';
-import { useEffect, useState } from 'react';
-import { get } from "http";
-
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { serverTimestamp, Timestamp } from "firebase/firestore";
+import { db } from "../../firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
 // Get all 1v1 requests received by user
 export const get1v1Requests = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
-    const requestsQuery = query(
-        collection(db, '1v1Requests'),
-        where('receiverID', '==', userID)
-    );
+    const requestsQuery = db.collection('1v1Requests')
+        .where('receiverID', '==', userID);
 
-    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+    const unsubscribe =requestsQuery. onSnapshot((snapshot) => {
         const processRequests = async () => {
             if (snapshot.empty) {
                 onUpdate([]);
@@ -33,7 +17,7 @@ export const get1v1Requests = (userID: string, onUpdate: (data: any | null) => v
             const requests = await Promise.all(
                 snapshot.docs.map(async (docSnap) => {
                     const data = docSnap.data();
-                    const senderDoc = await getDoc(doc(db, 'users', data.senderID));
+                    const senderDoc = await db.collection('users').doc(data.senderID).get();
                     return {
                         requestID: docSnap.id,
                         senderID: docSnap.data().senderID,
@@ -57,13 +41,12 @@ export const get1v1Requests = (userID: string, onUpdate: (data: any | null) => v
 
 // Get all 1v1 requests sent by user
 export const getSent1v1Requests = (userID: string, onUpdate: (data: any | null) => void): (() => void) => {
-    const requestsQuery = query(
-        collection(db, '1v1Requests'),
-        where('senderID', '==', userID),
-        where('status', '==', 'pending') // Only get pending requests
-    );
+    const requestsQuery = db.collection('1v1Requests')
+        .where('senderID', '==', userID)
+        .where('status', '==', 'pending') // Only get pending requests
+    ;
 
-    const unsubscribe = onSnapshot(requestsQuery, (snapshot) => {
+    const unsubscribe = requestsQuery.onSnapshot((snapshot) => {
         const processRequests = async () => {
             if (snapshot.empty) {
                 onUpdate([]);
@@ -72,7 +55,7 @@ export const getSent1v1Requests = (userID: string, onUpdate: (data: any | null) 
             const requests = await Promise.all(
                 snapshot.docs.map(async (docSnap) => {
                     const data = docSnap.data();
-                    const receiverDoc = await getDoc(doc(db, 'users', data.receiverID));
+                    const receiverDoc = await db.collection('users').doc(data.receiverID).get();
                     return {
                         requestID: docSnap.id,
                         receiverID: docSnap.data().requestID,
@@ -101,21 +84,19 @@ export const create1v1Request = async (userID: string, opponentID: string) => {
     // respondedAt: null | timestamp,
     // duelID: null | string
 
-    const existingQuery = query(
-        collection(db, '1v1Requests'),
-        where('senderID', '==', userID),
-        where('receiverID', '==', opponentID),
-        where('status', '==', 'pending')
-    );
+    const existingQuery = db.collection('1v1Requests')
+        .where('senderID', '==', userID)
+        .where('receiverID', '==', opponentID)
+        .where('status', '==', 'pending');
 
-    const existingSnapshot = await getDocs(existingQuery);
+    const existingSnapshot = await existingQuery.get();
 
     if (!existingSnapshot.empty) {
         throw new Error("A pending 1v1 request already exists between these users.");
     }
     
     try {
-        const requestRef = await addDoc(collection(db, '1v1Requests'), {
+        const requestRef = await db.collection('1v1Requests').add({
             senderID: userID,
             receiverID: opponentID,
             status: 'pending',
@@ -134,19 +115,15 @@ export const update1v1Requests = async (userID: string, requestID: string, new1v
     // get all 1v1 requests sent or received by user that is 'pending'
     // update requestID to 'accepted'
     // update all others to 'invalid'
-    const requestsSentQuery = query(
-        collection(db, '1v1Requests'),
-        where('senderID', '==', userID),
-        where('status', '==', 'pending')
-    );
-    const requestsReceivedQuery = query(
-        collection(db, '1v1Requests'),
-        where('receiverID', '==', userID),
-        where('status', '==', 'pending')
-    );
-    const requestsSentSnapshot = await getDocs(requestsSentQuery);
-    const requestsReceivedSnapshot = await getDocs(requestsReceivedQuery);
-    const batch = writeBatch(db);
+    const requestsSentQuery = db.collection('1v1Requests')
+        .where('senderID', '==', userID)
+        .where('status', '==', 'pending');
+    const requestsReceivedQuery = db.collection('1v1Requests')
+        .where('receiverID', '==', userID)
+        .where('status', '==', 'pending');
+    const requestsSentSnapshot = await requestsSentQuery.get();
+    const requestsReceivedSnapshot = await requestsReceivedQuery.get();
+    const batch = db.batch();
     requestsSentSnapshot.docs.forEach(doc => {
         if (doc.id === requestID) {
             batch.update(doc.ref, { 

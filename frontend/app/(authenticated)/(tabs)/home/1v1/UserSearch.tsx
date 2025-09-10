@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, doc, getDoc, getDocs, getFirestore } from 'firebase/firestore';
-import { app } from "@firebaseConfig";
+import { db } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
@@ -13,8 +11,6 @@ import { create1v1Request } from '@/backend/src/1v1Requests';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 dayjs.extend(relativeTime);
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,12 +50,13 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         const fetchData = async (uid: string) => {
             try {
                 // get friends
-                const meRef = doc(db, "users", uid);
-                const meSnap = await getDoc(meRef);
+                const userCollection = db.collection("users");
+                const meRef = userCollection.doc(uid);
+                const meSnap = await meRef.get();
                 const meData = meSnap.data() || {};
                 const friendsList: string[] = meData.friendsList || [];
                 setFriends(friendsList);
-                const querySnapshot = await getDocs(collection(db, 'users'));
+                const querySnapshot = await userCollection.get();
                 const usersArray: User[] = [];
                 const friendsArray: User[] = [];
 

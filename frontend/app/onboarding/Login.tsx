@@ -10,11 +10,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db, auth } from '@/firebaseConfig';
 
 const LoginPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -92,7 +91,7 @@ const LoginPage: React.FC = () => {
             console.log('Phone number verified successfully');
             
             // Check if user exists in Firestore
-            const userDoc = await firestore().collection('users').doc(userCredential.user.uid).get();
+            const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
             
             if (!userDoc.exists) {
                 Alert.alert(
@@ -199,7 +198,7 @@ const LoginPage: React.FC = () => {
                     
                     <TouchableOpacity
                         style={styles.createAccountButton}
-                        onPress={() => router.push('/onboarding')}
+                        onPress={() => router.replace('/onboarding')}
                     >
                         <Text style={styles.createAccountText}>
                             Don't have an account? Create one
@@ -298,7 +297,7 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     createAccountButton: {
-        marginTop: 30,
+        marginTop: 20,
         padding: 10,
     },
     createAccountText: {

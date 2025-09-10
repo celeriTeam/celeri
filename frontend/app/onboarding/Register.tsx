@@ -1,19 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    SafeAreaView, Pressable, Keyboard,
-    View, Image, Text, TouchableOpacity, TextInput, Alert,
-    KeyboardAvoidingView, Platform, ScrollView
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, Pressable, Keyboard, View, Image, Text, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
-import { app, auth, db } from "@firebaseConfig";
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db } from "@firebaseConfig";
+import { serverTimestamp } from 'firebase/firestore';
+import storage from '@react-native-firebase/storage'
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import MailchimpSubscribe from 'react-mailchimp-subscribe'
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 
 const SignUpPage: React.FC = () => {
@@ -23,12 +20,10 @@ const SignUpPage: React.FC = () => {
     const [profileImage, setProfileImage] = useState<string | undefined>();
     const [email, setEmail] = useState<string | undefined>();
     const [password, setPassword] = useState<string | undefined>();
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [focusedInput, setFocusedInput] = useState<string>('');
 
-    const auth = getAuth(app);
-    const storage = getStorage(app);
     const router = useRouter();
 
     const createProfile = async (user: any) => {
@@ -36,7 +31,7 @@ const SignUpPage: React.FC = () => {
             console.log("This shows before you upload the profileImage");
             const profileImageUrl = await uploadProfileImage(user.uid);
             console.log("profileImage uploaded successfully");
-            await setDoc(doc(db, 'users', user.uid), {
+            await db.collection('users').doc(user.uid).set({
                 name,
                 username,
                 email,
@@ -53,8 +48,7 @@ const SignUpPage: React.FC = () => {
     };
 
     useEffect(() => {
-        const authInstance = getAuth();
-        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
+        const unsubscribe = auth().onAuthStateChanged((currentUser) => {
             setUser(currentUser);
         });
 
@@ -117,16 +111,12 @@ const SignUpPage: React.FC = () => {
         if (!profileImage) return null;
 
         try {
-            const response = await fetch(profileImage);
-            const blob = await response.blob();
-            const storageRef = ref(storage, `profileImages/${userId}`);
+            const storageRef = storage().ref(`profileImages/${userId}`);
             console.log("profileImage checker THREE");
-            console.log('Blob size: ', blob.size);
-            console.log('Blob type: ', blob.type)
             console.log('Storage reference:', storageRef.fullPath);
-            await uploadBytes(storageRef, blob);
+            await storageRef.putFile(profileImage);
             console.log("profileImage checker FOUR");
-            const url = await getDownloadURL(storageRef);
+            const url = await storageRef.getDownloadURL();
 
             return url;
         } catch (error) {
@@ -147,11 +137,7 @@ const SignUpPage: React.FC = () => {
         if (email && password && username && profileImage) {
             try {
                 console.log("Trying to register user...");
-                const response = await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password,
-                );
+                const response = await auth().createUserWithEmailAndPassword(email, password);
                 console.log("User registration response: ", response);
 
                 if (response.user) {

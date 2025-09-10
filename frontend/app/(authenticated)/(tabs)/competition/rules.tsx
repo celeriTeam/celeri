@@ -4,19 +4,9 @@ import { Alert } from 'react-native';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import { Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '@/app/UserProvider';
-import { 
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  getFirestore
-} from 'firebase/firestore';
-import { app } from "@firebaseConfig";
+import { db } from "@firebaseConfig";
 import { writeConsentForm, hasUserConsented } from '@/backend/src/competition';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -66,14 +56,15 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
   useEffect(() => {
     const fetchUsers = async () => {
       // 1) Get current user friends
-      const meRef = doc(db, "users", userID);
-      const meSnap = await getDoc(meRef);
+      const usersCollection = db.collection("users");
+      const meRef = usersCollection.doc(userID);
+      const meSnap = await meRef.get();
       const meData = meSnap.data() || {};
       const friendsList: string[] = meData.friendsList || [];
       setFriends(friendsList);
 
       // 2) Get all users
-      const querySnapshot = await getDocs(collection(db, "users"));
+      const querySnapshot = await usersCollection.get();
       const usersArray: User[] = [];
 
       querySnapshot.forEach((docSnap) => {
