@@ -1,192 +1,311 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    SafeAreaView, Pressable, Keyboard,
-    View, Text, TouchableOpacity, Button, TextInput, Alert
+    SafeAreaView,
+    View, 
+    Text, 
+    TouchableOpacity, 
+    TextInput, 
+    Alert,
+    Image
 } from 'react-native';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, User, AuthError } from "firebase/auth";
-import { app, auth, db } from "@firebaseConfig";
-import { FirebaseError } from 'firebase/app';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
-import { StyleSheet } from 'react-native-size-scaling';
+import { StyleSheet } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState<string | undefined>();
-    const [password, setPassword] = useState<string | undefined>();
-    const [user, setUser] = useState<User | null>(null);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [confirmation, setConfirmation] = useState<any>(null);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [verifyingPhone, setVerifyingPhone] = useState(false);
     const router = useRouter();
 
-    const auth = getAuth(app);
-
+    // Set registration flag to prevent unwanted navigation
     useEffect(() => {
-        const authInstance = getAuth();
-        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
-            setUser(currentUser);
-        });
-
-        return () => unsubscribe(); // Cleanup subscription on unmount
+        const setLoginFlag = async () => {
+            await AsyncStorage.setItem('loginInProgress', 'true');
+        };
+        
+        setLoginFlag();
+        return () => {
+            AsyncStorage.removeItem('loginInProgress');
+        };
     }, []);
 
-    const loginAndGoToMainFlow = async () => {
-        if (email && password) {
-            try {
-                console.log("Trying to log in user...");
-                const response = await signInWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-                console.log("User login response: ", response);
-
-                if (response.user) {
-                    router.back();
-                    router.replace('/(authenticated)/(tabs)/home'); // Change to your authenticated route
-                }
-            } catch (e: unknown) {
-                if (e instanceof FirebaseError) {
-                    console.error("Firebase Error Code:", e.code);
-                    console.error("Firebase Error Message:", e.message);
-                    Alert.alert("Error", e.message);
-                } else if (e instanceof Error) {
-                    console.error("General Error Message:", e.message);
-                    Alert.alert("Error", e.message);
-                } else {
-                    console.error("Unknown Error:", e);
-                    Alert.alert("Error", "An unknown error occurred");
-                }
+    // Send verification code to the phone number
+    const sendVerificationCode = async () => {
+        try {
+            await AsyncStorage.setItem('loginInProgress', 'true');
+            
+            if (!phoneNumber) {
+                Alert.alert('Phone Number Required', 'Please enter your phone number.');
+                return;
             }
-        } else {
-            Alert.alert("Error", "Please enter both email and password.");
+
+            // Format phone number (same logic as in OnboardPrimer)
+            let formattedNumber = phoneNumber;
+            if (!formattedNumber.startsWith('+')) {
+                const digits = formattedNumber.replace(/\D/g, '');
+                if (digits.length !== 10) {
+                    Alert.alert('Invalid Number', 'Please enter a valid 10-digit US phone number.');
+                    return;
+                }
+                formattedNumber = `+1${digits}`;
+            }
+
+            setVerifyingPhone(true);
+            console.log('Sending verification code to:', formattedNumber);
+            
+            // Send verification code
+            const confirmation = await auth().signInWithPhoneNumber(formattedNumber);
+            console.log('Verification code sent');
+            
+            setConfirmation(confirmation);
+            
+            Alert.alert(
+                'Verification code sent',
+                `We've sent a verification code to ${formattedNumber}`
+            );
+        } catch (error) {
+            console.error('Error sending verification code:', error);
+            Alert.alert('Error', 'Failed to send verification code. Please try again.');
+        } finally {
+            setVerifyingPhone(false);
+        }
+    };
+
+    // Verify code and login
+    const confirmVerificationCode = async () => {
+        try {
+            if (!verificationCode) {
+                Alert.alert('Verification Code Required', 'Please enter the verification code.');
+                return;
+            }
+
+            setVerifyingPhone(true);
+            
+            // Verify the code
+            const userCredential = await confirmation.confirm(verificationCode);
+            console.log('Phone number verified successfully');
+            
+            // Check if user exists in Firestore
+            const userDoc = await firestore().collection('users').doc(userCredential.user.uid).get();
+            
+            if (!userDoc.exists) {
+                Alert.alert(
+                    'Account Not Found',
+                    'No account found with this phone number. Please create an account first.',
+                    [{ text: 'OK', onPress: () => router.push('/onboarding') }]
+                );
+                return;
+            }
+            
+            // Login successful, navigate to home
+            await AsyncStorage.removeItem('loginInProgress');
+            router.replace('/(authenticated)/(tabs)/home');
+            
+        } catch (error) {
+            console.error('Error verifying code:', error);
+            Alert.alert('Error', 'Invalid verification code. Please try again.');
+        } finally {
+            setVerifyingPhone(false);
         }
     };
 
     return (
-        <Pressable style={styles.contentView} onPress={Keyboard.dismiss}>
-            <SafeAreaView style={styles.contentView}>
-                <View style={styles.container}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.titleText}>Login here</Text>
-                    </View>
-                    <View style={styles.mainContent}>
-                        <TextInput
-                            style={styles.loginTextField}
-                            placeholder="Email"
-                            value={email}
-                            onChangeText={setEmail}
-                            inputMode="email"
-                            autoCapitalize="none"
-                            placeholderTextColor="#999797"
-                        />
-                        <TextInput
-                            style={styles.loginTextField}
-                            placeholder="Password"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            placeholderTextColor="#999797"
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        onPress={() => router.push("/onboarding/ForgotPassword")}
-                        style={[styles.button_container2]}
-                    >
-                        <Text style={styles.button_text2}>Forgot Password?</Text>
-                    </TouchableOpacity>
+        <LinearGradient colors={['#000000', '#024405']} style={styles.container}>
+            <StatusBar style="light" />
+            <SafeAreaView style={styles.safeArea}>
+                {/* Back button */}
+                <View style={styles.header}>
                     <TouchableOpacity 
-                        onPress={loginAndGoToMainFlow}
-                        style={[styles.button_container]}
-                    >
-                        <Text style={styles.button_text}>Login</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                        style={{ position: 'absolute', left: 0, padding: 16 }} 
                         onPress={() => router.back()}
-                        style={[styles.button_container2]}
                     >
-                        <Text style={styles.button_text2}>Go Back</Text>
+                        <Image
+                            source={require('@assets/icons/back.png')}
+                            style={styles.backImage}
+                        />
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.contentContainer}>
+                    <Text style={styles.pageTitle}>Sign In</Text>
+                    
+                    <Text style={styles.phoneInstructions}>
+                        Enter your phone number to sign in to your account.
+                    </Text>
+                    
+                    {!confirmation ? (
+                        // Phone number input
+                        <>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Phone Number (e.g., +1 234 567 8900)"
+                                value={phoneNumber}
+                                onChangeText={setPhoneNumber}
+                                keyboardType="phone-pad"
+                                placeholderTextColor="#e0e0e0"
+                                editable={!verifyingPhone}
+                            />
+                            
+                            <TouchableOpacity 
+                                style={[styles.verifyButton, verifyingPhone && styles.disabledButton]}
+                                onPress={sendVerificationCode}
+                                disabled={verifyingPhone}
+                            >
+                                <Text style={styles.verifyButtonText}>
+                                    {verifyingPhone ? 'Sending...' : 'Send Verification Code'}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        // Verification code input
+                        <>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Verification Code"
+                                value={verificationCode}
+                                onChangeText={setVerificationCode}
+                                keyboardType="number-pad"
+                                placeholderTextColor="#e0e0e0"
+                                editable={!verifyingPhone}
+                            />
+                            
+                            <TouchableOpacity 
+                                style={[styles.verifyButton, verifyingPhone && styles.disabledButton]}
+                                onPress={confirmVerificationCode}
+                                disabled={verifyingPhone}
+                            >
+                                <Text style={styles.verifyButtonText}>
+                                    {verifyingPhone ? 'Verifying...' : 'Sign In'}
+                                </Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                                style={styles.resendButton}
+                                onPress={() => {
+                                    setConfirmation(null);
+                                    setVerificationCode('');
+                                }}
+                            >
+                                <Text style={styles.resendButtonText}>Change Phone Number</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                    
+                    <TouchableOpacity
+                        style={styles.createAccountButton}
+                        onPress={() => router.push('/onboarding')}
+                    >
+                        <Text style={styles.createAccountText}>
+                            Don't have an account? Create one
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
-        </Pressable>
-
+        </LinearGradient>
     );
-
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    safeArea: {
+        flex: 1,
+    },
+    header: {
+        position: 'absolute',
+        top: 50,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        zIndex: 10,
+    },
+    backImage: {
+        width: 24,
+        height: 24,
+        tintColor: '#fff',
+    },
+    contentContainer: {
+        flex: 1,
         justifyContent: 'center',
-        padding: 20,
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    pageTitle: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        color: '#fff',
+        fontFamily: 'Lexend-Bold',
+        textAlign: 'center',
+    },
+    phoneInstructions: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#e0e0e0',
+        fontFamily: 'Lexend',
+        marginBottom: 30,
+        lineHeight: 24,
     },
     input: {
         height: 50,
-        borderColor: 'gray',
+        width: '100%',
+        borderColor: 'rgba(255, 255, 255, 0.3)',
         borderWidth: 1,
-        marginBottom: 20,
-        paddingHorizontal: 10,
-    },
-    text: {
-        fontWeight: "bold",
-        textAlign: "center",
-        fontSize: 24,
-        fontFamily: "Lexend"
-    },
-    button_text: {
-        textAlign: "center",
-        fontSize: 15,
-        color: 'white',
-        fontFamily: 'Lexend',
-    },
-    button_text2: {
-        color: 'black',
+        borderRadius: 10,
+        paddingHorizontal: 15,
+        marginBottom: 15,
+        color: '#fff',
         fontSize: 16,
         fontFamily: 'Lexend',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
-    button_container: {
-        borderRadius: 30,
-        flexDirection: "row",
-        marginVertical: 8,
-        paddingVertical: 18, // Reduce padding to make it smaller
+    verifyButton: {
+        backgroundColor: '#fff',
+        paddingVertical: 12,
         paddingHorizontal: 20,
-        justifyContent: "center",
-        backgroundColor: '#1976d2'
+        borderRadius: 25,
+        marginTop: 20,
+        width: '100%',
+        alignItems: 'center',
     },
-    button_container2: {
-        flexDirection: "row",
-        paddingVertical: 12, // Reduce padding to make it smaller
-        paddingHorizontal: 20,
-        justifyContent: "center",
-        backgroundColor: '#fff'
-    },
-    contentView: {
-        flex: 1,
-        backgroundColor: "white",
-        marginTop: 50,
-    },
-    titleContainer: {
-        flex: 1.2,
-        justifyContent: "center",
-    },
-    titleText: {
-        textAlign: "center",
-        fontSize: 30,
-        fontWeight: "200",
+    verifyButtonText: {
+        color: '#024405',
+        fontSize: 16,
         fontFamily: 'Lexend',
+        fontWeight: '500',
     },
-    loginTextField: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        height: 50,
-        fontSize: 20,
-        paddingHorizontal: 12,
-        marginVertical: 12,
-        fontWeight: "100",
-        fontFamily: 'Lexend'
-        
+    disabledButton: {
+        opacity: 0.7,
     },
-    mainContent: {
-        flex: 6,
+    resendButton: {
+        marginTop: 15,
+        padding: 10,
+    },
+    resendButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontFamily: 'Lexend',
+        textDecorationLine: 'underline',
+    },
+    createAccountButton: {
+        marginTop: 30,
+        padding: 10,
+    },
+    createAccountText: {
+        color: '#fff',
+        fontSize: 14,
+        fontFamily: 'Lexend',
+        textDecorationLine: 'underline',
     },
 });
 
