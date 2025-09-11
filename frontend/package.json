@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
-    "eas-build-pre-install": "bash -lc 'xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version; swiftc --version; xcodebuild -showsdks | sed -n \"s/.*-sdk \\(iphoneos.*\\)$/\\1/p\"'"
+    "eas-build-pre-install": "bash -lc 'xcodebuild -version; xcrun --sdk iphoneos --show-sdk-version; swiftc --version; xcodebuild -showsdks | sed -n \"s/.*-sdk \\(iphoneos.*\\)$/\\1/p\"'",
+    "postinstall": "patch-package"
   },
   "jest": {
     "preset": "jest-expo"
