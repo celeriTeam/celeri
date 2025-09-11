@@ -8,7 +8,7 @@ import { db } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
-import { create1v1Request } from '@/backend/src/1v1Requests';
+import { create1v1Request } from '@backend/src/1v1Requests';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 dayjs.extend(relativeTime);

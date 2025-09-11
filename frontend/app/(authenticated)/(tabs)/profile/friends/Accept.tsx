@@ -6,7 +6,7 @@ import { useUser } from '@/app/UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { getDoc, doc } from '@react-native-firebase/firestore'
 import { db } from "@firebaseConfig";
-import { acceptRequest, cancelRequest } from '@/backend/src/friends';
+import { acceptRequest, cancelRequest } from '@backend/src/friends';
 
 const { width, height } = Dimensions.get('window');
 

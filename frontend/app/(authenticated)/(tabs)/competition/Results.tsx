@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useUser } from '@/app/UserProvider';
-import { getUserProfilesBatch } from '@/backend/src/competition';
-import { getFriendsList } from '@/backend/src/users';
+import { getUserProfilesBatch } from '@backend/src/competition';
+import { getFriendsList } from '@backend/src/users';
 
 const { width, height } = Dimensions.get('window');
 
@@ -163,7 +163,7 @@ const ResultsModal: React.FC<Props> = ({ results, prevData, referralResults }) =
     useEffect (() => {
         grabUsersInfo();
         fetchFriendsList();
-    }, [results, referralResults, userID, prevData, referralResultsWithUserInfo]);
+    }, [results, referralResults, userID, prevData]);
 
     return (
         <View style={{ height: '100%' }}>

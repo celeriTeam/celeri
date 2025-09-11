@@ -90,7 +90,7 @@ const addCompetitionUser = async (user_id: string) => {
 const addCompetitionSteps = async (user_id: string, steps: number) => {
     try {
         const response = await api.post(`/competition-steps/update-steps`,
-            { user_id, steps }
+            { user_id, steps, minute: 0 }
         );
         return response.data;
     } catch (error: any) {

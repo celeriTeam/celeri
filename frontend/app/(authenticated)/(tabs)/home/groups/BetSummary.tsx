@@ -8,16 +8,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './modals/Store';
 import BetHistoryPage from './modals/BetHistory';
 import WeeklyBetHistoryPage from './modals/WeeklyBetHistory';
-import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@/backend/src/users';
+import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, getBiweeklySteps } from '@backend/src/users';
 import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
     getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, 
     setLogin, getLastLogin, getLatestBetTime, getTutorialStatus, addDiamonds, 
     setTutorialStatus
 } 
-from '@/backend/src/groups';
-import { getPowerups } from '@/backend/src/store';
+from '@backend/src/groups';
+import { getPowerups } from '@backend/src/store';
 import { Dimensions } from 'react-native';
-import { checkFinishedPropBet } from '@/backend/src/bets';
+import { checkFinishedPropBet } from '@backend/src/bets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './modals/LiveDuel';
 import PropBetPage from './modals/PropBet';

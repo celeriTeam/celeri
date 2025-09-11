@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, authInstance } from '@/firebaseConfig';
+import { db, authInstance } from '@firebaseConfig';
 
 const LoginPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');

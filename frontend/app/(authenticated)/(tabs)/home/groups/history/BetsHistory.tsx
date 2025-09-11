@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getMoreWeeklyDuelsSummary, getMorePropBets } from '@/backend/src/bets';
+import { getMoreWeeklyDuelsSummary, getMorePropBets } from '@backend/src/bets';
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';

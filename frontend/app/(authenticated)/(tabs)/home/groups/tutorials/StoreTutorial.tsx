@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Image, Dimensions, ScrollView } from 'rea
 import { useUser } from '@/app/UserProvider';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import { addDiamonds, setTutorialStatus } from '@/backend/src/groups';
+import { addDiamonds, setTutorialStatus } from '@backend/src/groups';
 
 const { width, height } = Dimensions.get('window');
 

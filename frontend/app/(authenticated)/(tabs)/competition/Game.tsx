@@ -5,10 +5,10 @@ import { fetchCurrentCompetition } from '@backend/src/api/competitions';
 import { updateCompetitionSteps } from '@backend/src/api/competition_steps';
 import { getCurrentCompetitionData, getReferralsData } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
-import { getUserProfilesBatch } from '@/backend/src/competition';
+import { getUserProfilesBatch } from '@backend/src/competition';
 import { onMessage } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getFriendsList } from '@/backend/src/users';
+import { getFriendsList } from '@backend/src/users';
 import { Platform } from 'react-native'; // <-- added
 import { useStepsSince } from '@backend/src/hooks/useStepsSince';
 import AsyncStorage from '@react-native-async-storage/async-storage';

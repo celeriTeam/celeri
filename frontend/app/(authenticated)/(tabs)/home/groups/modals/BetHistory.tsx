@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getMoreDuelsSummary, getGainsSummary, getWeeklyGainsSummary } from '@/backend/src/bets';
+import { getMoreDuelsSummary, getGainsSummary, getWeeklyGainsSummary } from '@backend/src/bets';
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package

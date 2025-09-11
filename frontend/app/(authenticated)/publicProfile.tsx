@@ -9,7 +9,7 @@ import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
 
-import { fetchPublicProfileData, PublicProfileData, requestFriend, acceptRequest, cancelRequest, removeFriend } from '@/backend/src/friends'
+import { fetchPublicProfileData, PublicProfileData, requestFriend, acceptRequest, cancelRequest, removeFriend } from '@backend/src/friends'
 
 const { width, height } = Dimensions.get('window');
 

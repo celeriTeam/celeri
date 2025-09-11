@@ -6,7 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
-import { getNewsSummary } from '@/backend/src/groups'; // Assume this function exists
+import { getNewsSummary } from '@backend/src/groups'; // Assume this function exists
 import { formatDistanceToNow } from 'date-fns'; // For relative time formatting
 
 const NewsHistoryPage: React.FC = () => {

@@ -5,15 +5,15 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { signOut } from "@react-native-firebase/auth";
 import { useUser } from '@/app/UserProvider';
-import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
-import useHealthData from '@/backend/src/hooks/useHealthData';
+import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@backend/src/users';
+import useHealthData from '@backend/src/hooks/useHealthData';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
-import { authInstance, messaging } from '@/firebaseConfig';
+import { authInstance, messaging } from '@firebaseConfig';
 import { getToken, unsubscribeFromTopic } from '@react-native-firebase/messaging';
 
 const { width, height } = Dimensions.get('window');

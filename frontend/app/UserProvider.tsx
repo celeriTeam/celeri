@@ -4,15 +4,15 @@ import { onAuthStateChanged } from "@react-native-firebase/auth";
 import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
-    getUserFinishedTutorial} from '@/backend/src/users';
+    getUserFinishedTutorial} from '@backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, 
     getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, 
     getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, 
     getTutorialStatus 
-} from '@/backend/src/groups';
+} from '@backend/src/groups';
 import { getYesterdaysDuelsSummary, getGameStartedAt, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, 
     checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, 
-} from '@/backend/src/bets';
+} from '@backend/src/bets';
 
 export interface UserContextType {
     userID: string;
