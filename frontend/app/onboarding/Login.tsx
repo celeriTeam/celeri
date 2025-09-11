@@ -1,19 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-    SafeAreaView,
-    View, 
-    Text, 
-    TouchableOpacity, 
-    TextInput, 
-    Alert,
-    Image
-} from 'react-native';
+import {SafeAreaView, View, Text, TouchableOpacity, TextInput, Alert,Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
+import auth, { signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
+import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, auth } from '@/firebaseConfig';
+import { db } from '@/firebaseConfig';
 
 const LoginPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -59,7 +53,7 @@ const LoginPage: React.FC = () => {
             console.log('Sending verification code to:', formattedNumber);
             
             // Send verification code
-            const confirmation = await auth().signInWithPhoneNumber(formattedNumber);
+            const confirmation = await signInWithPhoneNumber(auth(), formattedNumber);
             console.log('Verification code sent');
             
             setConfirmation(confirmation);
@@ -91,7 +85,7 @@ const LoginPage: React.FC = () => {
             console.log('Phone number verified successfully');
             
             // Check if user exists in Firestore
-            const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+            const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
             
             if (!userDoc.exists) {
                 Alert.alert(

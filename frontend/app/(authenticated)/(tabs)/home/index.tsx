@@ -1,8 +1,10 @@
 // HomeTab.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, Modal, ScrollView, Dimensions, Platform, Linking } from 'react-native';
-import { auth, db } from "@firebaseConfig";
-import useHealthData from '../../../../backend/src/hooks/useHealthData';
+import { db, auth } from "@firebaseConfig";
+import { onAuthStateChanged } from "@react-native-firebase/auth";
+import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
+import useHealthData from '@backend/src/hooks/useHealthData';
 import { getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getGroupUpdatedAt, getUsersInGroup } from '@backend/src/groups';
 import { getUserGroups } from '@backend/src/users';
 import { checkFinishedBetting, checkFinishedTutorial } from '@/backend/src/bets';
@@ -11,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
-import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend/src/1v1Requests';
+import { get1v1Requests, getSent1v1Requests } from '@/backend/src/1v1Requests';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { get1v1, get1v1History } from '@/backend/src/1v1';
@@ -87,7 +89,7 @@ const HomeTab: React.FC = () => {
         let unsubscribeReceivedRequests: (() => void) | null = null;
         let unsubscribeSentRequests: (() => void) | null = null;
         let unsubscribeCurrent1v1: (() => void) | null = null;
-        const unsubscribe = auth().onAuthStateChanged(async (user) => {
+        const unsubscribe = onAuthStateChanged(auth(), async (user) => {
             if (user) {
                 setIsLoadingHome(true);
                 setUserID(user.uid);
@@ -171,11 +173,11 @@ const HomeTab: React.FC = () => {
             await Promise.all(
                 userGroups.map(async (groupName) => {
                     const groupID = await getGroupIDFromGroupName(groupName);
-                    const groupsRef = db.collection("groups");
-                    const groupDocRef = groupsRef.doc(groupID);
+                    const groupsRef = collection(db, "groups");
+                    const groupDocRef = doc(groupsRef, groupID);
 
                     // Real-time updates
-                    const unsubscribeGroup = groupDocRef.onSnapshot(async (docSnapshot) => {
+                    const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                         if (docSnapshot.exists && groupID) {
                             const [
                                 groupImageUrl,

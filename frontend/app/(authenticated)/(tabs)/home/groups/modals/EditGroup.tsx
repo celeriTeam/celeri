@@ -1,23 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Alert, Button, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, Text, Alert, TouchableOpacity, TextInput, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { addGroupImage, editGroupName } from '@backend/src/groups';
 import { useUser } from '../../../../../UserProvider';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native-size-scaling';
-
-type userProp = {
-    id: string;
-    name: string;
-    username: string;
-};
 
 const EditGroupPage: React.FC< {
     groupID: string,

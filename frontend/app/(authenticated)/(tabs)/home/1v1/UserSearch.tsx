@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'rea
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
+import { collection, doc, getDoc, getDocs } from '@react-native-firebase/firestore';
 import { db } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -50,13 +51,12 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         const fetchData = async (uid: string) => {
             try {
                 // get friends
-                const userCollection = db.collection("users");
-                const meRef = userCollection.doc(uid);
-                const meSnap = await meRef.get();
+                const meRef = doc(db, "users", uid);
+                const meSnap = await getDoc(meRef);
                 const meData = meSnap.data() || {};
                 const friendsList: string[] = meData.friendsList || [];
                 setFriends(friendsList);
-                const querySnapshot = await userCollection.get();
+                const querySnapshot = await getDocs(collection(db, 'users'));
                 const usersArray: User[] = [];
                 const friendsArray: User[] = [];
 

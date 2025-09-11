@@ -3,19 +3,15 @@ import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, RefreshCon
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchCurrentCompetition } from '@backend/src/api/competitions';
 import { updateCompetitionSteps } from '@backend/src/api/competition_steps';
-import { getCurrentCompetitionData, getCompetitionUserInfo, getReferralsData } from '@backend/src/api/competition_steps';
+import { getCurrentCompetitionData, getReferralsData } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getFriendsList } from '@/backend/src/users';
-import { NativeModules, NativeEventEmitter, Platform } from 'react-native'; // <-- added
-import { Alert } from 'react-native';
-import { Pedometer } from 'expo-sensors';
+import { Platform } from 'react-native'; // <-- added
 import { useStepsSince } from '../../../../backend/src/hooks/useStepsSince';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { StepSession } = NativeModules;
 
 type Results = {
     user_id: string,

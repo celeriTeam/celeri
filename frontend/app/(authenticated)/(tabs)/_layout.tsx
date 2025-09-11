@@ -1,10 +1,8 @@
-import { Tabs, Redirect, Stack } from 'expo-router';
-import { Image, View, Text, ActivityIndicator, Dimensions, Platform } from 'react-native';
-import TabBar from "../../../components/TabBar";
-import { useTabBar, TabBarProvider } from '../../../hooks/useTabBar';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Tabs } from 'expo-router';
+import { Image, Dimensions, Platform } from 'react-native';
+import TabBar from "@components/TabBar";
+import { useTabBar } from '@hooks/useTabBar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 
 const { width, height } = Dimensions.get('window');

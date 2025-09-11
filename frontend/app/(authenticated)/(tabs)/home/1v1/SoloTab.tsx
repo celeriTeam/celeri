@@ -7,7 +7,6 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { update1v1Requests } from '@/backend/src/1v1Requests';
 import UserSearchPage from './UserSearch';
-import Store1v1Page from './Store';
 import { create1v1, get1v1Results, set1v1HasSeenResults } from '@/backend/src/1v1';
 import { setIsIn1v1 } from '@/backend/src/users';
 import { LineChart } from 'react-native-chart-kit';

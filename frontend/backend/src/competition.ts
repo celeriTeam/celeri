@@ -1,13 +1,14 @@
-import { db } from "../../firebaseConfig";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, orderBy, limit } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** PRE-GAME FUNCTIONS ********************************************/
 
 export const writeConsentForm = async (userId: string, payment: string, referral: string) => {
     try {
         // Reference to the user document in the 'users' collection
-        const userRef = db.collection('users').doc(userId);
+        const userRef = doc(db, 'users', userId);
         // Update the payment and consent fields
-        await userRef.update({
+        await updateDoc(userRef, {
             payment: payment,
             consent: true,
             referral: referral,
@@ -19,8 +20,8 @@ export const writeConsentForm = async (userId: string, payment: string, referral
 
 // Returns true if the user has consented (consent === true), false otherwise
 export const hasUserConsented = async (userId: string): Promise<boolean> => {
-    const userRef = db.collection('users').doc(userId);
-    const userSnap = await userRef.get();
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
     if (userSnap.exists) {
         const data = userSnap.data();
         return data?.consent === true;
@@ -30,8 +31,8 @@ export const hasUserConsented = async (userId: string): Promise<boolean> => {
 
 // Returns true if the user is in a competition (inCompetition === true), false otherwise
 export const isUserInCompetition = async (userId: string): Promise<boolean> => {
-    const userRef = db.collection('users').doc(userId);
-    const userSnap = await userRef.get();
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
     if (userSnap.exists) {
         const data = userSnap.data();
         return data?.inCompetition === true;
@@ -41,17 +42,17 @@ export const isUserInCompetition = async (userId: string): Promise<boolean> => {
 
 // Sets the user's inCompetition field to true
 export const setUserInCompetition = async (userId: string): Promise<void> => {
-    const userRef = db.collection('users').doc(userId);
+    const userRef = doc(db, 'users', userId);
     try {
-        await userRef.update({ inCompetition: true });
+        await updateDoc(userRef, { inCompetition: true });
     } catch (error) {
         console.log("Error setting inCompetition:", error);
     }
 };
 
 export const getUserProfile = async (userId: string) => {
-    const userRef = db.collection('users').doc(userId);
-    const userSnap = await userRef.get();
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
     if (userSnap.exists) {
         const data = userSnap.data();
         return {
@@ -71,8 +72,8 @@ export const getUserProfilesBatch = async (userIds: string[]) => {
     const batches = [];
     for (let i = 0; i < userIds.length; i += 10) {
         const batchIds = userIds.slice(i, i + 10);
-        const q = db.collection('users').where('__name__', 'in', batchIds);
-        batches.push(q.get());
+        const q = query(collection(db, 'users'), where('__name__', 'in', batchIds));
+        batches.push(getDocs(q));
     }
     const results = await Promise.all(batches);
     // Flatten and map to desired structure
@@ -92,7 +93,7 @@ export const getUserProfilesBatch = async (userIds: string[]) => {
 // GET referral id
 export const getReferral = async (id: string): Promise<string | null> => {
     try {
-        const userDoc = await db.collection('users').doc(id).get();
+        const userDoc = await getDoc(doc(db, "users", id));
         if (userDoc.exists && userDoc.data()?.referral !== undefined) {
             return userDoc.data()?.referral;
         } else {
@@ -108,10 +109,10 @@ export const getReferral = async (id: string): Promise<string | null> => {
 // GET titleMessage from waitingMessage
 export const fetchDefaultTitleMessage = async (): Promise<string> => {
     try {
-        const competitionsRef = db.collection('competitions');
-        const q = competitionsRef.orderBy('createdAt', 'desc').limit(1);
+        const competitionsRef = collection(db, 'competitions');
+        const q = query(competitionsRef, orderBy('createdAt', 'desc'), limit(1));
         console.log("test", q);
-        const snapshot = await q.get();
+        const snapshot = await getDocs(q);
         
         if (!snapshot.empty) {
             const competitionDoc = snapshot.docs[0];

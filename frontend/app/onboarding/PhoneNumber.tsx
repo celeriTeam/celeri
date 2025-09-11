@@ -1,10 +1,6 @@
 import React from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text } from 'react-native';
 import { StyleSheet } from 'react-native-size-scaling';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp } from '@react-navigation/native';
-
-
 
 const PhoneNumberPage: React.FC = () => {
     return (

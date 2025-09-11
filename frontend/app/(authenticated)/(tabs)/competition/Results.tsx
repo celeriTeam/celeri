@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { fetchCurrentCompetition } from '@backend/src/api/competitions';
-import { getCurrentCompetitionData, getCompetitionUserInfo } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
 import { getFriendsList } from '@/backend/src/users';

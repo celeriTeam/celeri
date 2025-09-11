@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView, Pressable, Keyboard, View, Image, Text, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
-import { auth, db } from "@firebaseConfig";
-import { serverTimestamp } from 'firebase/firestore';
-import storage from '@react-native-firebase/storage'
+import { onAuthStateChanged, createUserWithEmailAndPassword, FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { auth, db, storage } from "@firebaseConfig";
+import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import MailchimpSubscribe from 'react-mailchimp-subscribe'
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-
 
 const SignUpPage: React.FC = () => {
 
@@ -31,7 +28,7 @@ const SignUpPage: React.FC = () => {
             console.log("This shows before you upload the profileImage");
             const profileImageUrl = await uploadProfileImage(user.uid);
             console.log("profileImage uploaded successfully");
-            await db.collection('users').doc(user.uid).set({
+            await setDoc(doc(db, 'users', user.uid), {
                 name,
                 username,
                 email,
@@ -48,7 +45,7 @@ const SignUpPage: React.FC = () => {
     };
 
     useEffect(() => {
-        const unsubscribe = auth().onAuthStateChanged((currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth(), (currentUser) => {
             setUser(currentUser);
         });
 
@@ -111,12 +108,16 @@ const SignUpPage: React.FC = () => {
         if (!profileImage) return null;
 
         try {
+            const response = await fetch(profileImage);
+            const blob = await response.blob();
             const storageRef = storage().ref(`profileImages/${userId}`);
             console.log("profileImage checker THREE");
+            console.log('Blob size: ', blob.size);
+            console.log('Blob type: ', blob.type)
             console.log('Storage reference:', storageRef.fullPath);
-            await storageRef.putFile(profileImage);
+            await uploadBytes(storageRef, blob);
             console.log("profileImage checker FOUR");
-            const url = await storageRef.getDownloadURL();
+            const url = await getDownloadURL(storageRef);
 
             return url;
         } catch (error) {
@@ -137,7 +138,11 @@ const SignUpPage: React.FC = () => {
         if (email && password && username && profileImage) {
             try {
                 console.log("Trying to register user...");
-                const response = await auth().createUserWithEmailAndPassword(email, password);
+                const response = await createUserWithEmailAndPassword(
+                    auth(),
+                    email,
+                    password,
+                );
                 console.log("User registration response: ", response);
 
                 if (response.user) {

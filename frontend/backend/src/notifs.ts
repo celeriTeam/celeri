@@ -1,5 +1,5 @@
-import { serverTimestamp } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
+import { collection, addDoc, serverTimestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** CREATE FUNCTIONS ********************************************/
 
@@ -9,7 +9,7 @@ export const createNudge = async (username: string, groupID: string, message: st
     try {
         console.log('createNudge - ', username)
 
-        const nudgeRef = await db.collection('nudges').add({
+        const nudgeRef = await addDoc(collection(db, 'nudges'), {
             groupID,
             message,
             tokens,

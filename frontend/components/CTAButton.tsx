@@ -1,5 +1,4 @@
 import React, { FC } from "react";
-
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
 
 type ButtonType = "primary" | "secondary";

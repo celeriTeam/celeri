@@ -2,13 +2,14 @@ import { Redirect, Stack } from 'expo-router';
 import { View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '../UserProvider';
 import { useEffect, useState } from 'react';
+import { db, auth } from '@firebaseConfig';
 import * as Device from 'expo-device';
 import messaging from '@react-native-firebase/messaging';
+import firestore, { doc, updateDoc } from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
 import { TabBarProvider } from '../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { db, auth, firestore } from '@/firebaseConfig';
-
+import { onAuthStateChanged } from '@react-native-firebase/auth';
 
 const { width, height } = Dimensions.get('window');
 
@@ -72,10 +73,7 @@ async function saveTokenToDatabase(token: string, uid: string) {
     const userId = uid;
   
     // Add the token to the users datastore
-    await db
-      .collection('users')
-      .doc(userId)
-      .update({
+    await updateDoc(doc(db, 'users', userId), {
         tokens: firestore.FieldValue.arrayUnion(token),
       });
   }
@@ -94,11 +92,12 @@ async function saveTokenToDatabase(token: string, uid: string) {
   
 
 export default function AuthenticatedStack() {
+
     const [userID, setUserID] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = auth().onAuthStateChanged((user) => {
+        const unsubscribe = onAuthStateChanged(auth(), (user) => {
             if (user) {
                 console.log('There is a user. In useEffect.');
                 console.log(user);

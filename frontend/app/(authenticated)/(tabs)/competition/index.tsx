@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Modal, Alert, NativeEventEmitter, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Alert, Linking } from 'react-native';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
@@ -8,10 +8,9 @@ import { fetchCurrentCompetition, fetchCompetition } from '@backend/src/api/comp
 import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, getCompetitionTallyingResults, getReferralsData, setCompetitionHasSeenResults } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
-import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral, fetchDefaultTitleMessage } from '@backend/src/competition';
+import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
 import messaging from '@react-native-firebase/messaging';
-import { NativeModules, AppState, Platform } from 'react-native';
-import { EventEmitter, requireNativeModule } from 'expo-modules-core';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // import LiveHealthkit from '@/modules/live-healthkit';

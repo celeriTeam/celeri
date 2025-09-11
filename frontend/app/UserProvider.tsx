@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from "@firebaseConfig";
-import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, getAverageSteps, 
-    getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, getUserFinishedTutorial
-} from '@/backend/src/users';
+import { onAuthStateChanged } from "@react-native-firebase/auth";
+import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
+import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
+    getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
+    getUserFinishedTutorial} from '@/backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, 
     getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, 
     getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, 
     getTutorialStatus 
 } from '@/backend/src/groups';
 import { getYesterdaysDuelsSummary, getGameStartedAt, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, 
-    checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets
+    checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, 
 } from '@/backend/src/bets';
 
 export interface UserContextType {
@@ -52,7 +54,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         setLoading(true);
         let unsubscribeUser: any;
-        const unsubscribe = auth().onAuthStateChanged((user) => {
+        const unsubscribe = onAuthStateChanged(auth(), (user) => {
             if (user) {
                 setUserID(user.uid);
                 unsubscribeUser = fetchUserData(user.uid);
@@ -74,9 +76,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const fetchUserData = async (uid: string) => {
-        const usersRef = db.collection("users");
-        const userDocRef = usersRef.doc(uid);
-        const unsubscribeUser = userDocRef.onSnapshot(async (docSnapshot) => {
+        const usersRef = collection(db, "users");
+        const userDocRef = doc(usersRef, uid);
+        const unsubscribeUser = onSnapshot(userDocRef, async (docSnapshot) => {
             setLoading(true);
             if (docSnapshot.exists) {
                 const userData = docSnapshot.data();
@@ -107,9 +109,9 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userGroups) {
             await Promise.all(userGroups.map(async (groupName) => {
                 const groupID = await getGroupIDFromGroupName(groupName);
-                const groupsRef = db.collection("groups");
-                const groupDocRef = groupsRef.doc(groupID);
-                const unsubscribeGroup = groupDocRef.onSnapshot(async (docSnapshot) => {
+                const groupsRef = collection(db, "groups");
+                const groupDocRef = doc(groupsRef, groupID);
+                const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setLoading(true);
                     if (docSnapshot.exists && groupID) {
                         const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, isResultAvailable,

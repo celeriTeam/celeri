@@ -4,8 +4,9 @@ import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, auth } from '@/firebaseConfig';
+import { auth, db } from '@firebaseConfig';
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<"/(authenticated)/(tabs)/home" | "/onboarding" | null>(null);
@@ -38,17 +39,17 @@ const App: React.FC = () => {
                 const registrationInProgress = await AsyncStorage.getItem('registrationInProgress');
                 console.log('Auth state changed, registration flag:', registrationInProgress);
                 
-                // if (registrationInProgress === 'true') {
-                //     console.log('Registration in progress, STAYING on current screen');
-                //     setIsLoading(false);
-                //     return; // Don't redirect if registration is in progress
-                // }
+                if (registrationInProgress === 'true') {
+                    console.log('Registration in progress, STAYING on current screen');
+                    setIsLoading(false);
+                    return; // Don't redirect if registration is in progress
+                }
                 
                 const user = auth().currentUser;
                 if (user) {
                     // Check if this user has completed registration
                     try {
-                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
                         
                         // Only navigate to home if user document exists (registration complete)
                         if (userDoc.exists) {

@@ -32,7 +32,7 @@ const RegisterPage: React.FC = () => {
                         </Text>
                     </View>
                     
-                    <TouchableOpacity style={styles.button} onPress={() => router.push('/onboarding/OnboardPrimer')}>
+                    <TouchableOpacity style={styles.button} onPress={() => router.replace('/onboarding/OnboardPrimer')}>
                         <Text style={styles.buttonText}>I don't have an account yet.</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.button2} onPress={() => router.replace('/onboarding/Login')}>

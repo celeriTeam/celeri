@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, Pressable, SafeAreaView, View, TextInput, Keyboard, TouchableOpacity, Alert } from 'react-native';
-import { AuthError } from "firebase/auth";
+import { sendPasswordResetEmail } from "@react-native-firebase/auth";
 import { auth } from "@firebaseConfig";
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
@@ -14,7 +14,7 @@ const ForgotPasswordPage: React.FC = () => {
             try {
                 console.log("Trying to update user password...");
                 
-                await auth().sendPasswordResetEmail(email);
+                await sendPasswordResetEmail(auth(), email);
                 Alert.alert(
                     'Success', 
                     'Password reset email sent. Please check your inbox.',
@@ -26,7 +26,7 @@ const ForgotPasswordPage: React.FC = () => {
                     ]
                 );
             } catch (error) {
-                const errorCode = (error as AuthError).code;
+                const errorCode = (error as { code: string }).code;
                 let errorMessage = 'An error occurred while resetting password';
                 
                 switch (errorCode) {

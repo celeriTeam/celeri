@@ -1,13 +1,14 @@
-import { arrayUnion, Timestamp } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, Timestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
+
 
 /*********************************************** RECAP FUNCTIONS ********************************************/
 
 // GET yesterdays duels
 export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             let groupCycleCount = groupDoc.data()?.cycleCount;
             let groupCycleDay = groupDoc.data()?.cycleDay;
@@ -41,13 +42,13 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
             // console.log('getYesterdayDuelsSummary - Checkpoint Zero');
             
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('cycleCount', '==', groupCycleCount)
-                .where('cycleDay', '==', groupCycleDay)
-                .where('createdAt', '>=', yesterdayStart)
-                .where('createdAt', '<', yesterdayEnd);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where('cycleDay', '==', groupCycleDay),
+                where('createdAt', '>=', yesterdayStart),
+                where('createdAt', '<', yesterdayEnd));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 // console.log('getYesterdaysDuelsSummary - error: No duels found for today');
@@ -89,8 +90,8 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
 // GET yesterdays duels
 export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             let groupCycleCount = groupDoc.data()?.cycleCount;
             let groupCycleWeek = groupDoc.data()?.cycleWeek;
@@ -136,13 +137,13 @@ export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: 
             // console.log('getYesterdayDuelsSummary - Checkpoint Zero');
             
             // Get snapshot of duels for today
-            const duelsCollection = db.collection('duels');
-            const q = duelsCollection
-                .where('cycleCount', '==', groupCycleCount)
-                .where('cycleWeek', '==', groupCycleWeek)
-                .where('createdAt', '>=', startDay)
-                .where('createdAt', '<', endDay);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where('cycleWeek', '==', groupCycleWeek),
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 // console.log('getYesterdaysDuelsSummary - error: No duels found for today');
@@ -184,8 +185,8 @@ export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: 
 // GET more weekly duels
 export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: number): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists){
             // find the parameters of the given day
             // Start of the day 7 days ago
@@ -203,11 +204,11 @@ export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: numbe
             const weekEnd = Timestamp.fromDate(endOfWeek);
 
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('createdAt', '>=', weekStart)
-                .where('createdAt', '<', weekEnd);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', weekStart),
+                where('createdAt', '<', weekEnd));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getMoreDuelsSummary - error: No duels found for today');
@@ -251,8 +252,8 @@ export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: numbe
 // GET more duels
 export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[], winner: string, playerOneSteps: number,  playerTwoSteps: number, createdAt: Timestamp } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists){
             // find the parameters of the given day
             // Create a Date object for the current date and set it to the start of today
@@ -269,11 +270,11 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
             const dayEnd = Timestamp.fromDate(dayEndTemp);
 
         // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('createdAt', '>=', dayStart)
-                .where('createdAt', '<', dayEnd);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', dayStart),
+                where('createdAt', '<', dayEnd));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getMoreDuelsSummary - error: No duels found for today');
@@ -319,8 +320,8 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
     // get the createdAt timestamp of the latest duel in duel history
     // return all prop bets that were made after that timestamp (or on the same day)
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists){
             const groupData = groupDoc.data();
             const resetDay = groupData?.resetDay;
@@ -351,12 +352,12 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
 
             // Get snapshot of duels for today
             // console.log('my userid:', userID);
-            const propBetsCollection = groupDocRef.collection('propBets');
-            const q = propBetsCollection
-                .where("userID", "==", userID)
-                .where('createdAt', '>=', startDay)
-                .where('createdAt', '<', endDay);
-            const querySnapshot = await q.get();
+            const propBetsCollection = collection(groupDocRef, 'propBets');
+            const q = query(propBetsCollection,
+                where("userID", "==", userID),
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 // console.log('getLastWeekPropBets - error: No prop bets found for today');
@@ -391,8 +392,8 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
 // GET more prop bets
 export const getMorePropBets = async (groupID: string, userID: string, weeksAgo: number): Promise<{ [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if(groupDoc.exists){
             // find the parameters of the given day
             // Start of the day 7 days ago
@@ -410,12 +411,12 @@ export const getMorePropBets = async (groupID: string, userID: string, weeksAgo:
             const weekEnd = Timestamp.fromDate(endOfWeek);
 
             // Get snapshot of duels for today
-            const propBetsCollection = groupDocRef.collection('propBets');
-            const q = propBetsCollection
-                .where("userID", "==", userID)
-                .where('createdAt', '>=', weekStart)
-                .where('createdAt', '<', weekEnd);
-            const querySnapshot = await q.get();
+            const propBetsCollection = collection(groupDocRef, 'propBets');
+            const q = query(propBetsCollection,
+                where("userID", "==", userID),
+                where('createdAt', '>=', weekStart),
+                where('createdAt', '<', weekEnd));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getMorePropBets - error: No duels found for today');
@@ -452,8 +453,8 @@ export const getMorePropBets = async (groupID: string, userID: string, weeksAgo:
 
 export const getRacesSummary = async (groupID: string, weeksAgo: number, groups: Record<string, any>): Promise<{ races: Record<string, { gain: number; username: string; profilePic: string; weeksAgo: number; steps: number }>} | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
 
         if(groupDoc.exists){
 
@@ -501,11 +502,11 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
 
 
             // Get snapshot of duels for today
-            const racesCollection = groupDocRef.collection('races');
-            const q = racesCollection
-                .where('createdAt', '>=', startDay)
-                .where('createdAt', '<', endDay);
-            const querySnapshot = await q.get();
+            const racesCollection = collection(groupDocRef, 'races');
+            const q = query(racesCollection,
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getRacesSummary - error: No races found for this past week');
@@ -539,8 +540,8 @@ export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, g
     try {
         
 
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         // console.log('getGainsSummary - Checkpoint one');
         if(groupDoc.exists){
             const groupData = groupDoc.data();
@@ -588,11 +589,11 @@ export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, g
 
 
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('createdAt', '>=', startDay)
-                .where('createdAt', '<', endDay);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', startDay),
+                where('createdAt', '<', endDay));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getGainsSummary - error: No duels found for this past week');
@@ -646,8 +647,8 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
     try {
         
 
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         // console.log('getGainsSummary - Checkpoint one');
         if(groupDoc.exists){
             const groupData = groupDoc.data();
@@ -688,11 +689,11 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
             const dayEnd = Timestamp.fromDate(dayEndTemp);
 
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('createdAt', '>=', dayStart)
-                .where('createdAt', '<', dayEnd);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('createdAt', '>=', dayStart),
+                where('createdAt', '<', dayEnd));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 console.log('getGainsSummary - error: No duels found for today');
@@ -743,8 +744,8 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
 
 export const getGameStartedAt = async (groupID: string): Promise<Timestamp | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const gameStartedAt = groupDoc.data()?.gameStartedAt;
             return gameStartedAt;
@@ -827,8 +828,8 @@ const calculateEarnings = (userID: string, duel: Duel) => {
 // GET todays duels
 export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string, bets: { userID: string, wager: number, betOnUserID: string }[] } } | undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const groupCycleDay = groupDoc.data()?.cycleDay;
@@ -844,13 +845,14 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
             const todayEnd = Timestamp.fromDate(tomorrow);
             
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
-            const q = duelsCollection
-                .where('cycleCount', '==', groupCycleCount)
-                .where((gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay', '==', groupCycle)
-                .where('createdAt', '>=', todayStart)
-                .where('createdAt', '<', todayEnd);
-            const querySnapshot = await q.get();
+            const duelsCollection = collection(groupDocRef, 'duels');
+            const q = query(duelsCollection,
+                where('cycleCount', '==', groupCycleCount),
+                where((gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay', '==', groupCycle),
+                where('createdAt', '>=', todayStart),
+                where('createdAt', '<', todayEnd)
+            );
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 // console.log('getTodaysDuelsSummary - No duels found for today');
@@ -886,20 +888,18 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
 // GET duels not bet on yet by user
 export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ [key: string]: { duelID: string, player1: string, player2: string } }> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const gameType = groupDoc.data()?.gameType;
             const groupCurrentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
             
             // Get snapshot of duels for today
-            const duelsCollection = groupDocRef.collection('duels');
+            const duelsCollection = collection(groupDocRef, 'duels');
             const cycleBlank = (gameType === 'weekly' || gameType === 'biweekly') ? 'cycleWeek' : 'cycleDay';
-            const q = duelsCollection
-                .where('cycleCount', '==', groupCycleCount)
-                .where(cycleBlank, '==', groupCurrentCycle);
-            const querySnapshot = await q.get();
+            const q = query(duelsCollection, where('cycleCount', '==', groupCycleCount), where(cycleBlank, '==', groupCurrentCycle));
+            const querySnapshot = await getDocs(q);
 
             if (querySnapshot.empty) {
                 // console.log('getUnbetDuels - No duels found for today for group: ', groupID);
@@ -942,8 +942,8 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
 // Check if user has finished betting
 export const checkFinishedBetting = async (groupID: string, userID: string): Promise<boolean> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const finishedBetting = groupDoc.data()?.finishedBetting || [];
             //console.log("checkFinishedBetting - response: ", finishedBetting.includes(userID));
@@ -961,8 +961,8 @@ export const checkFinishedBetting = async (groupID: string, userID: string): Pro
 // Check if user has finished recap
 export const checkFinishedRecap = async (groupID: string, userID: string): Promise<boolean> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const finishedRecap = groupDoc.data()?.finishedRecap || [];
             // console.log("checkFinishedRecap - response: ", finishedRecap.includes(userID));
@@ -980,8 +980,8 @@ export const checkFinishedRecap = async (groupID: string, userID: string): Promi
 // Check if user has finished tutorial
 export const checkFinishedTutorial = async (groupID: string, userID: string): Promise<boolean> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const finishedTutorial = groupDoc.data()?.finishedTutorial || [];
             // console.log("checkFinishedTutorial - response: ", finishedTutorial.includes(userID));
@@ -999,8 +999,8 @@ export const checkFinishedTutorial = async (groupID: string, userID: string): Pr
 // Check if user has finished prop betting
 export const checkFinishedPropBet = async (groupID: string, userID: string): Promise<boolean> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const finishedPropBet = groupDoc.data()?.finishedPropBet || [];
             // console.log("checkFinishedPropBet - response: ", finishedPropBet.includes(userID));
@@ -1020,8 +1020,8 @@ export const checkFinishedPropBet = async (groupID: string, userID: string): Pro
 //CREATE bet
 export const createBet = async (groupID: string, userID: string, duelID: string, wager: number, betOnUserID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const duelDocRef = db.collection('duels').doc(duelID);
+        const groupDocRef = doc(db, 'groups', groupID);
+        const duelDocRef = doc(groupDocRef, 'duels', duelID);
         // We create a new bet structure with [userID, wager, betOnUserID]
         const newBet = {
             userID,
@@ -1030,7 +1030,7 @@ export const createBet = async (groupID: string, userID: string, duelID: string,
         };
         
         // Use arrayUnion to add the new bet to the "bets" array
-        await duelDocRef.update({
+        await updateDoc(duelDocRef, {
             bets: arrayUnion(newBet),
         });
         console.log(`Bet placed by user ${userID} on ${betOnUserID} with a wager of ${wager}`);
@@ -1047,8 +1047,8 @@ export const createBet = async (groupID: string, userID: string, duelID: string,
 // ADD user to finishedBetting
 export const addToFinishedBetting = async (groupID: string, userID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        await groupDocRef.update({
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
             finishedBetting: arrayUnion(userID),
         });
         console.log(`User ${userID} has finished betting`);
@@ -1062,8 +1062,8 @@ export const addToFinishedBetting = async (groupID: string, userID: string): Pro
 // ADD user to finishedRecap
 export const addToFinishedRecap = async (groupID: string, userID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        await groupDocRef.update({
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
             finishedRecap: arrayUnion(userID),
         });
         console.log(`User ${userID} has finished recap`);
@@ -1077,8 +1077,8 @@ export const addToFinishedRecap = async (groupID: string, userID: string): Promi
 // ADD user to finishedTutorial
 export const addToFinishedTutorial = async (groupID: string, userID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        await groupDocRef.update({
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
             finishedTutorial: arrayUnion(userID),
         });
         console.log(`User ${userID} has finished recap`);
@@ -1092,8 +1092,8 @@ export const addToFinishedTutorial = async (groupID: string, userID: string): Pr
 // ADD user to finishedPropBet
 export const addToFinishedPropBet = async (groupID: string, userID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        await groupDocRef.update({
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
             finishedPropBet: arrayUnion(userID),
         });
         console.log(`User ${userID} has finished prop bet`);

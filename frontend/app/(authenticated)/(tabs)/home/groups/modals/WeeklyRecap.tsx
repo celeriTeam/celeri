@@ -1,12 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';  // Import the icon package
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../../UserProvider';
-import Svg, { Circle, G } from 'react-native-svg';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
 

@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router'
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
+import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore'
 import { db } from "@firebaseConfig";
 import { TextInput } from 'react-native-gesture-handler';
 import { requestFriend } from '@/backend/src/friends';
@@ -42,17 +43,16 @@ export default function FriendsAddPage() {
                 // we want to exclude IDs from already requested, incoming requests, and already friends
 
                 // 1) Grab the current user’s doc and pull out the three arrays
-                const userCollection = db.collection("users");
-                const meRef = userCollection.doc(uid);
-                const meSnap = await meRef.get();
-                const meData = meSnap.data() || {};
+                const meRef = doc(db, 'users', uid)
+                const meSnap = await getDoc(meRef)
+                const meData = meSnap.data() || {}
 
-                const outgoing: string[] = meData.outgoingRequests || [];
-                const incoming: string[] = meData.incomingRequests || [];
-                const friends: string[] = meData.friendsList || [];
+                const outgoing: string[] = meData.outgoingRequests || []
+                const incoming: string[] = meData.incomingRequests || []
+                const friends: string[] = meData.friendsList || []
 
                 // 2) Fetch *all* users
-                const querySnapshot = await userCollection.get();
+                const querySnapshot = await getDocs(collection(db, 'users'));
                 const usersArray: User[] = [];
 
                 // 3) Build the list, skipping self & anyone in those arrays

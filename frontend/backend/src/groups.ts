@@ -1,5 +1,9 @@
-import { serverTimestamp, increment, arrayUnion, deleteField, Timestamp } from "firebase/firestore";
-import { db, storage } from "../../firebaseConfig";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp,
+    increment, arrayUnion, deleteDoc, deleteField, orderBy, Timestamp, runTransaction 
+} from "@react-native-firebase/firestore";
+import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
+import { db, storage } from "@firebaseConfig";
+
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
@@ -7,8 +11,8 @@ import { db, storage } from "../../firebaseConfig";
 export const getGroupIDFromGroupName = async (groupName: string): Promise<string | undefined> => {
     try {
         // Get the group ID from the group name
-        const q = db.collection('groups').where("groupName", "==", groupName);
-        const querySnapshot = await q.get();
+        const q = query(collection(db, "groups"), where("groupName", "==", groupName));
+        const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
             const groupID = doc.id;
@@ -27,7 +31,7 @@ export const getGroupIDFromGroupName = async (groupName: string): Promise<string
 // GET Users in Group
 export const getUsersInGroup = async (groupID: string): Promise<string[] | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.order) {
             const users = groupDoc.data()?.order;
             //console.log("getUsersInGroup - response: ", users);
@@ -45,9 +49,9 @@ export const getUsersInGroup = async (groupID: string): Promise<string[] | undef
 // GET Group Info From Code
 export const getGroupFromCode = async (groupCode: string): Promise<string | undefined> => {
     try {
-        const groupsCollection = db.collection('groups');
-        const q = groupsCollection.where("groupCode", "==", groupCode);
-        const querySnapshot = await q.get();
+        const groupsCollection = collection(db, "groups");
+        const q = query(groupsCollection, where("groupCode", "==", groupCode));
+        const querySnapshot = await getDocs(q);
         if (!querySnapshot.empty) {
             const doc = querySnapshot.docs[0];
             // console.log("getGroupFromCode - response: ", doc.id);
@@ -65,7 +69,7 @@ export const getGroupFromCode = async (groupCode: string): Promise<string | unde
 // GET Group Name
 export const getGroupName = async (groupID: string): Promise<string | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.groupName){
             // console.log("getGroupName - response: ", groupDoc.data()?.groupName);
             return groupDoc.data()?.groupName;
@@ -82,7 +86,7 @@ export const getGroupName = async (groupID: string): Promise<string | undefined>
 // GET Group Code
 export const getGroupCode = async (groupID: string): Promise<string | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.groupCode){
             // console.log("getGroupCode - response: ", groupDoc.data()?.groupCode);
             return groupDoc.data()?.groupCode;
@@ -99,7 +103,7 @@ export const getGroupCode = async (groupID: string): Promise<string | undefined>
 // GET Group createdAt
 export const getGroupCreatedAt = async (groupID: string): Promise<string | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.createdAt){
             // console.log("getGroupCreatedAt - response: ", groupDoc.data()?.createdAt);
             return groupDoc.data()?.createdAt;
@@ -116,7 +120,7 @@ export const getGroupCreatedAt = async (groupID: string): Promise<string | undef
 // GET Group updatedAt
 export const getGroupUpdatedAt = async (groupID: string): Promise<Date | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.updatedAt){
             const updatedAt = groupDoc.data()?.updatedAt;
             return updatedAt.toDate();
@@ -133,7 +137,7 @@ export const getGroupUpdatedAt = async (groupID: string): Promise<Date | undefin
 // GET Group isGameActive
 export const getGroupIsGameActive = async (groupID: string): Promise<boolean | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.hasOwnProperty('isGameActive')){
             // console.log("getGroupIsGameActive - response: ", groupDoc.data()?.isGameActive);
             return groupDoc.data()?.isGameActive;
@@ -150,7 +154,7 @@ export const getGroupIsGameActive = async (groupID: string): Promise<boolean | u
 // GET Group isFirstDay
 export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists){
             const gameType = groupDoc.data()?.gameType;
             const currentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
@@ -169,7 +173,7 @@ export const getGroupIsFirstDay = async (groupID: string): Promise<boolean | und
 
 // GET Group isResultAvailable
 export const getGroupIsResultAvailable = async (groupID: string, userID: string): Promise<boolean | undefined> => {
-    const groupDoc = await db.collection('groups').doc(groupID).get();
+    const groupDoc = await getDoc(doc(db, "groups", groupID));
     if (groupDoc.exists && groupDoc.data()?.hasPendingResults !== undefined) {
         const hasPendingResults = groupDoc.data()?.hasPendingResults;
         const viewedResults = groupDoc.data()?.viewedResults ?? [];
@@ -183,10 +187,10 @@ export const getGroupIsResultAvailable = async (groupID: string, userID: string)
 };
 
 export const setGroupViewedResults = async (groupID: string, userID: string) => {
-    const groupDocRef = db.collection('groups').doc(groupID);
-    const groupDoc = await groupDocRef.get();
+    const groupDocRef = doc(db, 'groups', groupID);
+    const groupDoc = await getDoc(groupDocRef);
     if (groupDoc.exists) {
-        await groupDocRef.update({
+        await updateDoc(groupDocRef, {
             viewedResults: arrayUnion(userID)
         });
     }
@@ -196,7 +200,7 @@ export const setGroupViewedResults = async (groupID: string, userID: string) => 
 export const getGroupCreator = async (groupID: string): Promise<string | undefined> => {
     // this will be the first user that was added to the group
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const users = groupDoc.data()?.order;
             const creator = users[0];
@@ -215,7 +219,7 @@ export const getGroupCreator = async (groupID: string): Promise<string | undefin
 // GET user tokens (based on group)
 export const getUserTokens = async (groupID: string, userID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
@@ -235,7 +239,7 @@ export const getUserTokens = async (groupID: string, userID: string): Promise<nu
 // GET defaultBetOnSelf
 export const getDefaultBetOnSelf = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.defaultBetOnSelf){
             // console.log("getDefaultBetOnSelf - response: ", groupDoc.data()?.defaultBetOnSelf);
             return groupDoc.data()?.defaultBetOnSelf;
@@ -252,7 +256,7 @@ export const getDefaultBetOnSelf = async (groupID: string): Promise<number | und
 // GET todaysBetTokens
 export const getTodaysBetTokens = async (groupID: string, userID: string): Promise<number> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
@@ -271,7 +275,7 @@ export const getTodaysBetTokens = async (groupID: string, userID: string): Promi
 // GET daily tokens
 export const getDailyTokens = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.dailyTokens){
             //console.log("getDailyTokens - response: ", groupDoc.data()?.dailyTokens);
             return groupDoc.data()?.dailyTokens;
@@ -288,7 +292,7 @@ export const getDailyTokens = async (groupID: string): Promise<number | undefine
 // GET total cycles
 export const getTotalCycles = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.totalCycles){
             // console.log("getTotalCycles - response: ", groupDoc.data()?.totalCycles);
             return groupDoc.data()?.totalCycles;
@@ -305,7 +309,7 @@ export const getTotalCycles = async (groupID: string): Promise<number | undefine
 // GET cycle day OR week
 export const getCycle = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists) {
             const gameType = groupDoc.data()?.gameType;
             const value = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
@@ -325,7 +329,7 @@ export const getCycle = async (groupID: string): Promise<number | undefined> => 
 // GET cycle count
 export const getCycleCount = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.cycleCount){
             // console.log("getCycleCount - response: ", groupDoc.data()?.cycleCount);
             return groupDoc.data()?.cycleCount;
@@ -342,7 +346,7 @@ export const getCycleCount = async (groupID: string): Promise<number | undefined
 // GET current players in game
 export const getCurrentPlayersInGame = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.currentPlayersInGame){
             // console.log("getCurrentPlayersInGame - response: ", groupDoc.data()?.currentPlayersInGame);
             return groupDoc.data()?.currentPlayersInGame;
@@ -359,7 +363,7 @@ export const getCurrentPlayersInGame = async (groupID: string): Promise<number |
 // GET diamonds
 export const getUserDiamonds = async (groupID: string, userID: string): Promise<number> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const users = groupDoc.data()?.users;
             const user = users[userID];
@@ -377,9 +381,9 @@ export const getUserDiamonds = async (groupID: string, userID: string): Promise<
 }
 
 // GET Group Profile Pic
-export const getGroupProfilePic = async (groupID: string): Promise<string | undefined> => {
+export const getGroupProfilePic = async (id: string): Promise<string | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", id));
         if (groupDoc.exists && groupDoc.data()?.groupImageUrl) {
             // console.log("getGroupProfilePic - response:", groupDoc.data()?.groupImageUrl);
             return groupDoc.data()?.groupImageUrl;
@@ -396,7 +400,7 @@ export const getGroupProfilePic = async (groupID: string): Promise<string | unde
 // GET reset day (if gameType is weekly)
 export const getResetDay = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && (groupDoc.data()?.resetDay !== undefined)){
             // console.log("getResetDay - response: ", groupDoc.data()?.resetDay);
             return groupDoc.data()?.resetDay;
@@ -413,7 +417,7 @@ export const getResetDay = async (groupID: string): Promise<number | undefined> 
 // GET group type
 export const getGameType = async (groupID: string): Promise<string | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.gameType){
             // console.log("getGameType - response: ", groupDoc.data()?.gameType);
             return groupDoc.data()?.gameType;
@@ -430,7 +434,7 @@ export const getGameType = async (groupID: string): Promise<string | undefined> 
 // GET prop bet info
 export const getPropBet = async (groupID: string, userID: string): Promise<{ betOnUserID: string, averageStepCount: number, overUnder: string } | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.propBets){
             const propBets = groupDoc.data()?.propBets;
             for (const propBet of propBets) {
@@ -457,7 +461,7 @@ export const getPropBet = async (groupID: string, userID: string): Promise<{ bet
 // GET last login
 export const getLastLogin = async (groupID: string, userID: string): Promise<Date | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const loginTime = groupDoc.data()?.users[userID]?.loginTime;
             const today = new Date();
@@ -477,7 +481,7 @@ export const getLastLogin = async (groupID: string, userID: string): Promise<Dat
 // GET starting tokens
 export const getStartingTokens = async (groupID: string): Promise<number | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.startingTokens){
             // console.log("getStartingTokens - response: ", groupDoc.data()?.startingTokens);
             return groupDoc.data()?.startingTokens;
@@ -494,7 +498,7 @@ export const getStartingTokens = async (groupID: string): Promise<number | undef
 // GET latest bet time
 export const getLatestBetTime = async (groupID: string, userID: string): Promise<Date | undefined> => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const latestBetTime = groupDoc.data()?.users[userID]?.latestBetTime;
             // console.log(`getLatestBetTime - response for ${userID}: ${latestBetTime}`);
@@ -523,7 +527,7 @@ export const getTutorialStatus = async (groupID: string, userID: string): Promis
     }
 > => {
     try {
-        const groupDoc = await db.collection('groups').doc(groupID).get();
+        const groupDoc = await getDoc(doc(db, "groups", groupID));
         if (groupDoc.exists && groupDoc.data()?.users){
             const tutorialStatus = groupDoc.data()?.users[userID]?.tutorials;
             // console.log(`getLatestBetTime - response for ${userID}: ${tutorialStatus ?? {}}`);
@@ -540,8 +544,8 @@ export const getTutorialStatus = async (groupID: string, userID: string): Promis
 
 export const getNewsSummary = async (groupID: string, targetDate: Date): Promise<{ news: any[]; nextTargetDate: Date }> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const newsRef = groupDocRef.collection("news");
+        const groupDocRef = doc(db, "groups", groupID);
+        const newsRef = collection(groupDocRef, "news");
 
         // Calculate day boundaries
         const startOfDay = new Date(targetDate);
@@ -550,22 +554,24 @@ export const getNewsSummary = async (groupID: string, targetDate: Date): Promise
         const endOfDay = new Date(targetDate);
         endOfDay.setHours(23, 59, 59, 999);
 
-        const q = newsRef
-            .where('createdAt', '>=', Timestamp.fromDate(startOfDay))
-            .where('createdAt', '<=', Timestamp.fromDate(endOfDay))
-            .orderBy('createdAt', 'desc');
+        const q = query(
+            newsRef,
+            where('createdAt', '>=', Timestamp.fromDate(startOfDay)),
+            where('createdAt', '<=', Timestamp.fromDate(endOfDay)),
+            orderBy('createdAt', 'desc')
+        );
 
-        const querySnapshot = await q.get();
+        const querySnapshot = await getDocs(q);
         const rawNews = await Promise.all(
             querySnapshot.docs.map(async (newsDoc) => {
                 const newsData = newsDoc.data();
-                const userRef = db.collection('users').doc(newsData.userID);
-                const userDoc = await userRef.get();
+                const userRef = doc(db, "users", newsData.userID);
+                const userDoc = await getDoc(userRef);
                 const userData = userDoc.data();
                 let userOpponentData = null;
                 if (newsData.opponentID) {
-                    const userOpponentRef = db.collection('users').doc(newsData.opponentID);
-                    const userOpponentDoc = await userOpponentRef.get();
+                    const userOpponentRef = doc(db, "users", newsData.opponentID);
+                    const userOpponentDoc = await getDoc(userOpponentRef);
                     userOpponentData = userOpponentDoc.data();
                 }
                 let content = "";
@@ -647,12 +653,13 @@ export const getNewsSummary = async (groupID: string, targetDate: Date): Promise
 // GET results from the results collection
 export const getGameResults = async (groupID: string): Promise<any[]> => {
     try {
-        const resultsRef = db.collection('results');
-        const q = resultsRef
-            .where("groupID", "==", groupID)
-            .orderBy("createdAt", "desc") // newest first
-        ;
-        const querySnapshot = await q.get();
+        const resultsRef = collection(db, "results");
+        const q = query(
+            resultsRef,
+            where("groupID", "==", groupID),
+            orderBy("createdAt", "desc") // newest first
+        );
+        const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
             return querySnapshot.docs.map(doc => ({
@@ -673,8 +680,8 @@ export const getGameResults = async (groupID: string): Promise<any[]> => {
 // ADD user to group
 export const addUserToGroup = async (groupID: string, userID: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const groupData = groupDoc.data();
             const users = groupData?.users;
@@ -689,7 +696,7 @@ export const addUserToGroup = async (groupID: string, userID: string): Promise<u
              const startingTokens = groupData?.startingTokens ?? 0;
 
             
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 [`users.${userID}`]: {
                     placedBet: false,
                     tokens: startingTokens,
@@ -715,16 +722,18 @@ export const addUserToGroup = async (groupID: string, userID: string): Promise<u
 export const addGroupImage = async (groupID: string, groupImageUri: string): Promise<string | null> => {
     try {
         if (groupImageUri != '') {
+            const response = await fetch(groupImageUri);
+            const blob = await response.blob();
             const storageRef = storage().ref(`groupImages/${groupID}`);
-            await storageRef.putFile(groupImageUri);
-            const downloadURL = await storageRef.getDownloadURL();
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
 
             // Update the user's profile in Firestore with the new image URL
-            const groupDocRef = db.collection('groups').doc(groupID);
-            await groupDocRef.update({
+            const groupDocRef = doc(db, 'groups', groupID);
+            await updateDoc(groupDocRef, {
                 groupImageUrl: downloadURL,
             });
-            const groupDoc = await groupDocRef.get();
+            const groupDoc = await getDoc(groupDocRef);
             console.log('addGroupImage - response: ', groupDoc.data()?.groupImageUrl);
             return downloadURL;
         } else {
@@ -740,11 +749,11 @@ export const addGroupImage = async (groupID: string, groupImageUri: string): Pro
 // Edit group name
 export const editGroupName = async(groupID: string, groupNameInput: string) => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        await groupDocRef.update({
+        const groupDocRef = doc(db, 'groups', groupID);
+        await updateDoc(groupDocRef, {
             groupName: groupNameInput,
         });
-        const groupDoc = await groupDocRef.get();
+        const groupDoc = await getDoc(groupDocRef);
         console.log('editGroupName - response: ', groupDoc.data()?.groupName);
     } catch (error) {
         console.error('editGroupName - Error updating username', error);
@@ -755,8 +764,8 @@ export const editGroupName = async(groupID: string, groupNameInput: string) => {
 export const addPropBet = async (groupID: string, userID: string, betOnUserID: string, averageStepCount: number, overUnder: string) => {
     // add to groups[groupID].propBets where propBets = {betOnUserID, userID, averageStepCount, overUnder}
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists) {
             const propBetData = {
                 betOnUserID: betOnUserID,
@@ -764,7 +773,7 @@ export const addPropBet = async (groupID: string, userID: string, betOnUserID: s
                 averageStepCount: averageStepCount,
                 overUnder: overUnder,
             };
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 propBets: arrayUnion(propBetData),
             });
             console.log('addPropBet - response: ', propBetData);
@@ -783,8 +792,8 @@ export const setLogin = async (groupID: string, userID: string, time: Date) => {
     try {
         // groups[groupID].users[userID].loginTime will be a list [lastlogin, currentlogin]
         // if loginTime doesnt exist, create it with lastlogin = currentlogin
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists) {
             const loginTime = groupDoc.data()?.users[userID]?.loginTime;
             if (loginTime) {
@@ -794,7 +803,7 @@ export const setLogin = async (groupID: string, userID: string, time: Date) => {
                 const oneMinuteInMs = 60 * 1000;
         
                 if (timeDifferenceNow >= oneMinuteInMs || timeDifference >= oneMinuteInMs) {
-                  await groupDocRef.update({
+                  await updateDoc(groupDocRef, {
                     [`users.${userID}.loginTime`]: [loginTime[1], time],
                   });
                   console.log('setLogin - response: Login time updated');
@@ -802,7 +811,7 @@ export const setLogin = async (groupID: string, userID: string, time: Date) => {
                   console.log('setLogin - response: Login time not updated (within 1 minute of last login)');
                 }
             } else {
-                await groupDocRef.update({
+                await updateDoc(groupDocRef, {
                     [`users.${userID}.loginTime`]: [time, time],
                 });
                 console.log('setLogin - response: Initial login time set');
@@ -818,10 +827,10 @@ export const setLogin = async (groupID: string, userID: string, time: Date) => {
 
 export const setLatestBetTime = async (groupID: string, userID: string, time: Date): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists) {
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 [`users.${userID}.latestBetTime`]: time,
             });
             console.log('setLatestBetTime - response: Latest bet time set');
@@ -838,10 +847,10 @@ export const setLatestBetTime = async (groupID: string, userID: string, time: Da
 
 export const setTutorialStatus = async (groupID: string, userID: string, tutorial: string): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists) {
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 [`users.${userID}.tutorials.${tutorial}`]: true,
             });
             console.log('setTutorialStatus - response: Latest bet time set');
@@ -858,11 +867,11 @@ export const setTutorialStatus = async (groupID: string, userID: string, tutoria
 
 export const addDiamonds = async (groupID: string, userID: string, diamonds: number) => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists) {
             const userDiamonds = groupDoc.data()?.users[userID]?.diamonds ?? 0;
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 [`users.${userID}.diamonds`]: userDiamonds + diamonds,
             });
             console.log('addDiamonds - response: Diamonds added');
@@ -883,7 +892,7 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
         if (!userID || userID.trim() === '') {
             throw new Error('Invalid userID');
         }
-        const groupRef = await db.collection('groups').add({
+        const groupRef = await addDoc(collection(db, 'groups'), {
             groupName,
             "users": {
                 [userID]: {
@@ -912,27 +921,27 @@ export const createGroup = async (userID: string, groupName: string, groupCode: 
 
 export const deleteGroup = async (groupID: string) => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         
         if (groupDoc.exists) {
             const orderArray = groupDoc.data()?.order || [];
             
             // Remove group from each user's groups array
             for (const userID of orderArray) {
-                const userDocRef = db.collection('users').doc(userID);
-                const userDoc = await userDocRef.get();
+                const userDocRef = doc(db, 'users', userID);
+                const userDoc = await getDoc(userDocRef);
                 
                 if (userDoc.exists) {
                     const userGroups = userDoc.data()?.groups || [];
-                    await userDocRef.update({
+                    await updateDoc(userDocRef, {
                         groups: userGroups.filter((group: string) => group !== groupID)
                     });
                 }
             }
             
             // Delete the group document
-            await groupDocRef.delete();
+            await deleteDoc(groupDocRef);
             console.log('deleteGroup - response: Group deleted');
         } else {
             console.error('deleteGroup - error: No such document!');
@@ -944,22 +953,22 @@ export const deleteGroup = async (groupID: string) => {
 
 export const leaveGroup = async (groupID: string, userID: string) => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const userDocRef = db.collection('users').doc(userID);
+        const groupDocRef = doc(db, 'groups', groupID);
+        const userDocRef = doc(db, 'users', userID);
         
-        const groupDoc = await groupDocRef.get();
-        const userDoc = await userDocRef.get();
+        const groupDoc = await getDoc(groupDocRef);
+        const userDoc = await getDoc(userDocRef);
         
         if (groupDoc.exists && userDoc.exists) {
             // Remove user from group's order array and users map
-            await groupDocRef.update({
+            await updateDoc(groupDocRef, {
                 order: groupDoc.data()?.order.filter((id: string) => id !== userID),
                 [`users.${userID}`]: deleteField()
             });
             
             // Remove group from user's groups array
             const userGroups = userDoc.data()?.groups || [];
-            await userDocRef.update({
+            await updateDoc(userDocRef, {
                 groups: userGroups.filter((id: string) => id !== groupID)
             });
             
@@ -976,10 +985,10 @@ export const leaveGroup = async (groupID: string, userID: string) => {
 
 // START Game
 export const startGame = async (groupID: string, totalCycles: number, startingTokens: number, gameType: string, resetDay: number): Promise<undefined> => {
-    const groupDocRef = db.collection('groups').doc(groupID);
+    const groupDocRef = doc(db, 'groups', groupID);
     
     try {
-        await db.runTransaction(async (transaction) => {
+        await runTransaction(db, async (transaction) => {
             // 1. Atomic read of group document
             const groupDoc = await transaction.get(groupDocRef);
             if (!groupDoc.exists) {
@@ -1025,10 +1034,10 @@ export const startGame = async (groupID: string, totalCycles: number, startingTo
 
             // 5. Create duels in transaction
             const duelsForDay1 = cycles[0];
-            const duelsCollection = groupDocRef.collection('duels');
+            const duelsCollection = collection(groupDocRef, 'duels');
             
             Object.values(duelsForDay1).forEach(duel => {
-                const duelDocRef = duelsCollection.doc();
+                const duelDocRef = doc(duelsCollection);
                 const duelData = {
                     player1: duel.player1,
                     player2: duel.player2,
@@ -1095,15 +1104,15 @@ function createCycle(players: Array<string>): Array<{ [duelKey: string]: { playe
 // SET todaysBetTokens
 export const setTodaysBetTokens = async (groupID: string, userID: string, todaysBetTokens: number): Promise<undefined> => {
     try {
-        const groupDocRef = db.collection('groups').doc(groupID);
-        const groupDoc = await groupDocRef.get();
+        const groupDocRef = doc(db, 'groups', groupID);
+        const groupDoc = await getDoc(groupDocRef);
         if (groupDoc.exists){
             const groupData = groupDoc.data();
             const users = groupData?.users;
             
             // Check if the user is already in the users map
             if (users && users[userID]) {
-                await groupDocRef.update({
+                await updateDoc(groupDocRef, {
                     [`users.${userID}.todaysBetTokens`]: increment(todaysBetTokens),
                 });
                 console.log(`setTodaysBetTokens - response: User ${userID} todaysBetTokens set to ${todaysBetTokens}`);
@@ -1135,10 +1144,10 @@ export const generateGroupCode = async (): Promise<string> => {
         }
 
         // Check if the group code already exists
-        const groupCodeQuery = db.collection('groups').where("groupCode", "==", groupCode);
+        const groupCodeQuery = query(collection(db, "groups"), where("groupCode", "==", groupCode));
 
         // If no group exists with this code, it's unique
-        const querySnapshot = await groupCodeQuery.get();
+        const querySnapshot = await getDocs(groupCodeQuery);
         if (querySnapshot.size === 0) {
             isUnique = true;
         }

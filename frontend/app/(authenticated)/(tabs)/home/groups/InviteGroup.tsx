@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet as RNStyleSheet, Text, TouchableOpacity, Alert, ActivityIndicator, Modal, ScrollView, Dimensions } from 'react-native';
 import { db } from "@firebaseConfig";
+import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
@@ -79,12 +80,12 @@ const InvitePage: React.FC = () => {
 
     const fetchData = async (uid: string) => {
         const currentGroups: { [groupID: string]: any } = {};
-        const groupsRef = db.collection("groups");
-        const groupDocRef = groupsRef.doc(resolvedGroupID);
+        const groupsRef = collection(db, "groups");
+        const groupDocRef = doc(groupsRef, resolvedGroupID);
 
         // Unsubscribe firebase listener functions
         const unsubscribeFunctions: (() => void)[] = [];
-        const unsubscribeGroup = groupDocRef.onSnapshot(async (docSnapshot) => {
+        const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
             setIsLoading(true);
             if (docSnapshot.exists && resolvedGroupID) {
                 const [isGameActive, groupCode, groupName, groupImageUrl, groupCreator] = await Promise.all([
@@ -185,7 +186,7 @@ const InvitePage: React.FC = () => {
 
         try {
             const nudgeMessage = "They're waiting for you to start the game!"
-            const userRef = db.collection('users').doc(resolvedLeaderID);
+            const userRef = doc(db, 'users', resolvedLeaderID);
             const userDoc = await userRef.get();
             const tokens = userDoc.data()?.tokens || [];
 

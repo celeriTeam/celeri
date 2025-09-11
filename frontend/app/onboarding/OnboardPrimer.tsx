@@ -5,8 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { signInWithPhoneNumber} from '@react-native-firebase/auth';
+import { doc, getDoc, setDoc } from '@react-native-firebase/firestore';
+import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
+import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db, auth, firestore, storage } from '@/firebaseConfig';
+import { auth, db, storage } from '@firebaseConfig';
 
 // Define your onboarding pages content
 const onboardingPages = [
@@ -118,7 +122,7 @@ const OnboardPrimer = () => {
   };
 
   const skipOnboarding = () => {
-    router.push('/onboarding');
+    router.replace('/onboarding');
   };
 
   // Image picker function
@@ -167,13 +171,15 @@ const OnboardPrimer = () => {
       // Upload profile image
       let profileImageUrl = null;
       if (profileImage) {
+        const response = await fetch(profileImage);
+        const blob = await response.blob();
         const storageRef = storage().ref(`profileImages/${user.uid}`);
-        await storageRef.putFile(profileImage);
-        profileImageUrl = await storageRef.getDownloadURL();
+        await uploadBytes(storageRef, blob);
+        profileImageUrl = await getDownloadURL(storageRef);
       }
       
       // Create user document
-      await db.collection('users').doc(user.uid).set({
+      await setDoc(doc(db, 'users', user.uid), {
         name,
         username,
         phoneNumber: user.phoneNumber,
@@ -277,23 +283,23 @@ const OnboardPrimer = () => {
       console.log('Formatted phone number:', formattedNumber);
       
       // This is the correct way to call it
-      const confirmation = await auth().signInWithPhoneNumber(formattedNumber);
+      const confirmation = await signInWithPhoneNumber(auth(), formattedNumber);
       console.log('Phone number sign-in confirmation received');
       
       // Add this listener for automatic verification in simulators
-      // const unsubscribe = auth().onAuthStateChanged(async (user) => {
+      // const unsubscribe = onAuthStateChanged(auth(), async (user) => {
       //   console.log('onAuthStateChanged triggered during phone verification');
       //   if (user) {
       //     console.log('Auto-verification detected in simulator');
       //     // Check if this user already exists in Firestore
-      //     const userDoc = await db.collection('users').doc(user.uid).get();
+      //     const userDoc = await getDoc(doc(db, 'users', user.uid));
           
       //     if (userDoc.exists) {
       //       // User already exists - show alert and navigate to login
       //       Alert.alert(
       //         'Account Exists',
       //         'An account with this phone number already exists. Please sign in instead.',
-      //         [{ text: 'OK', onPress: () => router.push('/onboarding/Login') }]
+      //         [{ text: 'OK', onPress: () => router.replace('/onboarding/Login') }]
       //       );
       //     } else {
       //       // New user - verified automatically, register and go to main flow
@@ -338,7 +344,7 @@ const OnboardPrimer = () => {
       const userCredential = await confirmation.confirm(verificationCode);
       
       // Check if this user already exists in Firestore
-      const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+      const userDoc = await getDoc(doc(db,'users',userCredential.user.uid));
       
       if (userDoc.exists) {
         // User already exists
@@ -574,7 +580,7 @@ const OnboardPrimer = () => {
           <View style={styles.header}>
             <TouchableOpacity 
               style={{ position: 'absolute', left: 0, padding: 16 }} 
-              onPress={() => router.back()}
+              onPress={() => router.replace('/onboarding')}
             >
               <Image
                 source={require('@assets/icons/back.png')}
