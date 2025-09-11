@@ -12,4 +12,5 @@ import storage from '@react-native-firebase/storage'
 const app = getApp();
 const db = getFirestore(app);
 const auth = () => getAuth(app);
-export { db, auth, firestore, storage };
+const authInstance = getAuth(app);
+export { db, auth, authInstance, firestore, storage };

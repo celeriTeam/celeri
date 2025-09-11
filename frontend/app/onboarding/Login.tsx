@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import {SafeAreaView, View, Text, TouchableOpacity, TextInput, Alert,Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import auth, { signInWithPhoneNumber } from '@react-native-firebase/auth';
+import { signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { db } from '@/firebaseConfig';
+import { db, authInstance } from '@/firebaseConfig';
 
 const LoginPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -53,7 +53,7 @@ const LoginPage: React.FC = () => {
             console.log('Sending verification code to:', formattedNumber);
             
             // Send verification code
-            const confirmation = await signInWithPhoneNumber(auth(), formattedNumber);
+            const confirmation = await signInWithPhoneNumber(authInstance, formattedNumber);
             console.log('Verification code sent');
             
             setConfirmation(confirmation);

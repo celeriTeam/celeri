@@ -2,7 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 import { View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '@/app/UserProvider';
 import { useEffect, useState } from 'react';
-import { db, auth } from '@firebaseConfig';
+import { db, authInstance } from '@firebaseConfig';
 import * as Device from 'expo-device';
 import messaging from '@react-native-firebase/messaging';
 import firestore, { doc, updateDoc } from '@react-native-firebase/firestore';
@@ -75,7 +75,7 @@ async function saveTokenToDatabase(token: string, uid: string) {
     // Add the token to the users datastore
     await updateDoc(doc(db, 'users', userId), {
         tokens: firestore.FieldValue.arrayUnion(token),
-      });
+    });
   }
   
     // Helper function to subscribe token to topic
@@ -97,7 +97,7 @@ export default function AuthenticatedStack() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth(), (user) => {
+        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
             if (user) {
                 console.log('There is a user. In useEffect.');
                 console.log(user);
@@ -139,8 +139,6 @@ export default function AuthenticatedStack() {
                     <Stack>
                     {/* this shows your bottom‑tab navigator */}
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-                    <Stack.Screen name="friends" options={{ title: 'Friends', headerShown: false }} />
                     <Stack.Screen name="publicProfile" options={{ title: 'PublicProfile', headerShown: false }} />
                   </Stack>
                 </TabBarProvider>

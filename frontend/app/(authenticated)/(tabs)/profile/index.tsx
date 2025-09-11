@@ -3,7 +3,7 @@ import { View, Text, Alert, TouchableOpacity, TextInput, Modal } from 'react-nat
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
-import { getAuth, signOut } from "@react-native-firebase/auth";
+import { signOut } from "@react-native-firebase/auth";
 import { useUser } from '@/app/UserProvider';
 import messaging from '@react-native-firebase/messaging';
 import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
@@ -14,6 +14,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
+import { authInstance } from '@/firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,7 +41,6 @@ const PersonalProfilePage: React.FC = () => {
 
     const handleLogout = async () => {
         setIsLoggingOut(true);
-        const authInstance = getAuth();
         try {
             const token = await messaging().getToken()
 

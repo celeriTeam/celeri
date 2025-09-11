@@ -1,5 +1,4 @@
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, Timestamp } from "@react-native-firebase/firestore";
-import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import { db, storage } from "@firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
@@ -179,18 +178,14 @@ export const getUserFinishedTutorial = async (userID: string): Promise<boolean> 
 // EDIT Profile Pic
 export const editProfilePic = async (userID: string, newProfileImageUri: string): Promise<string | null> => {
     try {
-        // Fetch the image as a blob
-        const response = await fetch(newProfileImageUri);
-        const blob = await response.blob();
-
         // Create a reference to the user's profile image in Firebase Storage
         const storageRef = storage().ref(`profileImages/${userID}`);
 
         // Overwrite the existing image with the new one
-        await uploadBytes(storageRef, blob);
+        await storageRef.putFile(newProfileImageUri);
 
         // Get the download URL for the new profile image
-        const downloadURL = await getDownloadURL(storageRef);
+        const downloadURL = await storageRef.getDownloadURL();
 
         // Update the user's profile in Firestore with the new image URL
         const userDocRef = doc(db, 'users', userID);
