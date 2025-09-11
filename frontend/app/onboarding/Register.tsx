@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView, Pressable, Keyboard, View, Image, Text, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
 import { onAuthStateChanged, createUserWithEmailAndPassword, FirebaseAuthTypes } from "@react-native-firebase/auth";
-import { auth, db, storage } from "@firebaseConfig";
+import { authInstance, db, storage } from "@firebaseConfig";
 import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
-import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
@@ -45,7 +44,7 @@ const SignUpPage: React.FC = () => {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth(), (currentUser) => {
+        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
             setUser(currentUser);
         });
 
@@ -108,16 +107,12 @@ const SignUpPage: React.FC = () => {
         if (!profileImage) return null;
 
         try {
-            const response = await fetch(profileImage);
-            const blob = await response.blob();
             const storageRef = storage().ref(`profileImages/${userId}`);
             console.log("profileImage checker THREE");
-            console.log('Blob size: ', blob.size);
-            console.log('Blob type: ', blob.type)
             console.log('Storage reference:', storageRef.fullPath);
-            await uploadBytes(storageRef, blob);
+            await storageRef.putFile(profileImage);
             console.log("profileImage checker FOUR");
-            const url = await getDownloadURL(storageRef);
+            const url = await storageRef.getDownloadURL();
 
             return url;
         } catch (error) {
@@ -139,7 +134,7 @@ const SignUpPage: React.FC = () => {
             try {
                 console.log("Trying to register user...");
                 const response = await createUserWithEmailAndPassword(
-                    auth(),
+                    authInstance,
                     email,
                     password,
                 );

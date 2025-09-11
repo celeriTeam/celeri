@@ -1,7 +1,6 @@
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp,
     increment, arrayUnion, deleteDoc, deleteField, orderBy, Timestamp, runTransaction 
 } from "@react-native-firebase/firestore";
-import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import { db, storage } from "@firebaseConfig";
 
 
@@ -722,11 +721,9 @@ export const addUserToGroup = async (groupID: string, userID: string): Promise<u
 export const addGroupImage = async (groupID: string, groupImageUri: string): Promise<string | null> => {
     try {
         if (groupImageUri != '') {
-            const response = await fetch(groupImageUri);
-            const blob = await response.blob();
             const storageRef = storage().ref(`groupImages/${groupID}`);
-            await uploadBytes(storageRef, blob);
-            const downloadURL = await getDownloadURL(storageRef);
+            await storageRef.putFile(groupImageUri);
+            const downloadURL = await storageRef.getDownloadURL();
 
             // Update the user's profile in Firestore with the new image URL
             const groupDocRef = doc(db, 'groups', groupID);

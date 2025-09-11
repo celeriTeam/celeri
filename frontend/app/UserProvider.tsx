@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from "@firebaseConfig";
+import { authInstance, db } from "@firebaseConfig";
 import { onAuthStateChanged } from "@react-native-firebase/auth";
 import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
@@ -54,7 +54,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         setLoading(true);
         let unsubscribeUser: any;
-        const unsubscribe = onAuthStateChanged(auth(), (user) => {
+        const unsubscribe = onAuthStateChanged(authInstance, (user) => {
             if (user) {
                 setUserID(user.uid);
                 unsubscribeUser = fetchUserData(user.uid);

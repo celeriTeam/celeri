@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db } from '@firebaseConfig';
+import { authInstance, db } from '@firebaseConfig';
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<"/(authenticated)/(tabs)/home" | "/onboarding" | null>(null);
@@ -45,7 +45,7 @@ const App: React.FC = () => {
                     return; // Don't redirect if registration is in progress
                 }
                 
-                const user = auth().currentUser;
+                const user = authInstance.currentUser;
                 if (user) {
                     // Check if this user has completed registration
                     try {

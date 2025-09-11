@@ -7,10 +7,9 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { signInWithPhoneNumber} from '@react-native-firebase/auth';
 import { doc, getDoc, setDoc } from '@react-native-firebase/firestore';
-import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db, storage } from '@firebaseConfig';
+import { authInstance, db, storage } from '@firebaseConfig';
 
 // Define your onboarding pages content
 const onboardingPages = [
@@ -155,7 +154,7 @@ const OnboardPrimer = () => {
   };
 
   // Register and navigate to main flow
-  const registerAndGoToMainFlow = async (user = auth().currentUser) => {
+  const registerAndGoToMainFlow = async (user = authInstance.currentUser) => {
     try {
       console.log('registerAndGoToMainFlow -- Registering user and navigating to main flow');
       if (!user) {
@@ -171,11 +170,9 @@ const OnboardPrimer = () => {
       // Upload profile image
       let profileImageUrl = null;
       if (profileImage) {
-        const response = await fetch(profileImage);
-        const blob = await response.blob();
         const storageRef = storage().ref(`profileImages/${user.uid}`);
-        await uploadBytes(storageRef, blob);
-        profileImageUrl = await getDownloadURL(storageRef);
+        await storageRef.putFile(profileImage);
+        profileImageUrl = await storageRef.getDownloadURL();
       }
       
       // Create user document
@@ -283,11 +280,11 @@ const OnboardPrimer = () => {
       console.log('Formatted phone number:', formattedNumber);
       
       // This is the correct way to call it
-      const confirmation = await signInWithPhoneNumber(auth(), formattedNumber);
+      const confirmation = await signInWithPhoneNumber(authInstance, formattedNumber);
       console.log('Phone number sign-in confirmation received');
       
       // Add this listener for automatic verification in simulators
-      // const unsubscribe = onAuthStateChanged(auth(), async (user) => {
+      // const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
       //   console.log('onAuthStateChanged triggered during phone verification');
       //   if (user) {
       //     console.log('Auto-verification detected in simulator');

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate, setLastLogin } from '../users'; 
-import { auth } from '@firebaseConfig';
+import { authInstance } from '@firebaseConfig';
 import AppleHealthKit, {
     HealthInputOptions,
     HealthKitPermissions,
@@ -508,7 +508,7 @@ const useHealthData = () => {
 
     // For foreground/UI updates
     const fetchHealthData = useCallback(async () => {
-        const user = auth().currentUser;
+        const user = authInstance.currentUser;
         const userID = user ? user.uid : "unknown_user";
 
         const healthData = await fetchAllHealthData(userID);
@@ -550,7 +550,7 @@ const useHealthData = () => {
 
     // For background updates
     const fetchHealthDataBackground = async () => {
-        const user = auth().currentUser;
+        const user = authInstance.currentUser;
         const userID = user ? user.uid : "unknown_user";
 
         const healthData = await fetchAllHealthData(userID);

@@ -1,7 +1,7 @@
 // HomeTab.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Image, Modal, ScrollView, Dimensions, Platform, Linking } from 'react-native';
-import { db, auth } from "@firebaseConfig";
+import { db, authInstance } from "@firebaseConfig";
 import { onAuthStateChanged } from "@react-native-firebase/auth";
 import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
 import useHealthData from '@backend/src/hooks/useHealthData';
@@ -89,7 +89,7 @@ const HomeTab: React.FC = () => {
         let unsubscribeReceivedRequests: (() => void) | null = null;
         let unsubscribeSentRequests: (() => void) | null = null;
         let unsubscribeCurrent1v1: (() => void) | null = null;
-        const unsubscribe = onAuthStateChanged(auth(), async (user) => {
+        const unsubscribe = onAuthStateChanged(authInstance, async (user) => {
             if (user) {
                 setIsLoadingHome(true);
                 setUserID(user.uid);
