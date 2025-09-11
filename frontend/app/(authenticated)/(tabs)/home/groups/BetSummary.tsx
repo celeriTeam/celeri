@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Sty
 import { db } from "@firebaseConfig";
 import { doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "@react-native-firebase/firestore";
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import StorePage from './modals/Store';
 import BetHistoryPage from './modals/BetHistory';

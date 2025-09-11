@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { useUser } from '../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';

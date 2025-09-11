@@ -9,7 +9,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { getGroupCode, getGroupName, getUsersInGroup, getGroupCreator, addGroupImage, deleteGroup, leaveGroup, getGroupIsGameActive, getGroupProfilePic, setGroupViewedResults } from '@backend/src/groups';
 import { getUserName, getProfilePic, getAverageSteps, getSteps, getName } from '@backend/src/users';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { createNudge } from '@/backend/src/notifs';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';

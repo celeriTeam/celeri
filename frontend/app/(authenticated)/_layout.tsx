@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { View, Text, ActivityIndicator, Dimensions } from 'react-native';
-import { UserProvider } from '../UserProvider';
+import { UserProvider } from '@/app/UserProvider';
 import { useEffect, useState } from 'react';
 import { db, auth } from '@firebaseConfig';
 import * as Device from 'expo-device';

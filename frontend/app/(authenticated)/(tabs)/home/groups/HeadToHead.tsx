@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet as RNStyleSheet, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView, StyleProp, ViewStyle, KeyboardAvoidingView } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, createBet, getUnbetDuels } from '@/backend/src/bets';
 import BetRecapPage from './modals/Recap';
 import WeeklyBetRecapPage from './modals/WeeklyRecap';

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
-import { useUser } from '../../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import { addDiamonds, setTutorialStatus } from '@/backend/src/groups';

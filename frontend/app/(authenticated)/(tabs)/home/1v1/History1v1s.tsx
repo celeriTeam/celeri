@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';

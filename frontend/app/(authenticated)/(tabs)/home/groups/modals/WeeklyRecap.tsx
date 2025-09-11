@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';

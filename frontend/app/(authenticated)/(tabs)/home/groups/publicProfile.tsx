@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { createNudge } from '@/backend/src/notifs';
 import { doc } from '@react-native-firebase/firestore';
 import { useRouter, useLocalSearchParams } from 'expo-router';

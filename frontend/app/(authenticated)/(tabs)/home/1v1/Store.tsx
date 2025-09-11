@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { buyPowerup } from '../../../../../backend/src/store';
 import { StyleSheet } from 'react-native-size-scaling';
 

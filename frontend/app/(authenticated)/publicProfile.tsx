@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useRouter, useLocalSearchParams, RelativePathString } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';

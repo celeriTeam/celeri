@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native-size-scaling';
 import { getGameResults } from '../../../../../backend/src/groups';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Dimensions } from 'react-native';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 

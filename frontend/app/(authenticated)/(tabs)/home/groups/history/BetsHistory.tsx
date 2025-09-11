@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { collection, doc, getDoc, getDocs } from '@react-native-firebase/firestore';
 import { db } from "@firebaseConfig";

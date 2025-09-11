@@ -5,7 +5,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { addGroupImage, editGroupName } from '@backend/src/groups';
-import { useUser } from '../../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, ScrollView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native-size-scaling';

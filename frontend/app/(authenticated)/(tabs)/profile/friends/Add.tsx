@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, Alert, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router'
-import { useUser } from '../../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
 import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore'
 import { db } from "@firebaseConfig";
