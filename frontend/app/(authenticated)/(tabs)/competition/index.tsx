@@ -201,6 +201,14 @@ const CompetitionLandingPage: React.FC = () => {
         );
     }
 
+    // Add a callback function to refresh the consent status
+    const refreshConsentStatus = useCallback(async () => {
+      if (userID) {
+        const consented = await hasUserConsented(userID);
+        setHasConsented(consented);
+      }
+    }, [userID]);
+
     return (
         <LinearGradient
             colors={['#000000', '#024405']}
@@ -240,7 +248,7 @@ const CompetitionLandingPage: React.FC = () => {
                 animationType="fade"
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={styles.modalOverlay} >
+                <View style={styles.modalOverlay}>
                     <View style={[styles.modalContainer, { height: '75%' }]}>
                         <LinearGradient
                             colors={['#000000', '#024405']}
@@ -249,7 +257,10 @@ const CompetitionLandingPage: React.FC = () => {
                             <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
                                 <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
                             </TouchableOpacity>
-                            <RaceRulesPager closeModal={() => setModalVisible(false)} />
+                            <RaceRulesPager 
+                              closeModal={() => setModalVisible(false)} 
+                              onConsentSubmitted={refreshConsentStatus} 
+                            />
                         </LinearGradient>
                     </View>
                 </View>

@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     button: {
-        backgroundColor: '#1976d2', // Blue background color
+        backgroundColor: '#fff', // Blue background color
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 30, // Oval shape
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     buttonText: {
         textAlign: "center",
         fontSize: 15,
-        color: '#fff',
+        color: '#000',
         fontFamily: 'Lexend',
     },
     spaceAboveButton: {

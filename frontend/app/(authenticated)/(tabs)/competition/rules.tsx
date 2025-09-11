@@ -30,7 +30,10 @@ type User = {
   pfp: string;
 };
 
-const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) => {
+const RaceRulesPager: React.FC<{ 
+  closeModal?: () => void;
+  onConsentSubmitted?: () => void; 
+}> = ({ closeModal, onConsentSubmitted }) => {
   const { userID } = useUser();
   const [currentPage, setCurrentPage] = useState(0);
   const [payment, setPayment] = useState('');
@@ -122,6 +125,15 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
     }
     try {
       await writeConsentForm(userID, payment, referralId);
+      
+      // Update local state
+      setHasConsented(true);
+      
+      // Call the callback to update parent component state
+      if (onConsentSubmitted) {
+        onConsentSubmitted();
+      }
+      
       Alert.alert('Success', 'Consent form filled out', [
         {
           text: 'OK',

@@ -22,7 +22,7 @@ export const getProfilePic = async (userID: string): Promise<string | undefined>
 // GET User Name
 export const getUserName = async (userID: string): Promise<string> => {
     try {
-        const userDoc = await await db.collection('users').doc(userID).get();
+        const userDoc = await db.collection('users').doc(userID).get();
         if (userDoc.exists && userDoc.data()?.username) {
             return userDoc.data()?.username;
         } else {
