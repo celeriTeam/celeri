@@ -1,19 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot, orderBy, limit } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
-import { Subscription } from 'expo-sensors/build/Pedometer';
-import { useEffect, useState } from 'react';
-import { get } from "http";
-
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, orderBy, limit } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** PRE-GAME FUNCTIONS ********************************************/
 
@@ -36,9 +22,9 @@ export const writeConsentForm = async (userId: string, payment: string, referral
 export const hasUserConsented = async (userId: string): Promise<boolean> => {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
+    if (userSnap.exists) {
         const data = userSnap.data();
-        return data.consent === true;
+        return data?.consent === true;
     }
     return false;
 };
@@ -47,9 +33,9 @@ export const hasUserConsented = async (userId: string): Promise<boolean> => {
 export const isUserInCompetition = async (userId: string): Promise<boolean> => {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
+    if (userSnap.exists) {
         const data = userSnap.data();
-        return data.inCompetition === true;
+        return data?.inCompetition === true;
     }
     return false;
 };
@@ -67,11 +53,11 @@ export const setUserInCompetition = async (userId: string): Promise<void> => {
 export const getUserProfile = async (userId: string) => {
     const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
+    if (userSnap.exists) {
         const data = userSnap.data();
         return {
-            username: data.username || '',
-            profileImageUrl: data.profileImageUrl || '',
+            username: data?.username || '',
+            profileImageUrl: data?.profileImageUrl || '',
         };
     }
     return {
@@ -96,9 +82,9 @@ export const getUserProfilesBatch = async (userIds: string[]) => {
             const data = docSnap.data();
             return {
                 userId: docSnap.id,
-                username: data.username || '',
+                username: data?.username || '',
                 // Map to profileImageUrl for consistency
-                profileImageUrl: data.profileImageUrl || data.profilePicture || data.profilePic || '',
+                profileImageUrl: data?.profileImageUrl || data?.profilePicture || data?.profilePic || '',
             };
         })
     );
@@ -108,7 +94,7 @@ export const getUserProfilesBatch = async (userIds: string[]) => {
 export const getReferral = async (id: string): Promise<string | null> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.referral !== undefined) {
+        if (userDoc.exists && userDoc.data()?.referral !== undefined) {
             return userDoc.data()?.referral;
         } else {
             console.error("getSteps - error: No such document!");
@@ -131,8 +117,8 @@ export const fetchDefaultTitleMessage = async (): Promise<string> => {
         if (!snapshot.empty) {
             const competitionDoc = snapshot.docs[0];
             const data = competitionDoc.data();
-            if (data.waitingMessage) {
-                return data.waitingMessage;
+            if (data?.waitingMessage) {
+                return data?.waitingMessage;
             }
         }
         

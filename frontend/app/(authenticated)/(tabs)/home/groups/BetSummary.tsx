@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, Button, ActivityIndicator, FlatList, Modal, ScrollView, Alert, StyleSheet as RNStyleSheet, Platform } from 'react-native';
-import { app } from "@firebaseConfig";
-import { getFirestore, doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "firebase/firestore";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, ScrollView, StyleSheet as RNStyleSheet, Platform } from 'react-native';
+import { db } from "@firebaseConfig";
+import { doc, collection, query, where, onSnapshot, Timestamp, getDocs } from "@react-native-firebase/firestore";
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,11 +12,12 @@ import { getAverageSteps, getProfilePic, getSteps, getUserName, getWeeklySteps, 
 import { getCurrentPlayersInGame, getCycleCount, getCycle, getGroupIsFirstDay, getGroupName, getGroupProfilePic, getGameType, 
     getTodaysBetTokens, getTotalCycles, getUserDiamonds, getUsersInGroup, getUserTokens, addPropBet, getPropBet, getResetDay, 
     setLogin, getLastLogin, getLatestBetTime, getTutorialStatus, addDiamonds, 
-    setTutorialStatus} 
+    setTutorialStatus
+} 
 from '@/backend/src/groups';
 import { getPowerups } from '@/backend/src/store';
 import { Dimensions } from 'react-native';
-import { addToFinishedPropBet, checkFinishedPropBet } from '@/backend/src/bets';
+import { checkFinishedPropBet } from '@/backend/src/bets';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import LiveDuelPage from './modals/LiveDuel';
 import PropBetPage from './modals/PropBet';
@@ -29,8 +30,6 @@ import LiveDuelTutorial from './tutorials/LiveDuelTutorial';
 import StoreTutorial from './tutorials/StoreTutorial';
 import CurrencyTutorial from './tutorials/CurrencyTutorial';
 import StepsTutorial from './tutorials/StepsTutorial';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 
@@ -194,7 +193,7 @@ const BetSummaryPage: React.FC = () => {
         ) {
             const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                 setIsLoading(true);
-                if (docSnapshot.exists() && groupID) {
+                if (docSnapshot.exists && groupID) {
                     const [groupImageUrl, groupName, isFirstDay, userTokens, todaysBetTokens, userDiamonds, currentPlayersInGame, 
                         cycle, cycleCount, totalCycles, resetDay, gameType, isFinishedPropBet, lastLogin, latestBetTime, tutorialStatus] = await Promise.all([
                         getGroupProfilePic(groupID),

@@ -1,12 +1,6 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, Timestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 import { getSteps, getWeeklySteps } from "./users";
-
-
-const db = getFirestore(app);
-const storage = getStorage();
-
 
 /** recordSetter
  * 
@@ -19,11 +13,11 @@ const storage = getStorage();
 const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps: number[]) => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data().groups) {
-            const groups = userDoc.data().groups;
+        if (userDoc.exists && userDoc.data()?.groups) {
+            const groups = userDoc.data()?.groups;
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                if (groupDoc.exists() && groupDoc.data().order) {
+                if (groupDoc.exists && groupDoc.data()?.order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
                     // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
@@ -42,9 +36,9 @@ const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps:
                     //     continue;
                     // }
 
-                    const members = groupDoc.data().order; // user IDs
-                    const resetDay = groupDoc.data().resetDay;
-                    const isGameActive = groupDoc.data().isGameActive;
+                    const members = groupDoc.data()?.order; // user IDs
+                    const resetDay = groupDoc.data()?.resetDay;
+                    const isGameActive = groupDoc.data()?.isGameActive;
                     const steps: { [key: string]: number } = {};
                     const record = [10000, 25000, 50000, 100000];
 
@@ -123,11 +117,11 @@ const recordSetter = async (userID: string, prevSteps: number, prevAverageSteps:
 const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAverageSteps: number[]) => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data().groups) {
-            const groups = userDoc.data().groups;
+        if (userDoc.exists && userDoc.data()?.groups) {
+            const groups = userDoc.data()?.groups;
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                if (groupDoc.exists() && groupDoc.data().order) {
+                if (groupDoc.exists && groupDoc.data()?.order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
                     // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
@@ -146,9 +140,9 @@ const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAver
                     //     continue;
                     // }
 
-                    const members = groupDoc.data().order; // user IDs
-                    const resetDay = groupDoc.data().resetDay;
-                    const isGameActive = groupDoc.data().isGameActive;
+                    const members = groupDoc.data()?.order; // user IDs
+                    const resetDay = groupDoc.data()?.resetDay;
+                    const isGameActive = groupDoc.data()?.isGameActive;
                     const steps: { [key: string]: number } = {};
 
                     if (!isGameActive) {
@@ -210,11 +204,11 @@ const racePullAheadTopThree = async (userID: string, prevSteps: number, prevAver
 const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverageSteps: number[]) => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data().groups) {
-            const groups = userDoc.data().groups;
+        if (userDoc.exists && userDoc.data()?.groups) {
+            const groups = userDoc.data()?.groups;
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                if (groupDoc.exists() && groupDoc.data().order) {
+                if (groupDoc.exists && groupDoc.data()?.order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
                     // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
@@ -233,12 +227,12 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
                     //     continue;
                     // }
 
-                    const members = groupDoc.data().order; // user IDs
-                    const gameType = groupDoc.data().gameType;
+                    const members = groupDoc.data()?.order; // user IDs
+                    const gameType = groupDoc.data()?.gameType;
                     const groupCycleCount = groupDoc.data()?.cycleCount;
                     const groupCurrentCycle = gameType === 'daily' ? groupDoc.data()?.cycleDay : groupDoc.data()?.cycleWeek;
-                    const resetDay = groupDoc.data().resetDay;
-                    const isGameActive = groupDoc.data().isGameActive;
+                    const resetDay = groupDoc.data()?.resetDay;
+                    const isGameActive = groupDoc.data()?.isGameActive;
                     
                     if (!isGameActive) {
                         continue;
@@ -340,11 +334,11 @@ const headToHeadPullAhead = async (userID: string, prevSteps: number, prevAverag
 const racePullAheadOfYou = async (userID: string, prevSteps: number, prevAverageSteps: number[]) => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data().groups) {
-            const groups = userDoc.data().groups;
+        if (userDoc.exists && userDoc.data()?.groups) {
+            const groups = userDoc.data()?.groups;
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                if (groupDoc.exists() && groupDoc.data().order) {
+                if (groupDoc.exists && groupDoc.data()?.order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
                     // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
@@ -363,9 +357,9 @@ const racePullAheadOfYou = async (userID: string, prevSteps: number, prevAverage
                     //     continue;
                     // }
 
-                    const members = groupDoc.data().order; // user IDs
-                    const resetDay = groupDoc.data().resetDay;
-                    const isGameActive = groupDoc.data().isGameActive;
+                    const members = groupDoc.data()?.order; // user IDs
+                    const resetDay = groupDoc.data()?.resetDay;
+                    const isGameActive = groupDoc.data()?.isGameActive;
                     const steps: { [key: string]: number } = {};
 
                     if (!isGameActive) {
@@ -437,11 +431,11 @@ const headToHeadOpponentWalking = async (userID: string, fiveHoursSteps: number)
         }
 
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data().groups) {
-            const groups = userDoc.data().groups;
+        if (userDoc.exists && userDoc.data()?.groups) {
+            const groups = userDoc.data()?.groups;
             for (const groupID of groups) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
-                if (groupDoc.exists() && groupDoc.data().order) {
+                if (groupDoc.exists && groupDoc.data()?.order) {
 
                     const newsCollectionRef = collection(db, 'groups', groupID, 'news');
                     // const fiveMinutesAgo = Timestamp.fromDate(new Date(Date.now() - 5 * 60 * 1000));
@@ -460,12 +454,12 @@ const headToHeadOpponentWalking = async (userID: string, fiveHoursSteps: number)
                     //     continue;
                     // }
 
-                    const members = groupDoc.data().order; // user IDs
-                    const gameType = groupDoc.data().gameType;
+                    const members = groupDoc.data()?.order; // user IDs
+                    const gameType = groupDoc.data()?.gameType;
                     const groupCycleCount = groupDoc.data()?.cycleCount;
                     const groupCurrentCycle = gameType === 'daily' ? groupDoc.data()?.cycleDay : groupDoc.data()?.cycleWeek;
-                    const resetDay = groupDoc.data().resetDay;
-                    const isGameActive = groupDoc.data().isGameActive;
+                    const resetDay = groupDoc.data()?.resetDay;
+                    const isGameActive = groupDoc.data()?.isGameActive;
                     
                     if (!isGameActive) {
                         continue;

@@ -1,24 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getFirestore } from 'firebase/firestore';
-import { app } from "@firebaseConfig";
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { TextInput } from 'react-native-gesture-handler';
-import { create1v1Request, update1v1Requests } from '@/backend/src/1v1Requests';
-import UserSearchPage from './UserSearch';
-import Store1v1Page from './Store';
-import { create1v1 } from '@/backend/src/1v1';
-import { setIsIn1v1 } from '@/backend/src/users';
 import { LineChart } from 'react-native-chart-kit';
 
 dayjs.extend(relativeTime);
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 

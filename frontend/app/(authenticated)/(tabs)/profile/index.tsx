@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, ScrollView, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Alert, TouchableOpacity, TextInput, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { getAuth, signOut } from "@react-native-firebase/auth";
 import { useUser } from '../../../UserProvider';
 import messaging from '@react-native-firebase/messaging';
 import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';

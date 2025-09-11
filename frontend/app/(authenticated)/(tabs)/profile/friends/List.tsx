@@ -4,12 +4,10 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router'
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { app } from "@firebaseConfig";
+import { db } from "@firebaseConfig";
 import { TextInput } from 'react-native-gesture-handler';
 import { removeFriend } from '@/backend/src/friends';
-import { getDoc, doc, getFirestore } from 'firebase/firestore'
-
-const db = getFirestore(app);
+import { getDoc, doc } from '@react-native-firebase/firestore'
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,7 +38,6 @@ export default function FriendsListPage() {
     useEffect(() => {
         const fetchData = async (uid: string) => {
             try {
-
                 const meRef = doc(db, 'users', uid)
                 const meSnap = await getDoc(meRef)
                 const meData = meSnap.data() || {}
@@ -49,12 +46,12 @@ export default function FriendsListPage() {
 
                 const fetchUserByID = async (id: string): Promise<User> => {
                     const snap = await getDoc(doc(db, 'users', id));
-                    const data = snap.exists() ? snap.data() : {};
+                    const data = snap.exists ? snap.data() : {};
                     return {
                         id,
-                        name: data.name || 'Unknown',
-                        username: data.username || 'Unknown',
-                        pfp: data.profileImageUrl || '',
+                        name: data?.name || 'Unknown',
+                        username: data?.username || 'Unknown',
+                        pfp: data?.profileImageUrl || '',
                     };
                 };
 

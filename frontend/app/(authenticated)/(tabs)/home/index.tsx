@@ -1,44 +1,25 @@
 // HomeTab.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    ActivityIndicator,
-    Image,
-    Button,
-    Modal,
-    ScrollView,
-    Dimensions,
-    Touchable,
-    Platform,
-    Linking
-} from 'react-native';
-import { app } from "@firebaseConfig";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
-import useHealthData from '../../../../backend/src/hooks/useHealthData';
-import { createGroup, getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getGroupUpdatedAt, getUsersInGroup } from '@backend/src/groups';
-import { getUserGroups, getUserName, setIsIn1v1, setStepsFirebase } from '@backend/src/users';
-import { checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial } from '@/backend/src/bets';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Image, Modal, ScrollView, Dimensions, Platform, Linking } from 'react-native';
+import { db, auth } from "@firebaseConfig";
+import { onAuthStateChanged } from "@react-native-firebase/auth";
+import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
+import useHealthData from '@backend/src/hooks/useHealthData';
+import { getGroupCreator, getGroupIDFromGroupName, getGroupIsGameActive, getGroupIsResultAvailable, getGroupName, getGroupProfilePic, getGroupUpdatedAt, getUsersInGroup } from '@backend/src/groups';
+import { getUserGroups } from '@backend/src/users';
+import { checkFinishedBetting, checkFinishedTutorial } from '@/backend/src/bets';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
 import { LinearGradient } from 'expo-linear-gradient';
-import Store1v1Page from './1v1/Store';
-import UserSearchPage from './1v1/UserSearch';
-import { get1v1Requests, getSent1v1Requests, update1v1Requests } from '@/backend/src/1v1Requests';
+import { get1v1Requests, getSent1v1Requests } from '@/backend/src/1v1Requests';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { create1v1, get1v1, get1v1History } from '@/backend/src/1v1';
+import { get1v1, get1v1History } from '@/backend/src/1v1';
 import SoloTab from './1v1/SoloTab';
-import { set } from 'date-fns';
 
 dayjs.extend(relativeTime);
-
-const auth = getAuth(app);
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 
@@ -108,7 +89,7 @@ const HomeTab: React.FC = () => {
         let unsubscribeReceivedRequests: (() => void) | null = null;
         let unsubscribeSentRequests: (() => void) | null = null;
         let unsubscribeCurrent1v1: (() => void) | null = null;
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        const unsubscribe = onAuthStateChanged(auth(), async (user) => {
             if (user) {
                 setIsLoadingHome(true);
                 setUserID(user.uid);
@@ -197,7 +178,7 @@ const HomeTab: React.FC = () => {
 
                     // Real-time updates
                     const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
-                        if (docSnapshot.exists() && groupID) {
+                        if (docSnapshot.exists && groupID) {
                             const [
                                 groupImageUrl,
                                 resolvedGroupName,

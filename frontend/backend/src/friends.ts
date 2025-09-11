@@ -1,10 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { useUser } from '../../app/UserProvider'
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** REQUEST FRIENDS FUNCTIONS ********************************************/
 
@@ -110,21 +105,21 @@ export const fetchPublicProfileData = async (userID: string, targetUserID: strin
         const userRef = doc(db, 'users', targetUserID)
         const snap = await getDoc(userRef)
 
-        if (!snap.exists()) {
+        if (!snap.exists) {
             console.warn(`No user found with ID "${targetUserID}"`)
             return undefined
         }
 
         const data = snap.data()
 
-        const incoming = Array.isArray(data.incomingRequests)
-        ? (data.incomingRequests as string[])
+        const incoming = Array.isArray(data?.incomingRequests)
+        ? (data?.incomingRequests as string[])
         : []
-        const outgoing = Array.isArray(data.outgoingRequests)
-        ? (data.outgoingRequests as string[])
+        const outgoing = Array.isArray(data?.outgoingRequests)
+        ? (data?.outgoingRequests as string[])
         : []
-        const friends = Array.isArray(data.friendsList)
-        ? (data.friendsList as string[])
+        const friends = Array.isArray(data?.friendsList)
+        ? (data?.friendsList as string[])
         : []
 
         // Determine friendStatus
@@ -139,13 +134,13 @@ export const fetchPublicProfileData = async (userID: string, targetUserID: strin
             }
         }
         return {
-            averageSteps: Array.isArray(data.averageSteps)
-                ? (data.averageSteps as number[])
+            averageSteps: Array.isArray(data?.averageSteps)
+                ? (data?.averageSteps as number[])
                 : [],
-            steps: data.steps as number,
-            name: data.name as string,
-            username: data.username as string,
-            profileImageUrl: data.profileImageUrl as string,
+            steps: data?.steps as number,
+            name: data?.name as string,
+            username: data?.username as string,
+            profileImageUrl: data?.profileImageUrl as string,
             friendStatus: friendStatus as string,
         }
 

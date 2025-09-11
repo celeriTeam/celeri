@@ -1,10 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { useUser } from '../../app/UserProvider'
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, Timestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 
 /*********************************************** RECAP FUNCTIONS ********************************************/
@@ -14,7 +9,7 @@ export const getYesterdaysDuelsSummary = async (groupID: string): Promise<{ [key
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             let groupCycleCount = groupDoc.data()?.cycleCount;
             let groupCycleDay = groupDoc.data()?.cycleDay;
             const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
@@ -97,10 +92,10 @@ export const getLastWeekDuelsSummary = async (groupID: string): Promise<{ [key: 
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             let groupCycleCount = groupDoc.data()?.cycleCount;
             let groupCycleWeek = groupDoc.data()?.cycleWeek;
-            let resetDay = groupDoc.data().resetDay; 
+            let resetDay = groupDoc.data()?.resetDay; 
             const numberOfPlayers = groupDoc.data()?.previousPlayersInGame;
 
             if (groupCycleWeek === 1 && groupCycleCount === 1) {
@@ -192,7 +187,7 @@ export const getMoreWeeklyDuelsSummary = async (groupID: string, weeksAgo: numbe
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             // find the parameters of the given day
             // Start of the day 7 days ago
             let endOfWeek = new Date();
@@ -259,7 +254,7 @@ export const getMoreDuelsSummary = async (groupID: string, daysAgo: number): Pro
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             // find the parameters of the given day
             // Create a Date object for the current date and set it to the start of today
             let dayStartTemp = new Date();
@@ -327,10 +322,10 @@ export const getLastWeekPropBets = async (groupID: string, userID: string): Prom
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             const groupData = groupDoc.data();
-            const resetDay = groupData.resetDay;
-            const players = Object.keys(groupData.users || {});
+            const resetDay = groupData?.resetDay;
+            const players = Object.keys(groupData?.users || {});
 
             // Initialize prop bets map with duel IDs as keys and 0 as default values
             const propBets: { [key: string]: { duelID: string, userID: string, betOnUserID: string, steps: number, averageStepCount: number, overUnder: string, win: boolean, createdAt: Timestamp } } = {};
@@ -399,7 +394,7 @@ export const getMorePropBets = async (groupID: string, userID: string, weeksAgo:
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             // find the parameters of the given day
             // Start of the day 7 days ago
             let endOfWeek = new Date();
@@ -461,11 +456,11 @@ export const getRacesSummary = async (groupID: string, weeksAgo: number, groups:
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
 
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
 
             // grab the reset day 
-            const resetDay = groupDoc.data().resetDay; 
-            const players = Object.keys(groupDoc.data().users || {});
+            const resetDay = groupDoc.data()?.resetDay; 
+            const players = Object.keys(groupDoc.data()?.users || {});
 
             // console.log("CHECKPOINT ONE");
 
@@ -548,11 +543,11 @@ export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, g
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         // console.log('getGainsSummary - Checkpoint one');
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             const groupData = groupDoc.data();
-            const resetDay = groupDoc.data().resetDay; 
+            const resetDay = groupDoc.data()?.resetDay; 
             // Extract user IDs from the users map
-            const players = Object.keys(groupData.users || {});
+            const players = Object.keys(groupData?.users || {});
 
             // Initialize gains map with user IDs as keys and 0 as default values
             const gains = players.reduce((acc, userID) => {
@@ -620,7 +615,7 @@ export const getWeeklyGainsSummary = async (groupID: string, weeksAgo: number, g
           
                     // Ensure userID exists in gains; initialize if missing
                     if (!gains[userID]) {
-                      const userInfo = groupData.users[userID] || {};
+                      const userInfo = groupData?.users[userID] || {};
                       gains[userID] = {
                         gain: 0,
                         username: userInfo.username || '',
@@ -655,13 +650,13 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
         // console.log('getGainsSummary - Checkpoint one');
-        if(groupDoc.exists()){
+        if(groupDoc.exists){
             const groupData = groupDoc.data();
             // Extract user IDs from the users map
-            const players = Object.keys(groupData.users || {});
+            const players = Object.keys(groupData?.users || {});
 
             // Find out if weekly or daily
-            const gameType = groupData.gameType || "daily";
+            const gameType = groupData?.gameType || "daily";
 
             // Initialize gains map with user IDs as keys and 0 as default values
             const gains = players.reduce((acc, userID) => {
@@ -720,7 +715,7 @@ export const getGainsSummary = async (groupID: string, daysAgo: number, groups: 
           
                     // Ensure userID exists in gains; initialize if missing
                     if (!gains[userID]) {
-                      const userInfo = groupData.users[userID] || {};
+                      const userInfo = groupData?.users[userID] || {};
                       gains[userID] = {
                         gain: 0,
                         username: userInfo.username || '',
@@ -751,7 +746,7 @@ export const getGameStartedAt = async (groupID: string): Promise<Timestamp | und
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const gameStartedAt = groupDoc.data()?.gameStartedAt;
             return gameStartedAt;
         } else{
@@ -835,7 +830,7 @@ export const getTodaysDuelsSummary = async (groupID: string): Promise<{ [key: st
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const groupCycleDay = groupDoc.data()?.cycleDay;
             const groupCycleWeek = groupDoc.data()?.cycleWeek;
@@ -895,7 +890,7 @@ export const getUnbetDuels = async (groupID: string, userID: string): Promise<{ 
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const groupCycleCount = groupDoc.data()?.cycleCount;
             const gameType = groupDoc.data()?.gameType;
             const groupCurrentCycle = (gameType === 'weekly' || gameType === 'biweekly') ? groupDoc.data()?.cycleWeek : groupDoc.data()?.cycleDay;
@@ -949,7 +944,7 @@ export const checkFinishedBetting = async (groupID: string, userID: string): Pro
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const finishedBetting = groupDoc.data()?.finishedBetting || [];
             //console.log("checkFinishedBetting - response: ", finishedBetting.includes(userID));
             return finishedBetting.includes(userID);
@@ -968,7 +963,7 @@ export const checkFinishedRecap = async (groupID: string, userID: string): Promi
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const finishedRecap = groupDoc.data()?.finishedRecap || [];
             // console.log("checkFinishedRecap - response: ", finishedRecap.includes(userID));
             return finishedRecap.includes(userID);
@@ -987,7 +982,7 @@ export const checkFinishedTutorial = async (groupID: string, userID: string): Pr
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const finishedTutorial = groupDoc.data()?.finishedTutorial || [];
             // console.log("checkFinishedTutorial - response: ", finishedTutorial.includes(userID));
             return finishedTutorial.includes(userID);
@@ -1006,7 +1001,7 @@ export const checkFinishedPropBet = async (groupID: string, userID: string): Pro
     try {
         const groupDocRef = doc(db, 'groups', groupID);
         const groupDoc = await getDoc(groupDocRef);
-        if (groupDoc.exists()){
+        if (groupDoc.exists){
             const finishedPropBet = groupDoc.data()?.finishedPropBet || [];
             // console.log("checkFinishedPropBet - response: ", finishedPropBet.includes(userID));
             return finishedPropBet.includes(userID);

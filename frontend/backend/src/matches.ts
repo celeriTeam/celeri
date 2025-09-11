@@ -1,9 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setDoc, increment, arrayUnion, deleteDoc, deleteField } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** TROPHY FUNCTIONS ********************************************/
 
@@ -11,8 +7,8 @@ const storage = getStorage();
 export const getTrophies = async (userID: string): Promise<string> => {
     try {
         const userDoc = await getDoc(doc(db, 'users', userID));
-        if (userDoc.exists() && userDoc.data()?.trophies){
-            return userDoc.data().trophies;
+        if (userDoc.exists && userDoc.data()?.trophies){
+            return userDoc.data()?.trophies;
         } else {
             console.error(`getTrophies - error: No such document for user ${userID}!`);
             return '';

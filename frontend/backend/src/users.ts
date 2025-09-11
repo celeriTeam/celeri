@@ -1,18 +1,6 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
-import { Subscription } from 'expo-sensors/build/Pedometer';
-import { useEffect, useState } from 'react';
-
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, Timestamp } from "@react-native-firebase/firestore";
+import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
+import { db, storage } from "@firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
@@ -20,7 +8,7 @@ const storage = getStorage();
 export const getProfilePic = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.username) {
+        if (userDoc.exists && userDoc.data()?.username) {
             return userDoc.data()?.profileImageUrl;
         } else {
             console.error("getProfilePic - error: No such document!");
@@ -36,7 +24,7 @@ export const getProfilePic = async (id: string): Promise<string | undefined> => 
 export const getUserName = async (id: string): Promise<string> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.username) {
+        if (userDoc.exists && userDoc.data()?.username) {
             return userDoc.data()?.username;
         } else {
             console.error(`getUserName - error: No such document for user ${id}!`);
@@ -52,7 +40,7 @@ export const getUserName = async (id: string): Promise<string> => {
 export const getName = async (id: string): Promise<string> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.name) {
+        if (userDoc.exists && userDoc.data()?.name) {
             return userDoc.data()?.name;
         } else {
             console.error(`getName - error: No such document for user ${id}!`);
@@ -68,7 +56,7 @@ export const getName = async (id: string): Promise<string> => {
 export const getUserEmail = async (id: string): Promise<string | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.email) {
+        if (userDoc.exists && userDoc.data()?.email) {
             // console.log("getUserEmail - response:", userDoc.data()?.email);
             return userDoc.data()?.email;
         } else {
@@ -85,7 +73,7 @@ export const getUserEmail = async (id: string): Promise<string | undefined> => {
 export const getUserGroups = async (id: string): Promise<string[] | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.groups) {
+        if (userDoc.exists && userDoc.data()?.groups) {
             const groupIDs = userDoc.data()?.groups;
             let groups: string[] = [];
             for (const groupID of groupIDs) {
@@ -109,7 +97,7 @@ export const getUserGroups = async (id: string): Promise<string[] | undefined> =
 export const getActiveUserGroupIDs = async (id: string): Promise<string[] | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.groups) {
+        if (userDoc.exists && userDoc.data()?.groups) {
             const groupIDs = userDoc.data()?.groups;
             let groups: string[] = [];
             for (const groupID of groupIDs) {
@@ -137,7 +125,7 @@ export const getIfWeekly = async (id: string): Promise<Boolean | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
         let isWeekly =  false;
-        if (userDoc.exists() && userDoc.data()?.groups) {
+        if (userDoc.exists && userDoc.data()?.groups) {
             const groupIDs = userDoc.data()?.groups;
             for (const groupID of groupIDs) {
                 const groupDoc = await getDoc(doc(db, "groups", groupID));
@@ -173,7 +161,7 @@ export const getWeeklyDuelsWon = async (groupID: string, userID: string): Promis
 export const getUserFinishedTutorial = async (userID: string): Promise<boolean> => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data()?.finishedTutorial) {
+        if (userDoc.exists && userDoc.data()?.finishedTutorial) {
             return userDoc.data()?.finishedTutorial;
         } else {
             console.error("getUserFinishedTutorial - error: No such document!");
@@ -196,7 +184,7 @@ export const editProfilePic = async (userID: string, newProfileImageUri: string)
         const blob = await response.blob();
 
         // Create a reference to the user's profile image in Firebase Storage
-        const storageRef = ref(storage, `profileImages/${userID}`);
+        const storageRef = storage().ref(`profileImages/${userID}`);
 
         // Overwrite the existing image with the new one
         await uploadBytes(storageRef, blob);
@@ -284,7 +272,7 @@ export const addGroupToUser = async (groupID: string, userID: string): Promise<s
     try {
         const userDocRef = doc(db, 'users', userID);
         const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()){
+        if (userDoc.exists){
             // Check if group is already in the user's groups
             if (userDoc.data()?.groups.includes(groupID)) {
                 console.log(`addUserToGroup - response: User ${userID} is already in the group ${groupID}. No update needed.`);
@@ -331,7 +319,7 @@ export const setStepsFirebase = async(userID: string, steps: number, averageStep
 export const getSteps = async (id: string): Promise<number> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.steps !== undefined) {
+        if (userDoc.exists && userDoc.data()?.steps !== undefined) {
             //console.log("getSteps - response: ", userDoc.data()?.steps, " id: ", id);
             return userDoc.data()?.steps;
         } else {
@@ -462,7 +450,7 @@ export const getWeeklySteps = async (groupID: string, userID: string): Promise<n
 export const getAverageSteps = async (id: string): Promise<number[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists() && userDoc.data()?.averageSteps !== undefined) {
+        if (userDoc.exists && userDoc.data()?.averageSteps !== undefined) {
             const averageSteps = userDoc.data()?.averageSteps;
             // console.log("getAverageSteps - response:", id, averageSteps);
             return averageSteps;
@@ -485,8 +473,8 @@ export const getLastWeekSteps = async (groupID: string, userID: string): Promise
         const groupDocSnap = await getDoc(groupDocRef);
         
 
-        if (groupDocSnap.exists()) {
-            const resetDay = groupDocSnap.data().resetDay as number; 
+        if (groupDocSnap.exists) {
+            const resetDay = groupDocSnap.data()?.resetDay as number; 
 
             // Get the date of the most recent "resetDay"
             const today = new Date();
@@ -549,9 +537,9 @@ export const getStepsFromWeekBefore = async(userID: string): Promise<number> => 
         const userDocRef = doc(db, `users/${userID}`)
         const userDocSnap = await getDoc(userDocRef);
 
-        if (userDocSnap.exists()) {
+        if (userDocSnap.exists) {
             const data = userDocSnap.data();
-            const stepsFromWeekBefore = data.stepsFromWeekBefore ?? 0; // Fallback to 0 if field is missing
+            const stepsFromWeekBefore = data?.stepsFromWeekBefore ?? 0; // Fallback to 0 if field is missing
             // console.log(`getStepsFromWeekBefore - ${stepsFromWeekBefore} here stepsFromWeekBefore`);
             return stepsFromWeekBefore;
         } else {
@@ -568,7 +556,7 @@ export const getStepsFromWeekBefore = async(userID: string): Promise<number> => 
 export const getStepsLastUpdate = async (id: string): Promise<Date | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", id));
-        if (userDoc.exists()) {
+        if (userDoc.exists) {
             const stepsLastUpdate = userDoc.data()?.stepsLastUpdate.toDate() ?? new Date();
             // console.log("getStepsLastUpdate - response: ", stepsLastUpdate);
             return stepsLastUpdate;
@@ -598,7 +586,7 @@ export const setStepsLastUpdate = async (id: string, date: Date): Promise<void> 
 export const getLastLogin = async (userID: string): Promise<Date | undefined> => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data()?.lastLogin) {
+        if (userDoc.exists && userDoc.data()?.lastLogin) {
             const lastLogin = userDoc.data()?.lastLogin.toDate();
             // console.log("getLastLogin - response: ", lastLogin);
             return lastLogin;
@@ -639,7 +627,7 @@ export const setIsIn1v1 = async (userID: string, isIn1v1: boolean): Promise<void
 export const getFriendsList = async (userID: string): Promise<string[]> => {
     try {
         const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists() && userDoc.data()?.friendsList) {
+        if (userDoc.exists && userDoc.data()?.friendsList) {
             const friendsList = userDoc.data()?.friendsList;
             return friendsList;
         } else {

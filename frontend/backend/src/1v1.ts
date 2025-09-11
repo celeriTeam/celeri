@@ -1,19 +1,5 @@
-import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch, onSnapshot } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { Pedometer } from 'expo-sensors';
-import AppleHealthKit, {
-    HealthInputOptions,
-    HealthKitPermissions,
-    HealthUnit,
-  } from "react-native-health";
-import { Subscription } from 'expo-sensors/build/Pedometer';
-import { useEffect, useState } from 'react';
-import { get } from "http";
-
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, Timestamp, onSnapshot } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
@@ -165,7 +151,7 @@ export const get1v1StartTime = async (userID: string) => {
 export const update1v1Steps = async (userID: string, current1v1ID: string, stepsMap: { [key: string]: number }) => {
     const duelRef = doc(db, '1v1s', current1v1ID);
     const duelDoc = await getDoc(duelRef);
-    if (!duelDoc.exists()) {
+    if (!duelDoc.exists) {
         throw new Error('Duel not found');
     }
 
@@ -173,11 +159,11 @@ export const update1v1Steps = async (userID: string, current1v1ID: string, steps
 
     await updateDoc(duelRef, {
         progress: {
-            ...duelData.progress,
+            ...duelData?.progress,
             [userID]: stepsMap,
         },
         lastSynced: {
-            ...duelData.lastSynced,
+            ...duelData?.lastSynced,
             [userID]: serverTimestamp()
         }
     });
@@ -220,13 +206,13 @@ export const create1v1 = async (Request1v1ID: string) => {
 	// }
 
     const requestDoc = await getDoc(doc(db, '1v1Requests', Request1v1ID));
-    if (!requestDoc.exists()) {
+    if (!requestDoc.exists) {
         throw new Error('Request not found');
     }
 
     const requestData = requestDoc.data();
-    const senderID = requestData.senderID;
-    const receiverID = requestData.receiverID;
+    const senderID = requestData?.senderID;
+    const receiverID = requestData?.receiverID;
 
     // set endTime to 24 hours after startTime
 
@@ -275,12 +261,12 @@ export const set1v1HasSeenResults = async (userID: string, duelID: string) => {
     try {
         const duelRef = doc(db, '1v1s', duelID);
         const duelDoc = await getDoc(duelRef);
-        if (!duelDoc.exists()) {
+        if (!duelDoc.exists) {
             return;
         }
         
         const duelData = duelDoc.data();
-        const hasSeenResults = duelData.hasSeenResults || [];
+        const hasSeenResults = duelData?.hasSeenResults || [];
 
         const updatedResults = {
             ...hasSeenResults,

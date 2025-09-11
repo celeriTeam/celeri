@@ -1,17 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { app } from "@firebaseConfig";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, collection, query, where, onSnapshot } from "firebase/firestore";
+import { auth, db } from "@firebaseConfig";
+import { onAuthStateChanged } from "@react-native-firebase/auth";
+import { doc, collection, onSnapshot } from "@react-native-firebase/firestore";
 import { getProfilePic, getUserName, getSteps, getUserGroups, getName, getWeeklySteps, 
     getAverageSteps, getStepsFromWeekBefore, getLastWeekSteps, getWeeklyDuelsWon, 
     getUserFinishedTutorial} from '@/backend/src/users';
 import { getGroupIDFromGroupName, getGroupName, getGroupCode, getGroupProfilePic, getGroupIsGameActive, getGroupIsFirstDay, 
-    getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, getTutorialStatus } from '@/backend/src/groups';
-import { getYesterdaysDuelsSummary, getGameStartedAt, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, } from '@/backend/src/bets';
-
-
-const auth = getAuth(app);
-const db = getFirestore(app);
+    getGroupIsResultAvailable, getGroupCreator, getUserTokens, getTodaysBetTokens, getUsersInGroup, getTotalCycles, getGameType, 
+    getCycle, getCycleCount, getCurrentPlayersInGame, getGroupCreatedAt, getUserDiamonds, getLastLogin, getResetDay, getStartingTokens, 
+    getTutorialStatus 
+} from '@/backend/src/groups';
+import { getYesterdaysDuelsSummary, getGameStartedAt, getTodaysDuelsSummary, getUnbetDuels, checkFinishedBetting, checkFinishedRecap, 
+    checkFinishedTutorial, getLastWeekDuelsSummary, getLastWeekPropBets, 
+} from '@/backend/src/bets';
 
 export interface UserContextType {
     userID: string;
@@ -53,7 +54,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         setLoading(true);
         let unsubscribeUser: any;
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth(), (user) => {
             if (user) {
                 setUserID(user.uid);
                 unsubscribeUser = fetchUserData(user.uid);
@@ -79,7 +80,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userDocRef = doc(usersRef, uid);
         const unsubscribeUser = onSnapshot(userDocRef, async (docSnapshot) => {
             setLoading(true);
-            if (docSnapshot.exists()) {
+            if (docSnapshot.exists) {
                 const userData = docSnapshot.data();
                 const currentProfilePicUrl = await getProfilePic(uid);
                 setProfileImageUrl(currentProfilePicUrl || '');
@@ -112,7 +113,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const groupDocRef = doc(groupsRef, groupID);
                 const unsubscribeGroup = onSnapshot(groupDocRef, async (docSnapshot) => {
                     setLoading(true);
-                    if (docSnapshot.exists() && groupID) {
+                    if (docSnapshot.exists && groupID) {
                         const [groupCode, groupImageUrl, groupName, isGameActive, isFirstDay, isResultAvailable,
                         groupCreator] = await Promise.all([
                             getGroupCode(groupID),

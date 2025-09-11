@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, Pressable, TouchableOpacity, Keyboard, Image, SafeAreaView } from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { View, Text, TextInput, Pressable, TouchableOpacity, Keyboard, Image, SafeAreaView } from 'react-native';
 import { getGroupFromCode, addUserToGroup, getGroupIsGameActive } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router'
 import { StyleSheet } from 'react-native-size-scaling';
 

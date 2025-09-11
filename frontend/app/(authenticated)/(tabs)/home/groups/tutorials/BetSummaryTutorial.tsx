@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, TouchableHighlight, Modal, PanResponder, Animated, TouchableWithoutFeedback, Image, Keyboard, KeyboardAvoidingView, Platform, StyleProp, ViewStyle, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Image, StyleProp, ViewStyle, Dimensions } from 'react-native';
 import { useUser } from '../../../../../UserProvider';
-import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import { setUserFinishedTutorial } from '@/backend/src/users';
 import { addDiamonds } from '@/backend/src/groups';
 
 const { width, height } = Dimensions.get('window');

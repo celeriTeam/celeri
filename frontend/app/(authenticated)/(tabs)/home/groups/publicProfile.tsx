@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { View, Text, Alert, Button, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
 import { createNudge } from '@/backend/src/notifs';
-import firestore, { FieldValue } from '@react-native-firebase/firestore';
+import { doc } from '@react-native-firebase/firestore';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
+import { db } from '@/firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 
@@ -66,7 +67,7 @@ const ProfilePage: React.FC = () => {
 
         try {
             // Assume userID has already been set and tokens are saved in Firestore
-            const userRef = firestore().collection('users').doc(selectedUserID);
+            const userRef = doc(db, 'users', selectedUserID);
             const userDoc = await userRef.get();
             const tokens = userDoc.data()?.tokens || [];
 

@@ -4,19 +4,10 @@ import { Alert } from 'react-native';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native';
 import { StyleSheet as ScaledStyleSheet } from 'react-native-size-scaling';
 import { Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useUser } from '@/app/UserProvider';
-import { 
-  collection,
-  getDocs,
-  getDoc,
-  doc,
-  getFirestore
-} from 'firebase/firestore';
-import { app } from "@firebaseConfig";
+import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore';
+import { db } from "@firebaseConfig";
 import { writeConsentForm, hasUserConsented } from '@/backend/src/competition';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 const SCREEN_WIDTH = Dimensions.get('window').width;

@@ -1,20 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-    SafeAreaView, Pressable, Keyboard,
-    View, Image, Text, TouchableOpacity, TextInput, Alert,
-    KeyboardAvoidingView, Platform, ScrollView
-} from 'react-native';
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, User } from "firebase/auth";
-import { app, auth, db } from "@firebaseConfig";
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { SafeAreaView, Pressable, Keyboard, View, Image, Text, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { onAuthStateChanged, createUserWithEmailAndPassword, FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { auth, db, storage } from "@firebaseConfig";
+import { doc, setDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { uploadBytes, getDownloadURL } from '@react-native-firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { FirebaseError } from 'firebase/app';
 import { useRouter } from 'expo-router';
 import { StyleSheet } from 'react-native-size-scaling';
-import MailchimpSubscribe from 'react-mailchimp-subscribe'
-
 
 const SignUpPage: React.FC = () => {
 
@@ -23,12 +17,10 @@ const SignUpPage: React.FC = () => {
     const [profileImage, setProfileImage] = useState<string | undefined>();
     const [email, setEmail] = useState<string | undefined>();
     const [password, setPassword] = useState<string | undefined>();
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [focusedInput, setFocusedInput] = useState<string>('');
 
-    const auth = getAuth(app);
-    const storage = getStorage(app);
     const router = useRouter();
 
     const createProfile = async (user: any) => {
@@ -53,8 +45,7 @@ const SignUpPage: React.FC = () => {
     };
 
     useEffect(() => {
-        const authInstance = getAuth();
-        const unsubscribe = onAuthStateChanged(authInstance, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth(), (currentUser) => {
             setUser(currentUser);
         });
 
@@ -119,7 +110,7 @@ const SignUpPage: React.FC = () => {
         try {
             const response = await fetch(profileImage);
             const blob = await response.blob();
-            const storageRef = ref(storage, `profileImages/${userId}`);
+            const storageRef = storage().ref(`profileImages/${userId}`);
             console.log("profileImage checker THREE");
             console.log('Blob size: ', blob.size);
             console.log('Blob type: ', blob.type)
@@ -148,7 +139,7 @@ const SignUpPage: React.FC = () => {
             try {
                 console.log("Trying to register user...");
                 const response = await createUserWithEmailAndPassword(
-                    auth,
+                    auth(),
                     email,
                     password,
                 );

@@ -1,10 +1,5 @@
-import { getFirestore, doc, runTransaction, getDoc, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, arrayUnion, Timestamp } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from "../../firebaseConfig";
-import { useUser } from '../../app/UserProvider'
-
-const db = getFirestore(app);
-const storage = getStorage();
+import { doc, runTransaction, collection, query, where, getDocs, serverTimestamp, Timestamp } from "@react-native-firebase/firestore";
+import { db } from "@firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
 
@@ -70,13 +65,13 @@ export const buyPowerup = async (groupID: string, userID: string, targetUserID: 
             const groupDoc = await transaction.get(groupDocRef);
             const powerupsCollectionRef = collection(groupDocRef, "powerups");
 
-            if (!groupDoc.exists()) {
+            if (!groupDoc.exists) {
                 console.error("Group document does not exist!");
                 return false;
             }
 
             const groupData = groupDoc.data();
-            const users = groupData.users || {};
+            const users = groupData?.users || {};
 
             // Ensure the user exists in the group
             if (!users[userID]) {

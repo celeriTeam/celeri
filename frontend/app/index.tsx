@@ -1,18 +1,17 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { ActivityIndicator, View, Text } from 'react-native';
 import * as Font from 'expo-font';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import firestore from '@react-native-firebase/firestore';
+import { doc, getDoc } from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth, db } from '@firebaseConfig';
 
 const App: React.FC = () => {
     const [initialRoute, setInitialRoute] = useState<"/(authenticated)/(tabs)/home" | "/onboarding" | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [fontsLoaded, setFontsLoaded] = useState(false);
-    const auth = getAuth();
     const router = useRouter(); // Move useRouter out of useEffect
 
     useEffect(() => {
@@ -34,7 +33,7 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+        const checkAuth = async () => {
             try {
                 // Check if registration is in progress
                 const registrationInProgress = await AsyncStorage.getItem('registrationInProgress');
@@ -46,10 +45,11 @@ const App: React.FC = () => {
                     return; // Don't redirect if registration is in progress
                 }
                 
+                const user = auth().currentUser;
                 if (user) {
                     // Check if this user has completed registration
                     try {
-                        const userDoc = await firestore().collection('users').doc(user.uid).get();
+                        const userDoc = await getDoc(doc(db, 'users', user.uid));
                         
                         // Only navigate to home if user document exists (registration complete)
                         if (userDoc.exists) {
@@ -73,10 +73,10 @@ const App: React.FC = () => {
                 setIsLoading(false);
                 setInitialRoute('/onboarding');
             }
-        });
+        };
 
-        return () => unsubscribe();
-    }, [auth]);
+        checkAuth();
+    }, []);
 
     useEffect(() => {
         // Navigate to the initial route once ready

@@ -1,20 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-    View, Text, Image, Button, Alert, Pressable, Keyboard, TouchableOpacity,
-    SafeAreaView, TextInput,
-} from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useRoute } from '@react-navigation/native';
-import { RouteProp } from '@react-navigation/native';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app, auth, db } from "@firebaseConfig";
-import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { View, Text, Image, Alert, Pressable, Keyboard, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { CTAButton } from "@components/CTAButton";
 import { generateGroupCode, createGroup, addGroupImage } from '@backend/src/groups';
 import { addGroupToUser } from '@backend/src/users';
-import { useUser } from '../../../UserProvider';
+import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router'
 import { StyleSheet } from 'react-native-size-scaling';
 
@@ -22,7 +12,6 @@ const CreateGroupPage: React.FC = () => {
     const { userID } = useUser();
     const [groupName, setGroupName] = useState<string | undefined>();
     const [groupImage, setGroupImage] = useState<string | undefined>();
-    const [users, setUsers] = useState<Map<string, Map<string, any>> | undefined>();
     const [errorMessage, setErrorMessage] = useState<string | undefined>(); // State for error message
     const router = useRouter();
 

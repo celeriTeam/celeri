@@ -4,12 +4,10 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router'
 import { useUser } from '../../../../UserProvider';
 import { StyleSheet } from 'react-native-size-scaling';
-import { collection, getDocs, getDoc, doc, getFirestore } from 'firebase/firestore'
-import { app } from "@firebaseConfig";
+import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore'
+import { db } from "@firebaseConfig";
 import { TextInput } from 'react-native-gesture-handler';
 import { requestFriend } from '@/backend/src/friends';
-
-const db = getFirestore(app);
 
 const { width, height } = Dimensions.get('window');
 

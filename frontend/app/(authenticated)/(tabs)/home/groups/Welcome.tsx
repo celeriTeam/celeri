@@ -1,21 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Keyboard, TouchableWithoutFeedback, Modal, Dimensions, ScrollView, StyleProp, ViewStyle, KeyboardAvoidingView } from 'react-native';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { useUser } from '../../../../UserProvider';
-import { addToFinishedBetting, addToFinishedRecap, addToFinishedTutorial, createBet, getUnbetDuels } from '@/backend/src/bets';
-import BetRecapPage from './modals/Recap';
-import WeeklyBetRecapPage from './modals/WeeklyRecap';
+import { addToFinishedTutorial } from '@/backend/src/bets';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { getGroupIsFirstDay, getTodaysBetTokens, getUserTokens, setTodaysBetTokens } from '@/backend/src/groups';
 import { LinearGradient } from 'expo-linear-gradient';
-import { match } from 'assert';
-import { getLastWeekSteps, getWeeklyDuelsWon } from '@/backend/src/users';
-import { useTabBar } from '../../../../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
-import NewHeadToHeadTutorial from './tutorials/NewHeadToHeadTutorial';
 
 
 const { width, height } = Dimensions.get('window');

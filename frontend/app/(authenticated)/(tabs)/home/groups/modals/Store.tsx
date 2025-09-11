@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Modal, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList, Dimensions, Alert } from 'react-native';
+import { View, Text, Modal, TouchableOpacity, Button, FlatList, Alert } from 'react-native';
 import { Image } from 'expo-image';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { useUser } from '../../../../../UserProvider';
-import { buyPowerup } from '../../../../../../backend/src/store';
+import { buyPowerup } from '@backend/src/store';
 import { StyleSheet } from 'react-native-size-scaling';
 
 type Props = {
