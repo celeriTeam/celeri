@@ -2,10 +2,10 @@ import { Redirect, Stack } from 'expo-router';
 import { View, Text, ActivityIndicator, Dimensions } from 'react-native';
 import { UserProvider } from '@/app/UserProvider';
 import { useEffect, useState } from 'react';
-import { db, authInstance } from '@firebaseConfig';
+import { db, authInstance, messaging } from '@firebaseConfig';
 import * as Device from 'expo-device';
-import messaging from '@react-native-firebase/messaging';
-import firestore, { doc, updateDoc } from '@react-native-firebase/firestore';
+import { AuthorizationStatus, getToken, requestPermission, subscribeToTopic } from '@react-native-firebase/messaging';
+import { arrayUnion, doc, updateDoc } from '@react-native-firebase/firestore';
 import { getActiveUserGroupIDs } from '@/backend/src/users';
 import { TabBarProvider } from '../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,72 +24,70 @@ const moderateScale = (size: number, factor = 0.5) => size + (scale(size) - size
 
 // Register for push notifications function
 async function registerForPushNotificationsAsync(userID: string) {
-  if (Device.isDevice) {
+    if (Device.isDevice) {
 
-      // Request permission for notifications
-      const authStatus = await messaging().requestPermission();
-      const isAuthorized =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+        // Request permission for notifications
+        const authStatus = await requestPermission(messaging);
+        const isAuthorized =
+            authStatus === AuthorizationStatus.AUTHORIZED ||
+            authStatus === AuthorizationStatus.PROVISIONAL;
 
-      if (!isAuthorized) {
-          console.log('Push notification permissions denied.');
-          return;
-      } else {
-        // console.log('Authorization status:', authStatus);
-      }
-      
-      // Retrieve Firebase push token (ensure Firebase is initialized)
-      try {
-          await messaging().registerDeviceForRemoteMessages();
-          const token = await messaging().getToken()
-          await saveTokenToDatabase(token, userID);
+        if (!isAuthorized) {
+            console.log('Push notification permissions denied.');
+            return;
+        } else {
+            // console.log('Authorization status:', authStatus);
+        }
 
-          // Subscribe Firebase token to topic
-          await subscribeTokenToTopic(token, 'allUsers');
+        // Retrieve Firebase push token (ensure Firebase is initialized)
+        try {
+            const token = await getToken(messaging);
+            await saveTokenToDatabase(token, userID);
 
-          // Subscribe to group-specific tokens
-          let activeUserGroups = await getActiveUserGroupIDs(userID);
+            // Subscribe Firebase token to topic
+            await subscribeTokenToTopic(token, 'allUsers');
 
-          if (activeUserGroups && Array.isArray(activeUserGroups)) {
-            for (const group of activeUserGroups) {
-                try {
-                await subscribeTokenToTopic(token, group);
-                } catch (error) {
-                console.error(`Failed to subscribe token to topic ${group}:`, error);
+            // Subscribe to group-specific tokens
+            let activeUserGroups = await getActiveUserGroupIDs(userID);
+
+            if (activeUserGroups && Array.isArray(activeUserGroups)) {
+                for (const group of activeUserGroups) {
+                    try {
+                        await subscribeTokenToTopic(token, group);
+                    } catch (error) {
+                        console.error(`Failed to subscribe token to topic ${group}:`, error);
+                    }
                 }
             }
+        } catch (error) {
+            console.error("Error getting Firebase token:", error);
         }
-      } catch (error) {
-          console.error("Error getting Firebase token:", error);
-      }
-  } else {
-      alert('Must use physical device for Push Notifications');
-  }
+    } else {
+        alert('Must use physical device for Push Notifications');
+    }
 }
 
 async function saveTokenToDatabase(token: string, uid: string) {
     // Assume user is already signed in
     const userId = uid;
-  
+
     // Add the token to the users datastore
     await updateDoc(doc(db, 'users', userId), {
-        tokens: firestore.FieldValue.arrayUnion(token),
+        tokens: arrayUnion(token),
     });
-  }
-  
-    // Helper function to subscribe token to topic
-  async function subscribeTokenToTopic(token: string, topic: string) {
-      messaging()
-      .subscribeToTopic(topic)
-      .then((response: any) => {
-          console.log('Successfully subscribed to topic:', topic);
+}
+
+// Helper function to subscribe token to topic
+async function subscribeTokenToTopic(token: string, topic: string) {
+    subscribeToTopic(messaging, topic)
+        .then((response: any) => {
+            console.log('Successfully subscribed to topic:', topic);
         })
         .catch((error: any) => {
-          console.log('Error subscribing to topic:', error);
+            console.log('Error subscribing to topic:', error);
         });
-    }
-  
+}
+
 
 export default function AuthenticatedStack() {
 
@@ -137,10 +135,10 @@ export default function AuthenticatedStack() {
             <UserProvider>
                 <TabBarProvider>
                     <Stack>
-                    {/* this shows your bottom‑tab navigator */}
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="publicProfile" options={{ title: 'PublicProfile', headerShown: false }} />
-                  </Stack>
+                        {/* this shows your bottom‑tab navigator */}
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="publicProfile" options={{ title: 'PublicProfile', headerShown: false }} />
+                    </Stack>
                 </TabBarProvider>
             </UserProvider>
         </SafeAreaView>

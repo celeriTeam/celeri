@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
-import messaging from '@react-native-firebase/messaging';
 import { getAverageSteps, getStepsLastUpdate, getSteps, setStepsFirebase, setStepsLastUpdate, setLastLogin } from '../users'; 
-import { authInstance } from '@firebaseConfig';
+import { authInstance, messaging } from '@firebaseConfig';
 import AppleHealthKit, {
     HealthInputOptions,
     HealthKitPermissions,
@@ -19,6 +18,7 @@ import { newsFunctions } from '../news';
 import { get1v1StartTime, update1v1Steps } from '../1v1';
 import { fetchCurrentCompetition } from '../api/competitions';
 import { updateCompetitionSteps, getCompetitionUserInfo } from '../api/competition_steps';
+import { onMessage, setBackgroundMessageHandler } from '@react-native-firebase/messaging';
 
 const { Permissions } = AppleHealthKit.Constants;
 
@@ -582,14 +582,18 @@ const useHealthData = () => {
   
     // Check permissions
     const checkAndRequestPermissions = async () => {
+        console.log('useHealthData -- CHECKING PERMISSIONS');
         if (Platform.OS === 'ios') {
             return new Promise((resolve) => {
+                console.log('check 0.5');
                 AppleHealthKit.initHealthKit(permissions, (err) => {
+                    console.log('check 1');
                     if (err) {
                         console.log('Error getting permissions', err);
                         resolve(false);
                         return;
                     }
+                    console.log('check 2');
                     AppleHealthKit.getAuthStatus(permissions, (err2, results: any) => {
                         if (err2) {
                             console.log("Error checking HealthKit auth status:", err2);
@@ -597,6 +601,7 @@ const useHealthData = () => {
                             resolve(false);
                             return;
                         }
+                        console.log('check 3');
                         console.log(AppleHealthKit.Constants.Permissions.Steps);
                         console.log(results);
                         
@@ -683,14 +688,14 @@ const useHealthData = () => {
             );
 
             // Firebase Messaging Handlers
-            const unsubscribeForeground = messaging().onMessage(async (remoteMessage) => {
+            const unsubscribeForeground = onMessage(messaging, async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
                     console.log("Fetching HealthKit data from silent notification (foreground)...");
                     fetchHealthData();
                 }
             });
 
-            messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+            setBackgroundMessageHandler(messaging, async (remoteMessage) => {
                 if (remoteMessage.data?.type === "silent" && remoteMessage.data?.action === "fetchSteps") {
                     console.log("Fetching HealthKit data from silent notification (background)...");
                     const permissionsValid = await checkAndRequestPermissions();

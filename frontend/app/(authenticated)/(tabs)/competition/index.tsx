@@ -9,9 +9,14 @@ import { addCompetitionUser, getCompetitionData, getCompetitionHasSeenResults, g
 import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { isUserInCompetition, setUserInCompetition, hasUserConsented, getReferral } from '@backend/src/competition';
-import messaging from '@react-native-firebase/messaging';
+import { messaging } from '@firebaseConfig';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { TextStyle } from 'react-native';
+import ResultsModal from './Results';
+import useHealthData from '@/backend/src/hooks/useHealthData';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { onMessage } from '@react-native-firebase/messaging';
 
 // import LiveHealthkit from '@/modules/live-healthkit';
 // const native = requireNativeModule('LiveHealthkit');
@@ -111,7 +116,7 @@ const CompetitionLandingPage: React.FC = () => {
     useEffect(() => {
 
         // listen while in foreground
-        const unsubscribe = messaging().onMessage(async remoteMsg => {
+        const unsubscribe = onMessage(messaging, async remoteMsg => {
             console.log('Received foreground message:', remoteMsg);
             if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
                 console.log('Competition started notification received');
@@ -248,7 +253,7 @@ const CompetitionLandingPage: React.FC = () => {
                             <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
                                 <Text style={{ color: '#fff', fontSize: 24 }}>✕</Text>
                             </TouchableOpacity>
-                            <RaceRulesPager closeModal={() => setModalVisible(false)} />
+                            <RaceRulesPager closeModal={() => setModalVisible(false)} setConsent={setHasConsented} />
                         </LinearGradient>
                     </View>
                 </View>
@@ -379,11 +384,6 @@ const joinButton = (currentGame: any): ViewStyle => ({
     marginBottom: 30,
     opacity: currentGame ? 1 : 0.6,
 });
-
-import type { TextStyle } from 'react-native';
-import ResultsModal from './Results';
-import useHealthData from '@/backend/src/hooks/useHealthData';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 const joinButtonText = (currentGame: any): TextStyle => ({
     fontSize: 24,

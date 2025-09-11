@@ -5,7 +5,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Image } from 'expo-image';
 import { signOut } from "@react-native-firebase/auth";
 import { useUser } from '@/app/UserProvider';
-import messaging from '@react-native-firebase/messaging';
 import { editName, editProfilePic, editUsername, getActiveUserGroupIDs } from '@/backend/src/users';
 import useHealthData from '@/backend/src/hooks/useHealthData';
 import { useRouter } from 'expo-router';
@@ -14,7 +13,8 @@ import { LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
-import { authInstance } from '@/firebaseConfig';
+import { authInstance, messaging } from '@/firebaseConfig';
+import { getToken, unsubscribeFromTopic } from '@react-native-firebase/messaging';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,7 +42,7 @@ const PersonalProfilePage: React.FC = () => {
     const handleLogout = async () => {
         setIsLoggingOut(true);
         try {
-            const token = await messaging().getToken()
+            const token = await getToken(messaging)
 
             if (!token) {
                 console.error("Failed to get a valid Firebase token.");
@@ -63,7 +63,7 @@ const PersonalProfilePage: React.FC = () => {
                 console.log(`Attempting to unsubscribe from topic: ${topic}`);
 
                 try {
-                    await messaging().unsubscribeFromTopic(topic);
+                    await unsubscribeFromTopic(messaging, topic);
                     console.log(`Successfully unsubscribed from topic: ${topic}`);
                 } catch (error) {
                     console.error(`Error unsubscribing from topic ${topic}:`, error);
