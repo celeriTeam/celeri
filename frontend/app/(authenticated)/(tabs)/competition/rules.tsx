@@ -31,7 +31,12 @@ type User = {
   pfp: string;
 };
 
-const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) => {
+type RaceRulesProp = {
+  closeModal?: () => void,
+  setConsent: (cosent: boolean) => void,
+};
+
+const RaceRulesPager: React.FC<RaceRulesProp> = ({ closeModal, setConsent }) => {
   const { userID } = useUser();
   const [currentPage, setCurrentPage] = useState(0);
   const [payment, setPayment] = useState('');
@@ -88,8 +93,6 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
   // 3) Update filtered users on search
   const handleSearch = (text: string) => {
     setReferral(text);
-    const foundUser = allUsers.find(u => u.username === text);
-    setReferralId(foundUser ? foundUser.id : '');
 
     if (!text.trim()) {
       setFilteredUsers(allUsers);
@@ -129,6 +132,7 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
             if (closeModal) {
               closeModal();
             }
+            setConsent(true);
           }
         }
       ]);
@@ -227,6 +231,8 @@ const RaceRulesPager: React.FC<{ closeModal?: () => void }> = ({ closeModal }) =
                   }}
                   onPress={() => {
                     setReferral(user.username); // pick this user
+                    setReferralId(user.id);
+                    console.log('userid: ', user.id);
                     setFilteredUsers([]); // close dropdown
                   }}
                 >

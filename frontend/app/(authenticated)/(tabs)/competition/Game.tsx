@@ -6,12 +6,13 @@ import { updateCompetitionSteps } from '@backend/src/api/competition_steps';
 import { getCurrentCompetitionData, getReferralsData } from '@backend/src/api/competition_steps';
 import { useUser } from '@/app/UserProvider';
 import { getUserProfilesBatch } from '@/backend/src/competition';
-import messaging from '@react-native-firebase/messaging';
+import { onMessage } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getFriendsList } from '@/backend/src/users';
 import { Platform } from 'react-native'; // <-- added
-import { useStepsSince } from '../../../../backend/src/hooks/useStepsSince';
+import { useStepsSince } from '@backend/src/hooks/useStepsSince';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { messaging } from '@firebaseConfig';
 
 type Results = {
     user_id: string,
@@ -237,7 +238,7 @@ const CompetitionGamePage: React.FC = () => {
     };
 
     useEffect(() => {
-        const unsubscribe = messaging().onMessage(remoteMsg => {
+        const unsubscribe = onMessage(messaging, remoteMsg => {
             if (remoteMsg.data?.type === 'TOGGLE_COMPETITION') {
                 refreshGameData();
             }

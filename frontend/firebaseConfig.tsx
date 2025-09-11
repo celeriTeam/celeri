@@ -6,11 +6,12 @@
 import { getApp } from '@react-native-firebase/app';
 import { getAuth } from '@react-native-firebase/auth';
 import firestore, { getFirestore } from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage'
+import storage from '@react-native-firebase/storage';
+import { getMessaging } from '@react-native-firebase/messaging';
 
 
 const app = getApp();
 const db = getFirestore(app);
-const auth = () => getAuth(app);
 const authInstance = getAuth(app);
-export { db, auth, authInstance, firestore, storage };
+const messaging = getMessaging();
+export { app, db, authInstance, firestore, storage, messaging };

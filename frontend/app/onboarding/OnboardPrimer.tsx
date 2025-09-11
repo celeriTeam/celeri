@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { signInWithPhoneNumber} from '@react-native-firebase/auth';
-import { doc, getDoc, setDoc } from '@react-native-firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from '@react-native-firebase/firestore';
 import firestore from '@react-native-firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authInstance, db, storage } from '@firebaseConfig';
@@ -181,8 +181,8 @@ const OnboardPrimer = () => {
         username,
         phoneNumber: user.phoneNumber,
         profileImageUrl,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         groups: [],
         receiveNews: newsConsent
       });
