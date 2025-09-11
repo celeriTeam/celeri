@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { TextStyle } from 'react-native';
 import ResultsModal from './Results';
-import useHealthData from '@/backend/src/hooks/useHealthData';
+import useHealthData from '@backend/src/hooks/useHealthData';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onMessage } from '@react-native-firebase/messaging';
 

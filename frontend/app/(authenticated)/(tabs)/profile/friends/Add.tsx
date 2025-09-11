@@ -7,7 +7,7 @@ import { StyleSheet } from 'react-native-size-scaling';
 import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore'
 import { db } from "@firebaseConfig";
 import { TextInput } from 'react-native-gesture-handler';
-import { requestFriend } from '@/backend/src/friends';
+import { requestFriend } from '@backend/src/friends';
 
 const { width, height } = Dimensions.get('window');
 

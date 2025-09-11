@@ -59,7 +59,7 @@ export const endCompetitionById = async (competitionId: number) => {
             WHERE competition_id = ${competitionId}
         `;
 
-        const isTallying = await sql`
+        const result = await sql`
             SELECT 
                 CASE 
                 -- Case 1: all rows fully updated
@@ -80,6 +80,8 @@ export const endCompetitionById = async (competitionId: number) => {
             FROM competitions c
             WHERE c.id = ${competitionId};
         `;
+        const isTallying = result[0]?.is_tallying ?? false;
+        console.log('istallying: ', isTallying);
         if (!isTallying) {
             // send silent notif to alert frontend & change firebase in users, but dont end comp yet
             await admin.messaging().send({

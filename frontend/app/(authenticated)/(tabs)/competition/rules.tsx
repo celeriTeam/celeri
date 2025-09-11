@@ -7,7 +7,7 @@ import { Dimensions } from 'react-native';
 import { useUser } from '@/app/UserProvider';
 import { collection, getDocs, getDoc, doc } from '@react-native-firebase/firestore';
 import { db } from "@firebaseConfig";
-import { writeConsentForm, hasUserConsented } from '@/backend/src/competition';
+import { writeConsentForm, hasUserConsented } from '@backend/src/competition';
 
 const { width, height } = Dimensions.get('window');
 const SCREEN_WIDTH = Dimensions.get('window').width;

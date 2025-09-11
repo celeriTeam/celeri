@@ -4,8 +4,8 @@ import { Dimensions, ScrollView } from 'react-native';
 import { View, Text, TouchableOpacity, Button, ActivityIndicator, TouchableHighlight, FlatList } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { addToFinishedPropBet } from '@/backend/src/bets';
-import { addPropBet } from '@/backend/src/groups';
+import { addToFinishedPropBet } from '@backend/src/bets';
+import { addPropBet } from '@backend/src/groups';
 import { StyleSheet } from 'react-native-size-scaling';
 
 const { width, height } = Dimensions.get('window');

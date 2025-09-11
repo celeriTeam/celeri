@@ -6,7 +6,7 @@ import { db, authInstance, messaging } from '@firebaseConfig';
 import * as Device from 'expo-device';
 import { AuthorizationStatus, getToken, requestPermission, subscribeToTopic } from '@react-native-firebase/messaging';
 import { arrayUnion, doc, updateDoc } from '@react-native-firebase/firestore';
-import { getActiveUserGroupIDs } from '@/backend/src/users';
+import { getActiveUserGroupIDs } from '@backend/src/users';
 import { TabBarProvider } from '../../hooks/useTabBar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { onAuthStateChanged } from '@react-native-firebase/auth';
