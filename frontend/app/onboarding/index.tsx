@@ -35,7 +35,7 @@ const RegisterPage: React.FC = () => {
                     <TouchableOpacity style={styles.button} onPress={() => router.replace('/onboarding/OnboardPrimer')}>
                         <Text style={styles.buttonText}>I don't have an account yet.</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.button2} onPress={() => router.replace('/onboarding/Login')}>
+                    <TouchableOpacity style={styles.button2} onPress={() => router.push('/onboarding/Login')}>
                         <Text style={styles.buttonText2}>I already have an account.</Text>
                     </TouchableOpacity>
                 </View>
@@ -74,6 +74,11 @@ const styles = StyleSheet.create({
     },
     button2: {
         marginTop: 20,
+        borderWidth: 1,
+        borderRadius: 35,
+        padding: 20,
+        paddingHorizontal: 25,
+        borderColor: '#fff',
     },
     buttonText: {
         fontFamily: "Lexend",

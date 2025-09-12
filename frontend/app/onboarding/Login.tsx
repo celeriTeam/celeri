@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     },
     header: {
         position: 'absolute',
-        top: 50,
+        top: 120,
         left: 0,
         right: 0,
         flexDirection: 'row',
