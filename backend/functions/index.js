@@ -10,7 +10,6 @@ initializeApp();
 const firestore = getFirestore();
 
 // Initialize SendGrid for email sending
-const {onCall} = require("firebase-functions/v2/https");
 const sgMail = require("@sendgrid/mail");
 
 // Define config parameter
@@ -18,8 +17,9 @@ const API_KEY = process.env.SENDGRID_API_KEY;
 sgMail.setApiKey(API_KEY);
 
 // Create email sending function
-exports.sendEmail = onCall(async (request) => {
-  const {data} = request;
+exports.sendEmail = onDocumentCreated("feedback/{feedbackId}", async (event) => {
+  const data = event.data.data();
+  if (!data) return;
 
   const msg = {
     to: data.to,
@@ -868,11 +868,12 @@ exports.sendNotifOnBet = onDocumentUpdated("groups/{groupID}/duels/{duelID}", as
   }
 });
 
-exports.send1v1RequestNotification = onCall(async (req) => {
-  const {receiverID, senderName} = req.data;
-  const db = getFirestore();
+exports.send1v1RequestNotification = onDocumentCreated("1v1Requests/{requestID}", async (event) => {
+  const data = event.data.data(); // snapshot data
+  if (!data) return;
 
-  const userSnap = await db.collection("users").doc(receiverID).get();
+  const {receiverID, senderName} = data;
+  const userSnap = await firestore.collection("users").doc(receiverID).get();
   const tokens = userSnap.data().tokens || [];
 
   for (const token of tokens) {
@@ -895,11 +896,19 @@ exports.send1v1RequestNotification = onCall(async (req) => {
   return {success: true};
 });
 
-exports.send1v1StartedNotification = onCall(async (req) => {
-  const {opponentID, opponentName} = req.data;
-  const db = getFirestore();
+exports.send1v1StartedNotification = onDocumentUpdated("1v1Requests/{requestID}", async (event) => {
+  const before = event.data.before.data();
+  const after = event.data.after.data();
 
-  const userSnap = await db.collection("users").doc(opponentID).get();
+  if (!before || !after) return;
+
+  // Only trigger when status changes to "accepted"
+  if (before.status === after.status) return;
+  if (after.status !== "accepted") return;
+
+  const {opponentID, opponentName} = after;
+
+  const userSnap = await firestore.collection("users").doc(opponentID).get();
   const tokens = userSnap.data().tokens || [];
 
   for (const token of tokens) {

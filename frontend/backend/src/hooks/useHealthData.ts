@@ -585,15 +585,12 @@ const useHealthData = () => {
         console.log('useHealthData -- CHECKING PERMISSIONS');
         if (Platform.OS === 'ios') {
             return new Promise((resolve) => {
-                console.log('check 0.5');
                 AppleHealthKit.initHealthKit(permissions, (err) => {
-                    console.log('check 1');
                     if (err) {
                         console.log('Error getting permissions', err);
                         resolve(false);
                         return;
                     }
-                    console.log('check 2');
                     AppleHealthKit.getAuthStatus(permissions, (err2, results: any) => {
                         if (err2) {
                             console.log("Error checking HealthKit auth status:", err2);
@@ -601,9 +598,6 @@ const useHealthData = () => {
                             resolve(false);
                             return;
                         }
-                        console.log('check 3');
-                        console.log(AppleHealthKit.Constants.Permissions.Steps);
-                        console.log(results);
                         
                         // Map the numeric [1] to string "Steps"
                         const hasSteps = Array.isArray(results?.permissions?.read) && results.permissions.read.length > 0;

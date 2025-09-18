@@ -9,7 +9,6 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { TextInput } from 'react-native-gesture-handler';
 import { create1v1Request } from '@backend/src/1v1Requests';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 
 dayjs.extend(relativeTime);
 
@@ -113,9 +112,6 @@ const UserSearchPage: React.FC<Props> = ({ setUserSearchModalVisible }) => {
         await create1v1Request(userID, id)
             .then(async (requestId) => {
                 console.log('1v1 request created with ID:', requestId);
-                const functions = getFunctions();
-                const sendNotification = httpsCallable(functions, 'send1v1RequestNotification');
-                await sendNotification({ receiverID: id, senderName: username });
                 Alert.alert('Challenge Sent', 'Your challenge has been sent successfully!');
                 setUserSearchModalVisible(false); // Close the modal after sending the challenge
             })

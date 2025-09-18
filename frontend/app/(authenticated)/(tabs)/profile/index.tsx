@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native-size-scaling';
 import { authInstance, messaging } from '@firebaseConfig';
 import { getToken, unsubscribeFromTopic } from '@react-native-firebase/messaging';
+import EditProfilePage from './editProfile';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,9 +35,6 @@ const PersonalProfilePage: React.FC = () => {
     const [editProfileModal, setEditProfileModal] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0, visible: false, value: 0 });
     const inputRef = useRef<TextInput>(null);
-    const [currentName, setCurrentName] = useState(name);
-    const [currentUsername, setCurrentUsername] = useState(username);
-    const [currentPic, setCurrentPic] = useState(profileImageUrl);
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -87,57 +85,6 @@ const PersonalProfilePage: React.FC = () => {
             inputRef.current.focus();
         }
     }, [editProfileModal]);
-
-    const handleCloseEdit = () => {
-        setEditProfileModal(false);
-        setCurrentName(name);
-        setCurrentUsername(username);
-        setCurrentPic(profileImageUrl);
-    }
-
-    const handleEdit = async () => {
-        if (currentName !== name) {
-            editName(userID, currentName);
-        }
-        if (currentUsername !== username) {
-            editUsername(userID, currentUsername);
-        }
-        if (currentPic !== profileImageUrl) {
-            editProfilePic(userID, currentPic);
-        }
-        setEditProfileModal(false);
-    };
-
-    const pickImage = async () => {
-        // Request permission to access the media library
-        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (permissionResult.granted === false) {
-            Alert.alert('Permission Required', 'Please grant media library permissions to select a profile image.');
-            return;
-        }
-
-        // Launch image picker
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            quality: 0.5,
-        });
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-            const selectedAsset = result.assets[0];
-            if (selectedAsset.uri) {
-                // Compress and resize the image
-                const manipulatedImage = await ImageManipulator.manipulateAsync(
-                    selectedAsset.uri,
-                    [{ resize: { width: 800 } }], // Resize to 800px width
-                    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-                );
-
-                setCurrentPic(manipulatedImage.uri);
-            }
-        }
-    };
 
     const StepsChart = ({ weeklySteps }: { weeklySteps: number[] }) => {
         const screenWidth = Dimensions.get('window').width;
@@ -312,40 +259,7 @@ const PersonalProfilePage: React.FC = () => {
                 >
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContainer}>
-                            <View style={styles.header}>
-                                <TouchableOpacity onPress={handleCloseEdit} activeOpacity={1}>
-                                    <Text style={styles.headerText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={handleEdit} style={styles.saveButton} activeOpacity={1}>
-                                    <Text style={styles.saveText}>Save</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <View style={styles.imageContainer}>
-                                <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
-                                    <Image
-                                        source={currentPic != '' ? { uri: currentPic } : require('@components/blank-profile-picture.png')}
-                                        style={styles.profileImageEdit}
-                                    />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.imageContainer} onPress={pickImage} activeOpacity={1}>
-                                    <Text style={styles.editImageText}>Change or Upload Profile Photo</Text>
-                                </TouchableOpacity>
-                            </View>
-                            <TextInput
-                                ref={inputRef}
-                                style={styles.nameInput}
-                                value={currentName}
-                                onChangeText={setCurrentName}
-                            />
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 25, }}>
-                                <Text style={{ fontFamily: 'Lexend', color: '#fff', fontSize: 17, width: '5%', marginLeft: 17, }}>@</Text>
-                                <TextInput
-                                    ref={inputRef}
-                                    style={[styles.nameInput, { width: '84%', marginLeft: 5, }]}
-                                    value={currentUsername}
-                                    onChangeText={setCurrentUsername}
-                                />
-                            </View>
+                            <EditProfilePage setEditProfileModal={setEditProfileModal}  />
                         </View>
                     </View>
                 </Modal>
@@ -493,7 +407,6 @@ const styles = StyleSheet.create({
         // set width
         width: '40%',
     },
-
     modalOverlay: {
         flex: 1,
         justifyContent: 'center',
