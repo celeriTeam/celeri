@@ -28,7 +28,11 @@
       "ios": {}
     },
     "production": {
-      "ios": {}
+      "ios": {
+        "hooks": {
+          "postinstall": "patch-package"
+        }
+      }
     }
   },
   "submit": {

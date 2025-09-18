@@ -1,4 +1,4 @@
-import { doc, getDoc, collection, query, where, getDocs, updateDoc, Timestamp } from "@react-native-firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, Timestamp, deleteDoc } from "@react-native-firebase/firestore";
 import { db, storage } from "@firebaseConfig";
 
 /*********************************************** GET FUNCTIONS ********************************************/
@@ -172,6 +172,39 @@ export const getUserFinishedTutorial = async (userID: string): Promise<boolean> 
     }
 }
 
+export const getLastLogin = async (userID: string): Promise<Date | undefined> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userID));
+        if (userDoc.exists && userDoc.data()?.lastLogin) {
+            const lastLogin = userDoc.data()?.lastLogin.toDate();
+            // console.log("getLastLogin - response: ", lastLogin);
+            return lastLogin;
+        } else {
+            console.error("getLastLogin - error: No such document!");
+            return undefined;
+        }
+    } catch (error) {
+        console.error("getLastLogin - Error fetching user document:", error);
+        return undefined;
+    }
+}
+
+export const getFriendsList = async (userID: string): Promise<string[]> => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userID));
+        if (userDoc.exists && userDoc.data()?.friendsList) {
+            const friendsList = userDoc.data()?.friendsList;
+            return friendsList;
+        } else {
+            console.error("getLastLogin - error: No such document!");
+            return [];
+        }
+    } catch (error) {
+        console.error('getFriendsList - Error getting friends list:', error);
+        return [];
+    }
+}
+
 
 /*********************************************** EDIT FUNCTIONS ********************************************/
 
@@ -286,6 +319,42 @@ export const addGroupToUser = async (groupID: string, userID: string): Promise<s
     } catch (error) {
          console.error("addGroupToUser - Error fetching user document: ", error);
          return undefined;
+    }
+}
+
+export const setLastLogin = async (userID: string, date: Date): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            lastLogin: date,
+        });
+        console.log('setLastLogin - response: ', date);
+    } catch (error) {
+        console.error('setLastLogin - Error updating last login:', error);
+    }
+}
+
+export const setIsIn1v1 = async (userID: string, isIn1v1: boolean): Promise<void> => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await updateDoc(userDocRef, {
+            isIn1v1: isIn1v1,
+        });
+        console.log('setIsIn1v1 - response: ', isIn1v1);
+    } catch (error) {
+        console.error('setIsIn1v1 - Error updating isIn1v1:', error);
+    }
+}
+
+/*********************************************** DELETE FUNCTIONS ********************************************/
+
+export const deleteUser = async (userID: string) => {
+    try {
+        const userDocRef = doc(db, 'users', userID);
+        await deleteDoc(userDocRef);
+        console.log('User account deleted.');
+    } catch (error) {
+        console.error('deleteUser - Error deleting user: ', error);
     }
 }
 
@@ -575,62 +644,5 @@ export const setStepsLastUpdate = async (id: string, date: Date): Promise<void> 
         console.log('setStepsLastUpdate - response: ', date);
     } catch (error) {
         console.error('setStepsLastUpdate - Error updating steps last updated:', error);
-    }
-}
-
-export const getLastLogin = async (userID: string): Promise<Date | undefined> => {
-    try {
-        const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists && userDoc.data()?.lastLogin) {
-            const lastLogin = userDoc.data()?.lastLogin.toDate();
-            // console.log("getLastLogin - response: ", lastLogin);
-            return lastLogin;
-        } else {
-            console.error("getLastLogin - error: No such document!");
-            return undefined;
-        }
-    } catch (error) {
-        console.error("getLastLogin - Error fetching user document:", error);
-        return undefined;
-    }
-}
-
-export const setLastLogin = async (userID: string, date: Date): Promise<void> => {
-    try {
-        const userDocRef = doc(db, 'users', userID);
-        await updateDoc(userDocRef, {
-            lastLogin: date,
-        });
-        console.log('setLastLogin - response: ', date);
-    } catch (error) {
-        console.error('setLastLogin - Error updating last login:', error);
-    }
-}
-
-export const setIsIn1v1 = async (userID: string, isIn1v1: boolean): Promise<void> => {
-    try {
-        const userDocRef = doc(db, 'users', userID);
-        await updateDoc(userDocRef, {
-            isIn1v1: isIn1v1,
-        });
-        console.log('setIsIn1v1 - response: ', isIn1v1);
-    } catch (error) {
-        console.error('setIsIn1v1 - Error updating isIn1v1:', error);
-    }
-}
-
-export const getFriendsList = async (userID: string): Promise<string[]> => {
-    try {
-        const userDoc = await getDoc(doc(db, "users", userID));
-        if (userDoc.exists && userDoc.data()?.friendsList) {
-            const friendsList = userDoc.data()?.friendsList;
-            return friendsList;
-        } else {
-            console.error("getLastLogin - error: No such document!");
-            return [];
-        }
-    } catch (error) {
-        console.error('getFriendsList - Error getting friends list:', error);
-        return [];
     }
 }

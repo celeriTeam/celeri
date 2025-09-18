@@ -5,6 +5,7 @@ import { useUser } from '@/app/UserProvider';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native-size-scaling';
+import { addFeedback } from '@/backend/src/feedback';
 
 // type Props = {
 //     navigation: StackNavigationProp<RootStackParamList, 'HomePage'>;
@@ -23,15 +24,8 @@ const BugReportsPage: React.FC = () => {
             Alert.alert('Error', 'Both fields are required.');
             return;
         }
-        const functions = getFunctions();
-        const sendEmail = httpsCallable(functions, 'sendEmail');
         try {
-            await sendEmail({
-                to: ['appceleri@gmail.com', 'lukaschin000@gmail.com', 'acn64@georgetown.edu', 'ssw59@georgetown.edu'],
-                subject: `Betting App Bug: ${subject}`,
-                text: `From: ${name}\nUsername: ${username}\n\nIssue: ${issue}`,
-            });
-            
+            await addFeedback(name, username, subject, issue);
             setSubject('');
             setIssue('');
             Alert.alert('Success', `Thank you for your feedback, ${username}!`);
